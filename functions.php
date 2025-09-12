@@ -932,14 +932,67 @@ function primefit_disable_shop_filters() {
 		return;
 	}
 	
-	// Remove ordering dropdown
+	// Remove default ordering dropdown (we have our own in the filter bar)
 	remove_action( 'woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30 );
 	
-	// Remove result count
+	// Remove default result count (we have our own in the filter bar)
 	remove_action( 'woocommerce_before_shop_loop', 'woocommerce_result_count', 20 );
 	
 	// Remove breadcrumbs on shop page
 	remove_action( 'woocommerce_before_main_content', 'woocommerce_breadcrumb', 20 );
+}
+
+/**
+ * Ensure WooCommerce sorting still works with our custom filter bar
+ *
+ * @since 1.0.0
+ */
+add_action( 'pre_get_posts', 'primefit_handle_custom_sorting' );
+function primefit_handle_custom_sorting( $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+	
+	// Only apply to WooCommerce shop/category/tag pages
+	if ( ! ( $query->is_post_type_archive( 'product' ) || $query->is_tax( get_object_taxonomies( 'product' ) ) ) ) {
+		return;
+	}
+	
+	// Handle sorting
+	if ( isset( $_GET['orderby'] ) ) {
+		$orderby = wc_clean( $_GET['orderby'] );
+		
+		switch ( $orderby ) {
+			case 'menu_order':
+				$query->set( 'orderby', 'menu_order title' );
+				$query->set( 'order', 'ASC' );
+				break;
+			case 'date':
+				$query->set( 'orderby', 'date ID' );
+				$query->set( 'order', 'DESC' );
+				break;
+			case 'price':
+				$query->set( 'meta_key', '_price' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'ASC' );
+				break;
+			case 'price-desc':
+				$query->set( 'meta_key', '_price' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'DESC' );
+				break;
+			case 'popularity':
+				$query->set( 'meta_key', 'total_sales' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'DESC' );
+				break;
+			case 'rating':
+				$query->set( 'meta_key', '_wc_average_rating' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'DESC' );
+				break;
+		}
+	}
 }
 
 /**

@@ -11,6 +11,13 @@ if ( is_shop() || is_product_category() || is_product_tag() ) {
 ?>
 
 <div class="woocommerce-page">
+	<?php 
+	// Add filter bar for shop/category pages
+	if ( is_shop() || is_product_category() || is_product_tag() ) {
+		get_template_part( 'parts/woocommerce/shop-filter-bar' );
+	}
+	?>
+	
 	<div class="container woocommerce-container">
 		<?php 
 		// Remove WooCommerce sidebar for shop pages

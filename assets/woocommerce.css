@@ -3,6 +3,236 @@
    ======================================== */
 
 /* ========================================
+   SHOP FILTER BAR
+   ======================================== */
+
+.shop-filter-bar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+  margin-bottom: 40px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.shop-filter-bar .container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.filter-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* Grid Controls (Left) */
+.grid-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.grid-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.grid-options {
+  display: flex;
+  gap: 8px;
+}
+
+.grid-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.grid-option:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.grid-option.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 68, 68, 0.1);
+}
+
+.grid-option svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Product Count (Center) */
+.product-count {
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  flex: 1;
+  text-align: center;
+  min-width: 200px;
+}
+
+/* Sort Dropdown (Right) */
+.woocommerce-ordering {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.woocommerce-ordering .orderby {
+  background: var(--card-background);
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 12px 40px 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 220px;
+  border-radius: 4px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23999' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.woocommerce-ordering .orderby:hover {
+  border-color: var(--text);
+}
+
+.woocommerce-ordering .orderby:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Grid Layout Classes */
+.products.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+}
+
+.products.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.products.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 1024px) {
+  .filter-bar-inner {
+    gap: 16px;
+  }
+  
+  .product-count {
+    text-align: left;
+    min-width: auto;
+    order: -1;
+    flex: 1 1 100%;
+  }
+  
+  .grid-controls {
+    order: 1;
+  }
+  
+  .woocommerce-ordering {
+    order: 2;
+  }
+  
+  .woocommerce-ordering .orderby {
+    min-width: 180px;
+    font-size: 13px;
+    padding: 10px 32px 10px 12px;
+  }
+  
+  /* Force grid layouts to be responsive on mobile */
+  .products.grid-2,
+  .products.grid-3,
+  .products.grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .shop-filter-bar {
+    padding: 16px 0;
+    margin-bottom: 20px;
+  }
+  
+  .filter-bar-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .grid-controls {
+    order: 2;
+  }
+  
+  .product-count {
+    order: 1;
+    text-align: left;
+    flex: none;
+  }
+  
+  .woocommerce-ordering {
+    order: 3;
+    width: 100%;
+  }
+  
+  .woocommerce-ordering .orderby {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .grid-option {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .grid-option svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  /* Single column on mobile */
+  .products.grid-2,
+  .products.grid-3,
+  .products.grid-4 {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* ========================================
    CART & MINI CART STYLES
    ======================================== */
 
