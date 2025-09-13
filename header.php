@@ -64,7 +64,7 @@ function primefit_get_header_classes() {
 do_action( 'primefit_before_header' );
 
 // Display promo bar
-get_template_part( 'parts/header/promo-bar' );
+get_template_part( 'templates/header/promo-bar' );
 ?>
 
 <header class="<?php echo esc_attr( primefit_get_header_classes() ); ?>" role="banner">
@@ -80,14 +80,10 @@ get_template_part( 'parts/header/promo-bar' );
 				<span class="hamburger" aria-hidden="true"></span>
 			</button>
 			
-			<?php get_template_part( 'parts/header/primary-navigation' ); ?>
-			<?php get_template_part( 'parts/header/brand-logo' ); ?>
+			<?php get_template_part( 'templates/header/primary-navigation' ); ?>
+			<?php get_template_part( 'templates/header/brand-logo' ); ?>
 			
-			<div class="header-icons">
-				<?php if ( function_exists( 'woocommerce_mini_cart' ) ) : ?>
-					<?php get_template_part( 'parts/header/mini-cart' ); ?>
-				<?php endif; ?>
-			</div>
+			<?php get_template_part( 'templates/header/header-actions' ); ?>
 		</div>
 		
 		<div class="mobile-nav-overlay" hidden aria-hidden="true"></div>

@@ -4,9 +4,9 @@
 	<footer class="site-footer">
 		<div class="container">
 			<div class="footer-top">
-				<?php get_template_part( 'parts/footer/footer-menu' ); ?>
+				<?php get_template_part( 'templates/footer/footer-menu' ); ?>
 			</div>
-			<?php get_template_part( 'parts/footer/copyright' ); ?>
+			<?php get_template_part( 'templates/footer/copyright' ); ?>
 		</div>
 	</footer>
 

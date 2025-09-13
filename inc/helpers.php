@@ -1,0 +1,621 @@
+<?php
+/**
+ * PrimeFit Theme Helper Functions
+ *
+ * Utility and helper functions for theme functionality
+ *
+ * @package PrimeFit
+ * @since 1.0.0
+ */
+
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Get first existing asset URI from a list of candidates relative to theme dir
+ *
+ * @param array $candidates Array of relative paths to check
+ * @return string Asset URI or empty string if none found
+ */
+function primefit_get_asset_uri( array $candidates ) {
+	foreach ( $candidates as $relative ) {
+		$path = get_theme_file_path( $relative );
+		if ( file_exists( $path ) ) {
+			return get_theme_file_uri( $relative );
+		}
+	}
+	return '';
+}
+
+/**
+ * Get hero image for WooCommerce category
+ *
+ * @param object $category WooCommerce category object
+ * @param string $size Image size (default: 'full')
+ * @return string Hero image URL
+ * @since 1.0.0
+ */
+function primefit_get_category_hero_image( $category, $size = 'full' ) {
+	$category_image_url = '';
+	
+	// Get category image from WooCommerce
+	$category_image_id = get_term_meta( $category->term_id, 'thumbnail_id', true );
+	
+	if ( $category_image_id ) {
+		$category_image_url = wp_get_attachment_image_url( $category_image_id, $size );
+	}
+	
+	// Fallback to default hero image if no category image
+	if ( empty( $category_image_url ) ) {
+		$category_image_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+	}
+	
+	return $category_image_url;
+}
+
+/**
+ * Get shop hero configuration
+ *
+ * @since 1.0.0
+ * @return array Hero configuration for shop pages
+ */
+function primefit_get_shop_hero_config() {
+	$hero_args = array();
+	
+	if ( is_shop() ) {
+		$hero_args = array(
+			'image' => array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'),
+			'heading' => 'SHOP ALL',
+			'subheading' => 'DISCOVER OUR COMPLETE COLLECTION OF PREMIUM FITNESS APPAREL',
+			'cta_text' => '',
+			'cta_link' => '',
+			'overlay_position' => 'center',
+			'text_color' => 'light'
+		);
+	} elseif ( is_product_category() ) {
+		$category = get_queried_object();
+		
+		// Get category hero image (with automatic fallback)
+		$hero_image = primefit_get_category_hero_image( $category );
+		
+		// Generate subheading with fallback
+		$subheading = '';
+		if ( !empty( $category->description ) ) {
+			$subheading = wp_strip_all_tags( $category->description );
+			// Limit description length for hero display
+			if ( strlen( $subheading ) > 80 ) {
+				$subheading = wp_trim_words( $subheading, 12, '...' );
+			}
+			$subheading = strtoupper( $subheading );
+		} else {
+			$subheading = 'EXPLORE OUR ' . strtoupper( $category->name ) . ' COLLECTION';
+		}
+		
+		$hero_args = array(
+			'image' => array( $hero_image ),
+			'heading' => strtoupper( $category->name ),
+			'subheading' => $subheading,
+			'cta_text' => '',
+			'cta_link' => '',
+			'overlay_position' => 'center',
+			'text_color' => 'light'
+		);
+		
+		// Allow customization via filter
+		$hero_args = apply_filters( 'primefit_category_hero_args', $hero_args, $category );
+	} elseif ( is_product_tag() ) {
+		$tag = get_queried_object();
+		$hero_args = array(
+			'image' => array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'),
+			'heading' => strtoupper( $tag->name ),
+			'subheading' => 'PRODUCTS TAGGED: ' . strtoupper( $tag->name ),
+			'cta_text' => '',
+			'cta_link' => '',
+			'overlay_position' => 'center',
+			'text_color' => 'light'
+		);
+	}
+	
+	return $hero_args;
+}
+
+/**
+ * Render size selection overlay for variable products in product loops
+ *
+ * @param WC_Product $product Variable product object
+ */
+function primefit_render_size_selection_overlay( $product ) {
+	if ( ! $product || ! $product->is_type( 'variable' ) ) {
+		return;
+	}
+	
+	// Get available variations
+	$available_variations = $product->get_available_variations();
+	
+	if ( empty( $available_variations ) ) {
+		return;
+	}
+	
+	// Get size attribute (common attribute names for size)
+	$size_attribute = '';
+	$size_options = array();
+	
+	// Look for size-related attributes
+	$attributes = $product->get_variation_attributes();
+	
+	// First, look for attributes containing 'size' - your products have 'pa_size'
+	foreach ( $attributes as $attribute_name => $options ) {
+		$clean_name = strtolower( str_replace( 'pa_', '', $attribute_name ) );
+		if ( in_array( $clean_name, array( 'size', 'sizes', 'clothing-size' ) ) || strpos( $clean_name, 'size' ) !== false ) {
+			$size_attribute = $attribute_name;
+			$size_options = $options;
+			break;
+		}
+	}
+	
+	// If no size attribute found, look for common clothing size patterns
+	if ( empty( $size_attribute ) ) {
+		foreach ( $attributes as $attribute_name => $options ) {
+			// Check if options contain typical clothing sizes
+			$typical_sizes = array( 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl', 'small', 'medium', 'large', 'extra-small', 'extra-large' );
+			$option_values = array_map( 'strtolower', $options );
+			
+			if ( array_intersect( $typical_sizes, $option_values ) ) {
+				$size_attribute = $attribute_name;
+				$size_options = $options;
+				break;
+			}
+		}
+	}
+	
+	if ( empty( $size_options ) ) {
+		return;
+	}
+	
+	// Build variation data for JavaScript
+	$variation_data = array();
+	foreach ( $available_variations as $variation ) {
+		$variation_obj = wc_get_product( $variation['variation_id'] );
+		if ( ! $variation_obj || ! $variation_obj->is_in_stock() ) {
+			continue;
+		}
+		
+		// Try different ways to get the size value
+		$size_value = '';
+		
+		// Method 1: Direct attribute access
+		if ( isset( $variation['attributes'][ $size_attribute ] ) ) {
+			$size_value = $variation['attributes'][ $size_attribute ];
+		}
+		
+		// Method 2: Try with attribute_ prefix
+		$attr_key = 'attribute_' . $size_attribute;
+		if ( empty( $size_value ) && isset( $variation['attributes'][ $attr_key ] ) ) {
+			$size_value = $variation['attributes'][ $attr_key ];
+		}
+		
+		// Method 3: Get from variation object
+		if ( empty( $size_value ) ) {
+			$size_value = $variation_obj->get_attribute( $size_attribute );
+		}
+		
+		if ( ! empty( $size_value ) ) {
+			$variation_data[ $size_value ] = array(
+				'variation_id' => $variation['variation_id'],
+				'url' => $product->get_permalink() . '?' . http_build_query( array(
+					'attribute_' . str_replace( 'pa_', '', $size_attribute ) => $size_value
+				) )
+			);
+		}
+	}
+	
+	if ( empty( $variation_data ) ) {
+		return;
+	}
+	
+	?>
+	<div class="product-size-overlay<?php echo isset( $_GET['debug_sizes'] ) ? ' debug-visible' : ''; ?>" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
+		<div class="size-options">
+			<?php foreach ( $size_options as $size_value ) : ?>
+				<?php if ( isset( $variation_data[ $size_value ] ) ) : ?>
+					<a href="<?php echo esc_url( $variation_data[ $size_value ]['url'] ); ?>" 
+					   class="size-option" 
+					   data-size="<?php echo esc_attr( $size_value ); ?>"
+					   data-variation-id="<?php echo esc_attr( $variation_data[ $size_value ]['variation_id'] ); ?>">
+						<?php echo esc_html( strtoupper( $size_value ) ); ?>
+					</a>
+				<?php endif; ?>
+			<?php endforeach; ?>
+		</div>
+	</div>
+	<?php
+}
+
+/**
+ * Debug function to test size overlay rendering
+ * Add ?debug_sizes=1 to any page URL to see debug info
+ */
+add_action( 'wp_footer', 'primefit_debug_size_overlay' );
+function primefit_debug_size_overlay() {
+	if ( isset( $_GET['debug_sizes'] ) && $_GET['debug_sizes'] == '1' ) {
+		echo '<div style="position: fixed; bottom: 0; left: 0; background: black; color: white; padding: 10px; z-index: 9999; max-width: 400px; font-size: 12px; max-height: 300px; overflow-y: auto;">';
+		echo '<strong>Size Overlay Debug:</strong><br>';
+		
+		global $woocommerce_loop;
+		if ( isset( $woocommerce_loop['is_shortcode'] ) && $woocommerce_loop['is_shortcode'] ) {
+			echo '✓ WooCommerce shortcode detected<br>';
+		}
+		
+		if ( function_exists( 'wc_get_products' ) ) {
+			$variable_products = wc_get_products( array(
+				'type' => 'variable',
+				'limit' => 5,
+				'status' => 'publish'
+			) );
+			
+			echo 'Variable products found: ' . count( $variable_products ) . '<br>';
+			
+			foreach ( $variable_products as $product ) {
+				echo '<hr style="margin: 5px 0;">';
+				echo '<strong>Product:</strong> ' . $product->get_name() . '<br>';
+				$attributes = $product->get_variation_attributes();
+				echo '<strong>Attributes:</strong> ' . implode( ', ', array_keys( $attributes ) ) . '<br>';
+				
+				foreach ( $attributes as $attr_name => $options ) {
+					echo '<strong>' . $attr_name . ':</strong> ' . implode( ', ', $options ) . '<br>';
+				}
+				
+				$variations = $product->get_available_variations();
+				echo '<strong>Variations:</strong> ' . count( $variations ) . '<br>';
+			}
+		}
+		
+		echo '</div>';
+	}
+}
+
+/**
+ * Render hero section with improved abstraction
+ *
+ * @param array $args Hero configuration arguments
+ * @return void
+ */
+function primefit_render_hero( $args = array() ) {
+	// Set defaults
+	$defaults = array(
+		'image' => array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'),
+		'heading' => 'END OF SEASON SALE',
+		'subheading' => 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.',
+		'cta_text' => 'SHOP NOW',
+		'cta_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+		'overlay_position' => 'left',
+		'text_color' => 'light',
+		'height' => 'auto', // 'auto', 'small', 'medium', 'large', 'full'
+		'parallax' => false,
+		'overlay_opacity' => 0.4
+	);
+
+	$hero = wp_parse_args( $args, $defaults );
+	
+	// Generate unique ID for this hero instance
+	$hero_id = 'hero-' . uniqid();
+	
+	// Get hero image URL
+	$hero_image_url = primefit_get_asset_uri( $hero['image'] );
+	if ( empty( $hero_image_url ) ) {
+		$hero_image_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+	}
+	
+	// Build CSS classes
+	$hero_classes = array(
+		'hero',
+		'hero--' . $hero['overlay_position'],
+		'hero--' . $hero['text_color'],
+		'hero--' . $hero['height']
+	);
+	
+	if ( $hero['parallax'] ) {
+		$hero_classes[] = 'hero--parallax';
+	}
+	
+	$hero_classes = implode( ' ', $hero_classes );
+	?>
+	<section class="<?php echo esc_attr( $hero_classes ); ?>" id="<?php echo esc_attr( $hero_id ); ?>" 
+			 style="background-image: url('<?php echo esc_url( $hero_image_url ); ?>');">
+		<div class="hero-overlay" style="opacity: <?php echo esc_attr( $hero['overlay_opacity'] ); ?>;"></div>
+		
+		<div class="hero-content">
+			<div class="container">
+				<div class="hero-text">
+					<?php if ( ! empty( $hero['heading'] ) ) : ?>
+						<h1 class="hero-heading"><?php echo esc_html( $hero['heading'] ); ?></h1>
+					<?php endif; ?>
+					
+					<?php if ( ! empty( $hero['subheading'] ) ) : ?>
+						<p class="hero-subheading"><?php echo esc_html( $hero['subheading'] ); ?></p>
+					<?php endif; ?>
+					
+					<?php if ( ! empty( $hero['cta_text'] ) && ! empty( $hero['cta_link'] ) ) : ?>
+						<div class="hero-cta">
+							<a href="<?php echo esc_url( $hero['cta_link'] ); ?>" class="button button--primary">
+								<?php echo esc_html( $hero['cta_text'] ); ?>
+							</a>
+						</div>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</section>
+	<?php
+}
+
+/**
+ * Get hero configuration for different page types
+ *
+ * @param string $page_type Type of page ('home', 'shop', 'category', 'tag')
+ * @param array $custom_args Custom arguments to override defaults
+ * @return array Hero configuration
+ */
+function primefit_get_hero_config_for_page( $page_type = 'home', $custom_args = array() ) {
+	$configs = array(
+		'home' => primefit_get_hero_config(),
+		'shop' => primefit_get_shop_hero_config(),
+		'category' => primefit_get_shop_hero_config(),
+		'tag' => primefit_get_shop_hero_config(),
+	);
+	
+	$config = isset( $configs[ $page_type ] ) ? $configs[ $page_type ] : $configs['home'];
+	
+	// Merge with custom arguments
+	return wp_parse_args( $custom_args, $config );
+}
+
+/**
+ * Render product loop section with improved abstraction
+ *
+ * @param array $args Product loop configuration arguments
+ * @return void
+ */
+function primefit_render_product_loop( $args = array() ) {
+	// Set defaults
+	$defaults = array(
+		'title' => 'PRODUCTS',
+		'limit' => 8,
+		'columns' => 4,
+		'orderby' => 'date',
+		'order' => 'DESC',
+		'visibility' => 'visible',
+		'category' => '',
+		'tag' => '',
+		'featured' => false,
+		'on_sale' => false,
+		'best_selling' => false,
+		'show_view_all' => true,
+		'view_all_text' => 'VIEW ALL',
+		'view_all_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+		'section_class' => 'product-section',
+		'header_alignment' => 'center',
+		'layout' => 'grid', // 'grid', 'carousel', 'list'
+		'show_pagination' => false,
+		'products_per_page' => 12
+	);
+
+	$section = wp_parse_args( $args, $defaults );
+	
+	// Build WooCommerce shortcode attributes
+	$shortcode_atts = array(
+		'limit' => absint( $section['limit'] ),
+		'columns' => absint( $section['columns'] ),
+		'orderby' => sanitize_text_field( $section['orderby'] ),
+		'order' => sanitize_text_field( $section['order'] ),
+		'visibility' => sanitize_text_field( $section['visibility'] )
+	);
+	
+	// Add conditional attributes
+	if ( ! empty( $section['category'] ) ) {
+		$shortcode_atts['category'] = sanitize_text_field( $section['category'] );
+	}
+	
+	if ( ! empty( $section['tag'] ) ) {
+		$shortcode_atts['tag'] = sanitize_text_field( $section['tag'] );
+	}
+	
+	if ( $section['featured'] ) {
+		$shortcode_atts['featured'] = 'true';
+	}
+	
+	if ( $section['on_sale'] ) {
+		$shortcode_atts['on_sale'] = 'true';
+	}
+	
+	if ( $section['best_selling'] ) {
+		$shortcode_atts['best_selling'] = 'true';
+	}
+	
+	// Build shortcode string
+	$shortcode_string = '[products';
+	foreach ( $shortcode_atts as $key => $value ) {
+		$shortcode_string .= ' ' . $key . '="' . esc_attr( $value ) . '"';
+	}
+	$shortcode_string .= ']';
+	
+	// Build CSS classes
+	$section_classes = array(
+		$section['section_class'],
+		'product-loop',
+		'product-loop--' . $section['layout'],
+		'product-loop--' . $section['columns'] . '-columns'
+	);
+	
+	$section_classes = implode( ' ', array_filter( $section_classes ) );
+	?>
+	<section class="<?php echo esc_attr( $section_classes ); ?>">
+		<div class="container">
+			<?php if ( ! empty( $section['title'] ) ) : ?>
+				<?php 
+				get_template_part( 'templates/parts/section-header', null, array(
+					'title' => $section['title'],
+					'alignment' => $section['header_alignment']
+				) ); 
+				?>
+			<?php endif; ?>
+			
+			<div class="product-loop-content">
+				<?php echo do_shortcode( $shortcode_string ); ?>
+			</div>
+			
+			<?php if ( $section['show_view_all'] && ! empty( $section['view_all_text'] ) ) : ?>
+				<div class="product-loop-actions">
+					<a href="<?php echo esc_url( $section['view_all_link'] ); ?>" class="button button--outline">
+						<?php echo esc_html( $section['view_all_text'] ); ?>
+					</a>
+				</div>
+			<?php endif; ?>
+			
+			<?php if ( $section['show_pagination'] ) : ?>
+				<div class="product-loop-pagination">
+					<?php
+					// This would need custom pagination logic for WooCommerce products
+					// For now, we'll use the default WooCommerce pagination
+					?>
+				</div>
+			<?php endif; ?>
+		</div>
+	</section>
+	<?php
+}
+
+/**
+ * Get product loop configuration for different contexts
+ *
+ * @param string $context Context ('featured', 'new', 'sale', 'category', 'custom')
+ * @param array $custom_args Custom arguments to override defaults
+ * @return array Product loop configuration
+ */
+function primefit_get_product_loop_config( $context = 'featured', $custom_args = array() ) {
+	$configs = array(
+		'featured' => array(
+			'title' => 'FEATURED PRODUCTS',
+			'limit' => 8,
+			'columns' => 4,
+			'featured' => true,
+			'orderby' => 'menu_order',
+			'order' => 'ASC'
+		),
+		'new' => array(
+			'title' => 'NEW ARRIVALS',
+			'limit' => 8,
+			'columns' => 4,
+			'orderby' => 'date',
+			'order' => 'DESC'
+		),
+		'sale' => array(
+			'title' => 'ON SALE',
+			'limit' => 8,
+			'columns' => 4,
+			'on_sale' => true,
+			'orderby' => 'date',
+			'order' => 'DESC'
+		),
+		'best_selling' => array(
+			'title' => 'BEST SELLERS',
+			'limit' => 8,
+			'columns' => 4,
+			'best_selling' => true,
+			'orderby' => 'popularity',
+			'order' => 'DESC'
+		),
+		'category' => array(
+			'title' => 'CATEGORY PRODUCTS',
+			'limit' => 12,
+			'columns' => 4,
+			'orderby' => 'date',
+			'order' => 'DESC'
+		),
+		'custom' => array(
+			'title' => 'PRODUCTS',
+			'limit' => 8,
+			'columns' => 4,
+			'orderby' => 'date',
+			'order' => 'DESC'
+		)
+	);
+	
+	$config = isset( $configs[ $context ] ) ? $configs[ $context ] : $configs['custom'];
+	
+	// Merge with custom arguments
+	return wp_parse_args( $custom_args, $config );
+}
+
+/**
+ * Register shortcodes for easy use of abstracted functions
+ */
+add_action( 'init', 'primefit_register_shortcodes' );
+function primefit_register_shortcodes() {
+	// Hero section shortcode
+	add_shortcode( 'primefit_hero', 'primefit_hero_shortcode' );
+	
+	// Product loop shortcode
+	add_shortcode( 'primefit_products', 'primefit_products_shortcode' );
+}
+
+/**
+ * Hero section shortcode
+ * Usage: [primefit_hero heading="My Title" subheading="My subtitle" cta_text="Shop Now" cta_link="/shop"]
+ */
+function primefit_hero_shortcode( $atts ) {
+	$atts = shortcode_atts( array(
+		'heading' => 'HERO TITLE',
+		'subheading' => 'Hero subtitle text',
+		'cta_text' => 'SHOP NOW',
+		'cta_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+		'overlay_position' => 'center',
+		'text_color' => 'light',
+		'height' => 'medium',
+		'image' => ''
+	), $atts );
+	
+	// Convert image string to array if provided
+	if ( ! empty( $atts['image'] ) ) {
+		$atts['image'] = array( $atts['image'] );
+	}
+	
+	ob_start();
+	primefit_render_hero( $atts );
+	return ob_get_clean();
+}
+
+/**
+ * Product loop shortcode
+ * Usage: [primefit_products title="Featured Products" limit="8" columns="4" featured="true"]
+ */
+function primefit_products_shortcode( $atts ) {
+	$atts = shortcode_atts( array(
+		'title' => 'PRODUCTS',
+		'limit' => '8',
+		'columns' => '4',
+		'orderby' => 'date',
+		'order' => 'DESC',
+		'category' => '',
+		'tag' => '',
+		'featured' => 'false',
+		'on_sale' => 'false',
+		'best_selling' => 'false',
+		'show_view_all' => 'true',
+		'view_all_text' => 'VIEW ALL',
+		'view_all_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+		'section_class' => 'product-section'
+	), $atts );
+	
+	// Convert string booleans to actual booleans
+	$atts['featured'] = $atts['featured'] === 'true';
+	$atts['on_sale'] = $atts['on_sale'] === 'true';
+	$atts['best_selling'] = $atts['best_selling'] === 'true';
+	$atts['show_view_all'] = $atts['show_view_all'] === 'true';
+	
+	ob_start();
+	primefit_render_product_loop( $atts );
+	return ob_get_clean();
+}

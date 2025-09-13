@@ -1,0 +1,219 @@
+<?php
+/**
+ * PrimeFit Theme Hooks
+ *
+ * Actions and filters for theme functionality
+ *
+ * @package PrimeFit
+ * @since 1.0.0
+ */
+
+// Prevent direct access
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * WooCommerce: wrap product thumbnail and add cart count fragment
+ */
+add_filter( 'woocommerce_add_to_cart_fragments', 'primefit_cart_count_fragment' );
+function primefit_cart_count_fragment( $fragments ) {
+	ob_start();
+	?>
+	<span class="count"><?php echo WC()->cart ? WC()->cart->get_cart_contents_count() : 0; ?></span>
+	<?php
+	$fragments['span.count'] = ob_get_clean();
+	return $fragments;
+}
+
+/**
+ * WooCommerce: Custom product thumbnail with hover effect for product loops
+ */
+add_action( 'init', 'primefit_customize_woocommerce_hooks' );
+function primefit_customize_woocommerce_hooks() {
+	// Remove default hooks
+	remove_action( 'woocommerce_before_shop_loop_item_title', 'woocommerce_show_product_loop_sale_flash', 10 );
+	remove_action( 'woocommerce_before_shop_loop_item_title', 'woocommerce_template_loop_product_thumbnail', 10 );
+	remove_action( 'woocommerce_after_shop_loop_item_title', 'woocommerce_template_loop_price', 10 );
+	remove_action( 'woocommerce_after_shop_loop_item', 'woocommerce_template_loop_add_to_cart', 10 );
+	
+	// Keep default product link wrapper but modify it
+	add_action( 'woocommerce_before_shop_loop_item', 'woocommerce_template_loop_product_link_open', 10 );
+	add_action( 'woocommerce_after_shop_loop_item', 'woocommerce_template_loop_product_link_close', 5 );
+	
+	// Add our custom hooks
+	add_action( 'woocommerce_before_shop_loop_item_title', 'primefit_loop_product_thumbnail', 10 );
+	add_action( 'woocommerce_after_shop_loop_item_title', 'primefit_loop_product_price', 10 );
+}
+
+/**
+ * Custom product thumbnail with hover effect and status badges
+ */
+function primefit_loop_product_thumbnail() {
+	global $product;
+	
+	if ( ! $product ) {
+		return;
+	}
+	
+	// Get product images
+	$attachment_ids = $product->get_gallery_image_ids();
+	$main_image_id = $product->get_image_id();
+	$second_image_id = !empty($attachment_ids) ? $attachment_ids[0] : null;
+	
+	echo '<div class="product-image-container">';
+	
+	if ( $main_image_id ) {
+		echo wp_get_attachment_image( $main_image_id, 'large', false, [
+			'class' => 'attachment-woocommerce_thumbnail',
+			'alt' => esc_attr( $product->get_name() )
+		] );
+	}
+	
+	if ( $second_image_id ) {
+		echo wp_get_attachment_image( $second_image_id, 'large', false, [
+			'class' => 'product-second-image',
+			'alt' => esc_attr( $product->get_name() )
+		] );
+	}
+	
+	// Add status badge
+	get_template_part( 'templates/parts/woocommerce/product-status-badge' );
+	
+	// Add size selection overlay for variable products
+	if ( $product->is_type( 'variable' ) ) {
+		primefit_render_size_selection_overlay( $product );
+	}
+	
+	echo '</div>';
+}
+
+/**
+ * Custom product price display
+ */
+function primefit_loop_product_price() {
+	get_template_part( 'templates/parts/woocommerce/product-price' );
+}
+
+/**
+ * Add product status tags to WooCommerce products
+ */
+add_action( 'woocommerce_before_shop_loop_item_title', 'primefit_add_product_status_tag', 5 );
+function primefit_add_product_status_tag() {
+	global $product;
+	
+	// Check if product is on sale
+	if ( $product->is_on_sale() ) {
+		$sale_percentage = 'SALE';
+		$tag_class = 'sale';
+		$percentage = 0;
+		
+		if ( $product->get_regular_price() && $product->get_sale_price() ) {
+			$percentage = round( ( ( $product->get_regular_price() - $product->get_sale_price() ) / $product->get_regular_price() ) * 100 );
+			if ( $percentage >= 50 ) {
+				$sale_percentage = 'FLASH SALE';
+				$tag_class = 'flash-sale';
+			}
+		}
+		
+		echo '<span class="product-status-tag ' . esc_attr( $tag_class ) . '">' . esc_html( $sale_percentage ) . '</span>';
+	}
+	
+	// Check if product is out of stock
+	if ( ! $product->is_in_stock() ) {
+		echo '<span class="product-status-tag sold-out">SOLD OUT</span>';
+	}
+}
+
+/**
+ * Add sold out text for out of stock products
+ */
+add_action( 'woocommerce_after_shop_loop_item_title', 'primefit_add_sold_out_text', 15 );
+function primefit_add_sold_out_text() {
+	global $product;
+	
+	if ( ! $product->is_in_stock() ) {
+		echo '<p class="sold-out-text">SOLD OUT</p>';
+	}
+}
+
+/**
+ * Remove WooCommerce shop sidebar and filters
+ */
+function primefit_remove_shop_sidebar() {
+	// Remove sidebar
+	remove_action( 'woocommerce_sidebar', 'woocommerce_get_sidebar', 10 );
+	
+	// Remove layered nav widgets
+	remove_action( 'woocommerce_sidebar', 'woocommerce_output_content_wrapper_end', 20 );
+}
+
+/**
+ * Disable WooCommerce shop filters and sorting on archive pages
+ */
+add_action( 'init', 'primefit_disable_shop_filters' );
+function primefit_disable_shop_filters() {
+	if ( is_admin() ) {
+		return;
+	}
+	
+	// Remove default ordering dropdown (we have our own in the filter bar)
+	remove_action( 'woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30 );
+	
+	// Remove default result count (we have our own in the filter bar)
+	remove_action( 'woocommerce_before_shop_loop', 'woocommerce_result_count', 20 );
+	
+	// Remove breadcrumbs on shop page
+	remove_action( 'woocommerce_before_main_content', 'woocommerce_breadcrumb', 20 );
+}
+
+/**
+ * Ensure WooCommerce sorting still works with our custom filter bar
+ */
+add_action( 'pre_get_posts', 'primefit_handle_custom_sorting' );
+function primefit_handle_custom_sorting( $query ) {
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+	
+	// Only apply to WooCommerce shop/category/tag pages
+	if ( ! ( $query->is_post_type_archive( 'product' ) || $query->is_tax( get_object_taxonomies( 'product' ) ) ) ) {
+		return;
+	}
+	
+	// Handle sorting
+	if ( isset( $_GET['orderby'] ) ) {
+		$orderby = wc_clean( $_GET['orderby'] );
+		
+		switch ( $orderby ) {
+			case 'menu_order':
+				$query->set( 'orderby', 'menu_order title' );
+				$query->set( 'order', 'ASC' );
+				break;
+			case 'date':
+				$query->set( 'orderby', 'date ID' );
+				$query->set( 'order', 'DESC' );
+				break;
+			case 'price':
+				$query->set( 'meta_key', '_price' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'ASC' );
+				break;
+			case 'price-desc':
+				$query->set( 'meta_key', '_price' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'DESC' );
+				break;
+			case 'popularity':
+				$query->set( 'meta_key', 'total_sales' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'DESC' );
+				break;
+			case 'rating':
+				$query->set( 'meta_key', '_wc_average_rating' );
+				$query->set( 'orderby', 'meta_value_num' );
+				$query->set( 'order', 'DESC' );
+				break;
+		}
+	}
+}
