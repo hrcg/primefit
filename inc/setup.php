@@ -45,9 +45,9 @@ function primefit_setup_theme() {
 	
 	// WooCommerce support
 	add_theme_support( 'woocommerce', [
-		'thumbnail_image_width' => 300,
-		'gallery_thumbnail_image_width' => 100,
-		'single_image_width' => 600,
+		'thumbnail_image_width' => 600,
+		'gallery_thumbnail_image_width' => 200,
+		'single_image_width' => 1200,
 	] );
 	add_theme_support( 'wc-product-gallery-zoom' );
 	add_theme_support( 'wc-product-gallery-lightbox' );

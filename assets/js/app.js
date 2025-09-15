@@ -1,6 +1,71 @@
 (function ($) {
   "use strict";
 
+  // Scroll prevention utilities
+  let scrollPosition = 0;
+
+  function getScrollbarWidth() {
+    // Create a temporary div to measure scrollbar width
+    const outer = document.createElement("div");
+    outer.style.visibility = "hidden";
+    outer.style.overflow = "scroll";
+    outer.style.msOverflowStyle = "scrollbar";
+    document.body.appendChild(outer);
+
+    const inner = document.createElement("div");
+    outer.appendChild(inner);
+
+    const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+    outer.parentNode.removeChild(outer);
+
+    return scrollbarWidth;
+  }
+
+  function preventPageScroll() {
+    // Only prevent scroll if not already locked
+    if (document.body.classList.contains("scroll-locked")) {
+      return;
+    }
+
+    // Store current scroll position
+    scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Calculate scrollbar width to prevent content shift
+    const scrollbarWidth = getScrollbarWidth();
+
+    // Add class to body for CSS styling
+    document.body.classList.add("scroll-locked");
+
+    // Set body position to fixed to prevent scrolling
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollPosition}px`;
+    document.body.style.width = "100%";
+
+    // Prevent content shift by adding padding for scrollbar
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+  }
+
+  function allowPageScroll() {
+    // Only allow scroll if currently locked
+    if (!document.body.classList.contains("scroll-locked")) {
+      return;
+    }
+
+    // Remove scroll lock class
+    document.body.classList.remove("scroll-locked");
+
+    // Restore body styles
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+    document.body.style.paddingRight = "";
+
+    // Restore scroll position
+    window.scrollTo(0, scrollPosition);
+  }
+
   // Cart functionality (preserved)
   function getCartContext(clickedEl) {
     const $root = clickedEl
@@ -22,6 +87,9 @@
     if (window.matchMedia("(max-width: 1024px)").matches) {
       document.body.classList.add("cart-open");
     }
+
+    // Prevent page scrolling when cart is open
+    preventPageScroll();
   }
 
   function closeCart(clickedEl) {
@@ -31,6 +99,9 @@
     $toggle.attr("aria-expanded", "false");
 
     document.body.classList.remove("cart-open");
+
+    // Re-enable page scrolling when cart is closed
+    allowPageScroll();
   }
 
   // Click-to-open cart drawer
@@ -49,6 +120,193 @@
     e.preventDefault();
     closeCart(this);
   });
+
+  // Cart quantity controls
+  $(document).on(
+    "click",
+    ".woocommerce-mini-cart__item-quantity .plus",
+    function (e) {
+      e.preventDefault();
+      const cartItemKey = $(this).data("cart-item-key");
+      const $input = $(this).siblings("input");
+      const currentQty = parseInt($input.val());
+      const maxQty = parseInt($input.attr("max"));
+
+      if (currentQty < maxQty) {
+        // Add loading state
+        $(this).addClass("loading").prop("disabled", true);
+        updateCartQuantity(cartItemKey, currentQty + 1, $(this));
+      }
+    }
+  );
+
+  $(document).on(
+    "click",
+    ".woocommerce-mini-cart__item-quantity .minus",
+    function (e) {
+      e.preventDefault();
+      const cartItemKey = $(this).data("cart-item-key");
+      const $input = $(this).siblings("input");
+      const currentQty = parseInt($input.val());
+
+      if (currentQty > 1) {
+        // Add loading state
+        $(this).addClass("loading").prop("disabled", true);
+        updateCartQuantity(cartItemKey, currentQty - 1, $(this));
+      }
+    }
+  );
+
+  $(document).on(
+    "change",
+    ".woocommerce-mini-cart__item-quantity input",
+    function (e) {
+      const cartItemKey = $(this).data("cart-item-key");
+      const newQty = parseInt($(this).val());
+      const maxQty = parseInt($(this).attr("max"));
+
+      if (newQty >= 1 && newQty <= maxQty) {
+        // Add loading state to input
+        $(this).addClass("loading").prop("disabled", true);
+        updateCartQuantity(cartItemKey, newQty, $(this));
+      } else {
+        $(this).val($(this).data("original-value") || 1);
+      }
+    }
+  );
+
+  // Remove item from cart
+  $(document).on("click", ".woocommerce-mini-cart__item-remove", function (e) {
+    e.preventDefault();
+    const cartItemKey = $(this).data("cart-item-key");
+    // Add loading state
+    $(this).addClass("loading").prop("disabled", true);
+    removeCartItem(cartItemKey, $(this));
+  });
+
+  // Update cart quantity via AJAX
+  function updateCartQuantity(cartItemKey, quantity, $element) {
+    // Validate parameters
+    if (!cartItemKey || !quantity || !wc_add_to_cart_params) {
+      console.error("Invalid parameters for cart update");
+      if ($element) {
+        $element.removeClass("loading").prop("disabled", false);
+      }
+      return;
+    }
+
+    $.ajax({
+      type: "POST",
+      url: wc_add_to_cart_params.ajax_url,
+      data: {
+        action: "woocommerce_update_cart_item_quantity",
+        cart_item_key: cartItemKey,
+        quantity: quantity,
+        security: wc_add_to_cart_params.update_cart_nonce,
+      },
+      success: function (response) {
+        if (response.success) {
+          // Update cart fragments
+          if (response.data && response.data.fragments) {
+            $.each(response.data.fragments, function (key, value) {
+              $(key).replaceWith(value);
+            });
+          }
+          // Trigger WooCommerce cart update events
+          $(document.body).trigger("update_checkout");
+          $(document.body).trigger("wc_fragment_refresh");
+          $(document.body).trigger("added_to_cart");
+        } else {
+          console.error("Failed to update cart quantity:", response.data);
+          // Fallback: reload page if AJAX fails
+          if (
+            response.data &&
+            response.data.includes("Security check failed")
+          ) {
+            window.location.reload();
+          }
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error("AJAX error updating cart quantity:", error);
+        // Fallback: reload page on critical errors
+        if (xhr.status === 403 || xhr.status === 500) {
+          window.location.reload();
+        }
+      },
+      complete: function () {
+        // Remove loading state
+        if ($element) {
+          $element.removeClass("loading").prop("disabled", false);
+        }
+      },
+    });
+  }
+
+  // Remove cart item via AJAX
+  function removeCartItem(cartItemKey, $element) {
+    // Validate parameters
+    if (!cartItemKey || !wc_add_to_cart_params) {
+      console.error("Invalid parameters for cart item removal");
+      if ($element) {
+        $element.removeClass("loading").prop("disabled", false);
+      }
+      return;
+    }
+
+    $.ajax({
+      type: "POST",
+      url: wc_add_to_cart_params.ajax_url,
+      data: {
+        action: "woocommerce_remove_cart_item",
+        cart_item_key: cartItemKey,
+        security: wc_add_to_cart_params.remove_cart_nonce,
+      },
+      success: function (response) {
+        if (response.success) {
+          // Update cart fragments
+          if (response.data && response.data.fragments) {
+            $.each(response.data.fragments, function (key, value) {
+              $(key).replaceWith(value);
+            });
+          }
+          // Trigger WooCommerce cart update events
+          $(document.body).trigger("update_checkout");
+          $(document.body).trigger("wc_fragment_refresh");
+          $(document.body).trigger("removed_from_cart");
+
+          // Check if cart is empty and close panel
+          setTimeout(function () {
+            if ($(".woocommerce-mini-cart__items li").length === 0) {
+              closeCart();
+            }
+          }, 100);
+        } else {
+          console.error("Failed to remove cart item:", response.data);
+          // Fallback: reload page if AJAX fails
+          if (
+            response.data &&
+            response.data.includes("Security check failed")
+          ) {
+            window.location.reload();
+          }
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error("AJAX error removing cart item:", error);
+        // Fallback: reload page on critical errors
+        if (xhr.status === 403 || xhr.status === 500) {
+          window.location.reload();
+        }
+      },
+      complete: function () {
+        // Remove loading state
+        if ($element) {
+          $element.removeClass("loading").prop("disabled", false);
+        }
+      },
+    });
+  }
 
   // Close when clicking overlay
   $(document).on("click", ".cart-overlay", function (e) {
@@ -312,9 +570,13 @@
     if (isOpen) {
       $body.removeClass("mobile-open");
       $(this).attr("aria-expanded", "false");
+      // Re-enable page scrolling when mobile menu is closed
+      allowPageScroll();
     } else {
       $body.addClass("mobile-open");
       $(this).attr("aria-expanded", "true");
+      // Prevent page scrolling when mobile menu is open
+      preventPageScroll();
     }
   });
 
@@ -326,6 +588,8 @@
       e.preventDefault();
       $("body").removeClass("mobile-open");
       $(".hamburger").attr("aria-expanded", "false");
+      // Re-enable page scrolling when mobile menu is closed
+      allowPageScroll();
     }
   );
 

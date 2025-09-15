@@ -28,6 +28,26 @@ $attributes = $product->get_attributes();
 $color_attribute = null;
 $size_attribute = null;
 
+// Get WooCommerce default attributes
+$default_attributes = $product->get_default_attributes();
+$default_color = '';
+$default_size = '';
+
+// Extract default color and size from WooCommerce defaults
+foreach ( $default_attributes as $attr_name => $attr_value ) {
+	$clean_name = strtolower( str_replace( 'pa_', '', $attr_name ) );
+	if ( stripos( $clean_name, 'color' ) !== false || 
+		 stripos( $attr_name, 'color' ) !== false ||
+		 stripos( $attr_name, 'pa_color' ) !== false ) {
+		$default_color = $attr_value;
+	}
+	if ( stripos( $clean_name, 'size' ) !== false || 
+		 stripos( $attr_name, 'size' ) !== false ||
+		 stripos( $attr_name, 'pa_size' ) !== false ) {
+		$default_size = $attr_value;
+	}
+}
+
 foreach ( $attributes as $attribute ) {
 	if ( $attribute->is_taxonomy() ) {
 		$attribute_name = wc_attribute_label( $attribute->get_name() );
@@ -86,12 +106,19 @@ foreach ( $attributes as $attribute ) {
 					}
 				}
 				
+				// Determine which color should be active (default or first)
+				$default_color_index = 0;
+				if ( $default_color && in_array( $default_color, $color_options ) ) {
+					$default_color_index = array_search( $default_color, $color_options );
+				}
+				
 				foreach ( $color_options as $index => $color_option ) :
 					$color_name = wc_attribute_label( $color_option );
 					$color_slug = sanitize_title( $color_option );
+					$is_default_color = ( $index === $default_color_index );
 				?>
 					<button 
-						class="color-option <?php echo $index === 0 ? 'active' : ''; ?>"
+						class="color-option <?php echo $is_default_color ? 'active' : ''; ?>"
 						data-color="<?php echo esc_attr( $color_option ); ?>"
 						aria-label="<?php printf( esc_attr__( 'Select color %s', 'primefit' ), $color_name ); ?>"
 					>
@@ -123,11 +150,27 @@ foreach ( $attributes as $attribute ) {
 					}
 				}
 				
-				foreach ( $size_options as $size_option ) :
+				// Determine which size should be selected (default or first)
+				$default_size_index = -1;
+				if ( $default_size && in_array( $default_size, $size_options ) ) {
+					$default_size_index = array_search( $default_size, $size_options );
+				}
+				
+				foreach ( $size_options as $index => $size_option ) :
 					$size_name = wc_attribute_label( $size_option );
+					$is_selected_size = false;
+					
+					// Check if this size should be selected
+					if ( $default_size_index >= 0 ) {
+						// Use WooCommerce default size if available
+						$is_selected_size = ( $index === $default_size_index );
+					} else {
+						// Fallback to first size if no default set
+						$is_selected_size = ( $index === 0 );
+					}
 				?>
 					<button 
-						class="size-option"
+						class="size-option <?php echo $is_selected_size ? 'selected' : ''; ?>"
 						data-size="<?php echo esc_attr( $size_option ); ?>"
 						aria-label="<?php printf( esc_attr__( 'Select size %s', 'primefit' ), $size_name ); ?>"
 					>

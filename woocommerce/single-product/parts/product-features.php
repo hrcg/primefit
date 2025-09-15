@@ -48,7 +48,7 @@ if ( ! is_array( $features_data ) || empty( $features_data ) ) {
 			<div class="feature-item">
 				<?php if ( $feature_image_id ) : ?>
 					<div class="feature-image">
-						<?php echo wp_get_attachment_image( $feature_image_id, 'medium', false, array( 'class' => 'feature-img' ) ); ?>
+						<?php echo wp_get_attachment_image( $feature_image_id, 'full', false, array( 'class' => 'feature-img' ) ); ?>
 					</div>
 				<?php endif; ?>
 				

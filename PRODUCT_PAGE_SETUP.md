@@ -58,10 +58,6 @@ Use the "Technical Highlights" field with this JSON format:
 
 ### 3. Product Information Fields
 
-#### Custom Description
-
-Override the default product description with custom content. Supports HTML.
-
 #### Designed For
 
 Describe what the product is designed for. Example:

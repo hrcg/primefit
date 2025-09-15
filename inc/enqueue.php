@@ -91,6 +91,15 @@ function primefit_enqueue_assets() {
 		]
 	] );
 	
+	// WooCommerce cart nonces
+	if ( class_exists( 'WooCommerce' ) ) {
+		wp_localize_script( 'primefit-app', 'wc_add_to_cart_params', [
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'update_cart_nonce' => wp_create_nonce( 'woocommerce_update_cart_nonce' ),
+			'remove_cart_nonce' => wp_create_nonce( 'woocommerce_remove_cart_nonce' ),
+		] );
+	}
+	
 	// Dashicons for admin functionality
 	wp_enqueue_style( 'dashicons' );
 }

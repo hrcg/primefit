@@ -30,19 +30,10 @@ if ( empty( $description ) && empty( $designed_for ) && empty( $fabric_technolog
 <div class="product-information-container">
 	<!-- Description Section -->
 	<?php if ( ! empty( $description ) ) : ?>
-		<div class="information-section">
-			<button class="information-toggle" data-target="description">
-				<span class="section-title"><?php esc_html_e( 'DESCRIPTION', 'primefit' ); ?></span>
-				<span class="toggle-icon">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-				</span>
-			</button>
-			<div class="information-content" id="description">
-				<div class="content-inner">
-					<?php echo wp_kses_post( wpautop( $description ) ); ?>
-				</div>
+		<div class="information-section description-section">
+			<h3 class="section-title"><?php esc_html_e( 'DESCRIPTION', 'primefit' ); ?></h3>
+			<div class="section-content">
+				<?php echo wp_kses_post( wpautop( $description ) ); ?>
 			</div>
 		</div>
 	<?php endif; ?>

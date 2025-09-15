@@ -869,3 +869,83 @@ function primefit_shop_categories_shortcode( $atts ) {
 	primefit_render_shop_categories( $atts );
 	return ob_get_clean();
 }
+
+/**
+ * Custom quantity input with plus/minus buttons
+ * 
+ * @param array $args Arguments for the quantity input
+ * @param WC_Product|null $product Product object
+ * @param bool $echo Whether to echo or return the output
+ * @return string|void
+ */
+function primefit_quantity_input( $args = array(), $product = null, $echo = true ) {
+	if ( is_null( $product ) ) {
+		$product = $GLOBALS['product'];
+	}
+
+	$defaults = array(
+		'input_id'     => uniqid( 'quantity_' ),
+		'input_name'   => 'quantity',
+		'input_value'  => '1',
+		'classes'      => apply_filters( 'woocommerce_quantity_input_classes', array( 'input-text', 'qty', 'text' ), $product ),
+		'max_value'    => apply_filters( 'woocommerce_quantity_input_max', -1, $product ),
+		'min_value'    => apply_filters( 'woocommerce_quantity_input_min', 0, $product ),
+		'step'         => apply_filters( 'woocommerce_quantity_input_step', 1, $product ),
+		'pattern'      => apply_filters( 'woocommerce_quantity_input_pattern', has_filter( 'woocommerce_stock_amount', 'intval' ) ? '[0-9]*' : '' ),
+		'inputmode'    => apply_filters( 'woocommerce_quantity_input_inputmode', has_filter( 'woocommerce_stock_amount', 'intval' ) ? 'numeric' : '' ),
+		'product_name' => $product ? $product->get_title() : '',
+		'placeholder'  => apply_filters( 'woocommerce_quantity_input_placeholder', '', $product ),
+	);
+
+	$args = apply_filters( 'woocommerce_quantity_input_args', wp_parse_args( $args, $defaults ), $product );
+
+	// Apply sanity to min/max args - min cannot be lower than 0.
+	$args['min_value'] = max( $args['min_value'], 0 );
+	$args['max_value'] = 0 < $args['max_value'] ? $args['max_value'] : '';
+
+	// Max cannot be lower than min if defined.
+	if ( '' !== $args['max_value'] && $args['max_value'] < $args['min_value'] ) {
+		$args['max_value'] = $args['min_value'];
+	}
+
+	$classes = array_map( 'sanitize_html_class', $args['classes'] );
+
+	ob_start();
+	?>
+	<div class="quantity">
+		<button type="button" class="minus" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>"></button>
+		<input
+			type="number"
+			id="<?php echo esc_attr( $args['input_id'] ); ?>"
+			class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
+			name="<?php echo esc_attr( $args['input_name'] ); ?>"
+			value="<?php echo esc_attr( $args['input_value'] ); ?>"
+			aria-label="<?php esc_attr_e( 'Product quantity', 'primefit' ); ?>"
+			size="4"
+			min="<?php echo esc_attr( $args['min_value'] ); ?>"
+			max="<?php echo esc_attr( 0 < $args['max_value'] ? $args['max_value'] : '' ); ?>"
+			<?php if ( ! empty( $args['step'] ) ) : ?>
+				step="<?php echo esc_attr( $args['step'] ); ?>"
+			<?php endif; ?>
+			<?php if ( ! empty( $args['placeholder'] ) ) : ?>
+				placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"
+			<?php endif; ?>
+			<?php if ( ! empty( $args['inputmode'] ) ) : ?>
+				inputmode="<?php echo esc_attr( $args['inputmode'] ); ?>"
+			<?php endif; ?>
+			<?php if ( ! empty( $args['pattern'] ) ) : ?>
+				pattern="<?php echo esc_attr( $args['pattern'] ); ?>"
+			<?php endif; ?>
+		/>
+		<button type="button" class="plus" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>"></button>
+	</div>
+	<?php
+
+	$output = ob_get_clean();
+
+	if ( $echo ) {
+		echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	} else {
+		return $output;
+	}
+}

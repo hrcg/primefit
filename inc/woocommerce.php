@@ -106,10 +106,20 @@ function primefit_display_additional_sections() {
 }
 
 /**
+ * Replace default WooCommerce quantity input with custom one
+ */
+add_filter( 'woocommerce_quantity_input_args', 'primefit_override_quantity_input', 10, 2 );
+function primefit_override_quantity_input( $args, $product ) {
+	// This filter allows us to modify the args, but we'll handle the replacement in the template
+	return $args;
+}
+
+/**
  * Header cart fragments (update cart count asynchronously)
  */
 add_filter( 'woocommerce_add_to_cart_fragments', 'primefit_header_cart_fragment' );
 function primefit_header_cart_fragment( $fragments ) {
+	// Add cart count fragment for header
 	ob_start();
 	?>
 	<span class="cart-count" data-cart-count>
@@ -117,6 +127,12 @@ function primefit_header_cart_fragment( $fragments ) {
 	</span>
 	<?php
 	$fragments['span[data-cart-count]'] = ob_get_clean();
+	
+	// Add mini cart fragment
+	ob_start();
+	wc_get_template( 'cart/mini-cart.php' );
+	$fragments['.woocommerce-mini-cart'] = ob_get_clean();
+	
 	return $fragments;
 }
 
@@ -125,6 +141,65 @@ function primefit_header_cart_fragment( $fragments ) {
  */
 add_action( 'wp_ajax_primefit_notify_availability', 'primefit_handle_notify_availability' );
 add_action( 'wp_ajax_nopriv_primefit_notify_availability', 'primefit_handle_notify_availability' );
+
+/**
+ * AJAX handlers for cart updates
+ */
+add_action( 'wp_ajax_woocommerce_update_cart_item_quantity', 'primefit_update_cart_item_quantity' );
+add_action( 'wp_ajax_nopriv_woocommerce_update_cart_item_quantity', 'primefit_update_cart_item_quantity' );
+
+add_action( 'wp_ajax_woocommerce_remove_cart_item', 'primefit_remove_cart_item' );
+add_action( 'wp_ajax_nopriv_woocommerce_remove_cart_item', 'primefit_remove_cart_item' );
+
+/**
+ * Update cart item quantity
+ */
+function primefit_update_cart_item_quantity() {
+	// Verify nonce
+	if ( ! wp_verify_nonce( $_POST['security'], 'woocommerce_update_cart_nonce' ) ) {
+		wp_die( 'Security check failed' );
+	}
+	
+	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] );
+	$quantity = intval( $_POST['quantity'] );
+	
+	if ( $cart_item_key && $quantity > 0 ) {
+		WC()->cart->set_quantity( $cart_item_key, $quantity );
+		
+		// Return updated cart fragments
+		wp_send_json_success( array(
+			'fragments' => apply_filters( 'woocommerce_add_to_cart_fragments', array() ),
+			'cart_hash' => WC()->cart->get_cart_hash(),
+		) );
+	} else {
+		wp_send_json_error( 'Invalid data' );
+	}
+}
+
+/**
+ * Remove cart item
+ */
+function primefit_remove_cart_item() {
+	// Verify nonce
+	if ( ! wp_verify_nonce( $_POST['security'], 'woocommerce_remove_cart_nonce' ) ) {
+		wp_die( 'Security check failed' );
+	}
+	
+	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] );
+	
+	if ( $cart_item_key ) {
+		WC()->cart->remove_cart_item( $cart_item_key );
+		
+		// Return updated cart fragments
+		wp_send_json_success( array(
+			'fragments' => apply_filters( 'woocommerce_add_to_cart_fragments', array() ),
+			'cart_hash' => WC()->cart->get_cart_hash(),
+		) );
+	} else {
+		wp_send_json_error( 'Invalid data' );
+	}
+}
+
 function primefit_handle_notify_availability() {
 	// Verify nonce
 	if ( ! wp_verify_nonce( $_POST['nonce'], 'primefit_nonce' ) ) {

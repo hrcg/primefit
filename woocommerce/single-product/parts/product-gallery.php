@@ -27,19 +27,54 @@ if ( $main_image_id ) {
 // Remove duplicates
 $attachment_ids = array_unique( $attachment_ids );
 
+// For variable products, also include variation images
+if ( $product->is_type( 'variable' ) ) {
+	$variations = $product->get_available_variations();
+	foreach ( $variations as $variation ) {
+		if ( ! empty( $variation['image']['id'] ) ) {
+			$attachment_ids[] = $variation['image']['id'];
+		}
+	}
+	// Remove duplicates again
+	$attachment_ids = array_unique( $attachment_ids );
+}
+
 if ( empty( $attachment_ids ) ) {
 	return;
 }
 ?>
 
 <div class="product-gallery-container">
+	<!-- Thumbnail Gallery -->
+	<?php if ( count( $attachment_ids ) > 1 ) : ?>
+		<div class="product-thumbnails">
+			<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
+				<?php
+				$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'full' );
+				$thumbnail_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+				?>
+				<button 
+					class="thumbnail-item <?php echo $index === 0 ? 'active' : ''; ?>"
+					data-image-index="<?php echo esc_attr( $index ); ?>"
+					aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
+				>
+					<img 
+						src="<?php echo esc_url( $thumbnail_url ); ?>" 
+						alt="<?php echo esc_attr( $thumbnail_alt ); ?>"
+						class="thumbnail-image"
+					/>
+				</button>
+			<?php endforeach; ?>
+		</div>
+	<?php endif; ?>
+	
 	<!-- Main Image Display -->
 	<div class="product-main-image">
 		<div class="main-image-wrapper">
-			<?php
-			$main_image_url = wp_get_attachment_image_url( $attachment_ids[0], 'woocommerce_single' );
-			$main_image_alt = get_post_meta( $attachment_ids[0], '_wp_attachment_image_alt', true );
-			?>
+		<?php
+		$main_image_url = wp_get_attachment_image_url( $attachment_ids[0], 'full' );
+		$main_image_alt = get_post_meta( $attachment_ids[0], '_wp_attachment_image_alt', true );
+		?>
 			<img 
 				src="<?php echo esc_url( $main_image_url ); ?>" 
 				alt="<?php echo esc_attr( $main_image_alt ); ?>"
@@ -73,29 +108,6 @@ if ( empty( $attachment_ids ) ) {
 			</button>
 		<?php endif; ?>
 	</div>
-	
-	<!-- Thumbnail Gallery -->
-	<?php if ( count( $attachment_ids ) > 1 ) : ?>
-		<div class="product-thumbnails">
-			<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
-				<?php
-				$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'woocommerce_gallery_thumbnail' );
-				$thumbnail_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
-				?>
-				<button 
-					class="thumbnail-item <?php echo $index === 0 ? 'active' : ''; ?>"
-					data-image-index="<?php echo esc_attr( $index ); ?>"
-					aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
-				>
-					<img 
-						src="<?php echo esc_url( $thumbnail_url ); ?>" 
-						alt="<?php echo esc_attr( $thumbnail_alt ); ?>"
-						class="thumbnail-image"
-					/>
-				</button>
-			<?php endforeach; ?>
-		</div>
-	<?php endif; ?>
 </div>
 
 <script type="text/javascript">
@@ -109,17 +121,31 @@ document.addEventListener('DOMContentLoaded', function() {
 	const prevBtn = galleryContainer.querySelector('.image-nav-prev');
 	const nextBtn = galleryContainer.querySelector('.image-nav-next');
 	
-	const images = <?php echo json_encode( $attachment_ids ); ?>;
+	// Generate high-quality image URLs for all gallery images
+	const imageUrls = <?php 
+		$urls = array();
+		foreach ($attachment_ids as $attachment_id) {
+			$urls[] = wp_get_attachment_image_url($attachment_id, 'full');
+		}
+		echo json_encode($urls);
+	?>;
+	
+	const imageAlts = <?php 
+		$alts = array();
+		foreach ($attachment_ids as $attachment_id) {
+			$alts[] = get_post_meta($attachment_id, '_wp_attachment_image_alt', true);
+		}
+		echo json_encode($alts);
+	?>;
+	
 	let currentIndex = 0;
 	
 	function updateMainImage(index) {
-		if (!images[index]) return;
+		if (!imageUrls[index]) return;
 		
-		const imageUrl = '<?php echo wp_get_attachment_image_url( 0, 'woocommerce_single' ); ?>'.replace('0', images[index]);
-		const imageAlt = '<?php echo esc_js( get_post_meta( 0, '_wp_attachment_image_alt', true ) ); ?>'.replace('0', images[index]);
-		
-		mainImage.src = imageUrl;
-		mainImage.alt = imageAlt;
+		// Use the pre-generated high-quality image URL
+		mainImage.src = imageUrls[index];
+		mainImage.alt = imageAlts[index] || '';
 		mainImage.dataset.imageIndex = index;
 		
 		// Update active states

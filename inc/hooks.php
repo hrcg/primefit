@@ -64,14 +64,14 @@ function primefit_loop_product_thumbnail() {
 	echo '<div class="product-image-container">';
 	
 	if ( $main_image_id ) {
-		echo wp_get_attachment_image( $main_image_id, 'large', false, [
+		echo wp_get_attachment_image( $main_image_id, 'full', false, [
 			'class' => 'attachment-woocommerce_thumbnail',
 			'alt' => esc_attr( $product->get_name() )
 		] );
 	}
 	
 	if ( $second_image_id ) {
-		echo wp_get_attachment_image( $second_image_id, 'large', false, [
+		echo wp_get_attachment_image( $second_image_id, 'full', false, [
 			'class' => 'product-second-image',
 			'alt' => esc_attr( $product->get_name() )
 		] );

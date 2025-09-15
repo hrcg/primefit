@@ -28,13 +28,62 @@ $attributes = $product->get_attributes();
 $color_attribute = null;
 $size_attribute = null;
 
+// Get variation attributes for better detection
+$variation_attributes = $product->get_variation_attributes();
+
+// Get WooCommerce default attributes
+$default_attributes = $product->get_default_attributes();
+$default_color = '';
+$default_size = '';
+
+// Extract default color and size from WooCommerce defaults
+foreach ( $default_attributes as $attr_name => $attr_value ) {
+	$clean_name = strtolower( str_replace( 'pa_', '', $attr_name ) );
+	if ( stripos( $clean_name, 'color' ) !== false || 
+		 stripos( $attr_name, 'color' ) !== false ||
+		 stripos( $attr_name, 'pa_color' ) !== false ) {
+		$default_color = $attr_value;
+	}
+	if ( stripos( $clean_name, 'size' ) !== false || 
+		 stripos( $attr_name, 'size' ) !== false ||
+		 stripos( $attr_name, 'pa_size' ) !== false ) {
+		$default_size = $attr_value;
+	}
+}
+
 foreach ( $attributes as $attribute ) {
 	if ( $attribute->is_taxonomy() ) {
-		$attribute_name = wc_attribute_label( $attribute->get_name() );
-		if ( stripos( $attribute_name, 'color' ) !== false ) {
+		$attribute_name = $attribute->get_name();
+		$attribute_label = wc_attribute_label( $attribute_name );
+		
+		// Check for color attribute
+		if ( stripos( $attribute_label, 'color' ) !== false || 
+			 stripos( $attribute_name, 'color' ) !== false ||
+			 stripos( $attribute_name, 'pa_color' ) !== false ) {
 			$color_attribute = $attribute;
-		} elseif ( stripos( $attribute_name, 'size' ) !== false ) {
+		}
+		
+		// Check for size attribute
+		if ( stripos( $attribute_label, 'size' ) !== false || 
+			 stripos( $attribute_name, 'size' ) !== false ||
+			 stripos( $attribute_name, 'pa_size' ) !== false ) {
 			$size_attribute = $attribute;
+		}
+	}
+}
+
+// If no size attribute found in taxonomy attributes, check variation attributes
+if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
+	foreach ( $variation_attributes as $attr_name => $options ) {
+		$clean_name = strtolower( str_replace( 'pa_', '', $attr_name ) );
+		if ( in_array( $clean_name, array( 'size', 'sizes', 'clothing-size' ) ) || 
+			 strpos( $clean_name, 'size' ) !== false ) {
+			// Create a mock attribute object for consistency
+			$size_attribute = (object) array(
+				'get_name' => function() use ($attr_name) { return $attr_name; },
+				'is_taxonomy' => function() { return true; }
+			);
+			break;
 		}
 	}
 }
@@ -67,7 +116,6 @@ foreach ( $attributes as $attribute ) {
 	<!-- Color Selection (for variable products) -->
 	<?php if ( $is_variable && $color_attribute ) : ?>
 		<div class="product-color-selection">
-			<span class="selection-label"><?php echo esc_html( wc_attribute_label( $color_attribute->get_name() ) ); ?>:</span>
 			<div class="color-options">
 				<?php
 				$variations = $product->get_available_variations();
@@ -86,26 +134,69 @@ foreach ( $attributes as $attribute ) {
 					}
 				}
 				
+				// Determine which color should be active (default or first)
+				$default_color_index = 0;
+				if ( $default_color && in_array( $default_color, $color_options ) ) {
+					$default_color_index = array_search( $default_color, $color_options );
+				}
+				
 				foreach ( $color_options as $index => $color_option ) :
 					$color_name = wc_attribute_label( $color_option );
 					$color_slug = sanitize_title( $color_option );
+					$is_default_color = ( $index === $default_color_index );
 					
 					// Try to get variation image for this color
 					$variation_image = '';
+					$variation_id = '';
+					$available_sizes = array();
+					
 					foreach ( $variations as $variation ) {
+						$has_color_match = false;
+						$current_size = '';
+						
+						// Check if this variation matches the current color
 						foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
 							if ( stripos( $attr_name, 'color' ) !== false && $attr_value === $color_option ) {
-								if ( ! empty( $variation['image']['src'] ) ) {
+								$has_color_match = true;
+								
+								// Get variation image (use first one found)
+								if ( ! empty( $variation['image']['src'] ) && empty( $variation_image ) ) {
 									$variation_image = $variation['image']['src'];
-									break 2;
 								}
+								
+								// Get variation ID (use first one found)
+								if ( empty( $variation_id ) ) {
+									$variation_id = $variation['variation_id'];
+								}
+								
+								break;
+							}
+						}
+						
+						// If this variation matches the color, get its size
+						if ( $has_color_match ) {
+							foreach ( $variation['attributes'] as $size_attr_name => $size_attr_value ) {
+								if ( stripos( $size_attr_name, 'size' ) !== false ) {
+									$current_size = $size_attr_value;
+									break;
+								}
+							}
+							
+							// Add this size to available sizes if not already added
+							if ( $current_size && ! in_array( $current_size, $available_sizes ) ) {
+								$available_sizes[] = $current_size;
 							}
 						}
 					}
+					
+
 				?>
 					<button 
-						class="color-option <?php echo $index === 0 ? 'active' : ''; ?>"
+						class="color-option <?php echo $is_default_color ? 'active' : ''; ?>"
 						data-color="<?php echo esc_attr( $color_option ); ?>"
+						data-variation-image="<?php echo esc_attr( $variation_image ); ?>"
+						data-variation-id="<?php echo esc_attr( $variation_id ); ?>"
+						data-available-sizes="<?php echo esc_attr( json_encode( $available_sizes ) ); ?>"
 						aria-label="<?php printf( esc_attr__( 'Select color %s', 'primefit' ), $color_name ); ?>"
 					>
 						<?php if ( $variation_image ) : ?>
@@ -123,32 +214,105 @@ foreach ( $attributes as $attribute ) {
 	<!-- Size Selection (for variable products) -->
 	<?php if ( $is_variable && $size_attribute ) : ?>
 		<div class="product-size-selection">
-			<span class="selection-label"><?php echo esc_html( wc_attribute_label( $size_attribute->get_name() ) ); ?>:</span>
 			<div class="size-options">
 				<?php
 				$size_options = array();
+				$size_attribute_name = $size_attribute->get_name();
+				
+				// Get all unique size options from variations
 				foreach ( $variations as $variation ) {
 					$size_value = '';
-					foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
-						if ( stripos( $attr_name, 'size' ) !== false ) {
-							$size_value = $attr_value;
-							break;
+					
+					// Try different ways to get the size value
+					if ( isset( $variation['attributes'][ $size_attribute_name ] ) ) {
+						$size_value = $variation['attributes'][ $size_attribute_name ];
+					} elseif ( isset( $variation['attributes']['attribute_' . $size_attribute_name] ) ) {
+						$size_value = $variation['attributes']['attribute_' . $size_attribute_name];
+					} else {
+						// Fallback: look for any attribute containing 'size'
+						foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
+							if ( stripos( $attr_name, 'size' ) !== false ) {
+								$size_value = $attr_value;
+								break;
+							}
 						}
 					}
+					
 					if ( $size_value && ! in_array( $size_value, $size_options ) ) {
 						$size_options[] = $size_value;
 					}
 				}
 				
-				foreach ( $size_options as $size_option ) :
+				// Sort size options in a logical order
+				$size_order = array( 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl', 'small', 'medium', 'large', 'extra-small', 'extra-large' );
+				usort( $size_options, function( $a, $b ) use ( $size_order ) {
+					$a_index = array_search( strtolower( $a ), $size_order );
+					$b_index = array_search( strtolower( $b ), $size_order );
+					
+					if ( $a_index === false && $b_index === false ) {
+						return strcmp( $a, $b );
+					} elseif ( $a_index === false ) {
+						return 1;
+					} elseif ( $b_index === false ) {
+						return -1;
+					} else {
+						return $a_index - $b_index;
+					}
+				});
+				
+				// Determine which size should be selected (default or first available)
+				$default_size_index = -1;
+				if ( $default_size && in_array( $default_size, $size_options ) ) {
+					$default_size_index = array_search( $default_size, $size_options );
+				}
+				
+				foreach ( $size_options as $index => $size_option ) :
 					$size_name = wc_attribute_label( $size_option );
+					$size_slug = sanitize_title( $size_option );
+					$is_selected_size = false;
+					
+					// Check if this size should be selected
+					if ( $default_size_index >= 0 ) {
+						// Use WooCommerce default size if available
+						$is_selected_size = ( $index === $default_size_index );
+					} else {
+						// Fallback to first size if no default set
+						$is_selected_size = ( $index === 0 );
+					}
+					
+					// Check if this size is available for the default color
+					$is_available_for_default_color = false;
+					if ( ! empty( $color_options ) ) {
+						$selected_color = $default_color ? $default_color : $color_options[0];
+						
+						// Get sizes available for the selected color
+						foreach ( $variations as $variation ) {
+							$has_color_match = false;
+							$current_size = '';
+							
+							foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
+								if ( stripos( $attr_name, 'color' ) !== false && $attr_value === $selected_color ) {
+									$has_color_match = true;
+								}
+								if ( stripos( $attr_name, 'size' ) !== false ) {
+									$current_size = $attr_value;
+								}
+							}
+							
+							if ( $has_color_match && $current_size === $size_option ) {
+								$is_available_for_default_color = true;
+								break;
+							}
+						}
+					}
 				?>
 					<button 
-						class="size-option"
+						class="size-option <?php echo ( $is_selected_size && $is_available_for_default_color ) ? 'selected' : ''; ?>"
 						data-size="<?php echo esc_attr( $size_option ); ?>"
+						data-size-slug="<?php echo esc_attr( $size_slug ); ?>"
 						aria-label="<?php printf( esc_attr__( 'Select size %s', 'primefit' ), $size_name ); ?>"
 					>
-						<?php echo esc_html( $size_name ); ?>
+						<?php echo esc_html( strtoupper( $size_name ) ); ?>
 					</button>
 				<?php endforeach; ?>
 			</div>
@@ -166,7 +330,35 @@ foreach ( $attributes as $attribute ) {
 	<!-- Add to Cart / Notify Button -->
 	<div class="product-actions">
 		<?php if ( $is_in_stock ) : ?>
-			<?php woocommerce_template_single_add_to_cart(); ?>
+			<?php if ( $is_variable ) : ?>
+				<!-- Custom variation form for variable products -->
+				<form class="primefit-variations-form cart" action="<?php echo esc_url( apply_filters( 'woocommerce_add_to_cart_form_action', $product->get_permalink() ) ); ?>" method="post" enctype='multipart/form-data' data-product_id="<?php echo absint( $product->get_id() ); ?>">
+					<!-- Hidden variation inputs -->
+					<input type="hidden" name="add-to-cart" value="<?php echo absint( $product->get_id() ); ?>" />
+					<input type="hidden" name="product_id" value="<?php echo absint( $product->get_id() ); ?>" />
+					<input type="hidden" name="variation_id" class="variation_id" value="0" />
+					
+					<!-- Quantity input -->
+					<div class="quantity-input-wrapper">
+						<?php primefit_quantity_input(
+							array(
+								'min_value'   => apply_filters( 'woocommerce_quantity_input_min', $product->get_min_purchase_quantity(), $product ),
+								'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->get_max_purchase_quantity(), $product ),
+								'input_value' => isset( $_POST['quantity'] ) ? wc_stock_amount( wp_unslash( $_POST['quantity'] ) ) : $product->get_min_purchase_quantity(),
+							),
+							$product
+						); ?>
+					</div>
+					
+					<!-- Add to cart button -->
+					<button type="submit" class="single_add_to_cart_button button alt" disabled>
+						<?php esc_html_e( 'SELECT OPTIONS', 'primefit' ); ?>
+					</button>
+				</form>
+			<?php else : ?>
+				<!-- Simple product add to cart -->
+				<?php woocommerce_template_single_add_to_cart(); ?>
+			<?php endif; ?>
 		<?php else : ?>
 			<button class="notify-button" type="button">
 				<?php esc_html_e( 'NOTIFY WHEN AVAILABLE', 'primefit' ); ?>
@@ -245,6 +437,19 @@ foreach ( $attributes as $attribute ) {
 </div>
 
 <script type="text/javascript">
+// Product variation data
+window.primefitProductData = {
+	variations: <?php echo json_encode( $variations ); ?>,
+	productId: <?php echo absint( $product->get_id() ); ?>,
+	defaultColor: <?php echo json_encode( $default_color ); ?>,
+	defaultSize: <?php echo json_encode( $default_size ); ?>,
+	debugInfo: {
+		defaultAttributes: <?php echo json_encode( $default_attributes ); ?>,
+		colorOptions: <?php echo json_encode( $color_options ?? array() ); ?>,
+		sizeOptions: <?php echo json_encode( $size_options ?? array() ); ?>
+	}
+};
+
 document.addEventListener('DOMContentLoaded', function() {
 	// Collapsible sections functionality
 	const collapsibleToggles = document.querySelectorAll('.collapsible-toggle');
@@ -272,6 +477,49 @@ document.addEventListener('DOMContentLoaded', function() {
 			colorOptions.forEach(opt => opt.classList.remove('active'));
 			// Add active class to clicked option
 			this.classList.add('active');
+			
+			// Update product gallery with variation image
+			const variationImage = this.dataset.variationImage;
+			if (variationImage) {
+				const mainImage = document.querySelector('.main-product-image');
+				if (mainImage) {
+					mainImage.src = variationImage;
+				}
+			}
+			
+			// Update available sizes
+			const availableSizes = JSON.parse(this.dataset.availableSizes || '[]');
+			console.log('Available sizes for color', this.dataset.color, ':', availableSizes);
+			const sizeOptions = document.querySelectorAll('.size-option');
+			sizeOptions.forEach(sizeOption => {
+				const sizeValue = sizeOption.dataset.size;
+				if (availableSizes.includes(sizeValue)) {
+					sizeOption.style.display = 'flex';
+					sizeOption.disabled = false;
+				} else {
+					sizeOption.style.display = 'none';
+					sizeOption.disabled = true;
+					sizeOption.classList.remove('selected');
+				}
+			});
+			
+			// Update color display
+			const colorValue = document.querySelector('.color-value');
+			if (colorValue) {
+				colorValue.textContent = this.dataset.color;
+			}
+			
+			// Update variation ID
+			const variationIdInput = document.querySelector('.variation_id');
+			if (variationIdInput) {
+				variationIdInput.value = this.dataset.variationId || '0';
+			}
+			
+			// Update variation ID based on current selections
+			updateVariationId();
+			
+			// Update add to cart button
+			updateAddToCartButton();
 		});
 	});
 	
@@ -283,7 +531,123 @@ document.addEventListener('DOMContentLoaded', function() {
 			sizeOptions.forEach(opt => opt.classList.remove('selected'));
 			// Add selected class to clicked option
 			this.classList.add('selected');
+			
+			// Update variation ID based on selected color and size
+			updateVariationId();
+			
+			// Update add to cart button
+			updateAddToCartButton();
 		});
 	});
+	
+	// Function to update variation ID based on selected options
+	function updateVariationId() {
+		const selectedColor = document.querySelector('.color-option.active');
+		const selectedSize = document.querySelector('.size-option.selected');
+		const variationIdInput = document.querySelector('.variation_id');
+		
+		if (!selectedColor || !selectedSize || !variationIdInput) {
+			return;
+		}
+		
+		const colorValue = selectedColor.dataset.color;
+		const sizeValue = selectedSize.dataset.size;
+		
+		// Find matching variation from product data
+		if (window.primefitProductData && window.primefitProductData.variations) {
+			const variations = window.primefitProductData.variations;
+			
+			for (let i = 0; i < variations.length; i++) {
+				const variation = variations[i];
+				let hasColor = false;
+				let hasSize = false;
+				
+				// Check if this variation matches the selected color and size
+				for (const attrName in variation.attributes) {
+					const attrValue = variation.attributes[attrName];
+					
+					// Check for color match (more flexible matching)
+					if ((attrName.toLowerCase().includes('color') || 
+						 attrName.includes('pa_color') || 
+						 attrName.includes('attribute_pa_color')) && 
+						attrValue === colorValue) {
+						hasColor = true;
+					}
+					
+					// Check for size match (more flexible matching)
+					if ((attrName.toLowerCase().includes('size') || 
+						 attrName.includes('pa_size') || 
+						 attrName.includes('attribute_pa_size')) && 
+						attrValue === sizeValue) {
+						hasSize = true;
+					}
+				}
+				
+				// If both color and size match, update variation ID
+				if (hasColor && hasSize) {
+					variationIdInput.value = variation.variation_id;
+					break;
+				}
+			}
+		}
+	}
+	
+	// Function to update add to cart button
+	function updateAddToCartButton() {
+		const selectedColor = document.querySelector('.color-option.active');
+		const selectedSize = document.querySelector('.size-option.selected');
+		const addToCartButton = document.querySelector('.single_add_to_cart_button');
+		
+		if (selectedColor && selectedSize && addToCartButton) {
+			addToCartButton.disabled = false;
+			addToCartButton.textContent = '<?php esc_html_e( 'ADD TO CART', 'primefit' ); ?>';
+		} else if (addToCartButton) {
+			addToCartButton.disabled = true;
+			addToCartButton.textContent = '<?php esc_html_e( 'SELECT OPTIONS', 'primefit' ); ?>';
+		}
+	}
+	
+	// Initialize with default color and size
+	const defaultColor = window.primefitProductData.defaultColor;
+	const defaultSize = window.primefitProductData.defaultSize;
+	
+	// Debug logging
+	console.log('PrimeFit Default Variations:', {
+		defaultColor: defaultColor,
+		defaultSize: defaultSize,
+		debugInfo: window.primefitProductData.debugInfo
+	});
+	
+	// Find and activate the default color
+	let activeColorOption = document.querySelector('.color-option.active');
+	if (defaultColor && activeColorOption) {
+		// Check if the active color matches the default
+		if (activeColorOption.dataset.color !== defaultColor) {
+			// Find the correct default color option
+			const defaultColorOption = document.querySelector(`[data-color="${defaultColor}"]`);
+			if (defaultColorOption) {
+				activeColorOption.classList.remove('active');
+				defaultColorOption.classList.add('active');
+				activeColorOption = defaultColorOption;
+			}
+		}
+	}
+	
+	// Initialize sizes based on the active color
+	if (activeColorOption) {
+		// Trigger the color selection to update available sizes
+		activeColorOption.click();
+		
+		// Then select the default size if available
+		if (defaultSize) {
+			const defaultSizeOption = document.querySelector(`[data-size="${defaultSize}"]`);
+			if (defaultSizeOption && defaultSizeOption.style.display !== 'none' && !defaultSizeOption.disabled) {
+				// Remove selected class from all sizes
+				document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
+				// Add selected class to default size
+				defaultSizeOption.classList.add('selected');
+			}
+		}
+	}
 });
 </script>

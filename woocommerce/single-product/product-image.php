@@ -37,7 +37,7 @@ if ( empty( $attachment_ids ) ) {
 	<div class="product-main-image">
 		<div class="main-image-wrapper">
 			<?php
-			$main_image_url = wp_get_attachment_image_url( $attachment_ids[0], 'woocommerce_single' );
+			$main_image_url = wp_get_attachment_image_url( $attachment_ids[0], 'full' );
 			$main_image_alt = get_post_meta( $attachment_ids[0], '_wp_attachment_image_alt', true );
 			?>
 			<img 
@@ -79,7 +79,7 @@ if ( empty( $attachment_ids ) ) {
 		<div class="product-thumbnails">
 			<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
 				<?php
-				$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'woocommerce_gallery_thumbnail' );
+				$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'full' );
 				$thumbnail_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 				?>
 				<button 
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	function updateMainImage(index) {
 		if (!images[index]) return;
 		
-		const imageUrl = '<?php echo wp_get_attachment_image_url( 0, 'woocommerce_single' ); ?>'.replace('0', images[index]);
+		const imageUrl = '<?php echo wp_get_attachment_image_url( 0, 'full' ); ?>'.replace('0', images[index]);
 		const imageAlt = '<?php echo esc_js( get_post_meta( 0, '_wp_attachment_image_alt', true ) ); ?>'.replace('0', images[index]);
 		
 		mainImage.src = imageUrl;
