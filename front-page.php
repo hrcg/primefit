@@ -22,17 +22,8 @@ primefit_render_product_loop($featured_products_args);
 get_template_part('templates/parts/category-tiles');
 
 
-// Training Division Section
-$training_division_args = array(
-	'heading' => 'TRAINING DIVISION',
-	'subheading' => '[ FALL 2025 COLLECTION ] A PATH WITHOUT OBSTACLES LEADS NOWHERE',
-	'cta_primary_text' => 'SHOP NOW',
-	'cta_primary_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
-	'cta_secondary_text' => '',
-	'cta_secondary_link' => '#',
-	'image' => get_template_directory_uri() . '/assets/images/training-dept.jpg'
-);
-get_template_part('templates/parts/training-division', null, $training_division_args);
+// Training Division Section (uses customizer settings)
+get_template_part('templates/parts/training-division');
 
 // Product Showcase Section
 $product_showcase_args = primefit_get_product_loop_config('new', array(
@@ -46,17 +37,9 @@ $product_showcase_args = primefit_get_product_loop_config('new', array(
 ));
 primefit_render_product_loop($product_showcase_args);
 
-// Training Division Section
-$training_division_args = array(
-	'heading' => 'Become your best self',
-	'subheading' => 'Unlock your potential with purpose-built gear designed for resilience, comfort, and top-tier performance.',
-	'cta_primary_text' => 'Arise Now',
-	'cta_primary_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
-	'cta_secondary_text' => '',
-	'cta_secondary_link' => '#',
-	'image' => get_template_directory_uri() . '/assets/images/basketball.webp'
-);
-get_template_part('templates/parts/training-division', null, $training_division_args);
+// Second Training Division Section (uses customizer settings)
+$training_division_2_config = primefit_get_training_division_2_config();
+get_template_part('templates/parts/training-division', null, $training_division_2_config);
 ?>
 
 <?php get_footer(); ?>

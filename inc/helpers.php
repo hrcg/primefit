@@ -66,7 +66,8 @@ function primefit_get_shop_hero_config() {
 	
 	if ( is_shop() ) {
 		$hero_args = array(
-			'image' => array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'),
+			'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
+			'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
 			'heading' => 'SHOP ALL',
 			'subheading' => 'DISCOVER OUR COMPLETE COLLECTION OF PREMIUM FITNESS APPAREL',
 			'cta_text' => '',
@@ -94,7 +95,8 @@ function primefit_get_shop_hero_config() {
 		}
 		
 		$hero_args = array(
-			'image' => array( $hero_image ),
+			'image_desktop' => $hero_image,
+			'image_mobile' => $hero_image,
 			'heading' => strtoupper( $category->name ),
 			'subheading' => $subheading,
 			'cta_text' => '',
@@ -108,7 +110,8 @@ function primefit_get_shop_hero_config() {
 	} elseif ( is_product_tag() ) {
 		$tag = get_queried_object();
 		$hero_args = array(
-			'image' => array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'),
+			'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
+			'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
 			'heading' => strtoupper( $tag->name ),
 			'subheading' => 'PRODUCTS TAGGED: ' . strtoupper( $tag->name ),
 			'cta_text' => '',
@@ -485,7 +488,8 @@ function primefit_render_shop_categories( $args = array() ) {
 function primefit_render_hero( $args = array() ) {
 	// Set defaults
 	$defaults = array(
-		'image' => array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'),
+		'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
+		'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
 		'heading' => 'END OF SEASON SALE',
 		'subheading' => 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.',
 		'cta_text' => 'SHOP NOW',
@@ -502,10 +506,16 @@ function primefit_render_hero( $args = array() ) {
 	// Generate unique ID for this hero instance
 	$hero_id = 'hero-' . uniqid();
 	
-	// Get hero image URL
-	$hero_image_url = primefit_get_asset_uri( $hero['image'] );
-	if ( empty( $hero_image_url ) ) {
-		$hero_image_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+	// Get hero image URLs
+	$hero_image_desktop_url = !empty($hero['image_desktop']) ? $hero['image_desktop'] : primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'));
+	$hero_image_mobile_url = !empty($hero['image_mobile']) ? $hero['image_mobile'] : primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg'));
+	
+	// Fallback to direct theme directory URI if no image found
+	if ( empty( $hero_image_desktop_url ) ) {
+		$hero_image_desktop_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+	}
+	if ( empty( $hero_image_mobile_url ) ) {
+		$hero_image_mobile_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
 	}
 	
 	// Build CSS classes
@@ -522,9 +532,19 @@ function primefit_render_hero( $args = array() ) {
 	
 	$hero_classes = implode( ' ', $hero_classes );
 	?>
-	<section class="<?php echo esc_attr( $hero_classes ); ?>" id="<?php echo esc_attr( $hero_id ); ?>" 
-			 style="background-image: url('<?php echo esc_url( $hero_image_url ); ?>');">
-		<div class="hero-overlay" style="opacity: <?php echo esc_attr( $hero['overlay_opacity'] ); ?>;"></div>
+	<section class="<?php echo esc_attr( $hero_classes ); ?>" id="<?php echo esc_attr( $hero_id ); ?>">
+		<div class="hero-media">
+			<picture>
+				<source media="(max-width: 768px)" srcset="<?php echo esc_url( $hero_image_mobile_url ); ?>">
+				<img 
+					src="<?php echo esc_url( $hero_image_desktop_url ); ?>" 
+					alt="<?php echo esc_attr( $hero['heading'] ); ?>" 
+					loading="eager"
+					class="hero-image"
+				/>
+			</picture>
+			<div class="hero-overlay" style="opacity: <?php echo esc_attr( $hero['overlay_opacity'] ); ?>;"></div>
+		</div>
 		
 		<div class="hero-content">
 			<div class="container">

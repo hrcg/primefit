@@ -61,6 +61,11 @@
 	align-items: center;
 	gap: 10px;
 	text-decoration: none;
+	position: relative;
+}
+
+.site-brand .brand-symbol {
+	display: none;
 }
 
 .site-brand .custom-logo {
@@ -121,7 +126,7 @@
 	border-radius: 3px;
 	background: transparent;
 	color: #fff;
-	font-size: 10px;
+	font-size: 12px;
 	font-weight: 800;
 }
 
@@ -152,8 +157,8 @@
 	width: 380px;
 	max-width: 100%;
 	height: 100vh;
-	background: #fff;
-	color: #000;
+	background: var(--background);
+	color: var(--text);
 	transform: translateX(100%);
 	transition: transform .25s ease;
 	z-index: 1000;
@@ -170,7 +175,7 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 16px;
-	border-bottom: 1px solid #eee;
+	border-bottom: 1px solid var(--border);
 }
 
 .cart-panel-header span {
@@ -185,6 +190,12 @@
 	font-size: 28px;
 	line-height: 1;
 	cursor: pointer;
+	color: var(--text);
+	transition: color 0.3s ease;
+}
+
+.cart-panel-header .cart-close:hover {
+	color: var(--accent);
 }
 
 .cart-panel-content {
@@ -361,8 +372,24 @@
 
 @media (max-width: 640px) {
     .site-brand .brand-logo {
-        width: 120px;
+        width: 130px;
+        transition: opacity 0.3s ease, transform 0.3s ease;
     }
+
+	.site-brand .brand-symbol {
+		display: block;
+		width: 32px;
+		height: 32px;
+        margin-left: 10px;
+		opacity: 0;
+		transform: scale(0.8);
+		transition: opacity 0.3s ease, transform 0.3s ease;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		margin-left: -12px;
+		margin-top: -15px;
+	}
 
 	.menu--secondary {
 		display: none;
@@ -370,6 +397,17 @@
 
 	.mobile-nav-panel {
 		max-width: none;
+	}
+
+	/* Change logo to symbol when header is sticky on mobile */
+	.site-header.is-scrolled .site-brand .brand-logo {
+		opacity: 0;
+		transform: scale(0.8);
+	}
+
+	.site-header.is-scrolled .site-brand .brand-symbol {
+		opacity: 1;
+		transform: scale(1);
 	}
 }
 
@@ -462,5 +500,5 @@ body:has(.promo-bar) .site-header {
 
 /* Offset site content on pages without hero so it doesn't hide under fixed header */
 body:not(.has-hero-header) .site-content {
-	padding-top: 66px;
+	padding-top: 110px;
 }

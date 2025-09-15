@@ -1,6 +1,6 @@
 /* Footer Styles */
 .site-footer {
-    background-color: #282828;
+    background-color: #000;
     color: #b8b8b8;
     padding: 0;
     border-top: none;
@@ -14,7 +14,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 60px;
-    max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
   }

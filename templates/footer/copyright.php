@@ -19,5 +19,5 @@ $copyright_text = get_theme_mod('primefit_copyright_text', $copyright['text']);
 ?>
 
 <div class="footer-bottom">
-	<p>COPYRIGHT © 2025. ASRV</p>
+	<p>COPYRIGHT © 2025 - PRIMEFIT ATHLETICS</p>
 </div>

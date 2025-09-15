@@ -19,6 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 
+<?php get_template_part( 'templates/header/promo-bar' ); ?>
+
 <header class="site-header" role="banner">
 	<div class="container">
 		<div class="header-inner">
@@ -41,6 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="header-center">
 				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="site-brand" aria-label="<?php echo esc_attr( get_bloginfo('name') ); ?>">
 					<img class="brand-logo" src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/logo-white.webp' ); ?>" alt="<?php echo esc_attr( get_bloginfo('name') ); ?>">
+					<img class="brand-symbol" src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/symbol.webp' ); ?>" alt="<?php echo esc_attr( get_bloginfo('name') ); ?>" >
 				</a>
 			</div>
 

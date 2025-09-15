@@ -301,4 +301,111 @@
     $('body').removeClass('mobile-open');
     $('.hamburger').attr('aria-expanded', 'false');
   });
+
+  // Hero Video Background Handler
+  class HeroVideoHandler {
+    constructor() {
+      this.init();
+    }
+
+    init() {
+      this.handleHeroVideos();
+    }
+
+    handleHeroVideos() {
+      const $heroVideos = $('.hero-video');
+      
+      if ($heroVideos.length === 0) return;
+
+      $heroVideos.each((index, video) => {
+        const $video = $(video);
+        const videoElement = video;
+
+        // Set up video event listeners
+        this.setupVideoEvents($video, videoElement);
+        
+        // Start loading the video
+        this.loadVideo($video, videoElement);
+      });
+    }
+
+    setupVideoEvents($video, videoElement) {
+      // When video can play through
+      videoElement.addEventListener('canplaythrough', () => {
+        this.onVideoReady($video, videoElement);
+      });
+
+      // When video starts playing
+      videoElement.addEventListener('playing', () => {
+        this.onVideoPlaying($video, videoElement);
+      });
+
+      // Handle video errors
+      videoElement.addEventListener('error', () => {
+        this.onVideoError($video, videoElement);
+      });
+
+      // Handle video loading
+      videoElement.addEventListener('loadstart', () => {
+        this.onVideoLoadStart($video, videoElement);
+      });
+    }
+
+    loadVideo($video, videoElement) {
+      // Set video source and start loading
+      const sources = videoElement.querySelectorAll('source');
+      if (sources.length > 0) {
+        // Let the browser choose the best source
+        videoElement.load();
+      }
+    }
+
+    onVideoLoadStart($video, videoElement) {
+      // Video started loading
+      console.log('Hero video started loading');
+    }
+
+    onVideoReady($video, videoElement) {
+      // Video is ready to play
+      $video.addClass('loaded');
+      
+      // Try to play the video
+      const playPromise = videoElement.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          this.onVideoPlaying($video, videoElement);
+        }).catch((error) => {
+          console.log('Video autoplay failed:', error);
+          this.onVideoError($video, videoElement);
+        });
+      }
+    }
+
+    onVideoPlaying($video, videoElement) {
+      // Video is playing successfully
+      console.log('Hero video is playing');
+      
+      // Hide fallback image with smooth transition
+      const $fallbackImage = $video.closest('.hero-media').find('.hero-fallback-image');
+      $fallbackImage.css('opacity', '0');
+    }
+
+    onVideoError($video, videoElement) {
+      // Video failed to load or play
+      console.log('Hero video failed to load or play');
+      
+      // Ensure fallback image is visible
+      const $fallbackImage = $video.closest('.hero-media').find('.hero-fallback-image');
+      $fallbackImage.css('opacity', '1');
+      
+      // Hide the video
+      $video.css('opacity', '0');
+    }
+  }
+
+  // Initialize hero video handler
+  if ($('.hero-video').length > 0) {
+    new HeroVideoHandler();
+  }
 })(jQuery);

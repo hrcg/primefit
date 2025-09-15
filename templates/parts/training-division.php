@@ -14,15 +14,19 @@
  * - 'image' => background image path
  */
 
-// Set defaults
+// Get customizer configuration
+$customizer_config = primefit_get_training_division_config();
+
+// Set defaults (merge customizer config with passed args)
 $defaults = array(
-	'heading' => 'TRAINING DIVISION',
-	'subheading' => '[ FALL 2025 COLLECTION ] A PATH WITHOUT OBSTACLES LEADS NOWHERE',
-	'cta_primary_text' => 'SHOP NOW',
-	'cta_primary_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
-	'cta_secondary_text' => 'VIEW LOOKBOOK',
-	'cta_secondary_link' => '#',
-	'image' => get_template_directory_uri() . '/assets/images/training-dept.jpg'
+	'heading' => $customizer_config['heading'],
+	'subheading' => $customizer_config['subheading'],
+	'cta_primary_text' => $customizer_config['cta_primary_text'],
+	'cta_primary_link' => $customizer_config['cta_primary_link'],
+	'cta_secondary_text' => $customizer_config['cta_secondary_text'],
+	'cta_secondary_link' => $customizer_config['cta_secondary_link'],
+	'image' => $customizer_config['image'],
+	'show_secondary_button' => $customizer_config['show_secondary_button']
 );
 
 $section = wp_parse_args($args ?? array(), $defaults);
@@ -62,7 +66,7 @@ $section_id = 'training-division-' . uniqid();
 						</a>
 					<?php endif; ?>
 					
-					<?php if (!empty($section['cta_secondary_text']) && !empty($section['cta_secondary_link'])) : ?>
+					<?php if ($section['show_secondary_button'] && !empty($section['cta_secondary_text']) && !empty($section['cta_secondary_link'])) : ?>
 						<a href="<?php echo esc_url($section['cta_secondary_link']); ?>" class="training-division-button button button--outline">
 							<?php echo esc_html($section['cta_secondary_text']); ?>
 						</a>
