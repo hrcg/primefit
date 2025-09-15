@@ -20,18 +20,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_action( 'wp_enqueue_scripts', 'primefit_enqueue_assets' );
 function primefit_enqueue_assets() {
+	// Google Fonts - Montserrat
+	wp_enqueue_style( 
+		'primefit-fonts', 
+		'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap', 
+		[], 
+		null 
+	);
+	
 	// Theme styles
 	wp_enqueue_style( 
 		'primefit-style', 
 		get_stylesheet_uri(), 
-		[], 
+		[ 'primefit-fonts' ], 
 		PRIMEFIT_VERSION 
 	);
 	
 	wp_enqueue_style( 
 		'primefit-app', 
 		PRIMEFIT_THEME_URI . '/assets/css/app.css', 
-		[], 
+		[ 'primefit-fonts' ], 
 		PRIMEFIT_VERSION 
 	);
 
@@ -155,6 +163,7 @@ function primefit_add_resource_hints() {
 	echo '<link rel="dns-prefetch" href="//fonts.googleapis.com">';
 	echo '<link rel="dns-prefetch" href="//www.google-analytics.com">';
 	
-	// Preconnect to critical external resources
+	// Preconnect to critical external resources for faster font loading
+	echo '<link rel="preconnect" href="https://fonts.googleapis.com">';
 	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
 }

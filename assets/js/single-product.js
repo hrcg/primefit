@@ -132,6 +132,11 @@
       const $gallery = $(".product-gallery-container");
       const $mainImageWrapper = $gallery.find(".main-image-wrapper");
 
+      // Prevent multiple animations
+      if ($mainImageWrapper.hasClass("loading")) {
+        return;
+      }
+
       // Add loading state
       $mainImageWrapper.addClass("loading");
 
@@ -148,32 +153,40 @@
         "data-image-index": index,
       });
 
-      // Add slide-in class based on direction
-      const slideInClass =
-        direction === "right" ? "slide-in-right" : "slide-in-left";
-      $tempImage.addClass(slideInClass);
+      // Preload the image to prevent flicker
+      $tempImage.on("load", () => {
+        // Add slide-in class based on direction
+        const slideInClass =
+          direction === "right" ? "slide-in-right" : "slide-in-left";
+        $tempImage.addClass(slideInClass);
 
-      // Add slide-out class to current image
-      const slideOutClass =
-        direction === "right" ? "slide-out-left" : "slide-out-right";
-      $mainImage.addClass(slideOutClass);
+        // Add slide-out class to current image
+        const slideOutClass =
+          direction === "right" ? "slide-out-left" : "slide-out-right";
+        $mainImage.addClass(slideOutClass);
 
-      // Append the new image
-      $mainImageWrapper.append($tempImage);
+        // Append the new image
+        $mainImageWrapper.append($tempImage);
 
-      // Trigger the slide-in animation after a brief delay
-      setTimeout(() => {
-        $tempImage.addClass("slide-in-active");
-      }, 50);
+        // Trigger the slide-in animation after a brief delay
+        setTimeout(() => {
+          $tempImage.addClass("slide-in-active");
+        }, 10);
 
-      // Remove the old image and clean up after animation completes
-      setTimeout(() => {
-        $mainImage.remove();
-        $tempImage
-          .removeClass("temp-image slide-in-left slide-in-right")
-          .addClass("slide-in-active");
+        // Remove the old image and clean up after animation completes
+        setTimeout(() => {
+          $mainImage.remove();
+          $tempImage
+            .removeClass("temp-image slide-in-left slide-in-right")
+            .addClass("slide-in-active");
+          $mainImageWrapper.removeClass("loading");
+        }, 250);
+      });
+
+      // Fallback if image doesn't load
+      $tempImage.on("error", () => {
         $mainImageWrapper.removeClass("loading");
-      }, 400);
+      });
     }
 
     previousImage() {
@@ -204,20 +217,42 @@
       let startY = 0;
       let endX = 0;
       let endY = 0;
+      let isScrolling = false;
+      let touchStartTime = 0;
 
       $(".product-main-image").on("touchstart", (e) => {
         startX = e.originalEvent.touches[0].clientX;
         startY = e.originalEvent.touches[0].clientY;
+        touchStartTime = Date.now();
+        isScrolling = false;
+      });
+
+      $(".product-main-image").on("touchmove", (e) => {
+        const currentX = e.originalEvent.touches[0].clientX;
+        const currentY = e.originalEvent.touches[0].clientY;
+        const deltaX = Math.abs(currentX - startX);
+        const deltaY = Math.abs(currentY - startY);
+
+        // If vertical movement is greater than horizontal, allow scrolling
+        if (deltaY > deltaX && deltaY > 10) {
+          isScrolling = true;
+          return; // Allow default scroll behavior
+        }
+
+        // If horizontal movement is greater, prevent scrolling for swipe
+        if (deltaX > deltaY && deltaX > 10) {
+          e.preventDefault();
+        }
       });
 
       $(".product-main-image").on("touchend", (e) => {
         endX = e.originalEvent.changedTouches[0].clientX;
         endY = e.originalEvent.changedTouches[0].clientY;
-        this.handleSwipe(startX, startY, endX, endY);
-      });
 
-      $(".product-main-image").on("touchmove", (e) => {
-        e.preventDefault();
+        // Only handle swipe if it wasn't a scroll gesture
+        if (!isScrolling) {
+          this.handleSwipe(startX, startY, endX, endY);
+        }
       });
     }
 

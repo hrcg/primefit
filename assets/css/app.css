@@ -77,7 +77,8 @@ body {
   background: var(--bg);
   color: var(--text);
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
   overflow-x: hidden;
 }
 body.nav-open {
@@ -963,6 +964,23 @@ body.nav-open {
   .tiles-3 {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+/* Mobile styles - show overlay by default */
+@media (max-width: 768px) {
+  .tiles-3 .tile-overlay {
+    opacity: 1;
+    visibility: visible;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0));
+  }
+
+  .tiles-3 .tile-label {
+    opacity: 0;
+  }
+
+  .tiles-3 .tile:hover .tile-label {
+    opacity: 0;
   }
 }
 

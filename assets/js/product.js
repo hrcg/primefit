@@ -65,28 +65,11 @@
 
   // Handle size selection in product loops
   function initProductLoopSizeSelection() {
-    // Handle mobile tap to show/hide sizes
-    $(document).on(
-      "click",
-      ".woocommerce ul.products li.product .product-image-container",
-      function (e) {
-        if (window.innerWidth <= 768) {
-          var $product = $(this).closest(".product");
-          var $sizeOptions = $product.find(".product-size-options");
+    // Disable mobile size option showing - let users navigate to product page instead
+    // Mobile users will click to go to product page rather than showing size options
 
-          if ($sizeOptions.length > 0) {
-            e.preventDefault();
-            e.stopPropagation(); // Prevent the product link from being triggered
-            $product.toggleClass("show-sizes");
-
-            // Close other open size options
-            $(".woocommerce ul.products li.product")
-              .not($product)
-              .removeClass("show-sizes");
-          }
-        }
-      }
-    );
+    // Note: Size options are hidden on mobile via CSS, and clicking the product
+    // will navigate to the product page where users can select sizes properly
 
     // Handle size option clicks - add to cart functionality
     $(document).on("click", ".product-size-options .size-option", function (e) {
@@ -115,9 +98,9 @@
           product_id: productId,
           variation_id: variationId,
           quantity: 1,
-          nonce: wc_add_to_cart_params.wc_ajax_add_to_cart_nonce
+          nonce: wc_add_to_cart_params.wc_ajax_add_to_cart_nonce,
         },
-        success: function(response) {
+        success: function (response) {
           if (response.error && response.product_url) {
             // If there's an error, redirect to product page
             window.location.href = response.product_url;
@@ -126,38 +109,27 @@
             $(document.body).trigger("added_to_cart", [
               response.fragments,
               response.cart_hash,
-              $button
+              $button,
             ]);
-            
+
             // Show success feedback
             $button.removeClass("loading").text("✓");
-            setTimeout(function() {
+            setTimeout(function () {
               $button.text(size.toUpperCase());
             }, 1500);
           }
         },
-        error: function() {
+        error: function () {
           // On error, redirect to product page
           var productUrl = $button.closest(".product").find("a").attr("href");
           if (productUrl) {
             window.location.href = productUrl;
           }
-        }
+        },
       });
     });
 
-    // Close size options when clicking outside on mobile
-    $(document).on("click", function (e) {
-      if (window.innerWidth <= 480) {
-        if (
-          !$(e.target).closest(
-            ".product-image-container, .product-size-options"
-          ).length
-        ) {
-          $(".woocommerce ul.products li.product").removeClass("show-sizes");
-        }
-      }
-    });
+    // Size options are disabled on mobile - users navigate to product page instead
 
     // Handle keyboard navigation for accessibility
     $(document).on("keydown", ".size-option", function (e) {
@@ -170,10 +142,10 @@
 
   // Hide tap indicator for products without size options
   function initTapIndicators() {
-    $(".woocommerce ul.products li.product").each(function() {
+    $(".woocommerce ul.products li.product").each(function () {
       var $product = $(this);
       var $sizeOptions = $product.find(".product-size-options");
-      
+
       if ($sizeOptions.length === 0) {
         $product.addClass("no-size-options");
       }
@@ -183,28 +155,28 @@
   // Shop Filter Bar functionality
   function initShopFilterBar() {
     // Sort dropdown change
-    $('.woocommerce-ordering .orderby').on('change', function() {
-      $(this).closest('form').submit();
+    $(".woocommerce-ordering .orderby").on("change", function () {
+      $(this).closest("form").submit();
     });
   }
-  
+
   // Cookie utility functions
   function setCookie(name, value, days) {
     var expires = "";
     if (days) {
       var date = new Date();
-      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
       expires = "; expires=" + date.toUTCString();
     }
     document.cookie = name + "=" + (value || "") + expires + "; path=/";
   }
-  
+
   function getCookie(name) {
     var nameEQ = name + "=";
-    var ca = document.cookie.split(';');
+    var ca = document.cookie.split(";");
     for (var i = 0; i < ca.length; i++) {
       var c = ca[i];
-      while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+      while (c.charAt(0) == " ") c = c.substring(1, c.length);
       if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
     }
     return null;

@@ -142,13 +142,14 @@ body.single-product .single-product-page {
   /* Performance optimization for animations */
   will-change: transform;
   transform: translateZ(0);
+  /* Allow vertical scrolling while enabling horizontal swipe */
+  touch-action: pan-y pinch-zoom;
 }
 
 .main-product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   image-rendering: -webkit-optimize-contrast;
   opacity: 1;
   transform: translateX(0);
@@ -159,32 +160,46 @@ body.single-product .single-product-page {
   will-change: transform, opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  /* Allow vertical scrolling while enabling horizontal swipe */
+  touch-action: pan-y pinch-zoom;
+  /* Smooth transition for non-animated changes */
+  transition: opacity 0.2s ease;
 }
 
 /* Slide animation states */
 .main-product-image.slide-out-left {
-  transform: translateX(-100%);
+  transform: translateX(-100%) scale(0.95);
   opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.25s ease;
 }
 
 .main-product-image.slide-out-right {
-  transform: translateX(100%);
+  transform: translateX(100%) scale(0.95);
   opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.25s ease;
 }
 
 .main-product-image.slide-in-left {
-  transform: translateX(-100%);
+  transform: translateX(-100%) scale(0.95);
   opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.25s ease;
 }
 
 .main-product-image.slide-in-right {
-  transform: translateX(100%);
+  transform: translateX(100%) scale(0.95);
   opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.25s ease;
 }
 
 .main-product-image.slide-in-active {
-  transform: translateX(0);
+  transform: translateX(0) scale(1);
   opacity: 1;
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.25s ease;
 }
 
 /* Temporary image positioning during animation */
@@ -202,13 +217,14 @@ body.single-product .single-product-page {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border: 2px solid var(--product-border);
-  border-top: 2px solid var(--primary-color);
+  border-top: 2px solid var(--product-text);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
   z-index: 3;
+  opacity: 0.7;
 }
 
 @keyframes spin {
@@ -229,8 +245,9 @@ body.single-product .single-product-page {
 }
 
 .image-dot {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   border: none;
   background: var(--product-border);
   cursor: pointer;

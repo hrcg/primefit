@@ -252,13 +252,6 @@
   font-size: 16px;
 }
 
-.woocommerce-mini-cart__empty-message:before {
-  content: "🛒";
-  display: block;
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
 /* Cart Items List */
 .woocommerce-mini-cart__items {
   list-style: none;
@@ -691,7 +684,7 @@
 /* Extra small screens - further optimizations */
 @media (max-width: 480px) {
   .cart-panel {
-    height: 90vh; /* Use more screen height on very small screens */
+    height: 80vh; /* Use more screen height on very small screens */
   }
 
   .cart-panel-content {
@@ -1096,7 +1089,7 @@
 }
 
 .promo-text {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1108,7 +1101,7 @@
 
 /* Adjust header position when promo bar is present */
 body:has(.promo-bar) .site-header {
-  top: 40px; /* Height of promo bar */
+  top: 38px; /* Height of promo bar */
 }
 
 /* Responsive adjustments */
@@ -1118,12 +1111,12 @@ body:has(.promo-bar) .site-header {
   }
 
   .promo-text {
-    font-size: 12px;
+    font-size: 10px;
   }
 
   /* Adjust header position for mobile */
   body:has(.promo-bar) .site-header {
-    top: 33px; /* Reduced promo bar height on mobile */
+    top: 31px; /* Reduced promo bar height on mobile */
   }
 
   /* Adjust site content padding for mobile */
@@ -1138,7 +1131,7 @@ body:has(.promo-bar) .site-header {
 
 @media (max-width: 480px) {
   .promo-text {
-    font-size: 11px;
+    font-size: 9px;
     letter-spacing: 0.06em;
   }
 
