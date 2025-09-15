@@ -18,6 +18,10 @@ $featured_products_args = primefit_get_product_loop_config('sale', array(
 ));
 primefit_render_product_loop($featured_products_args);
 
+// Category Tiles Section
+get_template_part('templates/parts/category-tiles');
+
+
 // Training Division Section
 $training_division_args = array(
 	'heading' => 'TRAINING DIVISION',
@@ -42,8 +46,17 @@ $product_showcase_args = primefit_get_product_loop_config('new', array(
 ));
 primefit_render_product_loop($product_showcase_args);
 
-// Category Tiles Section
-get_template_part('templates/parts/category-tiles');
+// Training Division Section
+$training_division_args = array(
+	'heading' => 'Become your best self',
+	'subheading' => 'Unlock your potential with purpose-built gear designed for resilience, comfort, and top-tier performance.',
+	'cta_primary_text' => 'Arise Now',
+	'cta_primary_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+	'cta_secondary_text' => '',
+	'cta_secondary_link' => '#',
+	'image' => get_template_directory_uri() . '/assets/images/basketball.webp'
+);
+get_template_part('templates/parts/training-division', null, $training_division_args);
 ?>
 
 <?php get_footer(); ?>

@@ -75,7 +75,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<?php } ?>
 			</div>
 
-			<div class="mobile-nav-wrap" id="mobile-nav" hidden>
+			<div class="mobile-nav-wrap" id="mobile-nav">
 				<div class="mobile-nav-overlay" aria-hidden="true"></div>
 				<aside class="mobile-nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
 					<div class="mobile-nav-header">

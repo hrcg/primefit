@@ -288,11 +288,9 @@
     
     if (isOpen) {
       $body.removeClass('mobile-open');
-      $nav.attr('hidden', true);
       $(this).attr('aria-expanded', 'false');
     } else {
       $body.addClass('mobile-open');
-      $nav.removeAttr('hidden');
       $(this).attr('aria-expanded', 'true');
     }
   });
@@ -301,7 +299,6 @@
   $(document).on('click', '.mobile-nav-close, .mobile-nav-overlay', function(e) {
     e.preventDefault();
     $('body').removeClass('mobile-open');
-    $('#mobile-nav').attr('hidden', true);
     $('.hamburger').attr('aria-expanded', 'false');
   });
 })(jQuery);

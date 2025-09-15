@@ -64,7 +64,7 @@ if (empty($hero_image_url)) {
 				
 				<?php if (!empty($hero['cta_text']) && !empty($hero['cta_link'])) : ?>
 					<div class="hero-cta">
-						<a href="<?php echo esc_url($hero['cta_link']); ?>" class="featured-products-view-all button button--outline">
+						<a href="<?php echo esc_url($hero['cta_link']); ?>" class="training-division-button button button--primary">
 							<?php echo esc_html($hero['cta_text']); ?>
 						</a>
 					</div>

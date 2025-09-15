@@ -117,9 +117,10 @@
 	min-width: 16px;
 	height: 16px;
 	padding: 0 4px;
+    border: 1px solid #fff;
 	border-radius: 3px;
-	background: #9b9b9b;
-	color: #000;
+	background: transparent;
+	color: #fff;
 	font-size: 10px;
 	font-weight: 800;
 }
@@ -234,6 +235,9 @@
 	position: fixed;
 	inset: 0;
 	z-index: 1000;
+	visibility: hidden;
+	opacity: 0;
+	transition: visibility 0s linear 0.3s, opacity 0.3s ease;
 }
 
 .mobile-nav-overlay {
@@ -248,14 +252,14 @@
 .mobile-nav-panel {
 	position: fixed;
 	top: 0;
-	right: 0;
+	left: 0;
 	width: 82vw;
 	max-width: 380px;
 	height: 100vh;
 	background: #111;
 	color: #fff;
-	transform: translateX(100%);
-	transition: transform .25s ease;
+	transform: translateX(-100%);
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	display: flex;
 	flex-direction: column;
 }
@@ -311,7 +315,9 @@
 }
 
 .mobile-open .mobile-nav-wrap {
-	display: block;
+	visibility: visible;
+	opacity: 1;
+	transition: visibility 0s linear 0s, opacity 0.3s ease;
 }
 
 .mobile-open .mobile-nav-overlay {
@@ -363,7 +369,6 @@
 	}
 
 	.mobile-nav-panel {
-		width: 100vw;
 		max-width: none;
 	}
 }
@@ -377,4 +382,85 @@
 /* When scrolled, force black background even on front page */
 .site-header.is-scrolled {
 	background: #000;
+}
+
+/* Promo Bar Styles */
+.promo-bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	background-color: #FF0000;
+	z-index: 999;
+	padding: 12px 0;
+	transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.promo-bar-content {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 20px;
+}
+
+.promo-text {
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #FFFFFF;
+	text-align: center;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+	line-height: 1.2;
+}
+
+
+/* Adjust header position when promo bar is present */
+body:has(.promo-bar) .site-header {
+	top: 40px; /* Height of promo bar */
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.promo-bar {
+		padding: 10px 0;
+	}
+	
+	.promo-text {
+		font-size: 12px;
+	}
+
+	/* Adjust header position for mobile */
+	body:has(.promo-bar) .site-header {
+		top: 34px; /* Reduced promo bar height on mobile */
+	}
+	
+	/* Adjust site content padding for mobile */
+	body:has(.promo-bar):not(.has-hero-header) .site-content {
+		padding-top: 104px; /* Mobile promo bar + header height */
+	}
+	
+	body:has(.promo-bar).has-hero-header .site-content {
+		padding-top: 38px; /* Just mobile promo bar height */
+	}
+}
+
+@media (max-width: 480px) {
+	.promo-text {
+		font-size: 11px;
+		letter-spacing: 0.06em;
+	}
+	
+	.promo-bar-content {
+		padding: 0 15px;
+	}
+}
+
+/* Offset site content on pages without hero so it doesn't hide under fixed header */
+body:not(.has-hero-header) .site-content {
+	padding-top: 66px;
 }

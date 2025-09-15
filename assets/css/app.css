@@ -24,11 +24,10 @@ body.nav-open {
 
 .training-division {
   position: relative;
-  min-height: 70vh;
+  min-height: 85vh;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   overflow: hidden;
-  margin: 80px 0;
 }
 
 .training-division-media {
@@ -142,7 +141,6 @@ body.nav-open {
 @media (max-width: 768px) {
   .training-division {
     min-height: 60vh;
-    margin: 40px 0;
   }
 
   .training-division-content {
@@ -501,7 +499,7 @@ body.nav-open {
 /* Hero Text Positioning */
 .hero-text {
   max-width: 600px;
-  text-align: left;
+  margin-left: 0;
 }
 
 
@@ -567,18 +565,12 @@ body.nav-open {
   }
 
   .hero-text {
-    max-width: 100%;
-  }
-
-  .hero-text--left,
-  .hero-text--center,
-  .hero-text--right {
-    margin-left: 0;
     text-align: center;
+    margin: 0 auto;
   }
 
   .hero-heading {
-    font-size: 26px;
+    font-size: 36px;
   }
 
   .hero-subheading {
@@ -767,7 +759,7 @@ body.nav-open {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    margin-left: 20px;
+    margin-left: 10px;
   }
   
   .tiles-3 .tile {
@@ -781,14 +773,13 @@ body.nav-open {
   }
   
   .tiles-3 .tile:last-child {
-    margin-right: 20px;
+    margin-right: 10px;
   }
   
   .tiles-3 .tile img {
     width: 100%;
     height: 400px;
     object-fit: cover;
-    border-radius: 8px;
   }
   
   .tiles-3 .tile .tile-label {
