@@ -24,6 +24,14 @@ function primefit_setup_theme() {
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
 	add_theme_support( 'menus' );
+	// Site logo support
+	add_theme_support( 'custom-logo', [
+		'height'      => 80,
+		'width'       => 200,
+		'flex-height' => true,
+		'flex-width'  => true,
+		'header-text' => [ 'site-title', 'site-description' ],
+	] );
 	add_theme_support( 'customize-selective-refresh-widgets' );
 	add_theme_support( 'html5', [
 		'search-form',
@@ -47,8 +55,9 @@ function primefit_setup_theme() {
 	
 	// Register navigation menus
 	register_nav_menus( [
-		'primary' => esc_html__( 'Primary Menu', 'primefit' ),
-		'footer' => esc_html__( 'Footer Menu', 'primefit' ),
+		'primary'   => esc_html__( 'Primary Menu', 'primefit' ),
+		'secondary' => esc_html__( 'Secondary Menu', 'primefit' ),
+		'footer'    => esc_html__( 'Footer Menu', 'primefit' ),
 	] );
 	
 	// Set content width

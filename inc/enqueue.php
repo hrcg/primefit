@@ -34,7 +34,22 @@ function primefit_enqueue_assets() {
 		[], 
 		PRIMEFIT_VERSION 
 	);
+
+	// Header-specific styles
+	wp_enqueue_style(
+		'primefit-header',
+		PRIMEFIT_THEME_URI . '/assets/css/header.css',
+		[ 'primefit-app' ],
+		PRIMEFIT_VERSION
+	);
 	
+	// Footer-specific styles
+	wp_enqueue_style(
+		'primefit-footer',
+		PRIMEFIT_THEME_URI . '/assets/css/footer.css',
+		[ 'primefit-app' ],
+		PRIMEFIT_VERSION
+	);
 	// WooCommerce styles
 	if ( class_exists( 'WooCommerce' ) ) {
 		wp_enqueue_style( 

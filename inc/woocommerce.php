@@ -128,3 +128,18 @@ function primefit_display_additional_sections() {
 		echo '<section class="pf-additional container">' . wp_kses_post( $additional ) . '</section>';
 	}
 }
+
+/**
+ * Header cart fragments (update cart count asynchronously)
+ */
+add_filter( 'woocommerce_add_to_cart_fragments', 'primefit_header_cart_fragment' );
+function primefit_header_cart_fragment( $fragments ) {
+	ob_start();
+	?>
+	<span class="cart-count" data-cart-count>
+		<?php echo WC()->cart ? intval( WC()->cart->get_cart_contents_count() ) : 0; ?>
+	</span>
+	<?php
+	$fragments['span[data-cart-count]'] = ob_get_clean();
+	return $fragments;
+}

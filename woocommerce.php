@@ -3,24 +3,49 @@
 <?php
 // Check if this is a WooCommerce page
 if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_product_tag() ) ) {
-	// Get shop hero configuration
-	$hero_args = primefit_get_shop_hero_config();
-	
-	if ( ! empty( $hero_args ) ) {
-		primefit_render_hero( $hero_args );
+	// Only show hero on category/tag pages, not on main shop page
+	if ( is_product_category() || is_product_tag() ) {
+		$hero_args = primefit_get_shop_hero_config();
+		
+		if ( ! empty( $hero_args ) ) {
+			primefit_render_hero( $hero_args );
+		}
 	}
 	
-	// Add shop filter bar
-	get_template_part( 'templates/parts/woocommerce/shop-filter-bar' );
+	// Show categories grid on main shop page only (not on category or tag pages)
+	if ( is_shop() ) {
+		
+		// Render shop categories section with subcategories included
+		primefit_render_shop_categories( array(
+			'title' => __( 'Shop by Category', 'primefit' ),
+			'columns' => 4,
+			'limit' => 20, // Increased to accommodate subcategories
+			'show_count' => true,
+			'hide_empty' => true,
+			'parent' => null, // Changed from 0 to null to include all categories
+			'include_subcategories' => true // New parameter
+		) );
+		
+		// Don't show products on main shop page - only show categories
+		// Continue to footer instead of returning early
+	}
 	
-	// WooCommerce will handle the product loop
-	?>
-	<div class="container">
-		<div class="products-grid-wrapper">
-			<?php woocommerce_content(); ?>
+	// Add shop filter bar for product category/tag pages
+	if ( is_product_category() || is_product_tag() ) {
+		get_template_part( 'templates/parts/woocommerce/shop-filter-bar' );
+	}
+	
+	// WooCommerce will handle the product loop for category/tag pages only
+	// Only show products on category/tag pages, not on main shop page
+	if ( is_product_category() || is_product_tag() ) {
+		?>
+		<div class="container">
+			<div class="products-grid-wrapper">
+				<?php woocommerce_content(); ?>
+			</div>
 		</div>
-	</div>
-	<?php
+		<?php
+	}
 } else {
 	// Regular archive page
 	?>

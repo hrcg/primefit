@@ -137,45 +137,10 @@
 
   // Shop Filter Bar functionality
   function initShopFilterBar() {
-    // Grid toggle functionality
-    $('.grid-option').on('click', function(e) {
-      e.preventDefault();
-      
-      var $btn = $(this);
-      var gridType = $btn.data('grid');
-      var $products = $('.woocommerce ul.products');
-      
-      // Update active state
-      $('.grid-option').removeClass('active');
-      $btn.addClass('active');
-      
-      // Remove existing grid classes
-      $products.removeClass('grid-2 grid-3 grid-4');
-      
-      // Add new grid class
-      if (gridType) {
-        $products.addClass('grid-' + gridType);
-      }
-      
-      // Store preference in cookie
-      setCookie('primefit_grid_view', gridType, 30); // 30 days
-    });
-    
     // Sort dropdown change
     $('.woocommerce-ordering .orderby').on('change', function() {
       $(this).closest('form').submit();
     });
-    
-    // Initialize grid view from cookie
-    var savedGrid = getCookie('primefit_grid_view');
-    if (savedGrid) {
-      $('.grid-option[data-grid="' + savedGrid + '"]').addClass('active');
-      $('.woocommerce ul.products').removeClass('grid-2 grid-3 grid-4').addClass('grid-' + savedGrid);
-    } else {
-      // Default to 3 column grid
-      $('.grid-option[data-grid="3"]').addClass('active');
-      $('.woocommerce ul.products').addClass('grid-3');
-    }
   }
   
   // Cookie utility functions

@@ -9,12 +9,12 @@
 .shop-filter-bar {
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  padding: 20px 0;
-  margin-bottom: 40px;
+  margin-bottom: 10px;
   position: sticky;
   top: 0;
   z-index: 100;
   backdrop-filter: blur(10px);
+  padding: 10px 0;
 }
 
 .shop-filter-bar .container {
@@ -23,21 +23,7 @@
   padding: 0 20px;
 }
 
-.filter-bar-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-/* Grid Controls (Left) */
-.grid-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
+/* Base styles - will be overridden by responsive media queries */
 
 .grid-label {
   font-size: 14px;
@@ -52,6 +38,28 @@
   gap: 8px;
 }
 
+/* Show mobile options by default, hide desktop */
+.grid-options-mobile {
+  display: flex;
+  gap: 8px;
+}
+
+.grid-options-desktop {
+  display: none;
+}
+
+/* Show desktop options on larger screens */
+@media (min-width: 1025px) {
+  .grid-options-mobile {
+    display: none;
+  }
+  
+  .grid-options-desktop {
+    display: flex;
+    gap: 8px;
+  }
+}
+
 .grid-option {
   display: flex;
   align-items: center;
@@ -59,11 +67,10 @@
   width: 40px;
   height: 40px;
   background: transparent;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   color: var(--muted);
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 4px;
 }
 
 .grid-option:hover {
@@ -78,22 +85,112 @@
 }
 
 .grid-option svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
-/* Product Count (Center) */
-.product-count {
-  font-size: 13px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+/* Base styles for components */
+
+/* Custom Filter Dropdown */
+.filter-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Filter dropdown styles will be defined in responsive sections */
+
+.filter-dropdown-toggle:hover {
+  border-color: var(--text);
+}
+
+.filter-dropdown-toggle:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.filter-dropdown-text {
   flex: 1;
-  text-align: center;
-  min-width: 200px;
+  text-align: left;
 }
 
-/* Sort Dropdown (Right) */
+.filter-dropdown-icon {
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.filter-dropdown.open .filter-dropdown-icon {
+  transform: rotate(180deg);
+}
+
+.filter-dropdown.open .filter-dropdown-toggle {
+  border-color: var(--accent);
+}
+
+/* Filter Dropdown Menu */
+.filter-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card-background);
+  border: 2px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.filter-dropdown.open .filter-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.filter-dropdown-option {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.filter-dropdown-option:last-child {
+  border-bottom: none;
+}
+
+.filter-dropdown-option:hover {
+  background: rgba(255, 68, 68, 0.1);
+  color: var(--accent);
+}
+
+.filter-dropdown-option.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.filter-dropdown-option.active::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+/* Sort Dropdown (Hidden - keeping for WooCommerce compatibility) */
 .woocommerce-ordering {
   position: relative;
   flex-shrink: 0;
@@ -127,22 +224,93 @@
 }
 
 /* Grid Layout Classes */
-.products.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 30px;
+.woocommerce ul.products.grid-1 {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
 }
 
-.products.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
+.woocommerce ul.products.grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 20px !important;
 }
 
-.products.grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+.woocommerce ul.products.grid-3 {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 30px !important;
+}
+
+.woocommerce ul.products.grid-4 {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 24px !important;
+}
+
+/* Default mobile layout - 2 columns */
+@media (max-width: 1024px) {
+  .woocommerce ul.products:not([class*="grid-"]) {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+}
+
+/* Desktop Layout - Grid options left, category next to them, controls right */
+@media (min-width: 1025px) {
+  .filter-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: nowrap;
+  }
+  
+  .product-count {
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    flex: 1;
+    text-align: left;
+    min-width: auto;
+    margin-left: 16px;
+  }
+  
+  .grid-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  
+  .filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  
+  .filter-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 200px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  
+  .grid-option {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* Mobile Responsive */
@@ -162,6 +330,16 @@
     order: 1;
   }
   
+  .filter-controls {
+    order: 2;
+  }
+  
+  .filter-dropdown-toggle {
+    min-width: 180px;
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+  
   .woocommerce-ordering {
     order: 2;
   }
@@ -172,45 +350,233 @@
     padding: 10px 32px 10px 12px;
   }
   
-  /* Force grid layouts to be responsive on mobile */
-  .products.grid-2,
-  .products.grid-3,
-  .products.grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
+  /* Mobile grid layouts - override desktop settings */
+  .woocommerce ul.products.grid-3,
+  .woocommerce ul.products.grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
   }
 }
 
 @media (max-width: 768px) {
   .shop-filter-bar {
-    padding: 16px 0;
-    margin-bottom: 20px;
+    padding: 5px 10px;
+    margin-bottom: 80px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .shop-filter-bar .container {
+    padding: 0 20px;
   }
   
   .filter-bar-inner {
-    flex-direction: column;
-    align-items: flex-start;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
+    flex-wrap: nowrap;
   }
   
-  .grid-controls {
+  /* Product count - centered category title */
+  .product-count {
     order: 2;
+    text-align: center;
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 0;
+    margin: 0;
+    border: none;
+  }
+  
+  /* Controls row - horizontal layout with three sections */
+  .filter-controls {
+    order: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    flex-shrink: 0;
+  }
+  
+  /* Filter section - left side */
+  .filter-section {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+  
+  .filter-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  
+  /* Sort section - middle */
+  .sort-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+  }
+  
+  .filter-dropdown-toggle {
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 80px;
+  }
+  
+  .filter-dropdown-toggle:hover {
+    color: var(--text);
+  }
+  
+  .filter-dropdown-icon {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+  }
+  
+  .filter-dropdown.open .filter-dropdown-icon {
+    transform: rotate(180deg);
+  }
+  
+  /* Grid controls - right side */
+  .grid-controls {
+    order: 3;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    justify-content: flex-end;
+  }
+  
+  .grid-option {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    touch-action: manipulation;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  
+  .grid-option:hover {
+    background: var(--border);
+  }
+  
+  .grid-option.active {
+    background: var(--text);
+    color: var(--bg);
+  }
+  
+  .grid-option svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Dropdown menu positioning for mobile */
+  .filter-dropdown-menu {
+    position: fixed;
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: auto;
+    max-height: 50vh;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    z-index: 1001;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Mobile dropdown overlay */
+  .filter-dropdown.open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+  }
+  
+  .filter-dropdown-option {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .filter-dropdown-option:last-child {
+    border-bottom: none;
+  }
+  
+  .filter-dropdown-option:active {
+    background-color: var(--border);
+  }
+  
+  /* Hidden WooCommerce ordering */
+  .woocommerce-ordering {
+    display: none;
+  }
+  
+  /* Small mobile grid layouts */
+  .woocommerce ul.products.grid-1 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  
+  .woocommerce ul.products.grid-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+  
+  .woocommerce ul.products.grid-3,
+  .woocommerce ul.products.grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .shop-filter-bar .container {
+    padding: 0 10px;
+  }
+  
+  .filter-bar-inner {
+    gap: 0px;
   }
   
   .product-count {
-    order: 1;
-    text-align: left;
-    flex: none;
+    font-size: 14px;
+    text-transform: uppercase;
   }
   
-  .woocommerce-ordering {
-    order: 3;
-    width: 100%;
-  }
-  
-  .woocommerce-ordering .orderby {
-    width: 100%;
-    min-width: auto;
+  .filter-controls {
+    gap: 5px;
   }
   
   .grid-option {
@@ -219,242 +585,53 @@
   }
   
   .grid-option svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
   
-  /* Single column on mobile */
-  .products.grid-2,
-  .products.grid-3,
-  .products.grid-4 {
-    grid-template-columns: 1fr;
+  .filter-dropdown-toggle {
+    font-size: 13px;
+  }
+  
+  .filter-dropdown-menu {
+    left: 12px;
+    right: 12px;
+    max-height: 45vh;
+  }
+  
+  .filter-dropdown-option {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+}
+
+/* Tablet landscape optimization */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .shop-filter-bar .container {
+    padding: 0 20px;
+  }
+  
+  .filter-bar-inner {
     gap: 20px;
   }
-}
-
-/* ========================================
-   CART & MINI CART STYLES
-   ======================================== */
-
-/* Header Cart Toggle */
-.header-actions a,
-.header-actions button.cart-toggle {
-  color: var(--text);
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.header-actions a:hover,
-.header-actions button.cart-toggle:hover {
-  color: var(--muted);
-}
-
-.header-actions button.cart-toggle {
-  padding: 0;
-  font-family: inherit;
-}
-
-/* Cart Toggle Styling */
-[data-behavior="click"] .cart-toggle {
-  position: relative;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  padding: 0;
-  transition: color 0.2s ease;
-}
-
-[data-behavior="click"] .cart-toggle:hover {
-  color: var(--muted);
-}
-
-/* Cart positioning wrapper */
-[data-behavior="click"] {
-  position: relative;
-}
-
-/* Hide cart in header-icons on desktop - it will be shown via header-actions */
-.header-icons [data-behavior="click"] {
-  display: none;
-}
-
-/* Mobile cart visibility */
-@media (max-width: 1024px) {
-  /* Show cart in header-icons on mobile only */
-  .header-icons [data-behavior="click"] {
-    display: block;
+  
+  .grid-option {
+    width: 42px;
+    height: 42px;
   }
-}
-
-/* Cart Side Panel Styles */
-.mini-cart-panel {
-  position: fixed;
-  top: 0;
-  right: -400px;
-  width: 400px;
-  height: 100vh;
-  background: #111;
-  border-left: 1px solid #2a2a2a;
-  padding: 20px;
-  z-index: 1001;
-  transition: right 0.3s ease;
-  overflow-y: auto;
-  display: block;
-}
-
-/* Mobile cart panel should always be in DOM but positioned off-screen */
-@media (max-width: 1024px) {
-  .mini-cart-panel[hidden] {
-    display: block !important;
+  
+  .filter-dropdown-toggle {
+    min-width: 180px;
+    padding: 12px 16px;
   }
-}
-
-[data-behavior="click"].open .mini-cart-panel,
-[data-behavior="click"][data-open="true"] .mini-cart-panel {
-  right: 0;
-}
-
-/* Cart Overlay for Desktop */
-.cart-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-[data-behavior="click"].open .cart-overlay,
-[data-behavior="click"][data-open="true"] .cart-overlay {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* Cart Header Styles */
-.cart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #2a2a2a;
-  margin-bottom: 20px;
-}
-
-.cart-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.cart-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 32px;
-  cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
-
-.cart-content {
-  flex: 1;
-  overflow-y: auto;
-  max-height: calc(100vh - 120px); /* Ensure content doesn't overflow viewport */
-}
-
-/* Prevent body scroll when cart is open on mobile */
-body.cart-open {
-  overflow: hidden;
-}
-
-/* Mobile Full Screen Cart */
-@media (max-width: 1024px) {
-  .mini-cart-panel {
-    left: -7px;
-    right: 0;
-    width: 100%;
-    transform: translateX(100%);
-    border: none;
-    transition: transform 0.3s ease;
-    z-index: 1002; /* Higher than mobile nav */
-    padding: 16px !important; /* Force mobile padding override */
-    overflow-x: hidden; /* Prevent horizontal overflow */
+  
+  /* 2 columns on tablet */
+  .woocommerce ul.products.grid-2,
+  .woocommerce ul.products.grid-3,
+  .woocommerce ul.products.grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 24px !important;
   }
-
-
-  /* Hide overlay on mobile since we want full screen */
-  .cart-overlay {
-    display: none;
-  }
-
-  /* Adjust cart header spacing on mobile */
-  .cart-header {
-    padding-bottom: 16px;
-    margin-bottom: 16px;
-  }
-
-  /* Make close button more accessible on mobile */
-  .cart-close {
-    width: 40px;
-    height: 40px;
-    font-size: 32px;
-  }
-
-  /* Mobile cart content adjustments */
-  .cart-content {
-    max-height: calc(100vh - 100px); /* Account for header and padding */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  }
-}
-
-/* Light theme cart styles */
-.site-header .header-actions a,
-.site-header .header-actions button.cart-toggle {
-  color: var(--white);
-}
-
-.site-header .header-actions a:hover,
-.site-header .header-actions button.cart-toggle:hover {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.site-header.scrolled .cart-toggle {
-  color: #fff;
-}
-
-/* Mini cart panel for light theme */
-.mini-cart-panel {
-  background: #ffffff;
-  border-left: 1px solid #e1e1e1;
-}
-
-.cart-header h3 {
-  color: #000;
-}
-
-.cart-close {
-  color: #000;
 }
 
 /* WooCommerce Products Grid */
@@ -467,9 +644,6 @@ body.cart-open {
 }
 
 
-.columns-4 {
-  padding: 0 20px;
-}
 /* Override WooCommerce default width and float styling */
 .woocommerce ul.products[class*="columns-"] li.product,
 .woocommerce-page ul.products[class*="columns-"] li.product,
@@ -483,6 +657,10 @@ body.cart-open {
 }
 
 .woocommerce-container .page-title {
+  display: none;
+}
+
+.products-grid-wrapper .page-title {
   display: none;
 }
 
@@ -961,6 +1139,20 @@ body.woocommerce .hero {
 }
 
 
+
+/* Products Grid Wrapper */
+.products-grid-wrapper {
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+/* Responsive padding for products grid wrapper */
+@media (max-width: 768px) {
+  .products-grid-wrapper {
+    padding-top: 10px;
+    padding-bottom: 20px;
+  }
+}
 
 /* Enhanced Product grid layout for shop pages */
 .woocommerce-page .woocommerce ul.products {

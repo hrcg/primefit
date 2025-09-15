@@ -277,6 +277,206 @@ function primefit_debug_size_overlay() {
 }
 
 /**
+ * Get WooCommerce product categories for shop page
+ *
+ * @param array $args Arguments for get_terms query
+ * @return array Array of category data for display
+ * @since 1.0.0
+ */
+function primefit_get_shop_categories( $args = array() ) {
+	// Default arguments
+	$defaults = array(
+		'taxonomy' => 'product_cat',
+		'orderby' => 'menu_order',
+		'order' => 'ASC',
+		'hide_empty' => true,
+		'parent' => 0, // Only top-level categories by default
+		'number' => 12, // Limit number of categories
+		'include_subcategories' => false // New parameter
+	);
+	
+	$args = wp_parse_args( $args, $defaults );
+	
+	// If including subcategories, remove parent restriction
+	if ( $args['include_subcategories'] ) {
+		unset( $args['parent'] );
+	}
+	
+	// Get categories
+	$categories = get_terms( $args );
+	
+	if ( is_wp_error( $categories ) || empty( $categories ) ) {
+		return array();
+	}
+	
+	$category_data = array();
+	
+	foreach ( $categories as $category ) {
+		// Get category image
+		$image_id = get_term_meta( $category->term_id, 'thumbnail_id', true );
+		$image_url = '';
+		
+		if ( $image_id ) {
+			$image_url = wp_get_attachment_image_url( $image_id, 'large' );
+		}
+		
+		// Fallback to default category images if no custom image
+		if ( empty( $image_url ) ) {
+			$image_url = primefit_get_default_category_image( $category );
+		}
+		
+		// Get product count
+		$product_count = $category->count;
+		
+		// Build category description
+		$description = ! empty( $category->description ) 
+			? wp_trim_words( wp_strip_all_tags( $category->description ), 12, '...' )
+			: sprintf( __( 'Explore our %s collection with %d products', 'primefit' ), 
+					  strtolower( $category->name ), 
+					  $product_count );
+		
+		// Check if this is a subcategory
+		$is_subcategory = $category->parent > 0;
+		$parent_category = null;
+		
+		if ( $is_subcategory ) {
+			$parent_category = get_term( $category->parent, 'product_cat' );
+		}
+		
+		$category_data[] = array(
+			'id' => $category->term_id,
+			'name' => $category->name,
+			'slug' => $category->slug,
+			'description' => $description,
+			'image' => $image_url,
+			'url' => get_term_link( $category ),
+			'count' => $product_count,
+			'button_text' => sprintf( __( 'Shop %s', 'primefit' ), $category->name ),
+			'is_subcategory' => $is_subcategory,
+			'parent_name' => $parent_category ? $parent_category->name : null,
+			'parent_slug' => $parent_category ? $parent_category->slug : null
+		);
+	}
+	
+	return $category_data;
+}
+
+/**
+ * Get default category image based on category name/slug
+ *
+ * @param object $category WooCommerce category object
+ * @return string Default image URL
+ * @since 1.0.0
+ */
+function primefit_get_default_category_image( $category ) {
+	$default_images = array(
+		'run' => '/assets/images/run.webp',
+		'train' => '/assets/images/train.webp',
+		'rec' => '/assets/images/rec.webp'
+	);
+	
+	$category_slug = strtolower( $category->slug );
+	
+	// Check if we have a specific image for this category
+	foreach ( $default_images as $slug_pattern => $image_path ) {
+		if ( strpos( $category_slug, $slug_pattern ) !== false ) {
+			$image_url = primefit_get_asset_uri( array( $image_path ) );
+			if ( ! empty( $image_url ) ) {
+				return $image_url;
+			}
+		}
+	}
+	
+	// Fallback to hero image
+	return primefit_get_asset_uri( array( '/assets/images/hero-image.webp', '/assets/images/hero-image.jpg' ) );
+}
+
+/**
+ * Render shop categories grid
+ *
+ * @param array $args Configuration arguments
+ * @return void
+ * @since 1.0.0
+ */
+function primefit_render_shop_categories( $args = array() ) {
+	$defaults = array(
+		'title' => __( 'Shop by Category', 'primefit' ),
+		'columns' => 4,
+		'limit' => 12,
+		'show_count' => true,
+		'hide_empty' => true,
+		'parent' => 0,
+		'section_class' => 'shop-categories',
+		'include_subcategories' => false
+	);
+	
+	$section = wp_parse_args( $args, $defaults );
+	
+	// Get categories
+	$category_args = array(
+		'number' => $section['limit'],
+		'hide_empty' => $section['hide_empty'],
+		'parent' => $section['parent'],
+		'include_subcategories' => $section['include_subcategories']
+	);
+	
+	$categories = primefit_get_shop_categories( $category_args );
+	
+	if ( empty( $categories ) ) {
+		return;
+	}
+	
+	// Build CSS classes
+	$section_classes = array(
+		$section['section_class'],
+		'category-grid',
+		'category-grid--' . $section['columns'] . '-columns'
+	);
+	
+	$section_classes = implode( ' ', array_filter( $section_classes ) );
+	?>
+	<section class="<?php echo esc_attr( $section_classes ); ?>">
+		<div class="container">
+			<?php if ( ! empty( $section['title'] ) ) : ?>
+			<?php endif; ?>
+			
+			<div class="category-grid-content">
+				<?php foreach ( $categories as $category ) : ?>
+					<div class="category-tile<?php echo $category['is_subcategory'] ? ' category-tile--subcategory' : ''; ?>" 
+						 data-category-name="<?php echo esc_attr( strtoupper( $category['name'] ) ); ?>"
+						 data-parent-category="<?php echo esc_attr( $category['parent_slug'] ); ?>">
+						<div class="category-tile-inner">
+							<div class="category-tile-image">
+								<img src="<?php echo esc_url( $category['image'] ); ?>" 
+								     alt="<?php echo esc_attr( $category['name'] ); ?>" 
+								     loading="lazy" />
+							</div>
+							
+							<div class="category-tile-overlay">
+								<div class="category-tile-content">
+									<h3 class="category-tile-title">
+										<a href="<?php echo esc_url( $category['url'] ); ?>">
+											<?php echo esc_html( $category['name'] ); ?>
+										</a>
+									</h3>
+									
+									<div class="category-tile-actions">
+										<a href="<?php echo esc_url( $category['url'] ); ?>" class="category-tile-button">
+											VIEW PRODUCTS
+										</a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+		</div>
+	</section>
+	<?php
+}
+
+/**
  * Render hero section with improved abstraction
  *
  * @param array $args Hero configuration arguments
@@ -559,6 +759,9 @@ function primefit_register_shortcodes() {
 	
 	// Product loop shortcode
 	add_shortcode( 'primefit_products', 'primefit_products_shortcode' );
+	
+	// Shop categories shortcode
+	add_shortcode( 'primefit_shop_categories', 'primefit_shop_categories_shortcode' );
 }
 
 /**
@@ -617,5 +820,32 @@ function primefit_products_shortcode( $atts ) {
 	
 	ob_start();
 	primefit_render_product_loop( $atts );
+	return ob_get_clean();
+}
+
+/**
+ * Shop categories shortcode
+ * Usage: [primefit_shop_categories title="Shop by Category" columns="4" limit="12"]
+ */
+function primefit_shop_categories_shortcode( $atts ) {
+	$atts = shortcode_atts( array(
+		'title' => 'Shop by Category',
+		'columns' => '4',
+		'limit' => '12',
+		'show_count' => 'true',
+		'hide_empty' => 'true',
+		'parent' => '0',
+		'section_class' => 'shop-categories'
+	), $atts );
+	
+	// Convert string values to appropriate types
+	$atts['columns'] = absint( $atts['columns'] );
+	$atts['limit'] = absint( $atts['limit'] );
+	$atts['parent'] = absint( $atts['parent'] );
+	$atts['show_count'] = $atts['show_count'] === 'true';
+	$atts['hide_empty'] = $atts['hide_empty'] === 'true';
+	
+	ob_start();
+	primefit_render_shop_categories( $atts );
 	return ob_get_clean();
 }
