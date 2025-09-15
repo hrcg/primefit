@@ -72,14 +72,14 @@
       function (e) {
         if (window.innerWidth <= 768) {
           var $product = $(this).closest(".product");
-          var $overlay = $product.find(".product-size-overlay");
+          var $sizeOptions = $product.find(".product-size-options");
 
-          if ($overlay.length > 0) {
+          if ($sizeOptions.length > 0) {
             e.preventDefault();
             e.stopPropagation(); // Prevent the product link from being triggered
             $product.toggleClass("show-sizes");
 
-            // Close other open size overlays
+            // Close other open size options
             $(".woocommerce ul.products li.product")
               .not($product)
               .removeClass("show-sizes");
@@ -88,23 +88,70 @@
       }
     );
 
-    // Handle size option clicks
-    $(document).on("click", ".product-size-overlay .size-option", function (e) {
+    // Handle size option clicks - add to cart functionality
+    $(document).on("click", ".product-size-options .size-option", function (e) {
       e.preventDefault();
       e.stopPropagation();
 
-      var url = $(this).attr("href");
-      if (url) {
-        window.location.href = url;
+      var $button = $(this);
+      var variationId = $button.data("variation-id");
+      var productId = $button.data("product-id");
+      var size = $button.data("size");
+
+      if (!variationId || !productId) {
+        console.error("Missing variation or product ID");
+        return;
       }
+
+      // Add loading state
+      $button.addClass("loading").text("...");
+
+      // Add to cart via AJAX
+      $.ajax({
+        url: wc_add_to_cart_params.ajax_url,
+        type: "POST",
+        data: {
+          action: "woocommerce_add_to_cart",
+          product_id: productId,
+          variation_id: variationId,
+          quantity: 1,
+          nonce: wc_add_to_cart_params.wc_ajax_add_to_cart_nonce
+        },
+        success: function(response) {
+          if (response.error && response.product_url) {
+            // If there's an error, redirect to product page
+            window.location.href = response.product_url;
+          } else {
+            // Success - trigger cart update
+            $(document.body).trigger("added_to_cart", [
+              response.fragments,
+              response.cart_hash,
+              $button
+            ]);
+            
+            // Show success feedback
+            $button.removeClass("loading").text("✓");
+            setTimeout(function() {
+              $button.text(size.toUpperCase());
+            }, 1500);
+          }
+        },
+        error: function() {
+          // On error, redirect to product page
+          var productUrl = $button.closest(".product").find("a").attr("href");
+          if (productUrl) {
+            window.location.href = productUrl;
+          }
+        }
+      });
     });
 
-    // Close size overlays when clicking outside on mobile
+    // Close size options when clicking outside on mobile
     $(document).on("click", function (e) {
       if (window.innerWidth <= 480) {
         if (
           !$(e.target).closest(
-            ".product-image-container, .product-size-overlay"
+            ".product-image-container, .product-size-options"
           ).length
         ) {
           $(".woocommerce ul.products li.product").removeClass("show-sizes");
@@ -121,18 +168,16 @@
     });
   }
 
-  // Hide tap indicator for products without size overlays
+  // Hide tap indicator for products without size options
   function initTapIndicators() {
-    if (window.innerWidth <= 768) {
-      $(".woocommerce ul.products li.product").each(function () {
-        var $product = $(this);
-        var $overlay = $product.find(".product-size-overlay");
-
-        if ($overlay.length === 0) {
-          $product.addClass("no-size-overlay");
-        }
-      });
-    }
+    $(".woocommerce ul.products li.product").each(function() {
+      var $product = $(this);
+      var $sizeOptions = $product.find(".product-size-options");
+      
+      if ($sizeOptions.length === 0) {
+        $product.addClass("no-size-options");
+      }
+    });
   }
 
   // Shop Filter Bar functionality

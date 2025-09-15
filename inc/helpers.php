@@ -219,16 +219,16 @@ function primefit_render_size_selection_overlay( $product ) {
 	}
 	
 	?>
-	<div class="product-size-overlay<?php echo isset( $_GET['debug_sizes'] ) ? ' debug-visible' : ''; ?>" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
+	<div class="product-size-options<?php echo isset( $_GET['debug_sizes'] ) ? ' debug-visible' : ''; ?>" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
 		<div class="size-options">
 			<?php foreach ( $size_options as $size_value ) : ?>
 				<?php if ( isset( $variation_data[ $size_value ] ) ) : ?>
-					<a href="<?php echo esc_url( $variation_data[ $size_value ]['url'] ); ?>" 
-					   class="size-option" 
+					<button class="size-option" 
 					   data-size="<?php echo esc_attr( $size_value ); ?>"
-					   data-variation-id="<?php echo esc_attr( $variation_data[ $size_value ]['variation_id'] ); ?>">
+					   data-variation-id="<?php echo esc_attr( $variation_data[ $size_value ]['variation_id'] ); ?>"
+					   data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
 						<?php echo esc_html( strtoupper( $size_value ) ); ?>
-					</a>
+					</button>
 				<?php endif; ?>
 			<?php endforeach; ?>
 		</div>

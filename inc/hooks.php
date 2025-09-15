@@ -80,11 +80,6 @@ function primefit_loop_product_thumbnail() {
 	// Add status badge
 	get_template_part( 'templates/parts/woocommerce/product-status-badge' );
 	
-	// Add size selection overlay for variable products
-	if ( $product->is_type( 'variable' ) ) {
-		primefit_render_size_selection_overlay( $product );
-	}
-	
 	echo '</div>';
 }
 
@@ -92,7 +87,27 @@ function primefit_loop_product_thumbnail() {
  * Custom product price display
  */
 function primefit_loop_product_price() {
-	get_template_part( 'templates/parts/woocommerce/product-price' );
+	global $product;
+	
+	if ( ! $product ) {
+		return;
+	}
+	
+	// For variable products, show size options instead of price on hover
+	if ( $product->is_type( 'variable' ) ) {
+		echo '<div class="product-price-container">';
+		
+		// Show price by default
+		get_template_part( 'templates/parts/woocommerce/product-price' );
+		
+		// Show size options on hover
+		primefit_render_size_selection_overlay( $product );
+		
+		echo '</div>';
+	} else {
+		// For simple products, just show the price
+		get_template_part( 'templates/parts/woocommerce/product-price' );
+	}
 }
 
 /**

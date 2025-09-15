@@ -879,13 +879,17 @@
   }
 }
 
-/* Product Size Selection Overlay */
-.woocommerce ul.products li.product .product-size-overlay {
+/* Product Price Container for Variable Products */
+.woocommerce ul.products li.product .product-price-container {
+  position: relative;
+}
+
+/* Product Size Options - positioned in price area */
+.woocommerce ul.products li.product .product-size-options {
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 0;
   right: 0;
-  padding: 20px 0px 16px 0px;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -893,50 +897,63 @@
   pointer-events: none;
 }
 
-.woocommerce ul.products li.product:hover .product-size-overlay {
+.woocommerce ul.products li.product:hover .product-size-options {
   opacity: 1;
   visibility: visible;
   pointer-events: all;
 }
 
-/* Debug: Temporarily make overlay always visible for testing */
-.woocommerce ul.products li.product .product-size-overlay.debug-visible {
+/* Hide price on hover for variable products */
+.woocommerce ul.products li.product:hover .product-price-container .price,
+.woocommerce ul.products li.product:hover .product-price-container .sold-out-text {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Debug: Temporarily make size options always visible for testing */
+.woocommerce ul.products li.product .product-size-options.debug-visible {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: all !important;
   background: rgba(255, 0, 0, 0.8) !important;
 }
 
-.woocommerce ul.products li.product .product-size-overlay .size-options {
+.woocommerce ul.products li.product .product-size-options .size-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 0px;
+  gap: 4px;
   justify-content: center;
+  align-items: center;
+  min-height: 24px; /* Match price height */
 }
 
-.woocommerce ul.products li.product .product-size-overlay .size-option {
+.woocommerce ul.products li.product .product-size-options .size-option {
   display: inline-block;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 1);
-  color: #000;
-  text-decoration: none;
-  font-size: 11px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   border-radius: 0px;
   transition: all 0.2s ease;
   cursor: pointer;
-  border: 1px solid transparent;
-  min-width: 32px;
+  min-width: 28px;
   text-align: center;
+  line-height: 1;
 }
 
-.woocommerce ul.products li.product .product-size-overlay .size-option:hover {
-  background: #000;
+.woocommerce ul.products li.product .product-size-options .size-option:hover {
+  background: var(--text);
   color: #fff;
-  border-color: #000;
-  border: 1px solid #000;
+  border-color: var(--text);
+}
+
+.woocommerce ul.products li.product .product-size-options .size-option.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* Ensure overlay doesn't interfere with product link when not hovered */
@@ -959,17 +976,16 @@
 }
 
 @media (max-width: 768px) {
-  /* Improve mobile touch interaction */
-  .woocommerce ul.products li.product .product-size-overlay {
+  /* Improve mobile touch interaction for size options */
+  .woocommerce ul.products li.product .product-size-options {
     opacity: 0;
     visibility: hidden;
   }
 
-  .woocommerce ul.products li.product.show-sizes .product-size-overlay {
+  .woocommerce ul.products li.product.show-sizes .product-size-options {
     opacity: 1;
     visibility: visible;
   }
-
 
   /* Hide tap indicator when sizes are shown */
   .woocommerce
@@ -979,10 +995,10 @@
     display: none;
   }
 
-  /* Hide tap indicator for products without size overlay */
+  /* Hide tap indicator for products without size options */
   .woocommerce
     ul.products
-    li.product.no-size-overlay
+    li.product.no-size-options
     .product-image-container::after {
     display: none;
   }

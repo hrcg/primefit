@@ -474,7 +474,7 @@ body:has(.promo-bar) .site-header {
 
 	/* Adjust header position for mobile */
 	body:has(.promo-bar) .site-header {
-		top: 34px; /* Reduced promo bar height on mobile */
+		top: 33px; /* Reduced promo bar height on mobile */
 	}
 	
 	/* Adjust site content padding for mobile */
