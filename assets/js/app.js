@@ -1,34 +1,36 @@
 (function ($) {
-  'use strict';
+  "use strict";
 
   // Cart functionality (preserved)
   function getCartContext(clickedEl) {
-    const $root = clickedEl ? $(clickedEl).closest('[data-behavior="click"]') : $('[data-behavior="click"]').first();
+    const $root = clickedEl
+      ? $(clickedEl).closest('[data-behavior="click"]')
+      : $('[data-behavior="click"]').first();
     return {
       $wrap: $root,
-      $panel: $root.find('#mini-cart-panel'),
-      $toggle: $root.find('.cart-toggle')
+      $panel: $root.find("#mini-cart-panel"),
+      $toggle: $root.find(".cart-toggle"),
     };
   }
 
   function openCart(clickedEl) {
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
-    $wrap.addClass('open').attr('data-open', 'true');
-    $panel.removeAttr('hidden');
-    $toggle.attr('aria-expanded', 'true');
+    $wrap.addClass("open").attr("data-open", "true");
+    $panel.removeAttr("hidden");
+    $toggle.attr("aria-expanded", "true");
 
-    if (window.matchMedia('(max-width: 1024px)').matches) {
-      document.body.classList.add('cart-open');
+    if (window.matchMedia("(max-width: 1024px)").matches) {
+      document.body.classList.add("cart-open");
     }
   }
 
   function closeCart(clickedEl) {
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
-    $wrap.removeClass('open').attr('data-open', 'false');
-    $panel.attr('hidden', true);
-    $toggle.attr('aria-expanded', 'false');
+    $wrap.removeClass("open").attr("data-open", "false");
+    $panel.attr("hidden", true);
+    $toggle.attr("aria-expanded", "false");
 
-    document.body.classList.remove('cart-open');
+    document.body.classList.remove("cart-open");
   }
 
   // Click-to-open cart drawer
@@ -79,8 +81,8 @@
   // Shop Filter Bar Controller (preserved)
   class ShopFilterController {
     constructor() {
-      this.$gridOptions = $('.grid-option');
-      this.$productsGrid = $('.woocommerce ul.products');
+      this.$gridOptions = $(".grid-option");
+      this.$productsGrid = $(".woocommerce ul.products");
       this.currentGrid = this.getCurrentGrid();
       this.isMobile = this.isMobileDevice();
       this.init();
@@ -94,84 +96,97 @@
     }
 
     bindEvents() {
-      $(document).on('click', '.grid-option', this.handleGridClick.bind(this));
-      $(document).on('click', '.filter-dropdown-toggle', this.handleFilterToggle.bind(this));
-      $(document).on('click', '.filter-dropdown-option', this.handleFilterOption.bind(this));
-      $(document).on('click', this.handleOutsideClick.bind(this));
-      $(window).on('resize', this.debounce(this.handleResize.bind(this), 250));
+      $(document).on("click", ".grid-option", this.handleGridClick.bind(this));
+      $(document).on(
+        "click",
+        ".filter-dropdown-toggle",
+        this.handleFilterToggle.bind(this)
+      );
+      $(document).on(
+        "click",
+        ".filter-dropdown-option",
+        this.handleFilterOption.bind(this)
+      );
+      $(document).on("click", this.handleOutsideClick.bind(this));
+      $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
     }
 
     handleGridClick(event) {
       event.preventDefault();
       const $button = $(event.currentTarget);
-      const gridValue = $button.data('grid');
-      if (this.isMobile && (gridValue === '3' || gridValue === '4')) return;
-      if (!this.isMobile && (gridValue === '1' || gridValue === '2')) return;
-      this.$gridOptions.removeClass('active');
-      $button.addClass('active');
+      const gridValue = $button.data("grid");
+      if (this.isMobile && (gridValue === "3" || gridValue === "4")) return;
+      if (!this.isMobile && (gridValue === "1" || gridValue === "2")) return;
+      this.$gridOptions.removeClass("active");
+      $button.addClass("active");
       this.currentGrid = gridValue;
-      this.setCookie('primefit_grid_view', gridValue, 30);
+      this.setCookie("primefit_grid_view", gridValue, 30);
       this.applyGridLayout();
     }
 
     applyGridLayout() {
-      this.$productsGrid.removeClass('grid-1 grid-2 grid-3 grid-4');
+      this.$productsGrid.removeClass("grid-1 grid-2 grid-3 grid-4");
       this.$productsGrid.addClass(`grid-${this.currentGrid}`);
-      this.$productsGrid.attr('class', this.$productsGrid.attr('class').replace(/columns-\d+/, `columns-${this.currentGrid}`));
+      this.$productsGrid.attr(
+        "class",
+        this.$productsGrid
+          .attr("class")
+          .replace(/columns-\d+/, `columns-${this.currentGrid}`)
+      );
     }
 
     handleFilterToggle(event) {
       event.preventDefault();
       event.stopPropagation();
-      const $dropdown = $(event.currentTarget).closest('.filter-dropdown');
-      const isOpen = $dropdown.hasClass('open');
-      $('.filter-dropdown').removeClass('open');
-      if (!isOpen) $dropdown.addClass('open');
+      const $dropdown = $(event.currentTarget).closest(".filter-dropdown");
+      const isOpen = $dropdown.hasClass("open");
+      $(".filter-dropdown").removeClass("open");
+      if (!isOpen) $dropdown.addClass("open");
     }
 
     handleFilterOption(event) {
       event.preventDefault();
       const $option = $(event.currentTarget);
-      const $dropdown = $option.closest('.filter-dropdown');
-      const filterValue = $option.data('filter');
+      const $dropdown = $option.closest(".filter-dropdown");
+      const filterValue = $option.data("filter");
       const filterText = $option.text().trim();
-      $dropdown.find('.filter-dropdown-text').text(filterText);
-      $dropdown.removeClass('open');
+      $dropdown.find(".filter-dropdown-text").text(filterText);
+      $dropdown.removeClass("open");
       this.applyFilter(filterValue);
     }
 
     handleOutsideClick(event) {
       const $target = $(event.target);
-      if (!$target.closest('.filter-dropdown').length) {
-        $('.filter-dropdown').removeClass('open');
+      if (!$target.closest(".filter-dropdown").length) {
+        $(".filter-dropdown").removeClass("open");
       }
     }
 
     applyFilter(filterValue) {
       const filterMap = {
-        'featured': 'menu_order',
-        'best-selling': 'popularity',
-        'alphabetical-az': 'title',
-        'alphabetical-za': 'title-desc',
-        'price-low-high': 'price',
-        'price-high-low': 'price-desc',
-        'date-old-new': 'date',
-        'date-new-old': 'date-desc'
+        featured: "menu_order",
+        "best-selling": "popularity",
+        "alphabetical-az": "title",
+        "alphabetical-za": "title-desc",
+        "price-low-high": "price",
+        "price-high-low": "price-desc",
+        "date-old-new": "date",
+        "date-new-old": "date-desc",
       };
-      const orderbyValue = filterMap[filterValue] || 'menu_order';
-      const $hiddenSelect = $('.woocommerce-ordering .orderby');
+      const orderbyValue = filterMap[filterValue] || "menu_order";
+      const $hiddenSelect = $(".woocommerce-ordering .orderby");
       $hiddenSelect.val(orderbyValue);
-      $('.woocommerce-ordering').submit();
+      $(".woocommerce-ordering").submit();
     }
 
     getCurrentGrid() {
-      const cookieValue = this.getCookie('primefit_grid_view');
+      const cookieValue = this.getCookie("primefit_grid_view");
       if (cookieValue) return cookieValue;
-      return this.isMobileDevice() ? '2' : '3';
+      return this.isMobileDevice() ? "2" : "3";
     }
 
     isMobileDevice() {
-      return window.matchMedia('(max-width: 1024px)').matches;
+      return window.matchMedia("(max-width: 1024px)").matches;
     }
 
     handleResize() {
@@ -186,13 +201,13 @@
       const currentGrid = parseInt(this.currentGrid);
       if (this.isMobile) {
         if (currentGrid > 2) {
-          this.currentGrid = '2';
-          this.setCookie('primefit_grid_view', '2', 30);
+          this.currentGrid = "2";
+          this.setCookie("primefit_grid_view", "2", 30);
         }
       } else {
         if (currentGrid < 3) {
-          this.currentGrid = '3';
-          this.setCookie('primefit_grid_view', '3', 30);
+          this.currentGrid = "3";
+          this.setCookie("primefit_grid_view", "3", 30);
         }
       }
       this.updateActiveGridOption();
@@ -200,50 +215,58 @@
     }
 
     updateActiveGridOption() {
-      this.$gridOptions.removeClass('active');
-      const $activeOption = this.$gridOptions.filter(`[data-grid="${this.currentGrid}"]`);
+      this.$gridOptions.removeClass("active");
+      const $activeOption = this.$gridOptions.filter(
+        `[data-grid="${this.currentGrid}"]`
+      );
       if ($activeOption.length) {
-        $activeOption.addClass('active');
+        $activeOption.addClass("active");
       }
     }
 
     setCookie(name, value, days) {
       const expires = new Date();
-      expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
       document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
     }
 
     getCookie(name) {
       const nameEQ = name + "=";
-      const ca = document.cookie.split(';');
+      const ca = document.cookie.split(";");
       for (let i = 0; i < ca.length; i++) {
         let c = ca[i];
-        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        while (c.charAt(0) === " ") c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0)
+          return c.substring(nameEQ.length, c.length);
       }
       return null;
     }
 
     syncFilterState() {
       const urlParams = new URLSearchParams(window.location.search);
-      const currentOrderby = urlParams.get('orderby') || $('.woocommerce-ordering .orderby').val() || 'menu_order';
+      const currentOrderby =
+        urlParams.get("orderby") ||
+        $(".woocommerce-ordering .orderby").val() ||
+        "menu_order";
       const orderbyMap = {
-        'menu_order': 'featured',
-        'popularity': 'best-selling',
-        'title': 'alphabetical-az',
-        'title-desc': 'alphabetical-za',
-        'price': 'price-low-high',
-        'price-desc': 'price-high-low',
-        'date': 'date-old-new',
-        'date-desc': 'date-new-old'
+        menu_order: "featured",
+        popularity: "best-selling",
+        title: "alphabetical-az",
+        "title-desc": "alphabetical-za",
+        price: "price-low-high",
+        "price-desc": "price-high-low",
+        date: "date-old-new",
+        "date-desc": "date-new-old",
       };
-      const currentFilter = orderbyMap[currentOrderby] || 'featured';
-      const $dropdown = $('.filter-dropdown');
+      const currentFilter = orderbyMap[currentOrderby] || "featured";
+      const $dropdown = $(".filter-dropdown");
       const $activeOption = $dropdown.find(`[data-filter="${currentFilter}"]`);
       if ($activeOption.length) {
-        $dropdown.find('.filter-dropdown-text').text($activeOption.text().trim());
-        $dropdown.find('.filter-dropdown-option').removeClass('active');
-        $activeOption.addClass('active');
+        $dropdown
+          .find(".filter-dropdown-text")
+          .text($activeOption.text().trim());
+        $dropdown.find(".filter-dropdown-option").removeClass("active");
+        $activeOption.addClass("active");
       }
       this.updateActiveGridOption();
     }
@@ -261,46 +284,74 @@
     }
   }
 
-  if ($('.grid-option').length > 0) {
+  if ($(".grid-option").length > 0) {
     const shopFilterController = new ShopFilterController();
   }
 
   // Header: add scrolled state to force black background on sticky
-  const $header = $('.site-header');
+  const $header = $(".site-header");
   if ($header.length) {
     const toggleScrolled = () => {
       if (window.scrollY > 10) {
-        $header.addClass('is-scrolled');
+        $header.addClass("is-scrolled");
       } else {
-        $header.removeClass('is-scrolled');
+        $header.removeClass("is-scrolled");
       }
     };
     toggleScrolled();
-    $(window).on('scroll', toggleScrolled);
+    $(window).on("scroll", toggleScrolled);
   }
 
   // Mobile hamburger menu
-  $(document).on('click', '.hamburger', function(e) {
+  $(document).on("click", ".hamburger", function (e) {
     e.preventDefault();
-    const $body = $('body');
-    const $nav = $('#mobile-nav');
-    const isOpen = $body.hasClass('mobile-open');
-    
+    const $body = $("body");
+    const $nav = $("#mobile-nav");
+    const isOpen = $body.hasClass("mobile-open");
+
     if (isOpen) {
-      $body.removeClass('mobile-open');
-      $(this).attr('aria-expanded', 'false');
+      $body.removeClass("mobile-open");
+      $(this).attr("aria-expanded", "false");
     } else {
-      $body.addClass('mobile-open');
-      $(this).attr('aria-expanded', 'true');
+      $body.addClass("mobile-open");
+      $(this).attr("aria-expanded", "true");
     }
   });
 
   // Close mobile nav
-  $(document).on('click', '.mobile-nav-close, .mobile-nav-overlay', function(e) {
-    e.preventDefault();
-    $('body').removeClass('mobile-open');
-    $('.hamburger').attr('aria-expanded', 'false');
-  });
+  $(document).on(
+    "click",
+    ".mobile-nav-close, .mobile-nav-overlay",
+    function (e) {
+      e.preventDefault();
+      $("body").removeClass("mobile-open");
+      $(".hamburger").attr("aria-expanded", "false");
+    }
+  );
+
+  // Mobile menu dropdown functionality
+  $(document).on(
+    "click",
+    ".mobile-menu .menu-item-has-children > a",
+    function (e) {
+      e.preventDefault();
+      const $parent = $(this).parent();
+      const $submenu = $parent.find(".sub-menu");
+
+      if ($submenu.length) {
+        const isOpen = $parent.hasClass("mobile-submenu-open");
+
+        // Close all other open submenus in the same menu
+        $parent
+          .siblings(".menu-item-has-children")
+          .removeClass("mobile-submenu-open");
+
+        if (!isOpen) {
+          $parent.addClass("mobile-submenu-open");
+        }
+      }
+    }
+  );
 
   // Hero Video Background Handler
   class HeroVideoHandler {
@@ -313,8 +364,8 @@
     }
 
     handleHeroVideos() {
-      const $heroVideos = $('.hero-video');
-      
+      const $heroVideos = $(".hero-video");
+
       if ($heroVideos.length === 0) return;
 
       $heroVideos.each((index, video) => {
@@ -323,7 +374,7 @@
 
         // Set up video event listeners
         this.setupVideoEvents($video, videoElement);
-        
+
         // Start loading the video
         this.loadVideo($video, videoElement);
       });
@@ -331,29 +382,29 @@
 
     setupVideoEvents($video, videoElement) {
       // When video can play through
-      videoElement.addEventListener('canplaythrough', () => {
+      videoElement.addEventListener("canplaythrough", () => {
         this.onVideoReady($video, videoElement);
       });
 
       // When video starts playing
-      videoElement.addEventListener('playing', () => {
+      videoElement.addEventListener("playing", () => {
         this.onVideoPlaying($video, videoElement);
       });
 
       // Handle video errors
-      videoElement.addEventListener('error', () => {
+      videoElement.addEventListener("error", () => {
         this.onVideoError($video, videoElement);
       });
 
       // Handle video loading
-      videoElement.addEventListener('loadstart', () => {
+      videoElement.addEventListener("loadstart", () => {
         this.onVideoLoadStart($video, videoElement);
       });
     }
 
     loadVideo($video, videoElement) {
       // Set video source and start loading
-      const sources = videoElement.querySelectorAll('source');
+      const sources = videoElement.querySelectorAll("source");
       if (sources.length > 0) {
         // Let the browser choose the best source
         videoElement.load();
@@ -362,50 +413,197 @@
 
     onVideoLoadStart($video, videoElement) {
       // Video started loading
-      console.log('Hero video started loading');
+      console.log("Hero video started loading");
     }
 
     onVideoReady($video, videoElement) {
       // Video is ready to play
-      $video.addClass('loaded');
-      
+      $video.addClass("loaded");
+
       // Try to play the video
       const playPromise = videoElement.play();
-      
+
       if (playPromise !== undefined) {
-        playPromise.then(() => {
-          this.onVideoPlaying($video, videoElement);
-        }).catch((error) => {
-          console.log('Video autoplay failed:', error);
-          this.onVideoError($video, videoElement);
-        });
+        playPromise
+          .then(() => {
+            this.onVideoPlaying($video, videoElement);
+          })
+          .catch((error) => {
+            console.log("Video autoplay failed:", error);
+            this.onVideoError($video, videoElement);
+          });
       }
     }
 
     onVideoPlaying($video, videoElement) {
       // Video is playing successfully
-      console.log('Hero video is playing');
-      
+      console.log("Hero video is playing");
+
       // Hide fallback image with smooth transition
-      const $fallbackImage = $video.closest('.hero-media').find('.hero-fallback-image');
-      $fallbackImage.css('opacity', '0');
+      const $fallbackImage = $video
+        .closest(".hero-media")
+        .find(".hero-fallback-image");
+      $fallbackImage.css("opacity", "0");
     }
 
     onVideoError($video, videoElement) {
       // Video failed to load or play
-      console.log('Hero video failed to load or play');
-      
+      console.log("Hero video failed to load or play");
+
       // Ensure fallback image is visible
-      const $fallbackImage = $video.closest('.hero-media').find('.hero-fallback-image');
-      $fallbackImage.css('opacity', '1');
-      
+      const $fallbackImage = $video
+        .closest(".hero-media")
+        .find(".hero-fallback-image");
+      $fallbackImage.css("opacity", "1");
+
       // Hide the video
-      $video.css('opacity', '0');
+      $video.css("opacity", "0");
     }
   }
 
   // Initialize hero video handler
-  if ($('.hero-video').length > 0) {
+  if ($(".hero-video").length > 0) {
     new HeroVideoHandler();
+  }
+
+  // Mega Menu Controller
+  class MegaMenuController {
+    constructor() {
+      this.$megaMenu = $("#mega-menu");
+      this.$header = $(".site-header");
+      this.isDesktop = this.isDesktopDevice();
+      this.isOpen = false;
+      this.hoverTimeout = null;
+      this.init();
+    }
+
+    init() {
+      if (this.$megaMenu.length === 0) return;
+
+      this.bindEvents();
+      this.handleResize();
+    }
+
+    bindEvents() {
+      // Show mega menu on header hover (desktop only)
+      $(document).on(
+        "mouseenter",
+        ".site-header",
+        this.handleHeaderHover.bind(this)
+      );
+      $(document).on(
+        "mouseleave",
+        ".site-header",
+        this.handleHeaderLeave.bind(this)
+      );
+
+      // Show mega menu on specific menu item hover
+      $(document).on(
+        "mouseenter",
+        ".menu--primary .menu-item-has-children",
+        this.handleMenuItemHover.bind(this)
+      );
+      $(document).on(
+        "mouseleave",
+        ".menu--primary .menu-item-has-children",
+        this.handleMenuItemLeave.bind(this)
+      );
+
+      // Hide mega menu when clicking outside
+      $(document).on("click", this.handleOutsideClick.bind(this));
+
+      // Handle window resize
+      $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
+    }
+
+    handleHeaderHover() {
+      if (!this.isDesktop) return;
+
+      clearTimeout(this.hoverTimeout);
+      this.showMegaMenu();
+    }
+
+    handleHeaderLeave() {
+      if (!this.isDesktop) return;
+
+      this.hoverTimeout = setTimeout(() => {
+        this.hideMegaMenu();
+      }, 150);
+    }
+
+    handleMenuItemHover(event) {
+      if (!this.isDesktop) return;
+
+      clearTimeout(this.hoverTimeout);
+      this.showMegaMenu();
+    }
+
+    handleMenuItemLeave(event) {
+      if (!this.isDesktop) return;
+
+      this.hoverTimeout = setTimeout(() => {
+        this.hideMegaMenu();
+      }, 150);
+    }
+
+    handleOutsideClick(event) {
+      if (!this.isDesktop || !this.isOpen) return;
+
+      const $target = $(event.target);
+      if (
+        !$target.closest(".site-header").length &&
+        !$target.closest(".mega-menu").length
+      ) {
+        this.hideMegaMenu();
+      }
+    }
+
+    showMegaMenu() {
+      if (this.isOpen) return;
+
+      this.isOpen = true;
+      this.$megaMenu.addClass("active").attr("aria-hidden", "false");
+      this.$header.addClass("mega-menu-open");
+    }
+
+    hideMegaMenu() {
+      if (!this.isOpen) return;
+
+      this.isOpen = false;
+      this.$megaMenu.removeClass("active").attr("aria-hidden", "true");
+      this.$header.removeClass("mega-menu-open");
+    }
+
+    isDesktopDevice() {
+      return window.matchMedia("(min-width: 1025px)").matches;
+    }
+
+    handleResize() {
+      const wasDesktop = this.isDesktop;
+      this.isDesktop = this.isDesktopDevice();
+
+      if (wasDesktop !== this.isDesktop) {
+        if (!this.isDesktop) {
+          this.hideMegaMenu();
+        }
+      }
+    }
+
+    debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+  }
+
+  // Initialize mega menu controller
+  if ($("#mega-menu").length > 0) {
+    new MegaMenuController();
   }
 })(jQuery);

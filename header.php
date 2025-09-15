@@ -40,6 +40,75 @@ if ( ! defined( 'ABSPATH' ) ) {
 				?>
 			</nav>
 
+			<?php 
+			$mega_menu_config = primefit_get_mega_menu_config();
+			if ( $mega_menu_config['enabled'] ) : 
+			?>
+			<!-- Mega Menu -->
+			<div class="mega-menu" id="mega-menu" aria-hidden="true">
+				<div class="container">
+					<div class="mega-menu-content">
+						<div class="mega-menu-column">
+							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_1_heading'] ); ?></h3>
+							<ul class="mega-menu-links">
+								<?php
+								$links_1 = explode( ',', $mega_menu_config['column_1_links'] );
+								foreach ( $links_1 as $link ) {
+									$link = trim( $link );
+									if ( ! empty( $link ) ) {
+										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
+									}
+								}
+								?>
+							</ul>
+						</div>
+						<div class="mega-menu-column">
+							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_2_heading'] ); ?></h3>
+							<ul class="mega-menu-links">
+								<?php
+								$links_2 = explode( ',', $mega_menu_config['column_2_links'] );
+								foreach ( $links_2 as $link ) {
+									$link = trim( $link );
+									if ( ! empty( $link ) ) {
+										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
+									}
+								}
+								?>
+							</ul>
+						</div>
+						<div class="mega-menu-column">
+							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_3_heading'] ); ?></h3>
+							<ul class="mega-menu-links">
+								<?php
+								$links_3 = explode( ',', $mega_menu_config['column_3_links'] );
+								foreach ( $links_3 as $link ) {
+									$link = trim( $link );
+									if ( ! empty( $link ) ) {
+										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
+									}
+								}
+								?>
+							</ul>
+						</div>
+						<div class="mega-menu-column">
+							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_4_heading'] ); ?></h3>
+							<ul class="mega-menu-links">
+								<?php
+								$links_4 = explode( ',', $mega_menu_config['column_4_links'] );
+								foreach ( $links_4 as $link ) {
+									$link = trim( $link );
+									if ( ! empty( $link ) ) {
+										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
+									}
+								}
+								?>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+			<?php endif; ?>
+
 			<div class="header-center">
 				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="site-brand" aria-label="<?php echo esc_attr( get_bloginfo('name') ); ?>">
 					<img class="brand-logo" src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/logo-white.webp' ); ?>" alt="<?php echo esc_attr( get_bloginfo('name') ); ?>">
@@ -58,6 +127,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						]);
 					?>
 				</nav>
+				
 				<?php if ( class_exists('WooCommerce') ) { ?>
 					<div class="cart-wrap" data-behavior="click">
 						<a class="header-cart cart-toggle" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="View cart" aria-expanded="false" aria-controls="mini-cart-panel">
@@ -91,6 +161,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 								'theme_location' => 'primary',
 								'container'      => false,
 								'menu_class'      => 'mobile-menu',
+								'fallback_cb'     => false,
+							]);
+						?>
+					</nav>
+					
+					<nav class="mobile-nav mobile-nav--tertiary" aria-label="Mobile Tertiary Menu">
+						<?php
+							wp_nav_menu([
+								'theme_location' => 'secondary',
+								'container'      => false,
+								'menu_class'      => 'mobile-menu mobile-menu--tertiary',
 								'fallback_cb'     => false,
 							]);
 						?>

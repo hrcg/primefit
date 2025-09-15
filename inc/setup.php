@@ -57,6 +57,7 @@ function primefit_setup_theme() {
 	register_nav_menus( [
 		'primary'   => esc_html__( 'Primary Menu', 'primefit' ),
 		'secondary' => esc_html__( 'Secondary Menu', 'primefit' ),
+		'tertiary'  => esc_html__( 'Tertiary Menu', 'primefit' ),
 		'footer'    => esc_html__( 'Footer Menu', 'primefit' ),
 	] );
 	

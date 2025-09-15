@@ -417,6 +417,115 @@ function primefit_customize_register( $wp_customize ) {
 		'section' => 'primefit_training_division_2',
 		'type'    => 'checkbox',
 	) );
+
+	// Mega Menu Section Panel
+	$wp_customize->add_section( 'primefit_mega_menu', array(
+		'title'    => __( 'Mega Menu', 'primefit' ),
+		'priority' => 40,
+	) );
+
+	// Mega Menu Enable/Disable
+	$wp_customize->add_setting( 'primefit_mega_menu_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_enabled', array(
+		'label'   => __( 'Enable Mega Menu', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'checkbox',
+	) );
+
+	// Column 1 Heading
+	$wp_customize->add_setting( 'primefit_mega_menu_column_1_heading', array(
+		'default'           => 'TOPS',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_1_heading', array(
+		'label'   => __( 'Column 1 Heading', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'text',
+	) );
+
+	// Column 1 Links
+	$wp_customize->add_setting( 'primefit_mega_menu_column_1_links', array(
+		'default'           => 'Sports Bras,Tanks & Short Sleeves,Hoodies & Sweatshirts',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_1_links', array(
+		'label'       => __( 'Column 1 Links (comma-separated)', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'textarea',
+		'description' => __( 'Enter links separated by commas. Example: Sports Bras,Tanks & Short Sleeves,Hoodies & Sweatshirts', 'primefit' ),
+	) );
+
+	// Column 2 Heading
+	$wp_customize->add_setting( 'primefit_mega_menu_column_2_heading', array(
+		'default'           => 'BOTTOMS',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_2_heading', array(
+		'label'   => __( 'Column 2 Heading', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'text',
+	) );
+
+	// Column 2 Links
+	$wp_customize->add_setting( 'primefit_mega_menu_column_2_links', array(
+		'default'           => 'Shorts,Leggings & Joggers,Pants',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_2_links', array(
+		'label'       => __( 'Column 2 Links (comma-separated)', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'textarea',
+		'description' => __( 'Enter links separated by commas. Example: Shorts,Leggings & Joggers,Pants', 'primefit' ),
+	) );
+
+	// Column 3 Heading
+	$wp_customize->add_setting( 'primefit_mega_menu_column_3_heading', array(
+		'default'           => 'ACCESSORIES',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_3_heading', array(
+		'label'   => __( 'Column 3 Heading', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'text',
+	) );
+
+	// Column 3 Links
+	$wp_customize->add_setting( 'primefit_mega_menu_column_3_links', array(
+		'default'           => 'Hats & Headwear,Bags,Socks,Jewelry & Hardware',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_3_links', array(
+		'label'       => __( 'Column 3 Links (comma-separated)', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'textarea',
+		'description' => __( 'Enter links separated by commas. Example: Hats & Headwear,Bags,Socks,Jewelry & Hardware', 'primefit' ),
+	) );
+
+	// Column 4 Heading
+	$wp_customize->add_setting( 'primefit_mega_menu_column_4_heading', array(
+		'default'           => 'DESIGNED FOR',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_4_heading', array(
+		'label'   => __( 'Column 4 Heading', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'text',
+	) );
+
+	// Column 4 Links
+	$wp_customize->add_setting( 'primefit_mega_menu_column_4_links', array(
+		'default'           => 'Run,Train,Rec',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_4_links', array(
+		'label'       => __( 'Column 4 Links (comma-separated)', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'textarea',
+		'description' => __( 'Enter links separated by commas. Example: Run,Train,Rec', 'primefit' ),
+	) );
 }
 
 /**
@@ -539,5 +648,22 @@ function primefit_get_training_division_2_config() {
 		'cta_secondary_text' => get_theme_mod( 'primefit_training_division_2_cta_secondary_text', '' ),
 		'cta_secondary_link' => $cta_secondary_link,
 		'show_secondary_button' => get_theme_mod( 'primefit_training_division_2_show_secondary_button', false ),
+	);
+}
+
+/**
+ * Helper function to get mega menu configuration from customizer
+ */
+function primefit_get_mega_menu_config() {
+	return array(
+		'enabled' => get_theme_mod( 'primefit_mega_menu_enabled', true ),
+		'column_1_heading' => get_theme_mod( 'primefit_mega_menu_column_1_heading', 'TOPS' ),
+		'column_1_links' => get_theme_mod( 'primefit_mega_menu_column_1_links', 'Sports Bras,Tanks & Short Sleeves,Hoodies & Sweatshirts' ),
+		'column_2_heading' => get_theme_mod( 'primefit_mega_menu_column_2_heading', 'BOTTOMS' ),
+		'column_2_links' => get_theme_mod( 'primefit_mega_menu_column_2_links', 'Shorts,Leggings & Joggers,Pants' ),
+		'column_3_heading' => get_theme_mod( 'primefit_mega_menu_column_3_heading', 'ACCESSORIES' ),
+		'column_3_links' => get_theme_mod( 'primefit_mega_menu_column_3_links', 'Hats & Headwear,Bags,Socks,Jewelry & Hardware' ),
+		'column_4_heading' => get_theme_mod( 'primefit_mega_menu_column_4_heading', 'DESIGNED FOR' ),
+		'column_4_links' => get_theme_mod( 'primefit_mega_menu_column_4_links', 'Run,Train,Rec' ),
 	);
 }
