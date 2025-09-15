@@ -213,7 +213,7 @@
 .cart-panel-header .cart-close {
   background: transparent;
   border: 0;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1;
   cursor: pointer;
   color: var(--text);
@@ -738,7 +738,7 @@ body:not(.has-hero-header) .site-content {
 
 /* Header state when mega menu is open */
 .site-header.mega-menu-open {
-  background: var(--background);
+  background: var(--headerBackground);
 }
 
 /* Hide mega menu on mobile */

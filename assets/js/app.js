@@ -411,11 +411,6 @@
       }
     }
 
-    onVideoLoadStart($video, videoElement) {
-      // Video started loading
-      console.log("Hero video started loading");
-    }
-
     onVideoReady($video, videoElement) {
       // Video is ready to play
       $video.addClass("loaded");
@@ -429,7 +424,6 @@
             this.onVideoPlaying($video, videoElement);
           })
           .catch((error) => {
-            console.log("Video autoplay failed:", error);
             this.onVideoError($video, videoElement);
           });
       }
@@ -437,7 +431,6 @@
 
     onVideoPlaying($video, videoElement) {
       // Video is playing successfully
-      console.log("Hero video is playing");
 
       // Hide fallback image with smooth transition
       const $fallbackImage = $video
@@ -448,7 +441,6 @@
 
     onVideoError($video, videoElement) {
       // Video failed to load or play
-      console.log("Hero video failed to load or play");
 
       // Ensure fallback image is visible
       const $fallbackImage = $video
@@ -485,28 +477,29 @@
     }
 
     bindEvents() {
-      // Show mega menu on header hover (desktop only)
+      // Show mega menu only on specific menu item hover (desktop only)
+      // Look for menu items with data-mega-menu="true" attribute on the link
       $(document).on(
         "mouseenter",
-        ".site-header",
-        this.handleHeaderHover.bind(this)
-      );
-      $(document).on(
-        "mouseleave",
-        ".site-header",
-        this.handleHeaderLeave.bind(this)
-      );
-
-      // Show mega menu on specific menu item hover
-      $(document).on(
-        "mouseenter",
-        ".menu--primary .menu-item-has-children",
+        ".menu--primary .menu-item a[data-mega-menu='true']",
         this.handleMenuItemHover.bind(this)
       );
       $(document).on(
         "mouseleave",
-        ".menu--primary .menu-item-has-children",
+        ".menu--primary .menu-item a[data-mega-menu='true']",
         this.handleMenuItemLeave.bind(this)
+      );
+
+      // Also handle hover on the mega menu itself to keep it open
+      $(document).on(
+        "mouseenter",
+        ".mega-menu",
+        this.handleMegaMenuHover.bind(this)
+      );
+      $(document).on(
+        "mouseleave",
+        ".mega-menu",
+        this.handleMegaMenuLeave.bind(this)
       );
 
       // Hide mega menu when clicking outside
@@ -514,21 +507,6 @@
 
       // Handle window resize
       $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
-    }
-
-    handleHeaderHover() {
-      if (!this.isDesktop) return;
-
-      clearTimeout(this.hoverTimeout);
-      this.showMegaMenu();
-    }
-
-    handleHeaderLeave() {
-      if (!this.isDesktop) return;
-
-      this.hoverTimeout = setTimeout(() => {
-        this.hideMegaMenu();
-      }, 150);
     }
 
     handleMenuItemHover(event) {
@@ -539,6 +517,20 @@
     }
 
     handleMenuItemLeave(event) {
+      if (!this.isDesktop) return;
+
+      this.hoverTimeout = setTimeout(() => {
+        this.hideMegaMenu();
+      }, 150);
+    }
+
+    handleMegaMenuHover() {
+      if (!this.isDesktop) return;
+
+      clearTimeout(this.hoverTimeout);
+    }
+
+    handleMegaMenuLeave() {
       if (!this.isDesktop) return;
 
       this.hoverTimeout = setTimeout(() => {

@@ -2,7 +2,7 @@
 
 <?php
 // Check if this is a WooCommerce page
-if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_product_tag() ) ) {
+if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_product_tag() || is_product() ) ) {
 	// Only show hero on category/tag pages, not on main shop page
 	if ( is_product_category() || is_product_tag() ) {
 		$hero_args = primefit_get_shop_hero_config();
@@ -32,12 +32,18 @@ if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_
 	
 	// Add shop filter bar for product category/tag pages
 	if ( is_product_category() || is_product_tag() ) {
-		get_template_part( 'templates/parts/woocommerce/shop-filter-bar' );
+		get_template_part( 'woocommerce/shop/filter-bar' );
 	}
 	
+	// Handle single product pages
+	if ( is_product() ) {
+		// Use our custom single product template
+		get_template_part( 'woocommerce/single-product' );
+		return; // Exit early to prevent further processing
+	}
 	// WooCommerce will handle the product loop for category/tag pages only
 	// Only show products on category/tag pages, not on main shop page
-	if ( is_product_category() || is_product_tag() ) {
+	elseif ( is_product_category() || is_product_tag() ) {
 		?>
 		<div class="container">
 			<div class="products-grid-wrapper">

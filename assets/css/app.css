@@ -12,6 +12,14 @@
   --accent: #ff4444;
   --card-background: #0d0d0d;
 
+  /* Hero gradient variables */
+  --hero-gradient-start: var(--background);
+  --hero-gradient-checkpoint-1: rgba(255, 255, 255, 0.8);
+  --hero-gradient-checkpoint-2: rgba(255, 255, 255, 0.1);
+  --hero-gradient-checkpoint-3: rgba(255, 255, 255, 0.1);
+  --hero-gradient-checkpoint-4: rgba(255, 255, 255, 0.8);
+  --hero-gradient-end: var(--background);
+
   /* Theme-aware variables */
   --size-option-bg: transparent;
   --size-option-text: var(--text);
@@ -611,6 +619,23 @@ body.nav-open {
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1;
+}
+
+/* Hero Bottom Gradient */
+.hero::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--headerBackground) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* Hero Content - Natural Flow */

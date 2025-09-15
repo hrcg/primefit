@@ -29,6 +29,7 @@ $includes = [
 	'inc/hooks.php',           // Actions and filters
 	'inc/helpers.php',         // Utility and helper functions
 	'inc/customizer.php',      // Theme customizer settings
+	'inc/acf-fields.php',      // ACF field groups and helpers
 	'inc/woocommerce.php',     // WooCommerce integration
 ];
 

@@ -435,6 +435,19 @@ function primefit_customize_register( $wp_customize ) {
 		'type'    => 'checkbox',
 	) );
 
+	// Mega Menu Trigger Menu Item
+	$wp_customize->add_setting( 'primefit_mega_menu_trigger_item', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_trigger_item', array(
+		'label'       => __( 'Menu Item That Triggers Mega Menu', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'select',
+		'choices'     => primefit_get_primary_menu_items_choices(),
+		'description' => __( 'Select which menu item should trigger the mega menu when hovered.', 'primefit' ),
+	) );
+
 	// Column 1 Heading
 	$wp_customize->add_setting( 'primefit_mega_menu_column_1_heading', array(
 		'default'           => 'TOPS',
@@ -657,6 +670,7 @@ function primefit_get_training_division_2_config() {
 function primefit_get_mega_menu_config() {
 	return array(
 		'enabled' => get_theme_mod( 'primefit_mega_menu_enabled', true ),
+		'trigger_item' => get_theme_mod( 'primefit_mega_menu_trigger_item', '' ),
 		'column_1_heading' => get_theme_mod( 'primefit_mega_menu_column_1_heading', 'TOPS' ),
 		'column_1_links' => get_theme_mod( 'primefit_mega_menu_column_1_links', 'Sports Bras,Tanks & Short Sleeves,Hoodies & Sweatshirts' ),
 		'column_2_heading' => get_theme_mod( 'primefit_mega_menu_column_2_heading', 'BOTTOMS' ),
@@ -666,4 +680,27 @@ function primefit_get_mega_menu_config() {
 		'column_4_heading' => get_theme_mod( 'primefit_mega_menu_column_4_heading', 'DESIGNED FOR' ),
 		'column_4_links' => get_theme_mod( 'primefit_mega_menu_column_4_links', 'Run,Train,Rec' ),
 	);
+}
+
+/**
+ * Helper function to get primary menu items for customizer dropdown
+ */
+function primefit_get_primary_menu_items_choices() {
+	$choices = array(
+		'' => __( 'Select a menu item...', 'primefit' ),
+	);
+	
+	// Get the primary menu
+	$menu_items = wp_get_nav_menu_items( get_nav_menu_locations()['primary'] ?? 0 );
+	
+	if ( $menu_items ) {
+		foreach ( $menu_items as $item ) {
+			// Only include top-level menu items (no parent)
+			if ( $item->menu_item_parent == 0 ) {
+				$choices[ $item->ID ] = $item->title;
+			}
+		}
+	}
+	
+	return $choices;
 }

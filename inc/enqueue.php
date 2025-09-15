@@ -58,6 +58,16 @@ function primefit_enqueue_assets() {
 			[ 'primefit-app' ], 
 			PRIMEFIT_VERSION 
 		);
+		
+		// Single product page styles
+		if ( is_product() ) {
+			wp_enqueue_style( 
+				'primefit-single-product', 
+				PRIMEFIT_THEME_URI . '/assets/css/single-product.css', 
+				[ 'primefit-woocommerce' ], 
+				PRIMEFIT_VERSION 
+			);
+		}
 	}
 	
 	// Theme scripts
@@ -99,6 +109,17 @@ function primefit_enqueue_product_scripts() {
 			PRIMEFIT_VERSION, 
 			true 
 		);
+		
+		// Single product page specific scripts
+		if ( is_product() ) {
+			wp_enqueue_script( 
+				'primefit-single-product', 
+				PRIMEFIT_THEME_URI . '/assets/js/single-product.js', 
+				[ 'jquery', 'primefit-product' ], 
+				PRIMEFIT_VERSION, 
+				true 
+			);
+		}
 	}
 }
 

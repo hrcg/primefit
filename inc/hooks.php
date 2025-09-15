@@ -78,7 +78,7 @@ function primefit_loop_product_thumbnail() {
 	}
 	
 	// Add status badge
-	get_template_part( 'templates/parts/woocommerce/product-status-badge' );
+	get_template_part( 'woocommerce/global/product-status-badge' );
 	
 	echo '</div>';
 }
@@ -98,7 +98,7 @@ function primefit_loop_product_price() {
 		echo '<div class="product-price-container">';
 		
 		// Show price by default
-		get_template_part( 'templates/parts/woocommerce/product-price' );
+		get_template_part( 'woocommerce/single-product/parts/product-price' );
 		
 		// Show size options on hover
 		primefit_render_size_selection_overlay( $product );
@@ -106,7 +106,7 @@ function primefit_loop_product_price() {
 		echo '</div>';
 	} else {
 		// For simple products, just show the price
-		get_template_part( 'templates/parts/woocommerce/product-price' );
+		get_template_part( 'woocommerce/single-product/parts/product-price' );
 	}
 }
 
@@ -231,4 +231,26 @@ function primefit_handle_custom_sorting( $query ) {
 				break;
 		}
 	}
+}
+
+/**
+ * Add data-mega-menu attribute to specific menu items for mega menu functionality
+ */
+add_filter( 'nav_menu_link_attributes', 'primefit_add_mega_menu_attribute', 10, 3 );
+function primefit_add_mega_menu_attribute( $atts, $item, $args ) {
+	// Only apply to primary menu
+	if ( $args->theme_location !== 'primary' ) {
+		return $atts;
+	}
+	
+	// Get the mega menu configuration from customizer
+	$mega_menu_config = primefit_get_mega_menu_config();
+	$trigger_item_id = $mega_menu_config['trigger_item'];
+	
+	// Check if this menu item should trigger the mega menu
+	if ( ! empty( $trigger_item_id ) && $item->ID == $trigger_item_id ) {
+		$atts['data-mega-menu'] = 'true';
+	}
+	
+	return $atts;
 }

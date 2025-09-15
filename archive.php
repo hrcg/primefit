@@ -11,7 +11,7 @@ if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_
 	}
 	
 	// Add shop filter bar
-	get_template_part( 'templates/parts/woocommerce/shop-filter-bar' );
+	get_template_part( 'woocommerce/shop/filter-bar' );
 	
 	// WooCommerce will handle the product loop
 	?>
