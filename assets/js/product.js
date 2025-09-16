@@ -106,6 +106,7 @@
             window.location.href = response.product_url;
           } else {
             // Success - trigger cart update
+            console.log('Triggering added_to_cart event from product.js with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
             $(document.body).trigger("added_to_cart", [
               response.fragments,
               response.cart_hash,

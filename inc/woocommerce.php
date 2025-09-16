@@ -120,7 +120,7 @@ function primefit_override_quantity_input( $args, $product ) {
 }
 
 /**
- * Header cart fragments (update cart count asynchronously)
+ * Header cart fragments (update cart count and mini cart content)
  */
 add_filter( 'woocommerce_add_to_cart_fragments', 'primefit_header_cart_fragment' );
 function primefit_header_cart_fragment( $fragments ) {
@@ -133,15 +133,27 @@ function primefit_header_cart_fragment( $fragments ) {
 	<?php
 	$fragments['span[data-cart-count]'] = ob_get_clean();
 	
-	// Add mini cart content fragment to ensure real-time refresh
-	// This is needed because sometimes WooCommerce core doesn't include the mini cart fragment
+	// Add mini cart content fragment using WooCommerce standard structure
 	ob_start();
-	if ( function_exists( 'woocommerce_mini_cart' ) ) {
-		woocommerce_mini_cart();
-	}
+	?>
+	<div class="widget_shopping_cart_content">
+		<?php if ( function_exists( 'woocommerce_mini_cart' ) ) { woocommerce_mini_cart(); } ?>
+	</div>
+	<?php
 	$fragments['div.widget_shopping_cart_content'] = ob_get_clean();
 	
 	return $fragments;
+}
+
+/**
+ * Add AJAX endpoint for refreshing cart fragments
+ * This ensures WooCommerce core cart functions work properly with our custom structure
+ */
+add_action( 'wp_ajax_woocommerce_get_refreshed_fragments', 'primefit_woocommerce_get_refreshed_fragments' );
+add_action( 'wp_ajax_nopriv_woocommerce_get_refreshed_fragments', 'primefit_woocommerce_get_refreshed_fragments' );
+
+function primefit_woocommerce_get_refreshed_fragments() {
+	WC_AJAX::get_refreshed_fragments();
 }
 
 /**

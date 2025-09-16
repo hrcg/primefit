@@ -104,7 +104,10 @@
   }
 
   function openCart(clickedEl) {
+    console.log('openCart called with:', clickedEl); // Debug log
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
+    console.log('Cart context:', {wrap: $wrap.length, panel: $panel.length, toggle: $toggle.length}); // Debug log
+    
     $wrap.addClass("open").attr("data-open", "true");
     $panel.removeAttr("hidden");
     $toggle.attr("aria-expanded", "true");
@@ -115,6 +118,7 @@
 
     // Prevent page scrolling when cart is open
     preventPageScroll();
+    console.log('Cart opened successfully'); // Debug log
   }
 
   function closeCart(clickedEl) {
@@ -487,17 +491,24 @@
     }
   });
 
-  // Initialize open/close feedback on add to cart (optional)
-  $(document).on("added_to_cart", function () {
+  // Auto-open mini cart when product is added to cart
+  $(document).on("added_to_cart", function (event, fragments, cart_hash, $button) {
+    console.log('Product added to cart - auto-opening mini cart'); // Debug log
+    console.log('Event data:', {fragments, cart_hash, button: $button}); // Debug log
+    
     // Check cart state and hide empty message if needed
     setTimeout(function () {
       checkAndShowEmptyCartState();
     }, 100);
     
+    // Open cart immediately
     openCart();
+    
+    // Auto-close after 5 seconds
     setTimeout(function () {
+      console.log('Auto-closing mini cart after 5 seconds'); // Debug log
       closeCart();
-    }, 3000);
+    }, 5000);
   });
 
   // Function to hide empty cart state
@@ -1211,6 +1222,7 @@
           // Trigger cart update events
           $(document.body).trigger('update_checkout');
           $(document.body).trigger('wc_fragment_refresh');
+          console.log('Triggering added_to_cart event from recommendation with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
           $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
           
           // Show success state

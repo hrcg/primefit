@@ -141,7 +141,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<button type="button" class="cart-close" aria-label="Close">&times;</button>
 							</div>
 							<div class="cart-panel-content">
-								<?php if ( function_exists( 'woocommerce_mini_cart' ) ) { woocommerce_mini_cart(); } ?>
+								<div class="widget_shopping_cart_content">
+									<?php if ( function_exists( 'woocommerce_mini_cart' ) ) { woocommerce_mini_cart(); } ?>
+								</div>
 							</div>
 						</aside>
 					</div>

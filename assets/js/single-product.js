@@ -1318,6 +1318,7 @@
       // Trigger WooCommerce events
       $(document.body).trigger('update_checkout');
       $(document.body).trigger('wc_fragment_refresh');
+      console.log('Triggering added_to_cart event with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
       $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
 
       // Show success state
@@ -1449,6 +1450,8 @@
             // Trigger WooCommerce events
             $(document.body).trigger('update_checkout');
             $(document.body).trigger('wc_fragment_refresh');
+            console.log('Triggering added_to_cart event from checkCartAfterAdd with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
+            $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
 
             // Show success state
             this.hideLoadingState($button, true);

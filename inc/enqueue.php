@@ -50,6 +50,14 @@ function primefit_enqueue_assets() {
 		[ 'primefit-app' ],
 		PRIMEFIT_VERSION
 	);
+
+	// Cart-specific styles
+	wp_enqueue_style(
+		'primefit-cart',
+		PRIMEFIT_THEME_URI . '/assets/css/cart.css',
+		[ 'primefit-app' ],
+		PRIMEFIT_VERSION
+	);
 	
 	// Footer-specific styles
 	wp_enqueue_style(
@@ -99,8 +107,11 @@ function primefit_enqueue_assets() {
 		]
 	] );
 	
-	// WooCommerce cart nonces (use namespaced object to avoid clobbering Woo's wc_add_to_cart_params)
+	// WooCommerce scripts and cart nonces
 	if ( class_exists( 'WooCommerce' ) ) {
+		// Ensure WooCommerce cart fragments script is loaded
+		wp_enqueue_script( 'wc-cart-fragments' );
+		
 		wp_localize_script( 'primefit-app', 'primefit_cart_params', [
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'update_cart_nonce' => wp_create_nonce( 'woocommerce_update_cart_nonce' ),
