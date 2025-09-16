@@ -1076,6 +1076,419 @@
   }
 
   /**
+   * AJAX Add to Cart functionality to prevent form resubmission on refresh
+   */
+  class AjaxAddToCart {
+    constructor() {
+      this.init();
+    }
+
+    init() {
+      this.bindEvents();
+    }
+
+    bindEvents() {
+      // Intercept all cart form submissions on single product pages
+      $(document).on('submit', 'form.cart, form.variations_form, form.primefit-variations-form', (e) => {
+        e.preventDefault();
+        this.handleFormSubmission(e);
+      });
+    }
+
+    handleFormSubmission(e) {
+      const $form = $(e.target);
+      const $button = $form.find('button[type="submit"], input[type="submit"]').first();
+      
+      // Validate form data
+      if (!this.validateForm($form)) {
+        return false;
+      }
+
+      // Get form data
+      const formData = this.getFormData($form);
+      
+      // Show loading state
+      this.showLoadingState($button);
+      
+      // Submit via AJAX
+      this.submitToCart(formData, $button);
+    }
+
+    validateForm($form) {
+      // For variable products, ensure a variation is selected and all attributes are set
+      if ($form.hasClass('variations_form') || $form.hasClass('primefit-variations-form')) {
+        const variationId = $form.find('input[name="variation_id"]').val() || $form.find('.variation_id').val();
+        
+        if (!variationId || variationId === '0' || variationId === '') {
+          this.showError('Please select all product options before adding to cart.');
+          return false;
+        }
+
+        // Check if all required variation attributes are selected
+        let missingOptions = [];
+        $form.find('select[name^="attribute_"]').each(function() {
+          const $select = $(this);
+          const value = $select.val();
+          const label = $select.closest('.variation-option').find('label').text() || 
+                       $select.closest('.value').prev('.label').text() || 
+                       $select.attr('name').replace('attribute_pa_', '').replace('attribute_', '');
+          
+          if (!value || value === '') {
+            missingOptions.push(label);
+          }
+        });
+
+        if (missingOptions.length > 0) {
+          const optionText = missingOptions.length === 1 ? 'option' : 'options';
+          this.showError(`Please select all product ${optionText}: ${missingOptions.join(', ')}`);
+          return false;
+        }
+      }
+
+      // Validate quantity
+      const quantity = parseInt($form.find('input[name="quantity"]').val()) || 1;
+      if (quantity < 1) {
+        this.showError('Please enter a valid quantity.');
+        return false;
+      }
+
+      return true;
+    }
+
+    getFormData($form) {
+      const formArray = $form.serializeArray();
+      const formData = {};
+      
+      // Convert form array to object
+      $.each(formArray, function(i, field) {
+        formData[field.name] = field.value;
+      });
+
+      // Ensure we have required fields
+      formData.action = 'woocommerce_add_to_cart';
+      
+      // Get product ID from various possible sources
+      if (!formData.product_id) {
+        formData.product_id = formData['add-to-cart'] || $form.data('product_id') || $form.find('input[name="product_id"]').val();
+      }
+      
+      // Set default quantity if not provided
+      if (!formData.quantity) {
+        formData.quantity = 1;
+      }
+
+      // For variable products, ensure all variation attributes are included
+      if ($form.hasClass('variations_form') || $form.hasClass('primefit-variations-form')) {
+        // Get all variation attributes from the form
+        $form.find('select[name^="attribute_"], input[name^="attribute_"]').each(function() {
+          const $field = $(this);
+          const name = $field.attr('name');
+          const value = $field.val();
+          
+          if (name && value) {
+            formData[name] = value;
+          }
+        });
+
+        // Also check for variation data attributes on select elements
+        $form.find('.variations select').each(function() {
+          const $select = $(this);
+          const attrName = $select.attr('name');
+          const attrValue = $select.val();
+          
+          if (attrName && attrValue) {
+            formData[attrName] = attrValue;
+          }
+        });
+
+        // Ensure variation_id is properly set
+        const variationId = $form.find('input[name="variation_id"]').val() || $form.find('.variation_id').val();
+        if (variationId) {
+          formData.variation_id = variationId;
+        }
+      }
+
+      // Add security nonce
+      if (window.primefit_cart_params && window.primefit_cart_params.add_to_cart_nonce) {
+        formData.security = window.primefit_cart_params.add_to_cart_nonce;
+      } else if (window.wc_add_to_cart_params && window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce) {
+        formData.security = window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce;
+      }
+
+      console.log('Form data (updated):', formData); // Debug log
+
+      return formData;
+    }
+
+    showLoadingState($button) {
+      if ($button.length) {
+        $button.prop('disabled', true)
+               .addClass('loading')
+               .data('original-text', $button.text())
+               .text('Adding to Cart...');
+      }
+    }
+
+    hideLoadingState($button, success = true) {
+      if ($button.length) {
+        const originalText = $button.data('original-text') || 'Add to Cart';
+        
+        $button.removeClass('loading')
+               .prop('disabled', false);
+        
+        if (success) {
+          $button.addClass('added').text('Added!');
+          
+          // Reset button text after 2 seconds
+          setTimeout(() => {
+            $button.removeClass('added').text(originalText);
+          }, 2000);
+        } else {
+          $button.addClass('error').text('Error');
+          
+          // Reset button text after 3 seconds
+          setTimeout(() => {
+            $button.removeClass('error').text(originalText);
+          }, 3000);
+        }
+      }
+    }
+
+    submitToCart(formData, $button) {
+      const ajaxUrl = (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
+                     (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
+                     '/wp-admin/admin-ajax.php';
+
+      $.ajax({
+        type: 'POST',
+        url: ajaxUrl,
+        data: formData,
+        dataType: 'json',
+        success: (response) => {
+          this.handleSuccess(response, $button);
+        },
+        error: (xhr, status, error) => {
+          this.handleError(xhr, status, error, $button);
+        }
+      });
+    }
+
+    handleSuccess(response, $button) {
+      console.log('Add to cart response:', response); // Debug log
+
+      // Check for actual errors vs success-with-redirect
+      if (response.error) {
+        // If there are fragments, it means the product was actually added successfully
+        // WooCommerce sometimes returns error: true for redirects/notices, not actual errors
+        if (response.fragments && Object.keys(response.fragments).length > 0) {
+          console.log('Product added successfully (with fragments despite error flag)');
+          // Treat as success since we have fragments
+        } else if (response.product_url && !response.data && !response.notice) {
+          // This might be a redirect response, which could be success
+          // Let's try to determine if it's actually an error or just a redirect
+          console.log('Received redirect response, checking if product was actually added...');
+          
+          // Force refresh cart fragments to check if item was added
+          this.checkCartAfterAdd($button);
+          return;
+        } else {
+          // This appears to be an actual error
+          let errorMessage = 'Failed to add product to cart.';
+          
+          if (response.data) {
+            errorMessage = response.data;
+          } else if (response.notice) {
+            errorMessage = response.notice;
+          }
+          
+          this.showError(errorMessage);
+          this.hideLoadingState($button, false);
+          return;
+        }
+      }
+
+      // Success! Update cart fragments and show feedback
+      if (response.fragments) {
+        // Update cart count and other fragments
+        $.each(response.fragments, function(key, value) {
+          $(key).replaceWith(value);
+        });
+      }
+
+      // Trigger WooCommerce events
+      $(document.body).trigger('update_checkout');
+      $(document.body).trigger('wc_fragment_refresh');
+      $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
+
+      // Show success state
+      this.hideLoadingState($button, true);
+      
+      // Show success message
+      this.showSuccess('Product added to cart successfully!');
+
+      // Clean up URL to prevent issues with browser back/forward
+      this.cleanUpURL();
+    }
+
+    handleError(xhr, status, error, $button) {
+      console.error('AJAX error adding to cart:', {xhr, status, error}); // Debug log
+      
+      let errorMessage = 'Network error. Please check your connection and try again.';
+      
+      if (xhr.status === 403) {
+        errorMessage = 'Security check failed. Please refresh the page and try again.';
+      } else if (xhr.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      this.showError(errorMessage);
+      this.hideLoadingState($button, false);
+    }
+
+    showError(message) {
+      // Remove any existing notifications
+      $('.primefit-cart-notification').remove();
+      
+      // Show error notification
+      const $notification = $(`
+        <div class="primefit-cart-notification error" style="
+          position: fixed; 
+          top: 20px; 
+          right: 20px; 
+          background: #dc3545; 
+          color: white; 
+          padding: 15px 20px; 
+          border-radius: 4px; 
+          z-index: 9999;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        ">
+          <strong>Error:</strong> ${message}
+          <button type="button" style="
+            background: none; 
+            border: none; 
+            color: white; 
+            float: right; 
+            font-size: 16px; 
+            margin-left: 10px;
+            cursor: pointer;
+          " onclick="$(this).parent().remove();">&times;</button>
+        </div>
+      `);
+      
+      $('body').append($notification);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        $notification.fadeOut(300, function() {
+          $(this).remove();
+        });
+      }, 5000);
+    }
+
+    showSuccess(message) {
+      // Remove any existing notifications
+      $('.primefit-cart-notification').remove();
+      
+      // Show success notification
+      const $notification = $(`
+        <div class="primefit-cart-notification success" style="
+          position: fixed; 
+          top: 20px; 
+          right: 20px; 
+          background: #28a745; 
+          color: white; 
+          padding: 15px 20px; 
+          border-radius: 4px; 
+          z-index: 9999;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        ">
+          <strong>Success:</strong> ${message}
+          <button type="button" style="
+            background: none; 
+            border: none; 
+            color: white; 
+            float: right; 
+            font-size: 16px; 
+            margin-left: 10px;
+            cursor: pointer;
+          " onclick="$(this).parent().remove();">&times;</button>
+        </div>
+      `);
+      
+      $('body').append($notification);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        $notification.fadeOut(300, function() {
+          $(this).remove();
+        });
+      }, 3000);
+    }
+
+    checkCartAfterAdd($button) {
+      // Force refresh cart fragments to check if product was actually added
+      const ajaxUrl = (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
+                     (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
+                     '/wp-admin/admin-ajax.php';
+
+      $.ajax({
+        type: 'POST',
+        url: ajaxUrl,
+        data: {
+          action: 'woocommerce_get_refreshed_fragments'
+        },
+        success: function(response) {
+          console.log('Cart check response:', response);
+          
+          if (response && response.fragments) {
+            // Update fragments - this will show the new cart count if product was added
+            $.each(response.fragments, function(key, value) {
+              $(key).replaceWith(value);
+            });
+
+            // Trigger WooCommerce events
+            $(document.body).trigger('update_checkout');
+            $(document.body).trigger('wc_fragment_refresh');
+
+            // Show success state
+            this.hideLoadingState($button, true);
+            this.showSuccess('Product added to cart successfully!');
+            this.cleanUpURL();
+          } else {
+            // If no fragments, treat as error
+            this.showError('Unable to verify if product was added. Please check your cart.');
+            this.hideLoadingState($button, false);
+          }
+        }.bind(this),
+        error: function() {
+          // Fallback: show ambiguous message
+          this.showError('Product may have been added. Please check your cart.');
+          this.hideLoadingState($button, false);
+        }.bind(this)
+      });
+    }
+
+    cleanUpURL() {
+      // Remove any add-to-cart parameters from URL to prevent resubmission
+      if (window.history && window.history.replaceState) {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('add-to-cart');
+          url.searchParams.delete('added-to-cart');
+          url.searchParams.delete('quantity');
+          
+          const newSearch = url.searchParams.toString();
+          const newUrl = url.pathname + (newSearch ? '?' + newSearch : '') + url.hash;
+          
+          window.history.replaceState({}, '', newUrl);
+        } catch (e) {
+          // Ignore if URL API not available
+        }
+      }
+    }
+  }
+
+  /**
    * Initialize all functionality when document is ready
    */
   $(document).ready(function () {
@@ -1087,6 +1500,7 @@
       new NotifyAvailability();
       new WooCommerceQuantityControls();
       new StickyAddToCart();
+      new AjaxAddToCart(); // Initialize AJAX cart functionality
     }
   });
 })(jQuery);

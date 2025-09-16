@@ -2,6 +2,30 @@
   --container: 1850px;
   --gap: 10px;
 
+  /* Z-Index Scale - Centralized z-index management
+     Use these variables instead of hardcoded values throughout the codebase
+     
+     --z-base: 1        - Basic stacking (product badges, content overlays)
+     --z-content: 2     - Content that should appear above base (hero content, image overlays)
+     --z-elevated: 3    - Slightly elevated content (hover states, size options)
+     --z-sticky: 100    - Sticky elements (filter bar, navigation)
+     --z-dropdown: 1000 - Dropdown menus and similar components
+     --z-modal: 2000    - Modal dialogs and overlays
+     --z-overlay: 9998  - Background overlays (cart overlay, mobile nav overlay)
+     --z-popup: 9999    - Popup elements (cart panel, mobile nav panel)
+     --z-toast: 10000   - Toast notifications and critical overlays (filter dropdown)
+  */
+  --z-base: 1;
+  --z-content: 2;
+  --z-elevated: 3;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-overlay: 9998;
+  --z-popup: 9999;
+  --z-toast: 10000;
+  --z-promo: 999;
+
   /* Dark theme (default) */
   --bg: #0d0d0d;
   --background: #0d0d0d;
@@ -99,7 +123,7 @@ body.nav-open {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 .training-division-image {
@@ -120,12 +144,12 @@ body.nav-open {
     rgba(0, 0, 0, 0.7) 0%,
     rgba(0, 0, 0, 0.3) 100%
   );
-  z-index: 2;
+  z-index: var(--z-content);
 }
 
 .training-division-content {
   position: relative;
-  z-index: 3;
+  z-index: var(--z-elevated);
   width: 100%;
   padding: 80px 0;
 }
@@ -619,7 +643,7 @@ body.nav-open {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 /* Hero Bottom Gradient */
@@ -635,14 +659,14 @@ body.nav-open {
     transparent 0%,
     var(--headerBackground) 100%
   );
-  z-index: 1;
+  z-index: var(--z-base);
   pointer-events: none;
 }
 
 /* Hero Content - Natural Flow */
 .hero-content {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-content);
   width: 100%;
   display: flex;
   align-items: flex-end;
@@ -834,7 +858,7 @@ body.nav-open {
   letter-spacing: 0.04em;
   color: #fff;
   text-decoration: none;
-  z-index: 2;
+  z-index: var(--z-content);
   transition: opacity 0.3s ease;
 }
 
@@ -851,7 +875,7 @@ body.nav-open {
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
-  z-index: 3;
+  z-index: var(--z-elevated);
 }
 
 .tiles-3 .tile:hover .tile-overlay {
@@ -1051,7 +1075,7 @@ body.nav-open {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 .category-tile-image img {
@@ -1072,7 +1096,7 @@ body.nav-open {
   justify-content: flex-start;
   opacity: 1;
   visibility: visible;
-  z-index: 2;
+  z-index: var(--z-content);
   padding: 24px;
 }
 
@@ -1145,18 +1169,43 @@ body.nav-open {
   text-transform: uppercase;
   text-decoration: none;
   background: transparent;
-  color: var(--text);
-  border: 1px solid var(--text);
+  color: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 0;
-  transition: none;
+  transition: all 0.2s ease;
   min-width: 120px;
   margin-top: 16px;
 }
 
 .category-tile-button:hover {
-  background: var(--text);
-  color: var(--background);
-  border-color: var(--text);
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--bg);
+}
+
+/* Dark theme compatibility */
+@media (prefers-color-scheme: dark) {
+  .category-tile-button {
+    color: var(--text, #fff);
+    border-color: var(--text, #fff);
+  }
+  
+  .category-tile-button:hover {
+    background: var(--text, #fff);
+    color: var(--background, #000);
+    border-color: var(--text, #fff);
+  }
+}
+
+[data-theme="dark"] .category-tile-button {
+  color: var(--text, #fff);
+  border-color: var(--text, #fff);
+}
+
+[data-theme="dark"] .category-tile-button:hover {
+  background: var(--text, #fff);
+  color: var(--background, #000);
+  border-color: var(--text, #fff);
 }
 
 /* Remove default category name overlay since content is always visible */

@@ -54,7 +54,7 @@ body.single-product .site-header {
   background: var(--product-bg);
   color: var(--product-text);
   min-height: 100vh;
-  padding: 20px 0;
+  padding: 80px 0;
 }
 
 /* Force override any conflicting styles */
@@ -207,7 +207,7 @@ body.single-product .single-product-page {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 2;
+  z-index: var(--z-content);
 }
 
 /* Loading state for image transitions */
@@ -223,7 +223,7 @@ body.single-product .single-product-page {
   border-top: 2px solid var(--product-text);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  z-index: 3;
+  z-index: var(--z-elevated);
   opacity: 0.7;
 }
 
@@ -281,7 +281,7 @@ body.single-product .single-product-page {
   cursor: pointer;
   transition: all 0.2s ease;
   color: var(--nav-svg);
-  z-index: 10;
+  z-index: var(--z-elevated);
 }
 
 .image-nav:hover {
@@ -395,8 +395,8 @@ body.single-product .single-product-page {
 }
 
 .color-option {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   border: 2px solid var(--product-border);
   background: transparent;
   cursor: pointer;
@@ -768,7 +768,7 @@ body.single-product .single-product-page {
   background: var(--product-bg);
   border-top: 1px solid var(--product-border);
   padding: 16px 20px;
-  z-index: 990;
+  z-index: var(--z-promo);
   transform: translateY(100%);
   transition: transform 0.3s ease-in-out;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);

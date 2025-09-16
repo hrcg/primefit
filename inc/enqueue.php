@@ -99,12 +99,15 @@ function primefit_enqueue_assets() {
 		]
 	] );
 	
-	// WooCommerce cart nonces
+	// WooCommerce cart nonces (use namespaced object to avoid clobbering Woo's wc_add_to_cart_params)
 	if ( class_exists( 'WooCommerce' ) ) {
-		wp_localize_script( 'primefit-app', 'wc_add_to_cart_params', [
+		wp_localize_script( 'primefit-app', 'primefit_cart_params', [
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'update_cart_nonce' => wp_create_nonce( 'woocommerce_update_cart_nonce' ),
 			'remove_cart_nonce' => wp_create_nonce( 'woocommerce_remove_cart_nonce' ),
+			'add_to_cart_nonce' => wp_create_nonce( 'woocommerce_add_to_cart_nonce' ),
+			'apply_coupon_nonce' => wp_create_nonce( 'apply_coupon' ),
+			'remove_coupon_nonce' => wp_create_nonce( 'remove_coupon' ),
 		] );
 	}
 	

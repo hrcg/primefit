@@ -12,7 +12,7 @@
   margin-bottom: 10px;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 50;
   backdrop-filter: blur(10px);
   padding: 10px 0;
 }
@@ -138,7 +138,7 @@
   border-top: none;
   border-radius: 0 0 4px 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: var(--z-toast);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
@@ -361,10 +361,10 @@
 @media (max-width: 768px) {
   .shop-filter-bar {
     padding: 5px 10px;
-    margin-bottom: 80px;
+    margin-bottom: 40px;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: var(--z-sticky);
   }
 
   .shop-filter-bar .container {
@@ -470,7 +470,6 @@
     height: 32px;
     border: none;
     background: transparent;
-    border-radius: 4px;
     touch-action: manipulation;
     display: flex;
     align-items: center;
@@ -495,7 +494,7 @@
   /* Dropdown menu positioning for mobile */
   .filter-dropdown-menu {
     position: fixed;
-    top: auto;
+    top: -15px;
     left: 16px;
     right: 16px;
     bottom: auto;
@@ -503,22 +502,41 @@
     border-radius: 8px;
     border: 1px solid var(--border);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    z-index: 1001;
+    z-index: 200;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Mobile dropdown overlay */
-  .filter-dropdown.open::before {
+  /* Mobile dropdown overlay - using body::before for full coverage */
+  body.filter-dropdown-open::before {
     content: "";
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    backdrop-filter: blur(2px);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    pointer-events: auto;
+  }
+
+  /* Elevate filter bar when dropdown is open to ensure it's above the overlay */
+  body.filter-dropdown-open .shop-filter-bar {
+    z-index: 101; /* Above overlay (100), below menu (200) */
+    background: rgba(0, 0, 0, 1);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  /* Prevent body scroll when filter dropdown is open on mobile */
+  body.filter-dropdown-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
   .filter-dropdown-option {
@@ -580,8 +598,8 @@
   }
 
   .grid-option {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
   }
 
   .grid-option svg {
@@ -746,7 +764,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  z-index: 2;
+  z-index: var(--z-content);
 }
 
 .woocommerce ul.products li.product .product-status-tag.flash-sale {
@@ -882,7 +900,7 @@
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
-  z-index: 5;
+  z-index: var(--z-elevated);
   pointer-events: none;
 }
 
@@ -1194,7 +1212,7 @@ body.woocommerce .hero {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  z-index: 2;
+  z-index: var(--z-content);
 }
 
 .woocommerce-page .product-status-tag.flash-sale {

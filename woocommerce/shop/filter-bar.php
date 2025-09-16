@@ -44,14 +44,6 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 				<div class="grid-options">
 					<!-- Mobile Grid Options (1, 2 columns) -->
 					<div class="grid-options-mobile">
-						<button class="grid-option<?php echo $current_grid === '1' ? ' active' : ''; ?>" data-grid="1" title="<?php esc_attr_e( '1 column', 'primefit' ); ?>">
-							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-								<rect x="2" y="3" width="16" height="2"></rect>
-								<rect x="2" y="7" width="16" height="2"></rect>
-								<rect x="2" y="11" width="16" height="2"></rect>
-								<rect x="2" y="15" width="16" height="2"></rect>
-							</svg>
-						</button>
 						<button class="grid-option<?php echo $current_grid === '2' ? ' active' : ''; ?>" data-grid="2" title="<?php esc_attr_e( '2 columns', 'primefit' ); ?>">
 							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
 								<rect x="1" y="1" width="7" height="7"></rect>
@@ -60,23 +52,18 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 								<rect x="12" y="12" width="7" height="7"></rect>
 							</svg>
 						</button>
+						<button class="grid-option<?php echo $current_grid === '1' ? ' active' : ''; ?>" data-grid="1" title="<?php esc_attr_e( '1 column', 'primefit' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+								<rect x="2" y="3" width="16" height="2"></rect>
+								<rect x="2" y="7" width="16" height="2"></rect>
+								<rect x="2" y="11" width="16" height="2"></rect>
+								<rect x="2" y="15" width="16" height="2"></rect>
+							</svg>
+						</button>
 					</div>
 					
 					<!-- Desktop Grid Options (3, 4 columns) -->
 					<div class="grid-options-desktop">
-						<button class="grid-option<?php echo $current_grid === '3' ? ' active' : ''; ?>" data-grid="3" title="<?php esc_attr_e( '3 columns', 'primefit' ); ?>">
-							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-								<rect x="1" y="1" width="5" height="5"></rect>
-								<rect x="7.5" y="1" width="5" height="5"></rect>
-								<rect x="14" y="1" width="5" height="5"></rect>
-								<rect x="1" y="7.5" width="5" height="5"></rect>
-								<rect x="7.5" y="7.5" width="5" height="5"></rect>
-								<rect x="14" y="7.5" width="5" height="5"></rect>
-								<rect x="1" y="14" width="5" height="5"></rect>
-								<rect x="7.5" y="14" width="5" height="5"></rect>
-								<rect x="14" y="14" width="5" height="5"></rect>
-							</svg>
-						</button>
 						<button class="grid-option<?php echo $current_grid === '4' ? ' active' : ''; ?>" data-grid="4" title="<?php esc_attr_e( '4 columns', 'primefit' ); ?>">
 							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
 								<rect x="1" y="1" width="4" height="4"></rect>
@@ -95,6 +82,19 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 								<rect x="6" y="16" width="4" height="3"></rect>
 								<rect x="11" y="16" width="4" height="3"></rect>
 								<rect x="16" y="16" width="3" height="3"></rect>
+							</svg>
+						</button>
+						<button class="grid-option<?php echo $current_grid === '3' ? ' active' : ''; ?>" data-grid="3" title="<?php esc_attr_e( '3 columns', 'primefit' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+								<rect x="1" y="1" width="5" height="5"></rect>
+								<rect x="7.5" y="1" width="5" height="5"></rect>
+								<rect x="14" y="1" width="5" height="5"></rect>
+								<rect x="1" y="7.5" width="5" height="5"></rect>
+								<rect x="7.5" y="7.5" width="5" height="5"></rect>
+								<rect x="14" y="7.5" width="5" height="5"></rect>
+								<rect x="1" y="14" width="5" height="5"></rect>
+								<rect x="7.5" y="14" width="5" height="5"></rect>
+								<rect x="14" y="14" width="5" height="5"></rect>
 							</svg>
 						</button>
 					</div>
