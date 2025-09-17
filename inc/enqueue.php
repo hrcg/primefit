@@ -112,6 +112,9 @@ function primefit_enqueue_assets() {
 		// Ensure WooCommerce cart fragments script is loaded
 		wp_enqueue_script( 'wc-cart-fragments' );
 		
+		// Ensure WooCommerce add to cart script is loaded for AJAX functionality
+		wp_enqueue_script( 'wc-add-to-cart' );
+		
 		wp_localize_script( 'primefit-app', 'primefit_cart_params', [
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'update_cart_nonce' => wp_create_nonce( 'woocommerce_update_cart_nonce' ),

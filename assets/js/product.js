@@ -81,8 +81,10 @@
       var productId = $button.data("product-id");
       var size = $button.data("size");
 
+      console.log('Size option clicked:', {variationId, productId, size}); // Debug log
+
       if (!variationId || !productId) {
-        console.error("Missing variation or product ID");
+        console.error("Missing variation or product ID", {variationId, productId});
         return;
       }
 
@@ -91,18 +93,24 @@
 
       // Add to cart via AJAX
       $.ajax({
-        url: wc_add_to_cart_params.ajax_url,
+        url: (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
+             (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
+             '/wp-admin/admin-ajax.php',
         type: "POST",
         data: {
           action: "woocommerce_add_to_cart",
           product_id: productId,
           variation_id: variationId,
           quantity: 1,
-          nonce: wc_add_to_cart_params.wc_ajax_add_to_cart_nonce,
+          security: (window.primefit_cart_params && window.primefit_cart_params.add_to_cart_nonce) ||
+                   (window.wc_add_to_cart_params && window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce),
         },
         success: function (response) {
+          console.log('Add to cart response:', response); // Debug log
+          
           if (response.error && response.product_url) {
             // If there's an error, redirect to product page
+            console.log('Error response, redirecting to product page:', response.product_url);
             window.location.href = response.product_url;
           } else {
             // Success - trigger cart update
@@ -120,10 +128,16 @@
             }, 1500);
           }
         },
-        error: function () {
+        error: function (xhr, status, error) {
+          console.error('AJAX error adding to cart:', {xhr, status, error}); // Debug log
+          
+          // Remove loading state
+          $button.removeClass("loading").text(size.toUpperCase());
+          
           // On error, redirect to product page
           var productUrl = $button.closest(".product").find("a").attr("href");
           if (productUrl) {
+            console.log('Redirecting to product page due to error:', productUrl);
             window.location.href = productUrl;
           }
         },

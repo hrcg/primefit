@@ -329,18 +329,26 @@
    */
   class ProductVariations {
     constructor() {
+      this.isInitializing = true; // Flag to prevent auto-add during initialization
+      this.hasUserInteracted = false; // Flag to track if user has interacted with the page
       this.init();
     }
 
     init() {
       this.bindEvents();
       this.initializeVariations();
+      
+      // Add a small delay to ensure page is fully loaded before allowing auto-add
+      setTimeout(() => {
+        this.isInitializing = false; // Set to false after initialization is complete
+      }, 100);
     }
 
     bindEvents() {
       // Color selection
       $(document).on("click", ".color-option", (e) => {
         e.preventDefault();
+        this.hasUserInteracted = true; // Mark that user has interacted
         const $option = $(e.currentTarget);
         this.selectColor($option);
       });
@@ -348,6 +356,7 @@
       // Size selection
       $(document).on("click", ".size-option", (e) => {
         e.preventDefault();
+        this.hasUserInteracted = true; // Mark that user has interacted
         const $option = $(e.currentTarget);
         this.selectSize($option);
       });
@@ -379,7 +388,8 @@
       }
 
       if ($activeColor.length) {
-        this.selectColor($activeColor);
+        // Initialize color without triggering auto-add
+        this.initializeColor($activeColor);
       }
 
       // Select default size if available
@@ -399,6 +409,35 @@
 
       // Update add to cart button state
       this.updateAddToCartButton();
+    }
+
+    initializeColor($option) {
+      $(".color-option").removeClass("active");
+      $option.addClass("active");
+
+      const color = $option.data("color");
+      const variationImage = $option.data("variation-image");
+      const availableSizes = $option.data("available-sizes");
+
+      // Update product color display
+      $(".color-value").text(color);
+
+      // Update gallery image if variation image exists
+      if (variationImage) {
+        this.updateGalleryImage(variationImage);
+      }
+
+      // Update available sizes
+      this.updateAvailableSizes(availableSizes);
+
+      // Update variation ID
+      const variationId = $option.data("variation-id");
+      $(".variation_id").val(variationId || "0");
+
+      // Update add to cart button
+      this.updateAddToCartButton();
+      
+      // Don't auto-add during initialization
     }
 
     selectColor($option) {
@@ -426,6 +465,9 @@
 
       // Update add to cart button
       this.updateAddToCartButton();
+      
+      // Auto-add to cart if size is already selected
+      this.autoAddToCart();
     }
 
     selectSize($option) {
@@ -434,6 +476,9 @@
 
       // Update add to cart button
       this.updateAddToCartButton();
+      
+      // Auto-add to cart when size is selected
+      this.autoAddToCart();
     }
 
     updateGalleryImage(imageUrl) {
@@ -599,6 +644,328 @@
         }
       }
       return null;
+    }
+
+    autoAddToCart() {
+      // Don't auto-add during initialization or if user hasn't interacted
+      if (this.isInitializing || !this.hasUserInteracted) {
+        return;
+      }
+
+      // Additional check: don't auto-add if page was just loaded/refreshed
+      if (performance.navigation && performance.navigation.type === performance.navigation.TYPE_RELOAD) {
+        // If this is a page reload, don't auto-add for the first few seconds
+        const timeSinceLoad = Date.now() - performance.timing.navigationStart;
+        if (timeSinceLoad < 2000) { // 2 seconds
+          return;
+        }
+      }
+
+      const $selectedColor = $(".color-option.active");
+      const $selectedSize = $(".size-option.selected");
+      const $addToCartButton = $(".single_add_to_cart_button");
+
+      // Only proceed if both color and size are selected
+      if (!$selectedColor.length || !$selectedSize.length) {
+        return;
+      }
+
+      // Check if button is enabled (meaning we have a valid variation)
+      if ($addToCartButton.prop("disabled")) {
+        return;
+      }
+
+      // Get the form data
+      const $form = $(".primefit-variations-form");
+      if (!$form.length) {
+        return;
+      }
+
+      // Prevent multiple simultaneous requests
+      if ($addToCartButton.hasClass("loading")) {
+        return;
+      }
+
+      // Show loading state
+      $addToCartButton.addClass("loading").prop("disabled", true).text("Adding...");
+      
+      // Also show loading state on the selected size option
+      $selectedSize.addClass("loading");
+
+      // Get form data
+      const formData = this.getFormDataForAjax($form);
+
+      // Submit via AJAX
+      this.submitToCartAjax(formData, $addToCartButton);
+    }
+
+    getFormDataForAjax($form) {
+      const formArray = $form.serializeArray();
+      const formData = {};
+      
+      // Convert form array to object
+      $.each(formArray, function(i, field) {
+        formData[field.name] = field.value;
+      });
+
+      // Ensure we have required fields
+      formData.action = 'woocommerce_add_to_cart';
+      
+      // Get product ID
+      if (!formData.product_id) {
+        formData.product_id = formData['add-to-cart'] || $form.data('product_id') || $form.find('input[name="product_id"]').val();
+      }
+      
+      // Set default quantity if not provided
+      if (!formData.quantity) {
+        formData.quantity = 1;
+      }
+
+      // Add security nonce
+      if (window.primefit_cart_params && window.primefit_cart_params.add_to_cart_nonce) {
+        formData.security = window.primefit_cart_params.add_to_cart_nonce;
+      } else if (window.wc_add_to_cart_params && window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce) {
+        formData.security = window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce;
+      }
+
+      return formData;
+    }
+
+    submitToCartAjax(formData, $button) {
+      const ajaxUrl = (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
+                     (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
+                     '/wp-admin/admin-ajax.php';
+
+      $.ajax({
+        type: 'POST',
+        url: ajaxUrl,
+        data: formData,
+        dataType: 'json',
+        success: (response) => {
+          this.handleAjaxSuccess(response, $button);
+        },
+        error: (xhr, status, error) => {
+          this.handleAjaxError(xhr, status, error, $button);
+        }
+      });
+    }
+
+    handleAjaxSuccess(response, $button) {
+      console.log('Auto add to cart response:', response);
+
+      // Check for actual errors vs success-with-redirect
+      if (response.error) {
+        // If there are fragments, it means the product was actually added successfully
+        if (response.fragments && Object.keys(response.fragments).length > 0) {
+          console.log('Product added successfully (with fragments despite error flag)');
+          // Treat as success since we have fragments
+        } else if (response.product_url && !response.data && !response.notice) {
+          // This might be a redirect response, which could be success
+          console.log('Received redirect response, checking if product was actually added...');
+          
+          // Force refresh cart fragments to check if item was added
+          this.checkCartAfterAutoAdd($button);
+          return;
+        } else {
+          // This appears to be an actual error
+          let errorMessage = 'Failed to add product to cart.';
+          
+          if (response.data) {
+            errorMessage = response.data;
+          } else if (response.notice) {
+            errorMessage = response.notice;
+          }
+          
+          this.showAutoAddError(errorMessage);
+          this.hideAutoAddLoadingState($button, false);
+          return;
+        }
+      }
+
+      // Success! Update cart fragments and show feedback
+      if (response.fragments) {
+        // Update cart count and other fragments
+        $.each(response.fragments, function(key, value) {
+          $(key).replaceWith(value);
+        });
+      }
+
+      // Trigger WooCommerce events
+      $(document.body).trigger('update_checkout');
+      $(document.body).trigger('wc_fragment_refresh');
+      $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
+
+      // Show success state
+      this.hideAutoAddLoadingState($button, true);
+      
+      // Show success message
+      this.showAutoAddSuccess('Product added to cart successfully!');
+    }
+
+    handleAjaxError(xhr, status, error, $button) {
+      console.error('AJAX error auto adding to cart:', {xhr, status, error});
+      
+      let errorMessage = 'Network error. Please check your connection and try again.';
+      
+      if (xhr.status === 403) {
+        errorMessage = 'Security check failed. Please refresh the page and try again.';
+      } else if (xhr.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      this.showAutoAddError(errorMessage);
+      this.hideAutoAddLoadingState($button, false);
+    }
+
+    hideAutoAddLoadingState($button, success = true) {
+      if ($button.length) {
+        const originalText = $button.data('original-text') || 'Add to Cart';
+        
+        $button.removeClass('loading')
+               .prop('disabled', false);
+        
+        // Remove loading state from size option
+        $('.size-option.loading').removeClass('loading');
+        
+        if (success) {
+          $button.addClass('added').text('Added!');
+          
+          // Reset button text after 2 seconds
+          setTimeout(() => {
+            $button.removeClass('added').text(originalText);
+          }, 2000);
+        } else {
+          $button.addClass('error').text('Error');
+          
+          // Reset button text after 3 seconds
+          setTimeout(() => {
+            $button.removeClass('error').text(originalText);
+          }, 3000);
+        }
+      }
+    }
+
+    showAutoAddSuccess(message) {
+      // Remove any existing notifications
+      $('.primefit-auto-add-notification').remove();
+      
+      // Show success notification
+      const $notification = $(`
+        <div class="primefit-auto-add-notification success" style="
+          position: fixed; 
+          top: 20px; 
+          right: 20px; 
+          background: #28a745; 
+          color: white; 
+          padding: 15px 20px; 
+          border-radius: 4px; 
+          z-index: 9999;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        ">
+          <strong>Success:</strong> ${message}
+          <button type="button" style="
+            background: none; 
+            border: none; 
+            color: white; 
+            float: right; 
+            font-size: 16px; 
+            margin-left: 10px;
+            cursor: pointer;
+          " onclick="$(this).parent().remove();">&times;</button>
+        </div>
+      `);
+      
+      $('body').append($notification);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        $notification.fadeOut(300, function() {
+          $(this).remove();
+        });
+      }, 3000);
+    }
+
+    showAutoAddError(message) {
+      // Remove any existing notifications
+      $('.primefit-auto-add-notification').remove();
+      
+      // Show error notification
+      const $notification = $(`
+        <div class="primefit-auto-add-notification error" style="
+          position: fixed; 
+          top: 20px; 
+          right: 20px; 
+          background: #dc3545; 
+          color: white; 
+          padding: 15px 20px; 
+          border-radius: 4px; 
+          z-index: 9999;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        ">
+          <strong>Error:</strong> ${message}
+          <button type="button" style="
+            background: none; 
+            border: none; 
+            color: white; 
+            float: right; 
+            font-size: 16px; 
+            margin-left: 10px;
+            cursor: pointer;
+          " onclick="$(this).parent().remove();">&times;</button>
+        </div>
+      `);
+      
+      $('body').append($notification);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        $notification.fadeOut(300, function() {
+          $(this).remove();
+        });
+      }, 5000);
+    }
+
+    checkCartAfterAutoAdd($button) {
+      // Force refresh cart fragments to check if product was actually added
+      const ajaxUrl = (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
+                     (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
+                     '/wp-admin/admin-ajax.php';
+
+      $.ajax({
+        type: 'POST',
+        url: ajaxUrl,
+        data: {
+          action: 'woocommerce_get_refreshed_fragments'
+        },
+        success: function(response) {
+          console.log('Cart check response:', response);
+          
+          if (response && response.fragments) {
+            // Update fragments - this will show the new cart count if product was added
+            $.each(response.fragments, function(key, value) {
+              $(key).replaceWith(value);
+            });
+
+            // Trigger WooCommerce events
+            $(document.body).trigger('update_checkout');
+            $(document.body).trigger('wc_fragment_refresh');
+            $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
+
+            // Show success state
+            this.hideAutoAddLoadingState($button, true);
+            this.showAutoAddSuccess('Product added to cart successfully!');
+          } else {
+            // If no fragments, treat as error
+            this.showAutoAddError('Unable to verify if product was added. Please check your cart.');
+            this.hideAutoAddLoadingState($button, false);
+          }
+        }.bind(this),
+        error: function() {
+          // Fallback: show ambiguous message
+          this.showAutoAddError('Product may have been added. Please check your cart.');
+          this.hideAutoAddLoadingState($button, false);
+        }.bind(this)
+      });
     }
   }
 

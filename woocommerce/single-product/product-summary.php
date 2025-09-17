@@ -204,7 +204,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 						<?php else : ?>
 							<span class="color-swatch color-<?php echo esc_attr( $color_slug ); ?>"></span>
 						<?php endif; ?>
-						<span class="color-name"><?php echo esc_html( $color_name ); ?></span>
 					</button>
 				<?php endforeach; ?>
 			</div>

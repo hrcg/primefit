@@ -123,7 +123,6 @@ foreach ( $attributes as $attribute ) {
 						aria-label="<?php printf( esc_attr__( 'Select color %s', 'primefit' ), $color_name ); ?>"
 					>
 						<span class="color-swatch color-<?php echo esc_attr( $color_slug ); ?>"></span>
-						<span class="color-name"><?php echo esc_html( $color_name ); ?></span>
 					</button>
 				<?php endforeach; ?>
 			</div>
