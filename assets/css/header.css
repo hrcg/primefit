@@ -523,7 +523,7 @@ body:has(.promo-bar) .site-header {
 
   /* Adjust site content padding for mobile */
   body:has(.promo-bar):not(.has-hero-header) .site-content {
-    padding-top: 88px; /* Mobile promo bar + header height */
+    padding-top: 83px; /* Mobile promo bar + header height */
   }
 
   body:has(.promo-bar).has-hero-header .site-content {

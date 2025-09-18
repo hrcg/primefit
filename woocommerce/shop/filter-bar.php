@@ -107,7 +107,7 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 				// Show category name if on category page, otherwise show product count
 				if ( is_product_category() ) {
 					$category = get_queried_object();
-					echo esc_html( $category->name );
+					echo esc_html( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) );
 				} elseif ( is_product_tag() ) {
 					$tag = get_queried_object();
 					echo esc_html( $tag->name );

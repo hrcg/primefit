@@ -1143,8 +1143,8 @@ body.woocommerce-product-category .hero,
 body.woocommerce-product-tag .hero,
 body.product-category .hero,
 body.woocommerce .hero {
-  height: 60vh !important;
-  min-height: 500px;
+  height: 40vh !important;
+  min-height: 300px;
 }
 
 /* Products Grid Wrapper */
@@ -1388,8 +1388,8 @@ body.woocommerce .hero {
   body.woocommerce-product-tag .hero,
   body.product-category .hero,
   body.woocommerce .hero {
-    height: 30vh !important;
-    min-height: 300px;
+    height: 22vh !important;
+    min-height: 150px;
   }
 
   /* Center hero content inside the image for mobile shop/category pages */

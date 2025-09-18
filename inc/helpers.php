@@ -108,13 +108,13 @@ function primefit_get_shop_hero_config() {
 			}
 			$subheading = strtoupper( $subheading );
 		} else {
-			$subheading = 'EXPLORE OUR ' . strtoupper( $category->name ) . ' COLLECTION';
+			$subheading = 'EXPLORE OUR ' . strtoupper( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ) . ' COLLECTION';
 		}
 		
 		$hero_args = array(
 			'image_desktop' => $hero_image,
 			'image_mobile' => $hero_image,
-			'heading' => strtoupper( $category->name ),
+			'heading' => strtoupper( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ),
 			'subheading' => $subheading,
 			'cta_text' => '',
 			'cta_link' => '',
@@ -352,7 +352,7 @@ function primefit_get_shop_categories( $args = array() ) {
 		$description = ! empty( $category->description ) 
 			? wp_trim_words( wp_strip_all_tags( $category->description ), 12, '...' )
 			: sprintf( __( 'Explore our %s collection with %d products', 'primefit' ), 
-					  strtolower( $category->name ), 
+					  strtolower( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ), 
 					  $product_count );
 		
 		// Check if this is a subcategory
@@ -365,15 +365,15 @@ function primefit_get_shop_categories( $args = array() ) {
 		
 		$category_data[] = array(
 			'id' => $category->term_id,
-			'name' => $category->name,
+			'name' => html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ),
 			'slug' => $category->slug,
 			'description' => $description,
 			'image' => $image_url,
 			'url' => get_term_link( $category ),
 			'count' => $product_count,
-			'button_text' => sprintf( __( 'Shop %s', 'primefit' ), $category->name ),
+			'button_text' => sprintf( __( 'Shop %s', 'primefit' ), html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ),
 			'is_subcategory' => $is_subcategory,
-			'parent_name' => $parent_category ? $parent_category->name : null,
+			'parent_name' => $parent_category ? html_entity_decode( $parent_category->name, ENT_QUOTES, 'UTF-8' ) : null,
 			'parent_slug' => $parent_category ? $parent_category->slug : null
 		);
 	}
@@ -463,12 +463,12 @@ function primefit_render_shop_categories( $args = array() ) {
 			<div class="category-grid-content">
 				<?php foreach ( $categories as $category ) : ?>
 					<div class="category-tile<?php echo $category['is_subcategory'] ? ' category-tile--subcategory' : ''; ?>" 
-						 data-category-name="<?php echo esc_attr( strtoupper( $category['name'] ) ); ?>"
+						 data-category-name="<?php echo esc_attr( strtoupper( html_entity_decode( $category['name'], ENT_QUOTES, 'UTF-8' ) ) ); ?>"
 						 data-parent-category="<?php echo esc_attr( $category['parent_slug'] ); ?>">
 						<div class="category-tile-inner">
 							<div class="category-tile-image">
 								<img src="<?php echo esc_url( $category['image'] ); ?>" 
-								     alt="<?php echo esc_attr( $category['name'] ); ?>" 
+								     alt="<?php echo esc_attr( html_entity_decode( $category['name'], ENT_QUOTES, 'UTF-8' ) ); ?>" 
 								     loading="lazy" />
 							</div>
 							
@@ -476,7 +476,7 @@ function primefit_render_shop_categories( $args = array() ) {
 								<div class="category-tile-content">
 									<h3 class="category-tile-title">
 										<a href="<?php echo esc_url( $category['url'] ); ?>">
-											<?php echo esc_html( $category['name'] ); ?>
+											<?php echo esc_html( html_entity_decode( $category['name'], ENT_QUOTES, 'UTF-8' ) ); ?>
 										</a>
 									</h3>
 									
