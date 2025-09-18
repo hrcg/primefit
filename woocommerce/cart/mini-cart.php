@@ -44,42 +44,44 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 				?>
 				<li class="woocommerce-mini-cart-item <?php echo esc_attr( apply_filters( 'woocommerce_mini_cart_item_class', 'mini_cart_item', $cart_item, $cart_item_key ) ); ?>">
 					
-					<?php echo apply_filters( 'woocommerce_cart_item_remove_link', sprintf( '<a href="%s" class="remove remove_from_cart_button" aria-label="%s" data-product_id="%s" data-cart_item_key="%s" data-product_sku="%s">&times;</a>', esc_url( wc_get_cart_remove_url( $cart_item_key ) ), esc_attr__( 'Remove this item', 'woocommerce' ), esc_attr( $product_id ), esc_attr( $cart_item_key ), esc_attr( $_product->get_sku() ) ), $cart_item_key ); ?>
+					<?php echo apply_filters( 'woocommerce_cart_item_remove_link', sprintf( '<a href="%s" class="remove remove_from_cart_button" aria-label="%s" data-product_id="%s" data-cart_item_key="%s" data-product_sku="%s">REMOVE</a>', esc_url( wc_get_cart_remove_url( $cart_item_key ) ), esc_attr__( 'Remove this item', 'woocommerce' ), esc_attr( $product_id ), esc_attr( $cart_item_key ), esc_attr( $_product->get_sku() ) ), $cart_item_key ); ?>
 					
-					<?php if ( empty( $product_permalink ) ) : ?>
-						<?php echo $thumbnail; ?>
-					<?php else : ?>
-						<a href="<?php echo esc_url( $product_permalink ); ?>">
-							<?php echo $thumbnail; ?>
-						</a>
-					<?php endif; ?>
-
-					<div class="woocommerce-mini-cart__item-details">
+					<div class="woocommerce-mini-cart__item-content">
 						<?php if ( empty( $product_permalink ) ) : ?>
-							<span class="woocommerce-mini-cart__item-name"><?php echo wp_kses_post( $product_name ); ?></span>
+							<?php echo $thumbnail; ?>
 						<?php else : ?>
-							<a href="<?php echo esc_url( $product_permalink ); ?>" class="woocommerce-mini-cart__item-name"><?php echo wp_kses_post( $product_name ); ?></a>
+							<a href="<?php echo esc_url( $product_permalink ); ?>">
+								<?php echo $thumbnail; ?>
+							</a>
 						<?php endif; ?>
 
-						<?php echo wc_get_formatted_cart_item_data( $cart_item ); ?>
+						<div class="woocommerce-mini-cart__item-details">
+							<?php if ( empty( $product_permalink ) ) : ?>
+								<span class="woocommerce-mini-cart__item-name"><?php echo wp_kses_post( $product_name ); ?></span>
+							<?php else : ?>
+								<a href="<?php echo esc_url( $product_permalink ); ?>" class="woocommerce-mini-cart__item-name"><?php echo wp_kses_post( $product_name ); ?></a>
+							<?php endif; ?>
 
-						<div class="woocommerce-mini-cart__item-quantity">
-							<div class="quantity">
-								<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>">−</button>
-								<input 
-									type="number" 
-									class="qty" 
-									value="<?php echo esc_attr( $cart_item['quantity'] ); ?>" 
-									min="1" 
-									max="<?php echo esc_attr( $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 999 ); ?>"
-									data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>"
-									data-original-value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
-									step="1"
-									inputmode="numeric"
-								>
-								<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>">+</button>
+							<?php echo wc_get_formatted_cart_item_data( $cart_item ); ?>
+
+							<div class="woocommerce-mini-cart__item-quantity">
+								<div class="quantity">
+									<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>">−</button>
+									<input 
+										type="number" 
+										class="qty" 
+										value="<?php echo esc_attr( $cart_item['quantity'] ); ?>" 
+										min="1" 
+										max="<?php echo esc_attr( $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 999 ); ?>"
+										data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>"
+										data-original-value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
+										step="1"
+										inputmode="numeric"
+									>
+									<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>">+</button>
+								</div>
+								<span class="quantity-price"><?php echo $product_price; ?></span>
 							</div>
-							<span class="quantity-price"><?php echo $product_price; ?></span>
 						</div>
 					</div>
 				</li>
@@ -90,17 +92,6 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 		do_action( 'woocommerce_mini_cart_contents' );
 		?>
 	</ul>
-
-	<p class="woocommerce-mini-cart__total total">
-		<?php
-		/**
-		 * Hook: woocommerce_widget_shopping_cart_total.
-		 *
-		 * @hooked woocommerce_widget_shopping_cart_subtotal - 10
-		 */
-		do_action( 'woocommerce_widget_shopping_cart_total' );
-		?>
-	</p>
 
 	<?php do_action( 'woocommerce_widget_shopping_cart_before_buttons' ); ?>
 

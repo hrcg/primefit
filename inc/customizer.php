@@ -24,6 +24,17 @@ function primefit_customize_register( $wp_customize ) {
 		'priority' => 25,
 	) );
 
+	// Promo Bar Enable/Disable
+	$wp_customize->add_setting( 'primefit_promo_bar_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_promo_bar_enabled', array(
+		'label'   => __( 'Enable Promo Bar', 'primefit' ),
+		'section' => 'primefit_promo_bar',
+		'type'    => 'checkbox',
+	) );
+
 	// Promo Bar Text
 	$wp_customize->add_setting( 'primefit_promo_text', array(
 		'default'           => 'END OF SEASON SALE — UP TO 60% OFF — LIMITED TIME ONLY',
@@ -33,6 +44,18 @@ function primefit_customize_register( $wp_customize ) {
 		'label'   => __( 'Promo Text', 'primefit' ),
 		'section' => 'primefit_promo_bar',
 		'type'    => 'text',
+	) );
+
+	// Promo Bar Link
+	$wp_customize->add_setting( 'primefit_promo_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_promo_link', array(
+		'label'   => __( 'Promo Bar Link', 'primefit' ),
+		'section' => 'primefit_promo_bar',
+		'type'    => 'url',
+		'description' => __( 'Optional: Add a link to make the entire promo bar clickable', 'primefit' ),
 	) );
 
 	// Promo Bar Background Color
@@ -539,6 +562,19 @@ function primefit_customize_register( $wp_customize ) {
 		'type'        => 'textarea',
 		'description' => __( 'Enter links separated by commas. Example: Run,Train,Rec', 'primefit' ),
 	) );
+}
+
+/**
+ * Helper function to get promo bar configuration from customizer
+ */
+function primefit_get_promo_bar_config() {
+	return array(
+		'enabled' => get_theme_mod( 'primefit_promo_bar_enabled', true ),
+		'text' => get_theme_mod( 'primefit_promo_text', 'END OF SEASON SALE — UP TO 60% OFF — LIMITED TIME ONLY' ),
+		'link' => get_theme_mod( 'primefit_promo_link', '' ),
+		'bg_color' => get_theme_mod( 'primefit_promo_bg_color', '#ff3b30' ),
+		'text_color' => get_theme_mod( 'primefit_promo_text_color', '#ffffff' ),
+	);
 }
 
 /**

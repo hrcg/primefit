@@ -30,6 +30,94 @@ error_log('CART DEBUG: WooCommerce class is available - setting up cart function
 add_filter( 'woocommerce_enqueue_styles', '__return_empty_array' );
 
 /**
+ * Add custom stock validation for add to cart
+ * This ensures stock limits are enforced on the server side
+ * TEMPORARILY DISABLED FOR DEBUGGING
+ */
+// add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
+function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity, $variation_id = 0, $variation_data = array() ) {
+	// Only validate for variable products with variations
+	if ( $variation_id && $variation_id > 0 ) {
+		$variation = wc_get_product( $variation_id );
+		
+		if ( $variation && $variation->is_type( 'variation' ) ) {
+			// Check if variation is in stock
+			if ( ! $variation->is_in_stock() ) {
+				wc_add_notice( __( 'This variation is currently out of stock.', 'primefit' ), 'error' );
+				return false;
+			}
+			
+			// Check stock quantity limits
+			if ( $variation->managing_stock() ) {
+				$stock_quantity = $variation->get_stock_quantity();
+				$max_purchase_quantity = $variation->get_max_purchase_quantity();
+				
+				// Use the more restrictive limit
+				$max_allowed = $max_purchase_quantity > 0 ? min( $stock_quantity, $max_purchase_quantity ) : $stock_quantity;
+				
+				if ( $quantity > $max_allowed ) {
+					wc_add_notice( 
+						sprintf( 
+							__( 'Only %d items available in stock. Please reduce your quantity.', 'primefit' ), 
+							$max_allowed 
+						), 
+						'error' 
+					);
+					return false;
+				}
+			}
+		}
+	}
+	
+	return $valid;
+}
+
+/**
+ * Ensure WooCommerce AJAX add to cart handler is properly registered
+ * WooCommerce should handle this automatically, but we'll ensure it's available
+ */
+add_action( 'wp_ajax_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
+add_action( 'wp_ajax_nopriv_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
+function primefit_ensure_wc_ajax_add_to_cart() {
+	// Let WooCommerce handle the AJAX add to cart
+	if ( class_exists( 'WC_AJAX' ) && method_exists( 'WC_AJAX', 'add_to_cart' ) ) {
+		WC_AJAX::add_to_cart();
+	} else {
+		// Fallback: handle manually
+		wp_send_json_error( __( 'WooCommerce AJAX handler not available', 'primefit' ) );
+	}
+}
+
+/**
+ * Enable AJAX add to cart functionality
+ */
+add_action( 'init', 'primefit_enable_ajax_add_to_cart' );
+function primefit_enable_ajax_add_to_cart() {
+	// Ensure AJAX add to cart is enabled
+	if ( class_exists( 'WooCommerce' ) ) {
+		// Enable AJAX add to cart for single products
+		add_filter( 'woocommerce_product_single_add_to_cart_text', 'primefit_ajax_add_to_cart_text', 10, 2 );
+		add_filter( 'woocommerce_loop_add_to_cart_link', 'primefit_ajax_add_to_cart_link', 10, 2 );
+	}
+}
+
+/**
+ * Ensure add to cart buttons have proper AJAX classes
+ */
+function primefit_ajax_add_to_cart_text( $text, $product ) {
+	return $text;
+}
+
+function primefit_ajax_add_to_cart_link( $link, $product ) {
+	// Add AJAX classes to add to cart links
+	if ( $product->is_type( 'simple' ) && $product->is_purchasable() && $product->is_in_stock() ) {
+		$link = str_replace( 'add_to_cart_button', 'add_to_cart_button ajax_add_to_cart', $link );
+		$link = str_replace( '<a ', '<a data-product_id="' . $product->get_id() . '" ', $link );
+	}
+	return $link;
+}
+
+/**
  * Admin: Legacy product custom fields notice
  * Note: These fields are now handled by ACF. This function is kept for reference.
  */
@@ -142,6 +230,17 @@ function primefit_header_cart_fragment( $fragments ) {
 	<?php
 	$fragments['div.widget_shopping_cart_content'] = ob_get_clean();
 	
+	// Debug: Log cart contents for troubleshooting
+	if ( WC()->cart && ! WC()->cart->is_empty() ) {
+		error_log( 'CART DEBUG: Fragment update - Cart contents: ' . print_r( array_map( function( $item ) {
+			return array(
+				'product_id' => $item['product_id'],
+				'quantity' => $item['quantity'],
+				'variation_id' => $item['variation_id']
+			);
+		}, WC()->cart->get_cart() ), true ) );
+	}
+	
 	return $fragments;
 }
 
@@ -249,6 +348,9 @@ function primefit_wc_update_cart_item_quantity() {
         wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
     }
 
+    // Debug: Log the update request
+    error_log( 'CART DEBUG: Update quantity request - Key: ' . $cart_item_key . ', Quantity: ' . $quantity );
+
     // Update quantity; set_quantity returns WC_Cart_Item or false
     $updated = WC()->cart->set_quantity( $cart_item_key, $quantity, true );
 
@@ -259,11 +361,19 @@ function primefit_wc_update_cart_item_quantity() {
     // Recalculate totals and refresh fragments
     WC()->cart->calculate_totals();
 
+    // Debug: Log cart state after update
+    $cart_contents = WC()->cart->get_cart();
+    if ( isset( $cart_contents[ $cart_item_key ] ) ) {
+        error_log( 'CART DEBUG: After update - Item quantity: ' . $cart_contents[ $cart_item_key ]['quantity'] );
+    }
+
     $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
 
     wp_send_json_success( array(
         'fragments' => $fragments,
         'cart_hash' => WC()->cart->get_cart_hash(),
+        'updated_quantity' => $quantity,
+        'cart_item_key' => $cart_item_key,
     ) );
 }
 
@@ -274,23 +384,32 @@ function primefit_wc_update_cart_item_quantity() {
 add_action( 'wp_ajax_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
 add_action( 'wp_ajax_nopriv_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
 function primefit_wc_remove_cart_item() {
+    error_log('CART DEBUG: Remove cart item AJAX handler called');
+    error_log('CART DEBUG: POST data: ' . print_r($_POST, true));
+    
     if ( ! isset( $_POST['cart_item_key'], $_POST['security'] ) ) {
+        error_log('CART DEBUG: Missing required parameters');
         wp_send_json_error( __( 'Invalid request', 'primefit' ), 400 );
     }
 
     if ( ! wp_verify_nonce( $_POST['security'], 'woocommerce_remove_cart_nonce' ) ) {
+        error_log('CART DEBUG: Nonce verification failed');
         wp_send_json_error( __( 'Security check failed', 'primefit' ), 403 );
     }
 
     $cart_item_key = sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) );
+    error_log('CART DEBUG: Cart item key: ' . $cart_item_key);
 
     if ( ! WC()->cart ) {
+        error_log('CART DEBUG: WooCommerce cart not available');
         wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
     }
 
     $removed = WC()->cart->remove_cart_item( $cart_item_key );
+    error_log('CART DEBUG: Remove result: ' . ($removed ? 'SUCCESS' : 'FAILED'));
 
     if ( ! $removed ) {
+        error_log('CART DEBUG: Failed to remove item');
         wp_send_json_error( __( 'Failed to remove item', 'primefit' ), 400 );
     }
 
@@ -298,6 +417,7 @@ function primefit_wc_remove_cart_item() {
 
     $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
 
+    error_log('CART DEBUG: Sending success response');
     wp_send_json_success( array(
         'fragments' => $fragments,
         'cart_hash' => WC()->cart->get_cart_hash(),
@@ -697,7 +817,6 @@ function primefit_mini_cart_recommended_items() {
 	</ul> <!-- Close the mini cart items list -->
 	<div class="mini-cart-recommendations">
 		<h3 class="recommendations-title"><?php _e( 'ADD A LITTLE EXTRA', 'primefit' ); ?></h3>
-		<p class="recommendations-subtitle"><?php _e( 'Add one or more of these items to get free delivery', 'primefit' ); ?></p>
 		
 		<div class="recommendations-grid">
 			<?php foreach ( array_slice( $recommended_products, 0, 2 ) as $product ) : ?>
@@ -807,17 +926,6 @@ function primefit_mini_cart_discount_section() {
 			</div>
 			<?php wp_nonce_field( 'apply_coupon', 'coupon_nonce' ); ?>
 		</form>
-		
-		<?php if ( function_exists( 'wc_help_tip' ) ) : ?>
-			<p class="coupon-help-text">
-				<?php echo wc_help_tip( __( 'Gift Card codes can be applied at checkout.', 'primefit' ) ); ?>
-				<small><?php _e( 'Gift Card codes can be applied at checkout.', 'primefit' ); ?></small>
-			</p>
-		<?php else : ?>
-			<p class="coupon-help-text">
-				<small><?php _e( 'Gift Card codes can be applied at checkout.', 'primefit' ); ?></small>
-			</p>
-		<?php endif; ?>
 		
 		<?php
 		// Display applied coupons

@@ -113,7 +113,17 @@ function primefit_enqueue_assets() {
 		wp_enqueue_script( 'wc-cart-fragments' );
 		
 		// Ensure WooCommerce add to cart script is loaded for AJAX functionality
-		wp_enqueue_script( 'wc-add-to-cart' );
+		wp_enqueue_script( 'wc-add-to-cart', '', [ 'jquery', 'wc-cart-fragments' ], WC_VERSION, true );
+		
+		// Localize WooCommerce add to cart parameters
+		wp_localize_script( 'wc-add-to-cart', 'wc_add_to_cart_params', [
+			'ajax_url' => WC_AJAX::get_endpoint( 'add_to_cart' ),
+			'wc_ajax_add_to_cart_nonce' => wp_create_nonce( 'wc_ajax_add_to_cart' ),
+			'i18n_view_cart' => esc_attr__( 'View cart', 'woocommerce' ),
+			'cart_url' => apply_filters( 'woocommerce_add_to_cart_redirect', wc_get_cart_url() ),
+			'is_cart' => is_cart(),
+			'cart_redirect_after_add' => get_option( 'woocommerce_cart_redirect_after_add' ),
+		] );
 		
 		wp_localize_script( 'primefit-app', 'primefit_cart_params', [
 			'ajax_url' => admin_url( 'admin-ajax.php' ),

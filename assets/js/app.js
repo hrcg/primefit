@@ -118,6 +118,74 @@
 
     // Prevent page scrolling when cart is open
     preventPageScroll();
+    
+    // Ensure all quantity inputs are properly synced when cart opens
+    // First try to get fresh cart fragments to ensure we have the latest data
+    if (window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
+      $.ajax({
+        type: 'POST',
+        url: window.primefit_cart_params.ajax_url,
+        data: {
+          action: 'woocommerce_get_refreshed_fragments'
+        },
+        success: function(response) {
+          if (response && response.fragments) {
+            // Update fragments with fresh data
+            $.each(response.fragments, function (key, value) {
+              $(key).replaceWith(value);
+            });
+            
+            // Now sync all quantity inputs with the fresh data
+            setTimeout(function() {
+              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+                const $input = $(this);
+                const cartItemKey = $input.data('cart-item-key');
+                const currentVal = parseInt($input.val()) || 1;
+                
+                // Update both the input value and the data attribute
+                if (currentVal && cartItemKey) {
+                  $input.val(currentVal);
+                  $input.attr('data-original-value', currentVal);
+                  console.log('CART DEBUG: Synced quantity on cart open (fresh data) for item', cartItemKey, 'to', currentVal);
+                }
+              });
+            }, 50);
+          }
+        },
+        error: function() {
+          // Fallback: sync with current values if AJAX fails
+          setTimeout(function() {
+            $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+              const $input = $(this);
+              const cartItemKey = $input.data('cart-item-key');
+              const currentVal = parseInt($input.val()) || 1;
+              
+              if (currentVal && cartItemKey) {
+                $input.val(currentVal);
+                $input.attr('data-original-value', currentVal);
+                console.log('CART DEBUG: Fallback sync quantity on cart open for item', cartItemKey, 'to', currentVal);
+              }
+            });
+          }, 50);
+        }
+      });
+    } else {
+      // Fallback if no AJAX params available
+      setTimeout(function() {
+        $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+          const $input = $(this);
+          const cartItemKey = $input.data('cart-item-key');
+          const currentVal = parseInt($input.val()) || 1;
+          
+          if (currentVal && cartItemKey) {
+            $input.val(currentVal);
+            $input.attr('data-original-value', currentVal);
+            console.log('CART DEBUG: Basic sync quantity on cart open for item', cartItemKey, 'to', currentVal);
+          }
+        });
+      }, 50);
+    }
+    
     console.log('Cart opened successfully'); // Debug log
   }
 
@@ -272,8 +340,25 @@
     }
   );
 
-  // Remove item from cart: defer to WooCommerce core handler; keep fallback only
+  // Remove item from cart: handle both WooCommerce core and custom handlers
   $(document).ready(function() {
+    // Handle WooCommerce core remove buttons
+    $(document).off("click.primefit-cart", ".remove_from_cart_button");
+    $(document).on("click.primefit-cart", ".remove_from_cart_button", function (e) {
+      e.preventDefault();
+      const $btn = $(this);
+      const cartItemKey = $btn.data("cart_item_key");
+      console.log('CART DEBUG: Remove button clicked, cart item key:', cartItemKey);
+      
+      if (cartItemKey) {
+        $btn.addClass("loading").prop("disabled", true);
+        removeCartItem(cartItemKey, $btn);
+      } else {
+        console.error('CART DEBUG: No cart item key found');
+      }
+    });
+    
+    // Keep fallback for custom remove buttons
     $(document).off("click.primefit-cart", ".woocommerce-mini-cart__item-remove");
     $(document).on("click.primefit-cart", ".woocommerce-mini-cart__item-remove[href='#']", function (e) {
       e.preventDefault();
@@ -313,15 +398,33 @@
             });
             
             // After fragments are updated, ensure all quantity inputs have proper data attributes
+            // Use a longer timeout to ensure DOM is fully updated
             setTimeout(function() {
               $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
                 const $input = $(this);
-                const currentVal = $input.val();
-                if (currentVal && !$input.data('original-value')) {
-                  $input.attr('data-original-value', currentVal);
+                const cartItemKey = $input.data('cart-item-key');
+                
+                // Get the actual quantity from the server response or cart data
+                let actualQuantity = response.data.updated_quantity;
+                
+                // If this is the item we just updated, use the updated quantity
+                if (cartItemKey === response.data.cart_item_key) {
+                  actualQuantity = response.data.updated_quantity;
+                } else {
+                  // For other items, try to get quantity from the input value
+                  actualQuantity = parseInt($input.val()) || 1;
+                }
+                
+                // Update both the input value and the data attribute
+                if (actualQuantity && cartItemKey) {
+                  $input.val(actualQuantity);
+                  $input.attr('data-original-value', actualQuantity);
+                  
+                  // Debug log to track quantity sync
+                  console.log('CART DEBUG: Synced quantity for item', cartItemKey, 'to', actualQuantity);
                 }
               });
-            }, 50);
+            }, 100);
           }
           
           // Trigger WooCommerce cart update events
@@ -371,7 +474,7 @@
     }
 
     // Find the cart item element for animation
-    const $cartItem = $(`.woocommerce-mini-cart__item-remove[data-cart-item-key="${cartItemKey}"]`).closest('.woocommerce-mini-cart__item');
+    const $cartItem = $(`.remove_from_cart_button[data-cart_item_key="${cartItemKey}"]`).closest('.woocommerce-mini-cart-item');
     
     // Add loading state to the remove button
     $element.addClass("loading").prop("disabled", true);
@@ -418,6 +521,22 @@
             $.each(response.data.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
+            
+            // After fragments are updated, ensure all quantity inputs have proper data attributes
+            setTimeout(function() {
+              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+                const $input = $(this);
+                const cartItemKey = $input.data('cart-item-key');
+                const currentVal = parseInt($input.val()) || 1;
+                
+                // Update both the input value and the data attribute
+                if (currentVal && cartItemKey) {
+                  $input.val(currentVal);
+                  $input.attr('data-original-value', currentVal);
+                  console.log('CART DEBUG: Synced quantity after removal for item', cartItemKey, 'to', currentVal);
+                }
+              });
+            }, 100);
             
             // Use server's cart state to determine if empty
             console.log('Server says cart is empty:', response.data.cart_is_empty);
@@ -541,6 +660,78 @@
   $(document).on("added_to_cart", function (event, fragments, cart_hash, $button) {
     console.log('Product added to cart - auto-opening mini cart'); // Debug log
     console.log('Event data:', {fragments, cart_hash, button: $button}); // Debug log
+    
+    // Update fragments if provided
+    if (fragments) {
+      $.each(fragments, function (key, value) {
+        $(key).replaceWith(value);
+      });
+      
+      // Force a more aggressive quantity sync after adding to cart
+      setTimeout(function() {
+        // First, try to get fresh cart fragments to ensure we have the latest data
+        if (window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
+          $.ajax({
+            type: 'POST',
+            url: window.primefit_cart_params.ajax_url,
+            data: {
+              action: 'woocommerce_get_refreshed_fragments'
+            },
+            success: function(response) {
+              if (response && response.fragments) {
+                // Update fragments with fresh data
+                $.each(response.fragments, function (key, value) {
+                  $(key).replaceWith(value);
+                });
+                
+                // Now sync all quantity inputs with the fresh data
+                setTimeout(function() {
+                  $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+                    const $input = $(this);
+                    const cartItemKey = $input.data('cart-item-key');
+                    const currentVal = parseInt($input.val()) || 1;
+                    
+                    // Update both the input value and the data attribute
+                    if (currentVal && cartItemKey) {
+                      $input.val(currentVal);
+                      $input.attr('data-original-value', currentVal);
+                      console.log('CART DEBUG: Synced quantity after fresh fragments for item', cartItemKey, 'to', currentVal);
+                    }
+                  });
+                }, 50);
+              }
+            },
+            error: function() {
+              // Fallback: sync with current values if AJAX fails
+              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+                const $input = $(this);
+                const cartItemKey = $input.data('cart-item-key');
+                const currentVal = parseInt($input.val()) || 1;
+                
+                if (currentVal && cartItemKey) {
+                  $input.val(currentVal);
+                  $input.attr('data-original-value', currentVal);
+                  console.log('CART DEBUG: Fallback sync quantity for item', cartItemKey, 'to', currentVal);
+                }
+              });
+            }
+          });
+        } else {
+          // Fallback if no AJAX params available
+          $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+            const $input = $(this);
+            const cartItemKey = $input.data('cart-item-key');
+            const currentVal = parseInt($input.val()) || 1;
+            
+            if (currentVal && cartItemKey) {
+              $input.val(currentVal);
+              $input.attr('data-original-value', currentVal);
+              console.log('CART DEBUG: Basic sync quantity for item', cartItemKey, 'to', currentVal);
+            }
+          });
+        }
+      }, 150);
+    }
     
     // Check cart state and hide empty message if needed
     setTimeout(function () {
@@ -1282,7 +1473,7 @@
       type: 'POST',
       url: wc_add_to_cart_params ? wc_add_to_cart_params.ajax_url : primefit_cart_params.ajax_url,
       data: {
-        action: 'woocommerce_add_to_cart',
+        action: 'wc_ajax_add_to_cart',
         product_id: productId,
         quantity: 1,
         security: wc_add_to_cart_params ? wc_add_to_cart_params.wc_ajax_add_to_cart_nonce : primefit_cart_params.add_to_cart_nonce
@@ -1319,9 +1510,18 @@
           }, 2000);
         }
       },
-      error: function() {
-        // Show error
-        $button.removeClass('loading').addClass('error').text('Error').prop('disabled', false);
+      error: function(xhr, status, error) {
+        console.error('Recommendation add to cart error:', {xhr, status, error});
+        
+        // Show error with more specific message
+        let errorText = 'Error';
+        if (status === 'timeout') {
+          errorText = 'Timeout';
+        } else if (status === 'error' && xhr.status === 0) {
+          errorText = 'Network Error';
+        }
+        
+        $button.removeClass('loading').addClass('error').text(errorText).prop('disabled', false);
         
         setTimeout(function() {
           $button.removeClass('error').text('+ ADD');

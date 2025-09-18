@@ -3,23 +3,33 @@
  * Promo Bar Template
  * 
  * Displays a promotional banner at the top of the site
+ * 
+ * Features:
+ * - Enable/disable toggle via customizer
+ * - Customizable text content
+ * - Background and text color selection
+ * - Optional clickable link functionality
+ * - Responsive design
  */
 
-// Get promo bar settings from customizer
-$promo_text = get_theme_mod( 'primefit_promo_text', 'END OF SEASON SALE — UP TO 60% OFF — LIMITED TIME ONLY' );
-$promo_bg_color = get_theme_mod( 'primefit_promo_bg_color', '#ff3b30' );
-$promo_text_color = get_theme_mod( 'primefit_promo_text_color', '#ffffff' );
+// Get promo bar configuration from customizer
+$promo_config = primefit_get_promo_bar_config();
 
-// Don't display if no promo text is set
-if ( empty( $promo_text ) ) {
+// Don't display if promo bar is disabled or no promo text is set
+if ( ! $promo_config['enabled'] || empty( $promo_config['text'] ) ) {
 	return;
 }
+
+// Determine if the promo bar should be clickable
+$is_clickable = ! empty( $promo_config['link'] );
+$container_tag = $is_clickable ? 'a' : 'div';
+$container_attrs = $is_clickable ? 'href="' . esc_url( $promo_config['link'] ) . '"' : '';
 ?>
 
-<div class="promo-bar" style="background-color: <?php echo esc_attr( $promo_bg_color ); ?>;">
+<<?php echo $container_tag; ?> class="promo-bar" style="background-color: <?php echo esc_attr( $promo_config['bg_color'] ); ?>;" <?php echo $container_attrs; ?>>
 	<div class="promo-bar-content">
-		<div class="promo-text" style="color: <?php echo esc_attr( $promo_text_color ); ?>;">
-			<?php echo esc_html( $promo_text ); ?>
+		<div class="promo-text" style="color: <?php echo esc_attr( $promo_config['text_color'] ); ?>;">
+			<?php echo esc_html( $promo_config['text'] ); ?>
 		</div>
 	</div>
-</div>
+</<?php echo $container_tag; ?>>

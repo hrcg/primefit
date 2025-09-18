@@ -98,7 +98,7 @@
              '/wp-admin/admin-ajax.php',
         type: "POST",
         data: {
-          action: "woocommerce_add_to_cart",
+          action: "wc_ajax_add_to_cart",
           product_id: productId,
           variation_id: variationId,
           quantity: 1,

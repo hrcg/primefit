@@ -331,7 +331,12 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 		<?php if ( $is_in_stock ) : ?>
 			<?php if ( $is_variable ) : ?>
 				<!-- Custom variation form for variable products -->
-				<form class="primefit-variations-form cart" action="<?php echo esc_url( apply_filters( 'woocommerce_add_to_cart_form_action', $product->get_permalink() ) ); ?>" method="post" enctype='multipart/form-data' data-product_id="<?php echo absint( $product->get_id() ); ?>">
+				<?php 
+				$available_variations = $product->get_available_variations();
+				$variations_json = wp_json_encode( $available_variations );
+				$variations_attr = function_exists( 'wc_esc_json' ) ? wc_esc_json( $variations_json ) : _wp_specialchars( $variations_json, ENT_QUOTES, 'UTF-8', true );
+				?>
+				<form class="primefit-variations-form cart" action="<?php echo esc_url( apply_filters( 'woocommerce_add_to_cart_form_action', $product->get_permalink() ) ); ?>" method="post" enctype='multipart/form-data' data-product_id="<?php echo absint( $product->get_id() ); ?>" data-product_variations="<?php echo $variations_attr; ?>">
 					<!-- Hidden variation inputs -->
 					<input type="hidden" name="add-to-cart" value="<?php echo absint( $product->get_id() ); ?>" />
 					<input type="hidden" name="product_id" value="<?php echo absint( $product->get_id() ); ?>" />
@@ -350,7 +355,7 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 					</div>
 					
 					<!-- Add to cart button -->
-					<button type="submit" class="single_add_to_cart_button button alt" disabled>
+					<button type="submit" class="single_add_to_cart_button button alt ajax_add_to_cart" data-product_id="<?php echo absint( $product->get_id() ); ?>" disabled>
 						<?php esc_html_e( 'SELECT OPTIONS', 'primefit' ); ?>
 					</button>
 				</form>

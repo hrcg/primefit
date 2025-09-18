@@ -819,7 +819,7 @@
       });
 
       // Ensure we have required fields
-      formData.action = 'woocommerce_add_to_cart';
+      formData.action = 'wc_ajax_add_to_cart';
       
       // Get product ID
       if (!formData.product_id) {
@@ -851,6 +851,8 @@
         url: ajaxUrl,
         data: formData,
         dataType: 'json',
+        timeout: 8000, // Explicit timeout
+        cache: false, // Prevent caching issues
         success: (response) => {
           this.handleAjaxSuccess(response, $button);
         },
@@ -918,12 +920,19 @@
     handleAjaxError(xhr, status, error, $button) {
       console.error('AJAX error auto adding to cart:', {xhr, status, error});
       
-      let errorMessage = 'Network error. Please check your connection and try again.';
+      let errorMessage = 'Unable to add product to cart. Please try again.';
       
-      if (xhr.status === 403) {
+      // More specific error messages based on status
+      if (status === 'timeout') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (status === 'error' && xhr.status === 0) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (xhr.status === 403) {
         errorMessage = 'Security check failed. Please refresh the page and try again.';
       } else if (xhr.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorMessage = 'Server error. Please try again in a moment.';
+      } else if (xhr.status === 404) {
+        errorMessage = 'Service unavailable. Please try again later.';
       }
       
       this.showAutoAddError(errorMessage);
@@ -1283,28 +1292,9 @@
         // Set value without triggering change event to prevent WooCommerce interference
         $stickyInput.val(originalValue);
         
-        // Update sticky button states
-        const currentValue = parseInt($stickyInput.val()) || 1;
-        const minValue = parseInt($stickyInput.attr("min")) || 1;
-        const maxValue = parseInt($stickyInput.attr("max")) || 999;
-
-        const $stickyMinus = $(".sticky-quantity .minus");
-        const $stickyPlus = $(".sticky-quantity .plus");
-
-        if ($stickyMinus.length && $stickyPlus.length) {
-          // Update decrease button state
-          if (currentValue <= minValue) {
-            $stickyMinus.prop("disabled", true);
-          } else {
-            $stickyMinus.prop("disabled", false);
-          }
-
-          // Update increase button state
-          if (currentValue >= maxValue) {
-            $stickyPlus.prop("disabled", true);
-          } else {
-            $stickyPlus.prop("disabled", false);
-          }
+        // Update sticky button states via the sticky instance
+        if (window.stickyAddToCartInstance && window.stickyAddToCartInstance.updateStickyQuantityButtons) {
+          window.stickyAddToCartInstance.updateStickyQuantityButtons();
         }
       }
     }
@@ -1463,6 +1453,11 @@
         // Set value without triggering change event to prevent WooCommerce interference
         $originalInput.val(stickyValue);
         this.updateStickyQuantityButtons();
+        
+        // Update main quantity button states
+        if (window.quantityControlsInstance && window.quantityControlsInstance.updateButtonStates) {
+          window.quantityControlsInstance.updateButtonStates();
+        }
       }
     }
 
@@ -1582,16 +1577,15 @@
         $stickyButton.prop("disabled", $sourceButton.prop("disabled"));
       }
 
-      // Don't automatically sync quantity values to keep them independent
-      // Only sync when both are 1 or user has explicitly changed main quantity
+      // Sync quantity values bidirectionally
       if ($stickyQuantityInput.length) {
         const $originalQuantityInput = $(".quantity input[type='number']");
         if ($originalQuantityInput.length) {
           const originalValue = parseInt($originalQuantityInput.val()) || 1;
           const stickyValue = parseInt($stickyQuantityInput.val()) || 1;
           
-          // Only sync if both are at 1 (reset state) or if user has manually changed main quantity
-          if ((originalValue === 1 && stickyValue === 1) || (originalValue !== stickyValue && originalValue !== 1)) {
+          // Always sync original to sticky to keep them in sync
+          if (originalValue !== stickyValue) {
             $stickyQuantityInput.val(originalValue);
             this.updateStickyQuantityButtons();
           }
@@ -1605,6 +1599,7 @@
    */
   class AjaxAddToCart {
     constructor() {
+      this.isSubmitting = false; // Prevent multiple simultaneous submissions
       this.init();
     }
 
@@ -1621,6 +1616,12 @@
     }
 
     handleFormSubmission(e) {
+      // Prevent multiple simultaneous submissions
+      if (this.isSubmitting) {
+        console.log('Form submission already in progress, ignoring duplicate submission');
+        return false;
+      }
+      
       const $form = $(e.target);
       const $button = $form.find('button[type="submit"], input[type="submit"]').first();
       
@@ -1631,6 +1632,9 @@
 
       // Get form data
       const formData = this.getFormData($form);
+      
+      // Mark as submitting
+      this.isSubmitting = true;
       
       // Show loading state
       this.showLoadingState($button);
@@ -1668,16 +1672,90 @@
           this.showError(`Please select all product ${optionText}: ${missingOptions.join(', ')}`);
           return false;
         }
-      }
 
-      // Validate quantity
-      const quantity = parseInt($form.find('input[name="quantity"]').val()) || 1;
-      if (quantity < 1) {
-        this.showError('Please enter a valid quantity.');
-        return false;
+        // Validate quantity against stock limits for variations
+        const quantity = parseInt($form.find('input[name="quantity"]').val()) || 1;
+        if (quantity < 1) {
+          this.showError('Please enter a valid quantity.');
+          return false;
+        }
+
+        // Check stock limits for the selected variation
+        const stockValidation = this.validateVariationStock(variationId, quantity);
+        if (!stockValidation.valid) {
+          this.showError(stockValidation.message);
+          return false;
+        }
+      } else {
+        // For simple products, validate quantity
+        const quantity = parseInt($form.find('input[name="quantity"]').val()) || 1;
+        if (quantity < 1) {
+          this.showError('Please enter a valid quantity.');
+          return false;
+        }
       }
 
       return true;
+    }
+
+    validateVariationStock(variationId, quantity) {
+      try {
+        const variations = window.primefitProductData?.variations || [];
+        
+        for (let i = 0; i < variations.length; i++) {
+          const variation = variations[i];
+          if (!variation) continue;
+          
+          if (String(variation.variation_id) === String(variationId)) {
+            // Check if variation is in stock
+            if (!variation.is_in_stock) {
+              return {
+                valid: false,
+                message: 'This variation is currently out of stock.'
+              };
+            }
+            
+            // Get maximum quantity allowed
+            let maxQty = 999; // Default fallback
+            
+            // Prefer WooCommerce provided max_qty
+            if (typeof variation.max_qty !== 'undefined' && variation.max_qty !== null && variation.max_qty !== '') {
+              const parsedMax = parseInt(variation.max_qty);
+              if (!isNaN(parsedMax) && parsedMax > 0) {
+                maxQty = parsedMax;
+              }
+            } else if (typeof variation.stock_quantity !== 'undefined' && variation.stock_quantity !== null && variation.stock_quantity !== '') {
+              const parsedStock = parseInt(variation.stock_quantity);
+              if (!isNaN(parsedStock) && parsedStock > 0) {
+                maxQty = parsedStock;
+              }
+            }
+            
+            // Check if requested quantity exceeds available stock
+            if (quantity > maxQty) {
+              return {
+                valid: false,
+                message: `Only ${maxQty} items available in stock. Please reduce your quantity.`
+              };
+            }
+            
+            return { valid: true };
+          }
+        }
+        
+        // If variation not found, return error
+        return {
+          valid: false,
+          message: 'Selected variation not found. Please refresh the page and try again.'
+        };
+        
+      } catch (error) {
+        console.error('Error validating variation stock:', error);
+        return {
+          valid: false,
+          message: 'Unable to validate stock. Please try again.'
+        };
+      }
     }
 
     getFormData($form) {
@@ -1690,7 +1768,7 @@
       });
 
       // Ensure we have required fields
-      formData.action = 'woocommerce_add_to_cart';
+      formData.action = 'wc_ajax_add_to_cart';
       
       // Get product ID from various possible sources
       if (!formData.product_id) {
@@ -1779,21 +1857,41 @@
       }
     }
 
-    submitToCart(formData, $button) {
+    submitToCart(formData, $button, retryCount = 0) {
       const ajaxUrl = (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
                      (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
                      '/wp-admin/admin-ajax.php';
+
+      // Set a shorter timeout for better user experience
+      const timeoutId = setTimeout(() => {
+        console.log('AJAX timeout - resetting button state');
+        this.hideLoadingState($button, false);
+      }, 8000); // 8 second timeout
 
       $.ajax({
         type: 'POST',
         url: ajaxUrl,
         data: formData,
         dataType: 'json',
+        timeout: 8000, // Explicit timeout
+        cache: false, // Prevent caching issues
         success: (response) => {
+          clearTimeout(timeoutId);
           this.handleSuccess(response, $button);
         },
         error: (xhr, status, error) => {
-          this.handleError(xhr, status, error, $button);
+          clearTimeout(timeoutId);
+          
+          // Retry logic for network errors
+          if (retryCount < 2 && (status === 'timeout' || status === 'error' || xhr.status === 0)) {
+            console.log(`Retrying AJAX request (attempt ${retryCount + 1}/3)`);
+            setTimeout(() => {
+              this.submitToCart(formData, $button, retryCount + 1);
+            }, 1000 * (retryCount + 1)); // Exponential backoff
+            return;
+          }
+          
+          this.handleError(xhr, status, error, $button, retryCount);
         }
       });
     }
@@ -1803,6 +1901,10 @@
 
       // Check for actual errors vs success-with-redirect
       if (response.error) {
+        console.log('Response has error flag:', response.error);
+        console.log('Response data:', response.data);
+        console.log('Response notice:', response.notice);
+        console.log('Response fragments:', response.fragments);
         // If there are fragments, it means the product was actually added successfully
         // WooCommerce sometimes returns error: true for redirects/notices, not actual errors
         if (response.fragments && Object.keys(response.fragments).length > 0) {
@@ -1826,6 +1928,7 @@
             errorMessage = response.notice;
           }
           
+          console.log('Actual error detected:', errorMessage);
           this.showError(errorMessage);
           this.hideLoadingState($button, false);
           return;
@@ -1840,14 +1943,17 @@
         });
       }
 
-      // Reset quantity inputs to 1 after successful add to cart
-      this.resetQuantityInputs();
-
-      // Trigger WooCommerce events
+      // Trigger WooCommerce events first
       $(document.body).trigger('update_checkout');
       $(document.body).trigger('wc_fragment_refresh');
       console.log('Triggering added_to_cart event with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
       $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
+
+      // Reset quantity inputs to 1 after WooCommerce events have completed
+      // Use a delay to ensure WooCommerce has finished updating fragments
+      setTimeout(() => {
+        this.resetQuantityInputs();
+      }, 100);
 
       // Show success state
       this.hideLoadingState($button, true);
@@ -1857,21 +1963,36 @@
 
       // Clean up URL to prevent issues with browser back/forward
       this.cleanUpURL();
+      
+      // Reset submission flag
+      this.isSubmitting = false;
     }
 
-    handleError(xhr, status, error, $button) {
-      console.error('AJAX error adding to cart:', {xhr, status, error}); // Debug log
+    handleError(xhr, status, error, $button, retryCount = 0) {
+      console.error('AJAX error adding to cart:', {xhr, status, error, retryCount}); // Debug logwoocommerce-mini-cart__item-details
       
-      let errorMessage = 'Network error. Please check your connection and try again.';
+      let errorMessage = 'Unable to add product to cart. Please try again.';
       
-      if (xhr.status === 403) {
+      // More specific error messages based on status
+      if (status === 'timeout') {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (status === 'error' && xhr.status === 0) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (xhr.status === 403) {
         errorMessage = 'Security check failed. Please refresh the page and try again.';
       } else if (xhr.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorMessage = 'Server error. Please try again in a moment.';
+      } else if (xhr.status === 404) {
+        errorMessage = 'Service unavailable. Please try again later.';
+      } else if (retryCount > 0) {
+        errorMessage = 'Failed after multiple attempts. Please try again.';
       }
       
       this.showError(errorMessage);
       this.hideLoadingState($button, false);
+      
+      // Reset submission flag
+      this.isSubmitting = false;
     }
 
 
@@ -1896,14 +2017,17 @@
               $(key).replaceWith(value);
             });
 
-            // Reset quantity inputs to 1 after successful add to cart
-            this.resetQuantityInputs();
-
-            // Trigger WooCommerce events
+            // Trigger WooCommerce events first
             $(document.body).trigger('update_checkout');
             $(document.body).trigger('wc_fragment_refresh');
             console.log('Triggering added_to_cart event from checkCartAfterAdd with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
             $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
+
+            // Reset quantity inputs to 1 after WooCommerce events have completed
+            // Use a delay to ensure WooCommerce has finished updating fragments
+            setTimeout(() => {
+              this.resetQuantityInputs();
+            }, 100);
 
             // Show success state
             this.hideLoadingState($button, true);
