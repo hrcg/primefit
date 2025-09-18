@@ -1063,8 +1063,9 @@
 .woocommerce-mini-cart-item-quantity,
 .mini_cart_item-quantity {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
   flex-shrink: 0;
   justify-content: space-between;
 }

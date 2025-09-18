@@ -1804,6 +1804,11 @@
       this.init();
     }
 
+    // Method to reset submission flag (useful for external calls)
+    resetSubmissionFlag() {
+      this.isSubmitting = false;
+    }
+
     init() {
       this.bindEvents();
     }
@@ -1814,6 +1819,12 @@
         "submit",
         "form.cart, form.variations_form, form.primefit-variations-form",
         (e) => {
+          // Skip temporary forms created by product loop functionality
+          const $form = $(e.target);
+          if ($form.hasClass("temp-form") || $form.data("temp-form")) {
+            return; // Let the form submit normally
+          }
+
           e.preventDefault();
           this.handleFormSubmission(e);
         }
@@ -2663,7 +2674,7 @@
       // Store instances globally for quantity reset functionality
       window.quantityControlsInstance = new WooCommerceQuantityControls();
       window.stickyAddToCartInstance = new StickyAddToCart();
-      new AjaxAddToCart(); // Initialize AJAX cart functionality
+      window.ajaxAddToCartInstance = new AjaxAddToCart(); // Initialize AJAX cart functionality
     }
   });
 })(jQuery);

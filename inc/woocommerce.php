@@ -34,7 +34,8 @@ add_filter( 'woocommerce_enqueue_styles', '__return_empty_array' );
  * This ensures stock limits are enforced on the server side
  * Only run for direct add-to-cart attempts on product pages
  */
-add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
+// Temporarily disabled to debug AJAX add to cart issues
+// add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
 function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity, $variation_id = 0, $variation_data = array() ) {
 	// Get the product
 	$product = wc_get_product( $product_id );
@@ -154,9 +155,26 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
  * Ensure WooCommerce AJAX add to cart handler is properly registered
  * WooCommerce should handle this automatically, but we'll ensure it's available
  */
+// Re-enable custom AJAX handler to ensure proper processing
 add_action( 'wp_ajax_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_nopriv_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
+
+// Debug: Add hook to catch validation errors
+add_action( 'woocommerce_add_to_cart_validation', 'primefit_debug_add_to_cart_validation', 5, 5 );
+function primefit_debug_add_to_cart_validation( $valid, $product_id, $quantity, $variation_id = 0, $variations = array() ) {
+	error_log('Add to Cart Validation: valid=' . ($valid ? 'true' : 'false') . ', product_id=' . $product_id . ', variation_id=' . $variation_id . ', variations=' . print_r($variations, true));
+	return $valid;
+}
 function primefit_ensure_wc_ajax_add_to_cart() {
+	// Debug: Log the request data
+	error_log('AJAX Add to Cart Request: ' . print_r($_POST, true));
+	
+	// Ensure variation_id is properly set
+	if ( isset( $_POST['variation_id'] ) && ! empty( $_POST['variation_id'] ) ) {
+		$_POST['variation_id'] = intval( $_POST['variation_id'] );
+		error_log('Fixed variation_id: ' . $_POST['variation_id']);
+	}
+	
 	// Let WooCommerce handle the AJAX add to cart
 	if ( class_exists( 'WC_AJAX' ) && method_exists( 'WC_AJAX', 'add_to_cart' ) ) {
 		WC_AJAX::add_to_cart();

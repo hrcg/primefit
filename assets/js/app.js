@@ -227,6 +227,14 @@
 
     // Re-enable page scrolling when cart is closed
     allowPageScroll();
+
+    // Reset form submission flag to allow new submissions
+    if (
+      window.ajaxAddToCartInstance &&
+      typeof window.ajaxAddToCartInstance.resetSubmissionFlag === "function"
+    ) {
+      window.ajaxAddToCartInstance.resetSubmissionFlag();
+    }
   }
 
   // Click-to-open cart drawer
@@ -1558,6 +1566,255 @@
   });
 
   /**
+   * Add variation to cart via AJAX - simulates clicking the add to cart button
+   */
+  function addVariationToCart($productContainer, $colorSwatch, $sizeOption) {
+    const variationId = $sizeOption.data("variation-id");
+    const productId = $sizeOption.data("product-id");
+    const colorValue = $colorSwatch.data("color");
+    const sizeValue = $sizeOption.data("size");
+
+    console.log("Size option data:", {
+      variationId,
+      productId,
+      colorValue,
+      sizeValue,
+      isInStock: $sizeOption.data("is-in-stock"),
+      stockQuantity: $sizeOption.data("stock-quantity"),
+    });
+
+    if (!variationId || !productId || variationId === 0) {
+      console.error("Missing or invalid variation/product ID:", {
+        variationId,
+        productId,
+      });
+      showCartFeedback(
+        $productContainer,
+        "Invalid product configuration",
+        "error"
+      );
+      return;
+    }
+
+    // Set loading state
+    $sizeOption.addClass("loading").prop("disabled", true);
+    $colorSwatch.addClass("loading");
+
+    // Create a temporary form to simulate WooCommerce's add to cart form
+    const $tempForm = $("<form>")
+      .attr({
+        method: "POST",
+        action: window.location.href,
+        enctype: "multipart/form-data",
+      })
+      .addClass("temp-form")
+      .data("temp-form", true);
+
+    // Add all required form fields exactly like WooCommerce expects
+    $tempForm.append(
+      $("<input>").attr({
+        type: "hidden",
+        name: "add-to-cart",
+        value: productId,
+      })
+    );
+
+    $tempForm.append(
+      $("<input>").attr({
+        type: "hidden",
+        name: "product_id",
+        value: productId,
+      })
+    );
+
+    $tempForm.append(
+      $("<input>").attr({
+        type: "hidden",
+        name: "variation_id",
+        value: variationId,
+      })
+    );
+
+    $tempForm.append(
+      $("<input>").attr({
+        type: "hidden",
+        name: "quantity",
+        value: 1,
+      })
+    );
+
+    // Add variation attributes with proper naming convention
+    if (colorValue) {
+      $tempForm.append(
+        $("<input>").attr({
+          type: "hidden",
+          name: "attribute_pa_color",
+          value: colorValue,
+        })
+      );
+    }
+
+    if (sizeValue) {
+      $tempForm.append(
+        $("<input>").attr({
+          type: "hidden",
+          name: "attribute_pa_size",
+          value: sizeValue,
+        })
+      );
+    }
+
+    // Serialize the form data
+    const formData = $tempForm.serializeArray().reduce(function (obj, item) {
+      obj[item.name] = item.value;
+      return obj;
+    }, {});
+
+    // Use standard WooCommerce add to cart endpoint
+    formData.action = "woocommerce_add_to_cart";
+
+    // Get security nonce
+    const securityNonce =
+      (window.primefit_cart_params &&
+        window.primefit_cart_params.add_to_cart_nonce) ||
+      (window.wc_add_to_cart_params &&
+        window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce);
+
+    if (!securityNonce) {
+      console.error("No security nonce available");
+      showCartFeedback($productContainer, "Configuration error", "error");
+      $sizeOption.removeClass("loading").prop("disabled", false);
+      $colorSwatch.removeClass("loading");
+      return;
+    }
+
+    formData.security = securityNonce;
+
+    // Get AJAX URL
+    const ajaxUrl =
+      (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
+      (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
+      "/wp-admin/admin-ajax.php";
+
+    console.log("Adding to cart with form data:", formData);
+
+    // Make AJAX request using WooCommerce's standard approach
+    $.ajax({
+      url: ajaxUrl,
+      type: "POST",
+      data: formData,
+      dataType: "json",
+      timeout: 8000,
+      cache: false,
+      success: function (response) {
+        console.log("Add to cart response:", response);
+
+        // Handle the response exactly like WooCommerce does
+        if (response.error && response.product_url) {
+          // This might be a redirect response, check if product was actually added
+          console.log("Received redirect response, checking cart...");
+          checkCartAfterAdd($productContainer, $sizeOption, $colorSwatch);
+        } else if (response.error) {
+          // Show error message
+          console.log("Error adding to cart:", response.error);
+          showCartFeedback(
+            $productContainer,
+            "Error adding to cart: " + (response.error || "Unknown error"),
+            "error"
+          );
+        } else {
+          // Success - update cart fragments
+          console.log("Successfully added to cart");
+
+          // Trigger cart update events
+          $(document.body).trigger("added_to_cart", [
+            response.fragments,
+            response.cart_hash,
+            $sizeOption,
+          ]);
+
+          // Update cart fragments if available
+          if (response.fragments) {
+            $.each(response.fragments, function (key, value) {
+              $(key).replaceWith(value);
+            });
+          }
+
+          // Open mini cart automatically after successful add (with small delay to ensure fragments are updated)
+          setTimeout(function () {
+            openMiniCart();
+          }, 100);
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error("AJAX error:", { xhr, status, error });
+        showCartFeedback($productContainer, "Error adding to cart", "error");
+      },
+      complete: function () {
+        // Remove loading state
+        $sizeOption.removeClass("loading").prop("disabled", false);
+        $colorSwatch.removeClass("loading");
+      },
+    });
+  }
+
+  /**
+   * Check cart after add to see if product was actually added
+   */
+  function checkCartAfterAdd($productContainer, $sizeOption, $colorSwatch) {
+    // Remove loading state
+    $sizeOption.removeClass("loading").prop("disabled", false);
+    $colorSwatch.removeClass("loading");
+
+    // Trigger cart fragment refresh
+    $(document.body).trigger("wc_fragment_refresh");
+
+    // Open mini cart automatically after a short delay
+    setTimeout(function () {
+      openMiniCart();
+    }, 500);
+  }
+
+  /**
+   * Open mini cart automatically
+   */
+  function openMiniCart() {
+    // Find the cart toggle button and trigger it
+    const $cartToggle = $(".cart-toggle");
+    if ($cartToggle.length > 0) {
+      // Check if cart is already open
+      const isExpanded = $cartToggle.attr("aria-expanded") === "true";
+      if (!isExpanded) {
+        // Trigger click to open cart
+        $cartToggle.trigger("click");
+      }
+    }
+  }
+
+  /**
+   * Show cart feedback message
+   */
+  function showCartFeedback($productContainer, message, type) {
+    // Remove any existing feedback
+    $productContainer.find(".cart-feedback").remove();
+
+    // Create feedback element
+    const $feedback = $(
+      `<div class="cart-feedback cart-feedback-${type}">${message}</div>`
+    );
+
+    // Add to product container
+    $productContainer.append($feedback);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      $feedback.fadeOut(300, function () {
+        $(this).remove();
+      });
+    }, 3000);
+  }
+
+  /**
    * Update size options based on selected color
    */
   function updateSizeOptionsForColor($productContainer, selectedColor) {
@@ -1674,6 +1931,42 @@
         $(this).removeClass("hover");
       }
     );
+
+    // Handle size option clicks in product loops
+    $(document).on("click", ".product-size-options .size-option", function (e) {
+      e.preventDefault();
+      e.stopPropagation(); // Prevent triggering the product link
+
+      const $sizeOption = $(this);
+      const $productContainer = $sizeOption.closest(".product");
+
+      // Only prevent if the exact same size option is already loading
+      if ($sizeOption.hasClass("loading")) {
+        console.log(
+          "This size option is already processing, ignoring duplicate click"
+        );
+        return;
+      }
+
+      // Check if the size option is in stock
+      const isInStock = $sizeOption.data("is-in-stock");
+      if (!isInStock) {
+        return; // Don't proceed if out of stock
+      }
+
+      // Get the selected color
+      const $selectedColor = $productContainer.find(".color-swatch.active");
+      if (!$selectedColor.length) {
+        // If no color selected, use the first available color
+        const $firstColor = $productContainer.find(".color-swatch").first();
+        if ($firstColor.length) {
+          $firstColor.addClass("active");
+          addVariationToCart($productContainer, $firstColor, $sizeOption);
+        }
+      } else {
+        addVariationToCart($productContainer, $selectedColor, $sizeOption);
+      }
+    });
 
     // Initialize size options for default color on page load
     $(".product-loop-color-swatches .color-swatch.active").each(function () {

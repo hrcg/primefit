@@ -123,7 +123,7 @@ function primefit_enqueue_assets() {
 		wp_enqueue_script( 'wc-cart-fragments' );
 		
 		// Ensure WooCommerce add to cart script is loaded for AJAX functionality
-		wp_enqueue_script( 'wc-add-to-cart', '', [ 'jquery', 'wc-cart-fragments' ], WC_VERSION, true );
+		wp_enqueue_script( 'wc-add-to-cart' );
 		
 		// Ensure WooCommerce add to cart variation script is loaded for variable products
 		wp_enqueue_script( 'wc-add-to-cart-variation' );
