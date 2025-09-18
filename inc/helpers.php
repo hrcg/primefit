@@ -194,16 +194,19 @@ function primefit_render_size_selection_overlay( $product ) {
 		return;
 	}
 	
-	// Build variation data for JavaScript
+	// Build variation data for JavaScript with stock information
 	$variation_data = array();
+	$all_variations_data = array(); // Store all variations for dynamic filtering
+	
 	foreach ( $available_variations as $variation ) {
 		$variation_obj = wc_get_product( $variation['variation_id'] );
-		if ( ! $variation_obj || ! $variation_obj->is_in_stock() ) {
+		if ( ! $variation_obj ) {
 			continue;
 		}
 		
 		// Try different ways to get the size value
 		$size_value = '';
+		$color_value = '';
 		
 		// Method 1: Direct attribute access
 		if ( isset( $variation['attributes'][ $size_attribute ] ) ) {
@@ -221,32 +224,116 @@ function primefit_render_size_selection_overlay( $product ) {
 			$size_value = $variation_obj->get_attribute( $size_attribute );
 		}
 		
+		// Get color value for filtering
+		foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
+			if ( stripos( $attr_name, 'color' ) !== false ) {
+				$color_value = $attr_value;
+				break;
+			}
+		}
+		
 		if ( ! empty( $size_value ) ) {
-			$variation_data[ $size_value ] = array(
+			$is_in_stock = $variation_obj->is_in_stock();
+			$stock_quantity = $variation_obj->get_stock_quantity();
+			$max_purchase_quantity = $variation_obj->get_max_purchase_quantity();
+			
+			$variation_info = array(
 				'variation_id' => $variation['variation_id'],
+				'is_in_stock' => $is_in_stock,
+				'stock_quantity' => $stock_quantity,
+				'max_purchase_quantity' => $max_purchase_quantity,
+				'color' => $color_value,
+				'size' => $size_value,
 				'url' => $product->get_permalink() . '?' . http_build_query( array(
 					'attribute_' . str_replace( 'pa_', '', $size_attribute ) => $size_value
 				) )
 			);
+			
+			// Store all variations for dynamic filtering
+			$all_variations_data[ $variation['variation_id'] ] = $variation_info;
+			
+			// Only add to variation_data if in stock (for backward compatibility)
+			if ( $is_in_stock ) {
+				$variation_data[ $size_value ] = $variation_info;
+			}
 		}
 	}
 	
-	if ( empty( $variation_data ) ) {
+	if ( empty( $all_variations_data ) ) {
 		return;
 	}
 	
 	?>
-	<div class="product-size-options<?php echo isset( $_GET['debug_sizes'] ) ? ' debug-visible' : ''; ?>" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
+	<div class="product-size-options<?php echo isset( $_GET['debug_sizes'] ) ? ' debug-visible' : ''; ?>" 
+		 data-product-id="<?php echo esc_attr( $product->get_id() ); ?>"
+		 data-variations="<?php echo esc_attr( wp_json_encode( $all_variations_data ) ); ?>">
 		<div class="size-options">
-			<?php foreach ( $size_options as $size_value ) : ?>
-				<?php if ( isset( $variation_data[ $size_value ] ) ) : ?>
-					<button class="size-option" 
-					   data-size="<?php echo esc_attr( $size_value ); ?>"
-					   data-variation-id="<?php echo esc_attr( $variation_data[ $size_value ]['variation_id'] ); ?>"
-					   data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
-						<?php echo esc_html( strtoupper( $size_value ) ); ?>
-					</button>
-				<?php endif; ?>
+			<?php 
+			// Get default color for initial size button setup
+			$default_color = '';
+			$default_attributes = $product->get_default_attributes();
+			foreach ( $default_attributes as $attr_name => $attr_value ) {
+				if ( stripos( $attr_name, 'color' ) !== false ) {
+					$default_color = $attr_value;
+					break;
+				}
+			}
+			
+			// If no default color, use the first available color
+			if ( empty( $default_color ) ) {
+				foreach ( $all_variations_data as $variation_info ) {
+					if ( ! empty( $variation_info['color'] ) ) {
+						$default_color = $variation_info['color'];
+						break;
+					}
+				}
+			}
+			
+			foreach ( $size_options as $size_value ) : ?>
+				<?php 
+				// Find variation with this size and default color
+				$size_variation = null;
+				foreach ( $all_variations_data as $variation_info ) {
+					if ( $variation_info['size'] === $size_value && $variation_info['color'] === $default_color ) {
+						$size_variation = $variation_info;
+						break;
+					}
+				}
+				
+				// If no variation found for default color, find any variation with this size
+				if ( ! $size_variation ) {
+					foreach ( $all_variations_data as $variation_info ) {
+						if ( $variation_info['size'] === $size_value ) {
+							$size_variation = $variation_info;
+							break;
+						}
+					}
+				}
+				
+				// If still no variation found, create a placeholder
+				if ( ! $size_variation ) {
+					$size_variation = array(
+						'variation_id' => 0,
+						'is_in_stock' => false,
+						'stock_quantity' => 0,
+						'max_purchase_quantity' => 0,
+						'color' => $default_color,
+						'size' => $size_value,
+						'url' => ''
+					);
+				}
+				?>
+				<button class="size-option <?php echo ! $size_variation['is_in_stock'] ? 'out-of-stock' : ''; ?>" 
+				   data-size="<?php echo esc_attr( $size_value ); ?>"
+				   data-variation-id="<?php echo esc_attr( $size_variation['variation_id'] ); ?>"
+				   data-product-id="<?php echo esc_attr( $product->get_id() ); ?>"
+				   data-is-in-stock="<?php echo $size_variation['is_in_stock'] ? 'true' : 'false'; ?>"
+				   data-stock-quantity="<?php echo esc_attr( $size_variation['stock_quantity'] ); ?>"
+				   data-max-purchase-quantity="<?php echo esc_attr( $size_variation['max_purchase_quantity'] ); ?>"
+				   data-color="<?php echo esc_attr( $size_variation['color'] ); ?>"
+				   <?php echo ! $size_variation['is_in_stock'] ? 'disabled' : ''; ?>>
+					<?php echo esc_html( strtoupper( $size_value ) ); ?>
+				</button>
 			<?php endforeach; ?>
 		</div>
 	</div>
@@ -965,4 +1052,104 @@ function primefit_quantity_input( $args = array(), $product = null, $echo = true
 	} else {
 		return $output;
 	}
+}
+
+/**
+ * Render color swatches for product loop
+ *
+ * @param WC_Product $product The product object
+ * @return void
+ */
+function primefit_render_product_loop_color_swatches( $product ) {
+	if ( ! $product || ! $product->is_type( 'variable' ) ) {
+		return;
+	}
+	
+	// Get product attributes
+	$attributes = $product->get_attributes();
+	$color_attribute = null;
+	
+	// Find color attribute
+	foreach ( $attributes as $attribute ) {
+		if ( $attribute->is_taxonomy() ) {
+			$attribute_name = wc_attribute_label( $attribute->get_name() );
+			if ( stripos( $attribute_name, 'color' ) !== false ) {
+				$color_attribute = $attribute;
+				break;
+			}
+		}
+	}
+	
+	if ( ! $color_attribute ) {
+		return;
+	}
+	
+	// Get variations and color options
+	$variations = $product->get_available_variations();
+	$color_options = array();
+	$variation_images = array();
+	
+	foreach ( $variations as $variation ) {
+		$color_value = '';
+		foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
+			if ( stripos( $attr_name, 'color' ) !== false ) {
+				$color_value = $attr_value;
+				break;
+			}
+		}
+		
+		if ( $color_value && ! in_array( $color_value, $color_options ) ) {
+			$color_options[] = $color_value;
+			// Store variation image for this color
+			if ( ! empty( $variation['image']['src'] ) ) {
+				$variation_images[ $color_value ] = $variation['image']['src'];
+			}
+		}
+	}
+	
+	if ( empty( $color_options ) || count( $color_options ) <= 1 ) {
+		return;
+	}
+	
+	// Get default color
+	$default_attributes = $product->get_default_attributes();
+	$default_color = '';
+	foreach ( $default_attributes as $attr_name => $attr_value ) {
+		if ( stripos( $attr_name, 'color' ) !== false ) {
+			$default_color = $attr_value;
+			break;
+		}
+	}
+	
+	echo '<div class="product-loop-color-swatches">';
+	
+	foreach ( $color_options as $index => $color_option ) :
+		$color_name = wc_attribute_label( $color_option );
+		$color_slug = sanitize_title( $color_option );
+		$is_default_color = ( $color_option === $default_color ) || ( $index === 0 && empty( $default_color ) );
+		$variation_image = isset( $variation_images[ $color_option ] ) ? $variation_images[ $color_option ] : '';
+		
+		// If no variation image, use the main product image
+		if ( empty( $variation_image ) ) {
+			$main_image_id = $product->get_image_id();
+			if ( $main_image_id ) {
+				$variation_image = wp_get_attachment_image_url( $main_image_id, 'full' );
+			}
+		}
+		
+		?>
+		<button 
+			class="color-swatch <?php echo $is_default_color ? 'active default-color' : ''; ?>"
+			data-color="<?php echo esc_attr( $color_option ); ?>"
+			data-variation-image="<?php echo esc_attr( $variation_image ); ?>"
+			data-product-id="<?php echo esc_attr( $product->get_id() ); ?>"
+			aria-label="<?php printf( esc_attr__( 'Select color %s', 'primefit' ), $color_name ); ?>"
+			title="<?php echo esc_attr( $color_name ); ?>"
+		>
+			<span class="color-swatch-inner color-<?php echo esc_attr( $color_slug ); ?>"></span>
+		</button>
+		<?php
+	endforeach;
+	
+	echo '</div>';
 }

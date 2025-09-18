@@ -32,39 +32,108 @@ add_filter( 'woocommerce_enqueue_styles', '__return_empty_array' );
 /**
  * Add custom stock validation for add to cart
  * This ensures stock limits are enforced on the server side
- * TEMPORARILY DISABLED FOR DEBUGGING
  */
-// add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
+add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
 function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity, $variation_id = 0, $variation_data = array() ) {
-	// Only validate for variable products with variations
-	if ( $variation_id && $variation_id > 0 ) {
+	// Get the product
+	$product = wc_get_product( $product_id );
+	
+	if ( ! $product ) {
+		wc_add_notice( __( 'Product not found.', 'primefit' ), 'error' );
+		return false;
+	}
+	
+	// For variable products, ensure variation is selected and valid
+	if ( $product->is_type( 'variable' ) ) {
+		if ( ! $variation_id || $variation_id <= 0 ) {
+			wc_add_notice( __( 'Please choose product options by visiting the product page.', 'primefit' ), 'error' );
+			return false;
+		}
+		
 		$variation = wc_get_product( $variation_id );
 		
-		if ( $variation && $variation->is_type( 'variation' ) ) {
-			// Check if variation is in stock
-			if ( ! $variation->is_in_stock() ) {
-				wc_add_notice( __( 'This variation is currently out of stock.', 'primefit' ), 'error' );
+		if ( ! $variation || ! $variation->is_type( 'variation' ) ) {
+			wc_add_notice( __( 'Selected variation is not valid.', 'primefit' ), 'error' );
+			return false;
+		}
+		
+		// Check if variation is in stock
+		if ( ! $variation->is_in_stock() ) {
+			wc_add_notice( __( 'This variation is currently out of stock.', 'primefit' ), 'error' );
+			return false;
+		}
+		
+		// Validate variation attributes
+		if ( ! empty( $variation_data ) ) {
+			$variation_attributes = $variation->get_variation_attributes();
+			
+			foreach ( $variation_data as $attribute_name => $attribute_value ) {
+				// Skip empty values
+				if ( empty( $attribute_value ) ) {
+					continue;
+				}
+				
+				// Check if this attribute is required for this variation
+				if ( isset( $variation_attributes[ $attribute_name ] ) ) {
+					$expected_value = $variation_attributes[ $attribute_name ];
+					
+					// If the variation has a specific value for this attribute, it must match
+					if ( ! empty( $expected_value ) && $expected_value !== $attribute_value ) {
+						wc_add_notice( 
+							sprintf( 
+								__( 'Selected %s is not available for this variation.', 'primefit' ), 
+								wc_attribute_label( $attribute_name )
+							), 
+							'error' 
+						);
+						return false;
+					}
+				}
+			}
+		}
+		
+		// Check stock quantity limits
+		if ( $variation->managing_stock() ) {
+			$stock_quantity = $variation->get_stock_quantity();
+			$max_purchase_quantity = $variation->get_max_purchase_quantity();
+			
+			// Use the more restrictive limit
+			$max_allowed = $max_purchase_quantity > 0 ? min( $stock_quantity, $max_purchase_quantity ) : $stock_quantity;
+			
+			if ( $quantity > $max_allowed ) {
+				wc_add_notice( 
+					sprintf( 
+						__( 'Only %d items available in stock. Please reduce your quantity.', 'primefit' ), 
+						$max_allowed 
+					), 
+					'error' 
+				);
 				return false;
 			}
+		}
+	} else {
+		// For simple products, check stock
+		if ( ! $product->is_in_stock() ) {
+			wc_add_notice( __( 'This product is currently out of stock.', 'primefit' ), 'error' );
+			return false;
+		}
+		
+		// Check stock quantity limits for simple products
+		if ( $product->managing_stock() ) {
+			$stock_quantity = $product->get_stock_quantity();
+			$max_purchase_quantity = $product->get_max_purchase_quantity();
 			
-			// Check stock quantity limits
-			if ( $variation->managing_stock() ) {
-				$stock_quantity = $variation->get_stock_quantity();
-				$max_purchase_quantity = $variation->get_max_purchase_quantity();
-				
-				// Use the more restrictive limit
-				$max_allowed = $max_purchase_quantity > 0 ? min( $stock_quantity, $max_purchase_quantity ) : $stock_quantity;
-				
-				if ( $quantity > $max_allowed ) {
-					wc_add_notice( 
-						sprintf( 
-							__( 'Only %d items available in stock. Please reduce your quantity.', 'primefit' ), 
-							$max_allowed 
-						), 
-						'error' 
-					);
-					return false;
-				}
+			$max_allowed = $max_purchase_quantity > 0 ? min( $stock_quantity, $max_purchase_quantity ) : $stock_quantity;
+			
+			if ( $quantity > $max_allowed ) {
+				wc_add_notice( 
+					sprintf( 
+						__( 'Only %d items available in stock. Please reduce your quantity.', 'primefit' ), 
+						$max_allowed 
+					), 
+					'error' 
+				);
+				return false;
 			}
 		}
 	}
@@ -85,6 +154,35 @@ function primefit_ensure_wc_ajax_add_to_cart() {
 	} else {
 		// Fallback: handle manually
 		wp_send_json_error( __( 'WooCommerce AJAX handler not available', 'primefit' ) );
+	}
+}
+
+/**
+ * Ensure variation attributes are properly processed during add to cart
+ */
+add_action( 'woocommerce_add_to_cart', 'primefit_ensure_variation_attributes', 10, 6 );
+function primefit_ensure_variation_attributes( $cart_item_key, $product_id, $quantity, $variation_id, $variation_data, $cart_item_data ) {
+	// Only process for variable products
+	if ( $variation_id && $variation_id > 0 ) {
+		$variation = wc_get_product( $variation_id );
+		
+		if ( $variation && $variation->is_type( 'variation' ) ) {
+			// Get the variation attributes
+			$variation_attributes = $variation->get_variation_attributes();
+			
+			// Ensure all required attributes are set
+			foreach ( $variation_attributes as $attribute_name => $attribute_value ) {
+				if ( ! empty( $attribute_value ) && ! isset( $variation_data[ $attribute_name ] ) ) {
+					// Set the attribute value from the variation
+					$variation_data[ $attribute_name ] = $attribute_value;
+				}
+			}
+			
+			// Update the cart item data
+			if ( ! empty( $variation_data ) ) {
+				WC()->cart->cart_contents[ $cart_item_key ]['variation'] = $variation_data;
+			}
+		}
 	}
 }
 

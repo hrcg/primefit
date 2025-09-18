@@ -237,7 +237,6 @@ body.single-product .single-product-page {
   }
 }
 
-
 /* Image Navigation Dots */
 .image-navigation-dots {
   display: flex;
@@ -763,11 +762,6 @@ body.single-product .single-product-page {
 .notify-button:hover {
   border-color: var(--product-text);
   color: var(--product-text);
-}
-
-/* Hide default WooCommerce variation form */
-.variations_form {
-  display: none !important;
 }
 
 /* WooCommerce Add to Cart Button Override */

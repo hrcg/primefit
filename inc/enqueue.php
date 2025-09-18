@@ -125,6 +125,9 @@ function primefit_enqueue_assets() {
 		// Ensure WooCommerce add to cart script is loaded for AJAX functionality
 		wp_enqueue_script( 'wc-add-to-cart', '', [ 'jquery', 'wc-cart-fragments' ], WC_VERSION, true );
 		
+		// Ensure WooCommerce add to cart variation script is loaded for variable products
+		wp_enqueue_script( 'wc-add-to-cart-variation' );
+		
 		// Localize WooCommerce add to cart parameters
 		wp_localize_script( 'wc-add-to-cart', 'wc_add_to_cart_params', [
 			'ajax_url' => WC_AJAX::get_endpoint( 'add_to_cart' ),

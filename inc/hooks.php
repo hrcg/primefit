@@ -47,7 +47,7 @@ function primefit_customize_woocommerce_hooks() {
 }
 
 /**
- * Custom product thumbnail with hover effect and status badges
+ * Custom product thumbnail with hover effect, status badges, and color swatches
  */
 function primefit_loop_product_thumbnail() {
 	global $product;
@@ -79,6 +79,11 @@ function primefit_loop_product_thumbnail() {
 	
 	// Add status badge
 	get_template_part( 'woocommerce/global/product-status-badge' );
+	
+	// Add color swatches for variable products
+	if ( $product->is_type( 'variable' ) ) {
+		primefit_render_product_loop_color_swatches( $product );
+	}
 	
 	echo '</div>';
 }

@@ -80,41 +80,55 @@
       var variationId = $button.data("variation-id");
       var productId = $button.data("product-id");
       var size = $button.data("size");
+      var isInStock = $button.data("is-in-stock") === "true";
 
-      console.log('Size option clicked:', {variationId, productId, size}); // Debug log
-
-      if (!variationId || !productId) {
-        console.error("Missing variation or product ID", {variationId, productId});
+      // Check if we have valid data for adding to cart
+      if (!variationId || variationId === 0 || !productId) {
+        console.error("Missing variation or product ID", {
+          variationId,
+          productId,
+          isInStock,
+        });
+        // Redirect to product page for unavailable sizes
+        var productUrl = $button.closest(".product").find("a").attr("href");
+        if (productUrl) {
+          window.location.href = productUrl;
+        }
         return;
       }
 
       // Add loading state
       $button.addClass("loading").text("...");
 
+      // Prepare AJAX data
+      const ajaxData = {
+        action: "wc_ajax_add_to_cart",
+        product_id: productId,
+        variation_id: variationId,
+        quantity: 1,
+        security:
+          (window.primefit_cart_params &&
+            window.primefit_cart_params.add_to_cart_nonce) ||
+          (window.wc_add_to_cart_params &&
+            window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce),
+      };
+
       // Add to cart via AJAX
       $.ajax({
-        url: (window.primefit_cart_params && window.primefit_cart_params.ajax_url) || 
-             (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) || 
-             '/wp-admin/admin-ajax.php',
+        url:
+          (window.primefit_cart_params &&
+            window.primefit_cart_params.ajax_url) ||
+          (window.wc_add_to_cart_params &&
+            window.wc_add_to_cart_params.ajax_url) ||
+          "/wp-admin/admin-ajax.php",
         type: "POST",
-        data: {
-          action: "wc_ajax_add_to_cart",
-          product_id: productId,
-          variation_id: variationId,
-          quantity: 1,
-          security: (window.primefit_cart_params && window.primefit_cart_params.add_to_cart_nonce) ||
-                   (window.wc_add_to_cart_params && window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce),
-        },
+        data: ajaxData,
         success: function (response) {
-          console.log('Add to cart response:', response); // Debug log
-          
           if (response.error && response.product_url) {
             // If there's an error, redirect to product page
-            console.log('Error response, redirecting to product page:', response.product_url);
             window.location.href = response.product_url;
           } else {
             // Success - trigger cart update
-            console.log('Triggering added_to_cart event from product.js with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
             $(document.body).trigger("added_to_cart", [
               response.fragments,
               response.cart_hash,
@@ -129,15 +143,12 @@
           }
         },
         error: function (xhr, status, error) {
-          console.error('AJAX error adding to cart:', {xhr, status, error}); // Debug log
-          
           // Remove loading state
           $button.removeClass("loading").text(size.toUpperCase());
-          
+
           // On error, redirect to product page
           var productUrl = $button.closest(".product").find("a").attr("href");
           if (productUrl) {
-            console.log('Redirecting to product page due to error:', productUrl);
             window.location.href = productUrl;
           }
         },

@@ -754,6 +754,14 @@
   opacity: 1;
 }
 
+/* Prevent hover effects when color swatch is active */
+.woocommerce
+  ul.products
+  li.product.color-swatch-active:hover
+  .product-second-image {
+  opacity: 0;
+}
+
 /* Product Status Tags */
 .woocommerce ul.products li.product .product-status-tag {
   position: absolute;
@@ -843,6 +851,196 @@
   opacity: 0.6;
 }
 
+/* Product Loop Color Swatches */
+.woocommerce ul.products li.product .product-loop-color-swatches {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: var(--z-content);
+}
+
+.woocommerce ul.products li.product:hover .product-loop-color-swatches {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Show color swatches on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .woocommerce ul.products li.product .product-loop-color-swatches {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.woocommerce ul.products li.product .color-swatch {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #fcfcfc;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Common color classes for swatches */
+.woocommerce ul.products li.product .color-swatch-inner.color-black {
+  background-color: #000000;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-white {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-red {
+  background-color: #ff0000;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-blue {
+  background-color: #0000ff;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-green {
+  background-color: #008000;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-yellow {
+  background-color: #ffff00;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-orange {
+  background-color: #ffa500;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-purple {
+  background-color: #800080;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-pink {
+  background-color: #ffc0cb;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-gray,
+.woocommerce ul.products li.product .color-swatch-inner.color-grey {
+  background-color: #808080;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-brown {
+  background-color: #a52a2a;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-navy {
+  background-color: #000080;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-maroon {
+  background-color: #800000;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-teal {
+  background-color: #008080;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-lime {
+  background-color: #00ff00;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-olive {
+  background-color: #808000;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-aqua {
+  background-color: #00ffff;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-silver {
+  background-color: #c0c0c0;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-fuchsia {
+  background-color: #ff00ff;
+}
+
+/* Additional common colors */
+.woocommerce ul.products li.product .color-swatch-inner.color-beige {
+  background-color: #f5f5dc;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-khaki {
+  background-color: #f0e68c;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-cherry {
+  background-color: #800020;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-coral {
+  background-color: #ff7f50;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-cream {
+  background-color: #fffdd0;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-gold {
+  background-color: #ffd700;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-indigo {
+  background-color: #4b0082;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-lavender {
+  background-color: #e6e6fa;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-mint {
+  background-color: #98fb98;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-peach {
+  background-color: #ffcba4;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-plum {
+  background-color: #dda0dd;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-rust {
+  background-color: #b7410e;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-sage {
+  background-color: #9caf88;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-turquoise {
+  background-color: #40e0d0;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-violet {
+  background-color: #8a2be2;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-wine {
+  background-color: #722f37;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .woocommerce ul.products {
@@ -883,6 +1081,23 @@
     left: 8px;
     padding: 3px 6px;
     font-size: 9px;
+  }
+
+  /* Adjust color swatches for mobile */
+  .woocommerce ul.products li.product .product-loop-color-swatches {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 4px;
+  }
+
+  .woocommerce ul.products li.product .color-swatch {
+    width: 20px;
+    height: 20px;
+  }
+
+  .woocommerce ul.products li.product .color-swatch.active {
+    border-width: 2px;
   }
 }
 
@@ -968,6 +1183,28 @@
 .woocommerce ul.products li.product .product-size-options .size-option.loading {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.woocommerce
+  ul.products
+  li.product
+  .product-size-options
+  .size-option.out-of-stock {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f5f5f5 !important;
+  color: #999 !important;
+  border-color: #ddd !important;
+}
+
+.woocommerce
+  ul.products
+  li.product
+  .product-size-options
+  .size-option.out-of-stock:hover {
+  background: #f5f5f5 !important;
+  color: #999 !important;
+  border-color: #ddd !important;
 }
 
 /* Ensure overlay doesn't interfere with product link when not hovered */

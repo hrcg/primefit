@@ -114,11 +114,15 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 	</div>
 	
 	<!-- Color Selection (for variable products) -->
-	<?php if ( $is_variable && $color_attribute ) : ?>
+	<?php if ( $is_variable ) : ?>
+		<?php
+		// Get variations data for all variable products (not just those with color attributes)
+		$variations = $product->get_available_variations();
+		?>
+		<?php if ( $color_attribute ) : ?>
 		<div class="product-color-selection">
 			<div class="color-options">
 				<?php
-				$variations = $product->get_available_variations();
 				$color_options = array();
 				
 				foreach ( $variations as $variation ) {
@@ -208,6 +212,7 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 				<?php endforeach; ?>
 			</div>
 		</div>
+		<?php endif; ?>
 	<?php endif; ?>
 	
 	<!-- Size Selection (for variable products) -->
@@ -336,11 +341,19 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 				$variations_json = wp_json_encode( $available_variations );
 				$variations_attr = function_exists( 'wc_esc_json' ) ? wc_esc_json( $variations_json ) : _wp_specialchars( $variations_json, ENT_QUOTES, 'UTF-8', true );
 				?>
-				<form class="primefit-variations-form cart" action="<?php echo esc_url( apply_filters( 'woocommerce_add_to_cart_form_action', $product->get_permalink() ) ); ?>" method="post" enctype='multipart/form-data' data-product_id="<?php echo absint( $product->get_id() ); ?>" data-product_variations="<?php echo $variations_attr; ?>">
+				<form class="primefit-variations-form variations_form cart" action="<?php echo esc_url( apply_filters( 'woocommerce_add_to_cart_form_action', $product->get_permalink() ) ); ?>" method="post" enctype='multipart/form-data' data-product_id="<?php echo absint( $product->get_id() ); ?>" data-product_variations="<?php echo $variations_attr; ?>">
 					<!-- Hidden variation inputs -->
 					<input type="hidden" name="add-to-cart" value="<?php echo absint( $product->get_id() ); ?>" />
 					<input type="hidden" name="product_id" value="<?php echo absint( $product->get_id() ); ?>" />
 					<input type="hidden" name="variation_id" class="variation_id" value="0" />
+					
+					<!-- Hidden attribute inputs for WooCommerce validation -->
+					<?php if ( $color_attribute ) : ?>
+						<input type="hidden" name="attribute_<?php echo esc_attr( $color_attribute->get_name() ); ?>" class="attribute_color_input" value="" />
+					<?php endif; ?>
+					<?php if ( $size_attribute ) : ?>
+						<input type="hidden" name="attribute_<?php echo esc_attr( $size_attribute->get_name() ); ?>" class="attribute_size_input" value="" />
+					<?php endif; ?>
 					
 					<!-- Quantity input -->
 					<div class="quantity-input-wrapper">
@@ -443,7 +456,7 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 <script type="text/javascript">
 // Product variation data
 window.primefitProductData = {
-	variations: <?php echo json_encode( $variations ); ?>,
+	variations: <?php echo json_encode( $variations ?? array() ); ?>,
 	productId: <?php echo absint( $product->get_id() ); ?>,
 	defaultColor: <?php echo json_encode( $default_color ); ?>,
 	defaultSize: <?php echo json_encode( $default_size ); ?>,

@@ -11,13 +11,16 @@
       ) {
         // Intervene on all pages except cart/checkout to avoid interfering with notices
         var isCartPage = document.body.classList.contains("woocommerce-cart");
-        var isCheckoutPage = document.body.classList.contains("woocommerce-checkout");
+        var isCheckoutPage = document.body.classList.contains(
+          "woocommerce-checkout"
+        );
         if (!isCartPage && !isCheckoutPage) {
           url.searchParams.delete("add-to-cart");
           url.searchParams.delete("added-to-cart");
           url.searchParams.delete("quantity");
           var newSearch = url.searchParams.toString();
-          var newUrl = url.pathname + (newSearch ? "?" + newSearch : "") + url.hash;
+          var newUrl =
+            url.pathname + (newSearch ? "?" + newSearch : "") + url.hash;
           window.history.replaceState({}, "", newUrl);
         }
       }
@@ -104,10 +107,14 @@
   }
 
   function openCart(clickedEl) {
-    console.log('openCart called with:', clickedEl); // Debug log
+    console.log("openCart called with:", clickedEl); // Debug log
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
-    console.log('Cart context:', {wrap: $wrap.length, panel: $panel.length, toggle: $toggle.length}); // Debug log
-    
+    console.log("Cart context:", {
+      wrap: $wrap.length,
+      panel: $panel.length,
+      toggle: $toggle.length,
+    }); // Debug log
+
     $wrap.addClass("open").attr("data-open", "true");
     $panel.removeAttr("hidden");
     $toggle.attr("aria-expanded", "true");
@@ -118,75 +125,96 @@
 
     // Prevent page scrolling when cart is open
     preventPageScroll();
-    
+
     // Ensure all quantity inputs are properly synced when cart opens
     // First try to get fresh cart fragments to ensure we have the latest data
     if (window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
       $.ajax({
-        type: 'POST',
+        type: "POST",
         url: window.primefit_cart_params.ajax_url,
         data: {
-          action: 'woocommerce_get_refreshed_fragments'
+          action: "woocommerce_get_refreshed_fragments",
         },
-        success: function(response) {
+        success: function (response) {
           if (response && response.fragments) {
             // Update fragments with fresh data
             $.each(response.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
-            
+
             // Now sync all quantity inputs with the fresh data
-            setTimeout(function() {
-              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+            setTimeout(function () {
+              $(
+                ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+              ).each(function () {
                 const $input = $(this);
-                const cartItemKey = $input.data('cart-item-key');
+                const cartItemKey = $input.data("cart-item-key");
                 const currentVal = parseInt($input.val()) || 1;
-                
+
                 // Update both the input value and the data attribute
                 if (currentVal && cartItemKey) {
                   $input.val(currentVal);
-                  $input.attr('data-original-value', currentVal);
-                  console.log('CART DEBUG: Synced quantity on cart open (fresh data) for item', cartItemKey, 'to', currentVal);
+                  $input.attr("data-original-value", currentVal);
+                  console.log(
+                    "CART DEBUG: Synced quantity on cart open (fresh data) for item",
+                    cartItemKey,
+                    "to",
+                    currentVal
+                  );
                 }
               });
             }, 50);
           }
         },
-        error: function() {
+        error: function () {
           // Fallback: sync with current values if AJAX fails
-          setTimeout(function() {
-            $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+          setTimeout(function () {
+            $(
+              ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+            ).each(function () {
               const $input = $(this);
-              const cartItemKey = $input.data('cart-item-key');
+              const cartItemKey = $input.data("cart-item-key");
               const currentVal = parseInt($input.val()) || 1;
-              
+
               if (currentVal && cartItemKey) {
                 $input.val(currentVal);
-                $input.attr('data-original-value', currentVal);
-                console.log('CART DEBUG: Fallback sync quantity on cart open for item', cartItemKey, 'to', currentVal);
+                $input.attr("data-original-value", currentVal);
+                console.log(
+                  "CART DEBUG: Fallback sync quantity on cart open for item",
+                  cartItemKey,
+                  "to",
+                  currentVal
+                );
               }
             });
           }, 50);
-        }
+        },
       });
     } else {
       // Fallback if no AJAX params available
-      setTimeout(function() {
-        $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+      setTimeout(function () {
+        $(
+          ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+        ).each(function () {
           const $input = $(this);
-          const cartItemKey = $input.data('cart-item-key');
+          const cartItemKey = $input.data("cart-item-key");
           const currentVal = parseInt($input.val()) || 1;
-          
+
           if (currentVal && cartItemKey) {
             $input.val(currentVal);
-            $input.attr('data-original-value', currentVal);
-            console.log('CART DEBUG: Basic sync quantity on cart open for item', cartItemKey, 'to', currentVal);
+            $input.attr("data-original-value", currentVal);
+            console.log(
+              "CART DEBUG: Basic sync quantity on cart open for item",
+              cartItemKey,
+              "to",
+              currentVal
+            );
           }
         });
       }, 50);
     }
-    
-    console.log('Cart opened successfully'); // Debug log
+
+    console.log("Cart opened successfully"); // Debug log
   }
 
   function closeCart(clickedEl) {
@@ -313,7 +341,7 @@
       if (!cartItemKey) {
         return;
       }
-      
+
       // Store the current value as the focus value for comparison later
       $(this).data("focus-value", $(this).val());
     }
@@ -329,10 +357,10 @@
       if (!cartItemKey) {
         return;
       }
-      
+
       const focusValue = parseInt($(this).data("focus-value")) || 1;
       const currentValue = parseInt($(this).val()) || 1;
-      
+
       // If value changed during focus, trigger change event
       if (focusValue !== currentValue) {
         $(this).trigger("change");
@@ -341,32 +369,46 @@
   );
 
   // Remove item from cart: handle both WooCommerce core and custom handlers
-  $(document).ready(function() {
+  $(document).ready(function () {
     // Handle WooCommerce core remove buttons
     $(document).off("click.primefit-cart", ".remove_from_cart_button");
-    $(document).on("click.primefit-cart", ".remove_from_cart_button", function (e) {
-      e.preventDefault();
-      const $btn = $(this);
-      const cartItemKey = $btn.data("cart_item_key");
-      console.log('CART DEBUG: Remove button clicked, cart item key:', cartItemKey);
-      
-      if (cartItemKey) {
+    $(document).on(
+      "click.primefit-cart",
+      ".remove_from_cart_button",
+      function (e) {
+        e.preventDefault();
+        const $btn = $(this);
+        const cartItemKey = $btn.data("cart_item_key");
+        console.log(
+          "CART DEBUG: Remove button clicked, cart item key:",
+          cartItemKey
+        );
+
+        if (cartItemKey) {
+          $btn.addClass("loading").prop("disabled", true);
+          removeCartItem(cartItemKey, $btn);
+        } else {
+          console.error("CART DEBUG: No cart item key found");
+        }
+      }
+    );
+
+    // Keep fallback for custom remove buttons
+    $(document).off(
+      "click.primefit-cart",
+      ".woocommerce-mini-cart__item-remove"
+    );
+    $(document).on(
+      "click.primefit-cart",
+      ".woocommerce-mini-cart__item-remove[href='#']",
+      function (e) {
+        e.preventDefault();
+        const $btn = $(this);
+        const cartItemKey = $btn.data("cart-item-key");
         $btn.addClass("loading").prop("disabled", true);
         removeCartItem(cartItemKey, $btn);
-      } else {
-        console.error('CART DEBUG: No cart item key found');
       }
-    });
-    
-    // Keep fallback for custom remove buttons
-    $(document).off("click.primefit-cart", ".woocommerce-mini-cart__item-remove");
-    $(document).on("click.primefit-cart", ".woocommerce-mini-cart__item-remove[href='#']", function (e) {
-      e.preventDefault();
-      const $btn = $(this);
-      const cartItemKey = $btn.data("cart-item-key");
-      $btn.addClass("loading").prop("disabled", true);
-      removeCartItem(cartItemKey, $btn);
-    });
+    );
   });
 
   // Update cart quantity via AJAX
@@ -396,17 +438,19 @@
             $.each(response.data.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
-            
+
             // After fragments are updated, ensure all quantity inputs have proper data attributes
             // Use a longer timeout to ensure DOM is fully updated
-            setTimeout(function() {
-              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+            setTimeout(function () {
+              $(
+                ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+              ).each(function () {
                 const $input = $(this);
-                const cartItemKey = $input.data('cart-item-key');
-                
+                const cartItemKey = $input.data("cart-item-key");
+
                 // Get the actual quantity from the server response or cart data
                 let actualQuantity = response.data.updated_quantity;
-                
+
                 // If this is the item we just updated, use the updated quantity
                 if (cartItemKey === response.data.cart_item_key) {
                   actualQuantity = response.data.updated_quantity;
@@ -414,24 +458,29 @@
                   // For other items, try to get quantity from the input value
                   actualQuantity = parseInt($input.val()) || 1;
                 }
-                
+
                 // Update both the input value and the data attribute
                 if (actualQuantity && cartItemKey) {
                   $input.val(actualQuantity);
-                  $input.attr('data-original-value', actualQuantity);
-                  
+                  $input.attr("data-original-value", actualQuantity);
+
                   // Debug log to track quantity sync
-                  console.log('CART DEBUG: Synced quantity for item', cartItemKey, 'to', actualQuantity);
+                  console.log(
+                    "CART DEBUG: Synced quantity for item",
+                    cartItemKey,
+                    "to",
+                    actualQuantity
+                  );
                 }
               });
             }, 100);
           }
-          
+
           // Trigger WooCommerce cart update events
           $(document.body).trigger("update_checkout");
           $(document.body).trigger("wc_fragment_refresh");
           // Note: Avoid triggering added_to_cart without required params
-          
+
           // Check if cart is empty after quantity update
           setTimeout(function () {
             checkAndShowEmptyCartState();
@@ -474,127 +523,147 @@
     }
 
     // Find the cart item element for animation
-    const $cartItem = $(`.remove_from_cart_button[data-cart_item_key="${cartItemKey}"]`).closest('.woocommerce-mini-cart-item');
-    
+    const $cartItem = $(
+      `.remove_from_cart_button[data-cart_item_key="${cartItemKey}"]`
+    ).closest(".woocommerce-mini-cart-item");
+
     // Add loading state to the remove button
     $element.addClass("loading").prop("disabled", true);
 
-    console.log('CART DEBUG: Removing cart item:', cartItemKey); // Debug log
-    console.log('CART DEBUG: primefit_cart_params:', primefit_cart_params); // Debug log
-    
+    console.log("CART DEBUG: Removing cart item:", cartItemKey); // Debug log
+    console.log("CART DEBUG: primefit_cart_params:", primefit_cart_params); // Debug log
+
     // Validate we have the required parameters
     if (!primefit_cart_params.ajax_url) {
-      console.error('CART DEBUG: No AJAX URL available');
-      alert('Configuration error: No AJAX URL');
+      console.error("CART DEBUG: No AJAX URL available");
+      alert("Configuration error: No AJAX URL");
       return;
     }
-    
+
     if (!primefit_cart_params.remove_cart_nonce) {
-      console.error('CART DEBUG: No remove cart nonce available');
-      alert('Configuration error: No security nonce');
+      console.error("CART DEBUG: No remove cart nonce available");
+      alert("Configuration error: No security nonce");
       return;
     }
-    
+
     const ajaxData = {
       action: "wc_ajax_remove_cart_item",
       cart_item_key: cartItemKey,
       security: primefit_cart_params.remove_cart_nonce,
     };
-    
-    console.log('CART DEBUG: AJAX data being sent:', ajaxData);
+
+    console.log("CART DEBUG: AJAX data being sent:", ajaxData);
 
     $.ajax({
       type: "POST",
       url: primefit_cart_params.ajax_url,
       data: ajaxData,
       success: function (response) {
-        console.log('Server response:', response); // Debug log
-        
+        console.log("Server response:", response); // Debug log
+
         if (response.success) {
           // Start fade-out animation immediately
           if ($cartItem.length) {
-            $cartItem.addClass('removing');
+            $cartItem.addClass("removing");
           }
-          
+
           // Update cart fragments - these should now reflect the item being removed
           if (response.data && response.data.fragments) {
             $.each(response.data.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
-            
+
             // After fragments are updated, ensure all quantity inputs have proper data attributes
-            setTimeout(function() {
-              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+            setTimeout(function () {
+              $(
+                ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+              ).each(function () {
                 const $input = $(this);
-                const cartItemKey = $input.data('cart-item-key');
+                const cartItemKey = $input.data("cart-item-key");
                 const currentVal = parseInt($input.val()) || 1;
-                
+
                 // Update both the input value and the data attribute
                 if (currentVal && cartItemKey) {
                   $input.val(currentVal);
-                  $input.attr('data-original-value', currentVal);
-                  console.log('CART DEBUG: Synced quantity after removal for item', cartItemKey, 'to', currentVal);
+                  $input.attr("data-original-value", currentVal);
+                  console.log(
+                    "CART DEBUG: Synced quantity after removal for item",
+                    cartItemKey,
+                    "to",
+                    currentVal
+                  );
                 }
               });
             }, 100);
-            
+
             // Use server's cart state to determine if empty
-            console.log('Server says cart is empty:', response.data.cart_is_empty);
-            console.log('Server cart contents count:', response.data.cart_contents_count);
-            
+            console.log(
+              "Server says cart is empty:",
+              response.data.cart_is_empty
+            );
+            console.log(
+              "Server cart contents count:",
+              response.data.cart_contents_count
+            );
+
             // Check cart state using server data
             setTimeout(function () {
-              if (response.data.cart_is_empty === true || response.data.cart_contents_count === 0) {
+              if (
+                response.data.cart_is_empty === true ||
+                response.data.cart_contents_count === 0
+              ) {
                 showEmptyCartState();
               } else {
                 hideEmptyCartState();
               }
             }, 50);
           } else {
-            console.error('No fragments returned from server');
+            console.error("No fragments returned from server");
           }
-          
+
           // Trigger WooCommerce cart update events
           $(document.body).trigger("update_checkout");
           $(document.body).trigger("wc_fragment_refresh");
           // Note: Avoid triggering removed_from_cart without required params
-          
         } else {
-          
           // Remove loading state and fade class on error
           $element.removeClass("loading").prop("disabled", false);
           if ($cartItem.length) {
-            $cartItem.removeClass('removing');
+            $cartItem.removeClass("removing");
           }
-          
+
           // Show specific error message
-          let errorMessage = 'Failed to remove item from cart. ';
+          let errorMessage = "Failed to remove item from cart. ";
           if (response.data) {
-            errorMessage += 'Error: ' + response.data;
+            errorMessage += "Error: " + response.data;
           }
-          errorMessage += ' Please check browser console for details.';
-          
+          errorMessage += " Please check browser console for details.";
+
           alert(errorMessage);
-          
+
           // Fallback: reload page if AJAX fails
-          if (response.data && typeof response.data === 'string' && response.data.includes("Security check failed")) {
-            console.log('CART DEBUG: Security check failed - reloading page');
+          if (
+            response.data &&
+            typeof response.data === "string" &&
+            response.data.includes("Security check failed")
+          ) {
+            console.log("CART DEBUG: Security check failed - reloading page");
             window.location.reload();
           }
         }
       },
       error: function (xhr, status, error) {
-        console.error("AJAX error removing cart item:", {xhr, status, error});
-        
+        console.error("AJAX error removing cart item:", { xhr, status, error });
+
         // Remove loading state and fade class on error
         $element.removeClass("loading").prop("disabled", false);
         if ($cartItem.length) {
-          $cartItem.removeClass('removing');
+          $cartItem.removeClass("removing");
         }
-        
-        // Show user-friendly error  
-        alert('Network error. Please check your connection and try again.');
-        
+
+        // Show user-friendly error
+        alert("Network error. Please check your connection and try again.");
+
         // Fallback: reload page on critical errors
         if (xhr.status === 403 || xhr.status === 500) {
           window.location.reload();
@@ -611,30 +680,32 @@
 
   // Function to check and show empty cart state if needed
   function checkAndShowEmptyCartState() {
-    const $cartItems = $('.woocommerce-mini-cart__items');
-    const $cartContent = $('.cart-panel-content');
-    
-    console.log('Checking empty cart state...'); // Debug log
-    console.log('Cart items container exists:', $cartItems.length > 0); // Debug log
-    
+    const $cartItems = $(".woocommerce-mini-cart__items");
+    const $cartContent = $(".cart-panel-content");
+
+    console.log("Checking empty cart state..."); // Debug log
+    console.log("Cart items container exists:", $cartItems.length > 0); // Debug log
+
     // Check multiple indicators to ensure cart is truly empty
     const hasCartItemsContainer = $cartItems.length > 0;
-    const cartItemsCount = hasCartItemsContainer ? $cartItems.find('li.woocommerce-mini-cart__item').length : 0;
-    const hasEmptyMessage = $('.woocommerce-mini-cart__empty-message').length > 0;
-    
-    console.log('Cart items count:', cartItemsCount); // Debug log
-    console.log('Has empty message:', hasEmptyMessage); // Debug log
-    
+    const cartItemsCount = hasCartItemsContainer
+      ? $cartItems.find("li.woocommerce-mini-cart__item").length
+      : 0;
+    const hasEmptyMessage =
+      $(".woocommerce-mini-cart__empty-message").length > 0;
+
+    console.log("Cart items count:", cartItemsCount); // Debug log
+    console.log("Has empty message:", hasEmptyMessage); // Debug log
+
     // If no cart items container exists OR cart items container is empty
     if (!hasCartItemsContainer || cartItemsCount === 0) {
-      console.log('Cart is empty - showing empty state'); // Debug log
+      console.log("Cart is empty - showing empty state"); // Debug log
       showEmptyCartState();
     } else {
-      console.log('Cart has items - hiding empty state'); // Debug log  
+      console.log("Cart has items - hiding empty state"); // Debug log
       hideEmptyCartState();
     }
   }
-
 
   // Close when clicking overlay
   $(document).on("click", ".cart-overlay", function (e) {
@@ -657,150 +728,177 @@
   });
 
   // Auto-open mini cart when product is added to cart
-  $(document).on("added_to_cart", function (event, fragments, cart_hash, $button) {
-    console.log('Product added to cart - auto-opening mini cart'); // Debug log
-    console.log('Event data:', {fragments, cart_hash, button: $button}); // Debug log
-    
-    // Update fragments if provided
-    if (fragments) {
-      $.each(fragments, function (key, value) {
-        $(key).replaceWith(value);
-      });
-      
-      // Force a more aggressive quantity sync after adding to cart
-      setTimeout(function() {
-        // First, try to get fresh cart fragments to ensure we have the latest data
-        if (window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
-          $.ajax({
-            type: 'POST',
-            url: window.primefit_cart_params.ajax_url,
-            data: {
-              action: 'woocommerce_get_refreshed_fragments'
-            },
-            success: function(response) {
-              if (response && response.fragments) {
-                // Update fragments with fresh data
-                $.each(response.fragments, function (key, value) {
-                  $(key).replaceWith(value);
-                });
-                
-                // Now sync all quantity inputs with the fresh data
-                setTimeout(function() {
-                  $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
-                    const $input = $(this);
-                    const cartItemKey = $input.data('cart-item-key');
-                    const currentVal = parseInt($input.val()) || 1;
-                    
-                    // Update both the input value and the data attribute
-                    if (currentVal && cartItemKey) {
-                      $input.val(currentVal);
-                      $input.attr('data-original-value', currentVal);
-                      console.log('CART DEBUG: Synced quantity after fresh fragments for item', cartItemKey, 'to', currentVal);
-                    }
+  $(document).on(
+    "added_to_cart",
+    function (event, fragments, cart_hash, $button) {
+      console.log("Product added to cart - auto-opening mini cart"); // Debug log
+      console.log("Event data:", { fragments, cart_hash, button: $button }); // Debug log
+
+      // Update fragments if provided
+      if (fragments) {
+        $.each(fragments, function (key, value) {
+          $(key).replaceWith(value);
+        });
+
+        // Force a more aggressive quantity sync after adding to cart
+        setTimeout(function () {
+          // First, try to get fresh cart fragments to ensure we have the latest data
+          if (
+            window.primefit_cart_params &&
+            window.primefit_cart_params.ajax_url
+          ) {
+            $.ajax({
+              type: "POST",
+              url: window.primefit_cart_params.ajax_url,
+              data: {
+                action: "woocommerce_get_refreshed_fragments",
+              },
+              success: function (response) {
+                if (response && response.fragments) {
+                  // Update fragments with fresh data
+                  $.each(response.fragments, function (key, value) {
+                    $(key).replaceWith(value);
                   });
-                }, 50);
-              }
-            },
-            error: function() {
-              // Fallback: sync with current values if AJAX fails
-              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
-                const $input = $(this);
-                const cartItemKey = $input.data('cart-item-key');
-                const currentVal = parseInt($input.val()) || 1;
-                
-                if (currentVal && cartItemKey) {
-                  $input.val(currentVal);
-                  $input.attr('data-original-value', currentVal);
-                  console.log('CART DEBUG: Fallback sync quantity for item', cartItemKey, 'to', currentVal);
+
+                  // Now sync all quantity inputs with the fresh data
+                  setTimeout(function () {
+                    $(
+                      ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+                    ).each(function () {
+                      const $input = $(this);
+                      const cartItemKey = $input.data("cart-item-key");
+                      const currentVal = parseInt($input.val()) || 1;
+
+                      // Update both the input value and the data attribute
+                      if (currentVal && cartItemKey) {
+                        $input.val(currentVal);
+                        $input.attr("data-original-value", currentVal);
+                        console.log(
+                          "CART DEBUG: Synced quantity after fresh fragments for item",
+                          cartItemKey,
+                          "to",
+                          currentVal
+                        );
+                      }
+                    });
+                  }, 50);
                 }
-              });
-            }
-          });
-        } else {
-          // Fallback if no AJAX params available
-          $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
-            const $input = $(this);
-            const cartItemKey = $input.data('cart-item-key');
-            const currentVal = parseInt($input.val()) || 1;
-            
-            if (currentVal && cartItemKey) {
-              $input.val(currentVal);
-              $input.attr('data-original-value', currentVal);
-              console.log('CART DEBUG: Basic sync quantity for item', cartItemKey, 'to', currentVal);
-            }
-          });
-        }
-      }, 150);
+              },
+              error: function () {
+                // Fallback: sync with current values if AJAX fails
+                $(
+                  ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+                ).each(function () {
+                  const $input = $(this);
+                  const cartItemKey = $input.data("cart-item-key");
+                  const currentVal = parseInt($input.val()) || 1;
+
+                  if (currentVal && cartItemKey) {
+                    $input.val(currentVal);
+                    $input.attr("data-original-value", currentVal);
+                    console.log(
+                      "CART DEBUG: Fallback sync quantity for item",
+                      cartItemKey,
+                      "to",
+                      currentVal
+                    );
+                  }
+                });
+              },
+            });
+          } else {
+            // Fallback if no AJAX params available
+            $(
+              ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+            ).each(function () {
+              const $input = $(this);
+              const cartItemKey = $input.data("cart-item-key");
+              const currentVal = parseInt($input.val()) || 1;
+
+              if (currentVal && cartItemKey) {
+                $input.val(currentVal);
+                $input.attr("data-original-value", currentVal);
+                console.log(
+                  "CART DEBUG: Basic sync quantity for item",
+                  cartItemKey,
+                  "to",
+                  currentVal
+                );
+              }
+            });
+          }
+        }, 150);
+      }
+
+      // Check cart state and hide empty message if needed
+      setTimeout(function () {
+        checkAndShowEmptyCartState();
+      }, 100);
+
+      // Open cart immediately
+      openCart();
+
+      // Auto-close after 5 seconds
+      setTimeout(function () {
+        console.log("Auto-closing mini cart after 5 seconds"); // Debug log
+        closeCart();
+      }, 5000);
     }
-    
-    // Check cart state and hide empty message if needed
-    setTimeout(function () {
-      checkAndShowEmptyCartState();
-    }, 100);
-    
-    // Open cart immediately
-    openCart();
-    
-    // Auto-close after 5 seconds
-    setTimeout(function () {
-      console.log('Auto-closing mini cart after 5 seconds'); // Debug log
-      closeCart();
-    }, 5000);
-  });
+  );
 
   // Function to show empty cart state
   function showEmptyCartState() {
-    console.log('Showing empty cart state'); // Debug log
-    
-    const $cartItems = $('.woocommerce-mini-cart__items');
-    const $cartTotal = $('.woocommerce-mini-cart__total');
-    const $cartButtons = $('.woocommerce-mini-cart__buttons');
-    const $cartRecommendations = $('.cart-recommendations');
-    const $cartCheckoutSummary = $('.cart-checkout-summary');
-    const $emptyMessage = $('.woocommerce-mini-cart__empty-message');
-    const $customEmptyCart = $('.pf-mini-cart-empty');
-    
+    console.log("Showing empty cart state"); // Debug log
+
+    const $cartItems = $(".woocommerce-mini-cart__items");
+    const $cartTotal = $(".woocommerce-mini-cart__total");
+    const $cartButtons = $(".woocommerce-mini-cart__buttons");
+    const $cartRecommendations = $(".cart-recommendations");
+    const $cartCheckoutSummary = $(".cart-checkout-summary");
+    const $emptyMessage = $(".woocommerce-mini-cart__empty-message");
+    const $customEmptyCart = $(".pf-mini-cart-empty");
+
     // Hide all cart content
     if ($cartItems.length) $cartItems.hide();
     if ($cartTotal.length) $cartTotal.hide();
     if ($cartButtons.length) $cartButtons.hide();
     if ($cartRecommendations.length) $cartRecommendations.hide();
     if ($cartCheckoutSummary.length) $cartCheckoutSummary.hide();
-    
+
     // Show empty message (either default or custom)
     if ($emptyMessage.length) {
       $emptyMessage.show();
     } else if ($customEmptyCart.length) {
       $customEmptyCart.show();
     }
-    
-    console.log('Empty cart state is now visible'); // Debug log
+
+    console.log("Empty cart state is now visible"); // Debug log
   }
 
   // Function to hide empty cart state
   function hideEmptyCartState() {
-    console.log('Hiding empty cart state'); // Debug log
-    
-    const $cartItems = $('.woocommerce-mini-cart__items');
-    const $cartTotal = $('.woocommerce-mini-cart__total');
-    const $cartButtons = $('.woocommerce-mini-cart__buttons');
-    const $cartRecommendations = $('.cart-recommendations');
-    const $cartCheckoutSummary = $('.cart-checkout-summary');
-    const $emptyMessage = $('.woocommerce-mini-cart__empty-message');
-    const $customEmptyCart = $('.pf-mini-cart-empty');
-    
+    console.log("Hiding empty cart state"); // Debug log
+
+    const $cartItems = $(".woocommerce-mini-cart__items");
+    const $cartTotal = $(".woocommerce-mini-cart__total");
+    const $cartButtons = $(".woocommerce-mini-cart__buttons");
+    const $cartRecommendations = $(".cart-recommendations");
+    const $cartCheckoutSummary = $(".cart-checkout-summary");
+    const $emptyMessage = $(".woocommerce-mini-cart__empty-message");
+    const $customEmptyCart = $(".pf-mini-cart-empty");
+
     // Show all cart content if it exists
     if ($cartItems.length) $cartItems.show();
     if ($cartTotal.length) $cartTotal.show();
     if ($cartButtons.length) $cartButtons.show();
     if ($cartRecommendations.length) $cartRecommendations.show();
     if ($cartCheckoutSummary.length) $cartCheckoutSummary.show();
-    
+
     // Hide empty message (both default and custom)
     if ($emptyMessage.length) $emptyMessage.hide();
     if ($customEmptyCart.length) $customEmptyCart.hide();
-    
-    console.log('Cart content is now visible'); // Debug log
+
+    console.log("Cart content is now visible"); // Debug log
   }
 
   // Shop Filter Bar Controller (preserved)
@@ -866,7 +964,7 @@
       const $dropdown = $(event.currentTarget).closest(".filter-dropdown");
       const isOpen = $dropdown.hasClass("open");
       $(".filter-dropdown").removeClass("open");
-      
+
       // Remove body class when closing
       if (isOpen) {
         document.body.classList.remove("filter-dropdown-open");
@@ -1349,185 +1447,385 @@
   }
 
   // Mini Cart Enhancements
-  
+
   // Handle coupon form submission in mini cart
-  $(document).on('submit', '.mini-cart-coupon-form', function(e) {
+  $(document).on("submit", ".mini-cart-coupon-form", function (e) {
     e.preventDefault();
-    
+
     const $form = $(this);
-    const $input = $form.find('.coupon-code-input');
-    const $button = $form.find('.apply-coupon-btn');
+    const $input = $form.find(".coupon-code-input");
+    const $button = $form.find(".apply-coupon-btn");
     const couponCode = $input.val().trim();
-    
+
     if (!couponCode) {
       return;
     }
-    
+
     // Show loading state
-    $button.addClass('loading').prop('disabled', true).text('Applying...');
-    
+    $button.addClass("loading").prop("disabled", true).text("Applying...");
+
     // Apply coupon via AJAX
     $.ajax({
-      type: 'POST',
+      type: "POST",
       url: primefit_cart_params.ajax_url,
       data: {
-        action: 'apply_coupon',
+        action: "apply_coupon",
         security: primefit_cart_params.apply_coupon_nonce,
-        coupon_code: couponCode
+        coupon_code: couponCode,
       },
-      success: function(response) {
+      success: function (response) {
         if (response.success) {
           // Clear the input
-          $input.val('');
-          
+          $input.val("");
+
           // Refresh cart fragments
-          $(document.body).trigger('update_checkout');
-          $(document.body).trigger('wc_fragment_refresh');
-          
+          $(document.body).trigger("update_checkout");
+          $(document.body).trigger("wc_fragment_refresh");
+
           // Show success message
-          $form.after('<div class="coupon-message success">Coupon applied successfully!</div>');
-          
-          setTimeout(function() {
-            $('.coupon-message').fadeOut();
+          $form.after(
+            '<div class="coupon-message success">Coupon applied successfully!</div>'
+          );
+
+          setTimeout(function () {
+            $(".coupon-message").fadeOut();
           }, 3000);
-          
         } else {
           // Show error message
-          let errorMsg = response.data || 'Failed to apply coupon';
-          $form.after('<div class="coupon-message error">' + errorMsg + '</div>');
-          
-          setTimeout(function() {
-            $('.coupon-message').fadeOut();
+          let errorMsg = response.data || "Failed to apply coupon";
+          $form.after(
+            '<div class="coupon-message error">' + errorMsg + "</div>"
+          );
+
+          setTimeout(function () {
+            $(".coupon-message").fadeOut();
           }, 5000);
         }
       },
-      error: function() {
-        $form.after('<div class="coupon-message error">Network error. Please try again.</div>');
-        setTimeout(function() {
-          $('.coupon-message').fadeOut();
+      error: function () {
+        $form.after(
+          '<div class="coupon-message error">Network error. Please try again.</div>'
+        );
+        setTimeout(function () {
+          $(".coupon-message").fadeOut();
         }, 5000);
       },
-      complete: function() {
+      complete: function () {
         // Remove loading state
-        $button.removeClass('loading').prop('disabled', false).text('APPLY');
-      }
+        $button.removeClass("loading").prop("disabled", false).text("APPLY");
+      },
     });
   });
-  
+
   // Handle coupon removal
-  $(document).on('click', '.remove-coupon', function(e) {
+  $(document).on("click", ".remove-coupon", function (e) {
     e.preventDefault();
-    
+
     const $button = $(this);
-    const couponCode = $button.data('coupon');
-    
+    const couponCode = $button.data("coupon");
+
     if (!couponCode) {
       return;
     }
-    
+
     // Show loading state
-    $button.addClass('loading').prop('disabled', true);
-    
+    $button.addClass("loading").prop("disabled", true);
+
     // Remove coupon via AJAX
     $.ajax({
-      type: 'POST',
+      type: "POST",
       url: primefit_cart_params.ajax_url,
       data: {
-        action: 'remove_coupon',
+        action: "remove_coupon",
         security: primefit_cart_params.remove_coupon_nonce,
-        coupon: couponCode
+        coupon: couponCode,
       },
-      success: function(response) {
+      success: function (response) {
         if (response.success) {
           // Refresh cart fragments
-          $(document.body).trigger('update_checkout');
-          $(document.body).trigger('wc_fragment_refresh');
+          $(document.body).trigger("update_checkout");
+          $(document.body).trigger("wc_fragment_refresh");
         }
       },
-      error: function() {
-        console.error('Failed to remove coupon');
+      error: function () {
+        console.error("Failed to remove coupon");
       },
-      complete: function() {
+      complete: function () {
         // Remove loading state
-        $button.removeClass('loading').prop('disabled', false);
-      }
+        $button.removeClass("loading").prop("disabled", false);
+      },
     });
   });
-  
+
   // Handle recommendation item add to cart
-  $(document).on('click', '.recommendation-add-btn', function(e) {
+  $(document).on("click", ".recommendation-add-btn", function (e) {
     e.preventDefault();
-    
+
     const $button = $(this);
-    const productId = $button.data('product-id');
-    
+    const productId = $button.data("product-id");
+
     if (!productId) {
       return;
     }
-    
+
     // Show loading state
-    $button.addClass('loading').prop('disabled', true).text('Adding...');
-    
+    $button.addClass("loading").prop("disabled", true).text("Adding...");
+
     // Add to cart via AJAX
     $.ajax({
-      type: 'POST',
-      url: wc_add_to_cart_params ? wc_add_to_cart_params.ajax_url : primefit_cart_params.ajax_url,
+      type: "POST",
+      url: wc_add_to_cart_params
+        ? wc_add_to_cart_params.ajax_url
+        : primefit_cart_params.ajax_url,
       data: {
-        action: 'wc_ajax_add_to_cart',
+        action: "wc_ajax_add_to_cart",
         product_id: productId,
         quantity: 1,
-        security: wc_add_to_cart_params ? wc_add_to_cart_params.wc_ajax_add_to_cart_nonce : primefit_cart_params.add_to_cart_nonce
+        security: wc_add_to_cart_params
+          ? wc_add_to_cart_params.wc_ajax_add_to_cart_nonce
+          : primefit_cart_params.add_to_cart_nonce,
       },
-      success: function(response) {
+      success: function (response) {
         if (response && !response.error) {
           // Update cart fragments
           if (response.fragments) {
-            $.each(response.fragments, function(key, value) {
+            $.each(response.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
           }
-          
+
           // Trigger cart update events
-          $(document.body).trigger('update_checkout');
-          $(document.body).trigger('wc_fragment_refresh');
-          console.log('Triggering added_to_cart event from recommendation with:', {fragments: response.fragments, cart_hash: response.cart_hash, button: $button}); // Debug log
-          $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
-          
+          $(document.body).trigger("update_checkout");
+          $(document.body).trigger("wc_fragment_refresh");
+          console.log(
+            "Triggering added_to_cart event from recommendation with:",
+            {
+              fragments: response.fragments,
+              cart_hash: response.cart_hash,
+              button: $button,
+            }
+          ); // Debug log
+          $(document.body).trigger("added_to_cart", [
+            response.fragments,
+            response.cart_hash,
+            $button,
+          ]);
+
           // Show success state
-          $button.removeClass('loading').addClass('added').text('Added!');
-          
+          $button.removeClass("loading").addClass("added").text("Added!");
+
           // Reset button after delay
-          setTimeout(function() {
-            $button.removeClass('added').text('+ ADD').prop('disabled', false);
+          setTimeout(function () {
+            $button.removeClass("added").text("+ ADD").prop("disabled", false);
           }, 2000);
-          
         } else {
           // Show error
-          $button.removeClass('loading').addClass('error').text('Error').prop('disabled', false);
-          
-          setTimeout(function() {
-            $button.removeClass('error').text('+ ADD');
+          $button
+            .removeClass("loading")
+            .addClass("error")
+            .text("Error")
+            .prop("disabled", false);
+
+          setTimeout(function () {
+            $button.removeClass("error").text("+ ADD");
           }, 2000);
         }
       },
-      error: function(xhr, status, error) {
-        console.error('Recommendation add to cart error:', {xhr, status, error});
-        
+      error: function (xhr, status, error) {
+        console.error("Recommendation add to cart error:", {
+          xhr,
+          status,
+          error,
+        });
+
         // Show error with more specific message
-        let errorText = 'Error';
-        if (status === 'timeout') {
-          errorText = 'Timeout';
-        } else if (status === 'error' && xhr.status === 0) {
-          errorText = 'Network Error';
+        let errorText = "Error";
+        if (status === "timeout") {
+          errorText = "Timeout";
+        } else if (status === "error" && xhr.status === 0) {
+          errorText = "Network Error";
         }
-        
-        $button.removeClass('loading').addClass('error').text(errorText).prop('disabled', false);
-        
-        setTimeout(function() {
-          $button.removeClass('error').text('+ ADD');
+
+        $button
+          .removeClass("loading")
+          .addClass("error")
+          .text(errorText)
+          .prop("disabled", false);
+
+        setTimeout(function () {
+          $button.removeClass("error").text("+ ADD");
         }, 2000);
-      }
+      },
     });
   });
-  
+
+  /**
+   * Update size options based on selected color
+   */
+  function updateSizeOptionsForColor($productContainer, selectedColor) {
+    const $sizeOptions = $productContainer.find(".product-size-options");
+    const $sizeButtons = $sizeOptions.find(".size-option");
+    const variationsData = $sizeOptions.data("variations");
+
+    if (!variationsData || !selectedColor) {
+      return;
+    }
+
+    // Reset all size buttons
+    $sizeButtons.removeClass("out-of-stock").prop("disabled", false);
+
+    // Update each size button based on color availability
+    $sizeButtons.each(function () {
+      const $button = $(this);
+      const size = $button.data("size");
+      const buttonColor = $button.data("color");
+
+      // Find the variation for this size and color combination
+      let matchingVariation = null;
+      for (const variationId in variationsData) {
+        const variation = variationsData[variationId];
+        if (variation.size === size && variation.color === selectedColor) {
+          matchingVariation = variation;
+          break;
+        }
+      }
+
+      if (matchingVariation) {
+        // Update button with variation data
+        $button.data("variation-id", matchingVariation.variation_id);
+        $button.data("is-in-stock", matchingVariation.is_in_stock);
+        $button.data("stock-quantity", matchingVariation.stock_quantity);
+        $button.data(
+          "max-purchase-quantity",
+          matchingVariation.max_purchase_quantity
+        );
+
+        // Update visual state based on stock availability
+        if (!matchingVariation.is_in_stock) {
+          $button.addClass("out-of-stock").prop("disabled", true);
+        } else {
+          $button.removeClass("out-of-stock").prop("disabled", false);
+        }
+      } else {
+        // No variation found for this size/color combination
+        $button.addClass("out-of-stock").prop("disabled", true);
+        $button.data("variation-id", 0);
+        $button.data("is-in-stock", false);
+      }
+    });
+  }
+
+  /**
+   * Product Loop Color Swatches Functionality
+   */
+  $(document).ready(function () {
+    // Handle color swatch clicks in product loops
+    $(document).on(
+      "click",
+      ".product-loop-color-swatches .color-swatch",
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent triggering the product link
+
+        const $swatch = $(this);
+        const $productContainer = $swatch.closest(".product");
+        const $imageContainer = $productContainer.find(
+          ".product-image-container"
+        );
+        const $mainImage = $imageContainer.find(
+          ".attachment-woocommerce_thumbnail"
+        );
+        const $secondImage = $imageContainer.find(".product-second-image");
+        const variationImage = $swatch.data("variation-image");
+        const selectedColor = $swatch.data("color");
+
+        // Update active state
+        $productContainer.find(".color-swatch").removeClass("active");
+        $swatch.addClass("active");
+
+        // If there's a variation image, update the main image
+        if (variationImage && variationImage !== "") {
+          // Add a class to prevent hover effects from interfering
+          $productContainer.addClass("color-swatch-active");
+
+          // Update the main image directly
+          $mainImage.attr("src", variationImage);
+
+          // Hide the second image to prevent hover conflicts
+          $secondImage.css("opacity", "0");
+        }
+
+        // Update size options based on selected color
+        updateSizeOptionsForColor($productContainer, selectedColor);
+      }
+    );
+
+    // Handle hover effects for color swatches
+    $(document).on(
+      "mouseenter",
+      ".product-loop-color-swatches .color-swatch",
+      function () {
+        $(this).addClass("hover");
+      }
+    );
+
+    $(document).on(
+      "mouseleave",
+      ".product-loop-color-swatches .color-swatch",
+      function () {
+        $(this).removeClass("hover");
+      }
+    );
+
+    // Initialize size options for default color on page load
+    $(".product-loop-color-swatches .color-swatch.active").each(function () {
+      const $swatch = $(this);
+      const $productContainer = $swatch.closest(".product");
+      const selectedColor = $swatch.data("color");
+      updateSizeOptionsForColor($productContainer, selectedColor);
+    });
+
+    // If no active color swatch, initialize with first available color
+    $(".product-loop-color-swatches").each(function () {
+      const $colorSwatches = $(this);
+      const $productContainer = $colorSwatches.closest(".product");
+
+      if ($colorSwatches.find(".color-swatch.active").length === 0) {
+        const $firstSwatch = $colorSwatches.find(".color-swatch").first();
+        if ($firstSwatch.length > 0) {
+          const firstColor = $firstSwatch.data("color");
+          updateSizeOptionsForColor($productContainer, firstColor);
+        }
+      }
+    });
+
+    // Reset color swatch state when leaving the product
+    $(document).on(
+      "mouseleave",
+      ".woocommerce ul.products li.product",
+      function () {
+        const $product = $(this);
+        const $activeSwatch = $product.find(".color-swatch.active");
+
+        // Only reset if there's an active swatch and it's not the default
+        if ($activeSwatch.length && !$activeSwatch.hasClass("default-color")) {
+          // Remove the active class and reset to default
+          $product.removeClass("color-swatch-active");
+          $product.find(".color-swatch").removeClass("active");
+
+          // Reset to the first/default color swatch
+          const $defaultSwatch = $product.find(".color-swatch").first();
+          if ($defaultSwatch.length) {
+            $defaultSwatch.addClass("active");
+            const defaultImage = $defaultSwatch.data("variation-image");
+            if (defaultImage && defaultImage !== "") {
+              $product
+                .find(".attachment-woocommerce_thumbnail")
+                .attr("src", defaultImage);
+            }
+          }
+        }
+      }
+    );
+  });
 })(jQuery);
