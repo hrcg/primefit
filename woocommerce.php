@@ -2,7 +2,7 @@
 
 <?php
 // Check if this is a WooCommerce page
-if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_product_tag() || is_product() ) ) {
+if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_product_tag() || is_product() || is_checkout() || is_cart() || is_account_page() ) ) {
 	// Only show hero on category/tag pages, not on main shop page
 	if ( is_product_category() || is_product_tag() ) {
 		$hero_args = primefit_get_shop_hero_config();
@@ -33,6 +33,22 @@ if ( function_exists( 'is_shop' ) && ( is_shop() || is_product_category() || is_
 	// Add shop filter bar for product category/tag pages
 	if ( is_product_category() || is_product_tag() ) {
 		get_template_part( 'woocommerce/shop/filter-bar' );
+	}
+	
+	// Handle checkout and cart pages - let WooCommerce handle template selection
+	if ( is_checkout() || is_cart() || is_account_page() ) {
+		// For checkout, let the custom template handle the layout
+		if ( is_checkout() ) {
+			woocommerce_content();
+		} else {
+			// For cart and account pages, use container
+			?>
+			<div class="container">
+				<?php woocommerce_content(); ?>
+			</div>
+			<?php
+		}
+		return; // Exit early to prevent further processing
 	}
 	
 	// Handle single product pages

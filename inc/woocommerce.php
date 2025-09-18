@@ -32,6 +32,7 @@ add_filter( 'woocommerce_enqueue_styles', '__return_empty_array' );
 /**
  * Add custom stock validation for add to cart
  * This ensures stock limits are enforced on the server side
+ * Only run for direct add-to-cart attempts on product pages
  */
 add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
 function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity, $variation_id = 0, $variation_data = array() ) {
@@ -45,6 +46,14 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
 	
 	// For variable products, ensure variation is selected and valid
 	if ( $product->is_type( 'variable' ) ) {
+		// Only validate on single product pages during direct add-to-cart attempts
+		$is_product_page = is_product() && ! wp_doing_ajax() && ! is_admin() && ! (defined('REST_REQUEST') && REST_REQUEST);
+		
+		// Skip all validation except for direct product page interactions
+		if ( ! $is_product_page ) {
+			return $valid; // Let WooCommerce handle validation in other contexts
+		}
+		
 		if ( ! $variation_id || $variation_id <= 0 ) {
 			wc_add_notice( __( 'Please choose product options by visiting the product page.', 'primefit' ), 'error' );
 			return false;
@@ -515,12 +524,19 @@ function primefit_wc_remove_cart_item() {
 
     $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
 
+    // Check if we're on checkout page and cart is now empty
+    $is_checkout_page = is_checkout();
+    $cart_is_empty = WC()->cart->is_empty();
+    
     error_log('CART DEBUG: Sending success response');
     wp_send_json_success( array(
         'fragments' => $fragments,
         'cart_hash' => WC()->cart->get_cart_hash(),
         'cart_contents_count' => WC()->cart->get_cart_contents_count(),
-        'cart_is_empty' => WC()->cart->is_empty(),
+        'cart_is_empty' => $cart_is_empty,
+        'is_checkout_page' => $is_checkout_page,
+        'redirect_to_shop' => $is_checkout_page && $cart_is_empty,
+        'shop_url' => $is_checkout_page && $cart_is_empty ? wc_get_page_permalink( 'shop' ) : null,
     ) );
 }
 
@@ -540,6 +556,34 @@ function primefit_redirect_cart_page() {
 		// Redirect to front page
 		wp_redirect( $redirect_url );
 		exit;
+	}
+}
+
+/**
+ * Redirect checkout page to shop if cart is empty
+ */
+add_action( 'template_redirect', 'primefit_redirect_empty_checkout' );
+function primefit_redirect_empty_checkout() {
+	// Check if we're on the checkout page and cart is empty
+	if ( is_checkout() && WC()->cart && WC()->cart->is_empty() ) {
+		// Get the shop page URL
+		$shop_url = wc_get_page_permalink( 'shop' );
+		
+		// Redirect to shop page
+		wp_redirect( $shop_url );
+		exit;
+	}
+}
+
+/**
+ * Hook into WooCommerce cart item removal to handle checkout redirect
+ */
+add_action( 'woocommerce_cart_item_removed', 'primefit_handle_cart_item_removed', 10, 2 );
+function primefit_handle_cart_item_removed( $cart_item_key, $cart ) {
+	// Check if we're on checkout page and cart is now empty
+	if ( is_checkout() && $cart->is_empty() ) {
+		// Set a transient to indicate we should redirect
+		set_transient( 'primefit_checkout_redirect_to_shop', true, 30 );
 	}
 }
 
@@ -959,21 +1003,20 @@ function primefit_mini_cart_recommended_items() {
 	<div class="mini-cart-recommendations">
 		<h3 class="recommendations-title"><?php _e( 'ADD A LITTLE EXTRA', 'primefit' ); ?></h3>
 		
-		<div class="recommendations-grid">
-			<?php foreach ( array_slice( $recommended_products, 0, 2 ) as $product ) : ?>
-				<div class="recommendation-item" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
-					<div class="recommendation-image">
-						<?php echo $product->get_image( 'thumbnail' ); ?>
-					</div>
-					<div class="recommendation-details">
-						<h4 class="recommendation-name"><?php echo esc_html( $product->get_name() ); ?></h4>
-						<span class="recommendation-price"><?php echo $product->get_price_html(); ?></span>
-					</div>
-					<button type="button" class="recommendation-add-btn" data-product-id="<?php echo esc_attr( $product->get_id() ); ?>">
-						+ <?php _e( 'ADD', 'primefit' ); ?>
-					</button>
-				</div>
-			<?php endforeach; ?>
+		<div class="recommendations-carousel">
+			<div class="carousel-container">
+				<?php foreach ( array_slice( $recommended_products, 0, 5 ) as $product ) : ?>
+					<a href="<?php echo esc_url( $product->get_permalink() ); ?>" class="recommendation-item">
+						<div class="recommendation-image">
+							<?php echo $product->get_image( 'thumbnail' ); ?>
+						</div>
+						<div class="recommendation-details">
+							<h4 class="recommendation-name"><?php echo esc_html( $product->get_name() ); ?></h4>
+							<span class="recommendation-price"><?php echo $product->get_price_html(); ?></span>
+						</div>
+					</a>
+				<?php endforeach; ?>
+			</div>
 		</div>
 	</div>
 	<ul class="woocommerce-mini-cart <?php echo esc_attr( $args['list_class'] ); ?> hidden-list-start"> <!-- Reopen the list for WooCommerce -->
@@ -1228,173 +1271,4 @@ function primefit_handle_remove_coupon() {
 /**
  * Customize checkout page layout
  */
-add_action( 'wp', 'primefit_customize_checkout_layout' );
-function primefit_customize_checkout_layout() {
-	if ( is_checkout() && ! is_wc_endpoint_url( 'order-received' ) ) {
-		// Remove default WooCommerce checkout styling
-		remove_action( 'woocommerce_before_checkout_form', 'woocommerce_checkout_coupon_form', 10 );
-		
-		// Add custom checkout wrapper
-		add_action( 'woocommerce_before_checkout_form', 'primefit_checkout_wrapper_start', 5 );
-		add_action( 'woocommerce_after_checkout_form', 'primefit_checkout_wrapper_end', 25 );
-		
-		// Customize checkout form fields
-		add_filter( 'woocommerce_checkout_fields', 'primefit_customize_checkout_fields' );
-		
-		// Add custom checkout scripts
-		add_action( 'wp_footer', 'primefit_checkout_custom_scripts' );
-	}
-}
-
-/**
- * Start checkout wrapper
- */
-function primefit_checkout_wrapper_start() {
-	echo '<div class="checkout-wrapper">';
-}
-
-/**
- * End checkout wrapper
- */
-function primefit_checkout_wrapper_end() {
-	echo '</div>';
-}
-
-/**
- * Customize checkout fields
- */
-function primefit_customize_checkout_fields( $fields ) {
-	// Remove unnecessary fields
-	unset( $fields['billing']['billing_company'] );
-	unset( $fields['billing']['billing_address_2'] );
-	unset( $fields['shipping']['shipping_company'] );
-	unset( $fields['shipping']['shipping_address_2'] );
-	
-	// Customize field order and styling
-	$fields['billing']['billing_email']['priority'] = 10;
-	$fields['billing']['billing_first_name']['priority'] = 20;
-	$fields['billing']['billing_last_name']['priority'] = 30;
-	$fields['billing']['billing_country']['priority'] = 40;
-	$fields['billing']['billing_address_1']['priority'] = 50;
-	$fields['billing']['billing_city']['priority'] = 60;
-	$fields['billing']['billing_postcode']['priority'] = 70;
-	$fields['billing']['billing_phone']['priority'] = 80;
-	
-	// Add custom fields
-	$fields['billing']['newsletter_signup'] = array(
-		'type' => 'checkbox',
-		'label' => __( 'Email me with news and offers', 'primefit' ),
-		'required' => false,
-		'priority' => 90,
-		'default' => true,
-	);
-	
-	$fields['billing']['package_protection'] = array(
-		'type' => 'checkbox',
-		'label' => sprintf( __( 'Package Protection for %s100', 'primefit' ), get_woocommerce_currency_symbol() ),
-		'required' => false,
-		'priority' => 100,
-		'default' => false,
-	);
-	
-	$fields['billing']['sms_signup'] = array(
-		'type' => 'checkbox',
-		'label' => __( 'Text me with news and offers', 'primefit' ),
-		'required' => false,
-		'priority' => 110,
-		'default' => false,
-	);
-	
-	return $fields;
-}
-
-/**
- * Add custom checkout scripts
- */
-function primefit_checkout_custom_scripts() {
-	?>
-	<script>
-	jQuery(document).ready(function($) {
-		// Initialize checkout manager if available
-		if (typeof CheckoutManager !== 'undefined') {
-			CheckoutManager.init();
-		}
-		
-		// Custom checkout form enhancements
-		$('.woocommerce-checkout').addClass('primefit-checkout');
-		
-		// Handle form submission
-		$('form.checkout').on('submit', function(e) {
-			// Add loading state
-			$('.checkout-continue-button').addClass('loading').prop('disabled', true);
-		});
-		
-		// Handle field validation
-		$('.woocommerce-checkout input, .woocommerce-checkout select').on('blur', function() {
-			var $field = $(this);
-			var fieldName = $field.attr('name');
-			var fieldValue = $field.val().trim();
-			
-			// Remove existing error state
-			$field.removeClass('error');
-			$field.siblings('.error-message').remove();
-			
-			// Validate required fields
-			if ($field.prop('required') && !fieldValue) {
-				$field.addClass('error');
-				$field.after('<div class="error-message">This field is required</div>');
-			}
-			
-			// Validate email
-			if (fieldName === 'billing_email' && fieldValue) {
-				var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				if (!emailPattern.test(fieldValue)) {
-					$field.addClass('error');
-					$field.after('<div class="error-message">Please enter a valid email address</div>');
-				}
-			}
-		});
-	});
-	</script>
-	<?php
-}
-
-/**
- * Handle custom checkout field processing
- */
-add_action( 'woocommerce_checkout_process', 'primefit_process_checkout_fields' );
-function primefit_process_checkout_fields() {
-	// Process custom fields if needed
-	if ( isset( $_POST['newsletter_signup'] ) ) {
-		// Handle newsletter signup
-		WC()->session->set( 'newsletter_signup', true );
-	}
-	
-	if ( isset( $_POST['package_protection'] ) ) {
-		// Handle package protection
-		WC()->session->set( 'package_protection', true );
-	}
-	
-	if ( isset( $_POST['sms_signup'] ) ) {
-		// Handle SMS signup
-		WC()->session->set( 'sms_signup', true );
-	}
-}
-
-/**
- * Add custom checkout order meta
- */
-add_action( 'woocommerce_checkout_update_order_meta', 'primefit_save_checkout_custom_fields' );
-function primefit_save_checkout_custom_fields( $order_id ) {
-	if ( WC()->session->get( 'newsletter_signup' ) ) {
-		update_post_meta( $order_id, '_newsletter_signup', 'yes' );
-	}
-	
-	if ( WC()->session->get( 'package_protection' ) ) {
-		update_post_meta( $order_id, '_package_protection', 'yes' );
-	}
-	
-	if ( WC()->session->get( 'sms_signup' ) ) {
-		update_post_meta( $order_id, '_sms_signup', 'yes' );
-	}
-}
+// Checkout customizations removed - using default WooCommerce checkout

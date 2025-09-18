@@ -187,6 +187,17 @@ function primefit_enqueue_product_scripts() {
 				primefit_get_file_version( '/assets/js/checkout.js' ), 
 				true 
 			);
+			
+			// Localize checkout script with shop URL and redirect flag
+			$should_redirect = get_transient( 'primefit_checkout_redirect_to_shop' );
+			if ( $should_redirect ) {
+				delete_transient( 'primefit_checkout_redirect_to_shop' );
+			}
+			
+			wp_localize_script( 'primefit-checkout', 'wc_checkout_params', array(
+				'shop_url' => wc_get_page_permalink( 'shop' ),
+				'should_redirect' => $should_redirect,
+			) );
 		}
 	}
 }

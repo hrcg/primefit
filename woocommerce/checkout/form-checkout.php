@@ -1,7 +1,7 @@
 <?php
 /**
  * Checkout Form Template
- * Custom Shopify-style checkout layout
+ * Modern dark-themed checkout layout
  *
  * @package PrimeFit
  * @since 1.0.0
@@ -9,217 +9,213 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// Get cart contents for order summary
-$cart_contents = WC()->cart->get_cart();
-$cart_total = WC()->cart->get_total();
+do_action( 'woocommerce_before_checkout_form', $checkout );
+
+// If checkout registration is disabled and not logged in, the user cannot checkout.
+if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_required() && ! is_user_logged_in() ) {
+	echo esc_html( apply_filters( 'woocommerce_checkout_must_be_logged_in_message', __( 'You must be logged in to checkout.', 'woocommerce' ) ) );
+	return;
+}
+
 ?>
 
-<div class="checkout-wrapper">
-    <!-- Checkout Header -->
-    <div class="checkout-header">
-        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="logo">
-            <?php echo get_bloginfo( 'name' ); ?>
-        </a>
-    </div>
+<div class="checkout-container">
+	<form name="checkout" method="post" class="checkout woocommerce-checkout" action="<?php echo esc_url( wc_get_checkout_url() ); ?>" enctype="multipart/form-data">
 
-    <!-- Checkout Progress -->
-    <div class="checkout-progress">
-        <div class="checkout-progress-steps">
-            <div class="checkout-progress-step completed">Cart</div>
-            <div class="checkout-progress-separator">></div>
-            <div class="checkout-progress-step active">Information</div>
-            <div class="checkout-progress-separator">></div>
-            <div class="checkout-progress-step">Shipping</div>
-            <div class="checkout-progress-separator">></div>
-            <div class="checkout-progress-step">Payment</div>
-        </div>
-    </div>
+		<div class="checkout-layout">
+			<!-- Desktop: Left Column: Contact & Billing Information -->
+			<!-- Mobile: Order Summary (order: 1) -->
+			<div class="checkout-summary-section">
+				<div class="summary-header">
+					<h3 class="summary-title">Order summary</h3>
+					<div class="summary-total-mobile">
+						<?php wc_cart_totals_order_total_html(); ?>
+					</div>
+					<button type="button" class="summary-toggle mobile-only" aria-label="Toggle order summary">
+						<span class="chevron">▼</span>
+					</button>
+				</div>
+				<div class="summary-content">
+				
+				<div class="order-items">
+					<?php
+					foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
+						$_product = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
+						$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
+						
+						if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_checkout_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
+							?>
+							<div class="order-item">
+								<div class="item-image">
+									<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_thumbnail', $_product->get_image(), $cart_item, $cart_item_key ) ); ?>
+									<span class="item-quantity"><?php echo esc_html( $cart_item['quantity'] ); ?></span>
+								</div>
+								<div class="item-details">
+									<h4 class="item-name"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key ) ); ?></h4>
+									<div class="item-price"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key ) ); ?></div>
+									<?php
+									// Display product attributes
+									if ( $_product->is_type( 'variable' ) ) {
+										$variation_data = $cart_item['variation'];
+										foreach ( $variation_data as $name => $value ) {
+											if ( ! empty( $value ) ) {
+												$attribute_name = wc_attribute_label( str_replace( 'attribute_', '', $name ) );
+												echo '<div class="item-attribute">' . esc_html( $attribute_name ) . ': ' . esc_html( $value ) . '</div>';
+											}
+										}
+									}
+									?>
+								</div>
+								<div class="item-total">
+									<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_subtotal', WC()->cart->get_product_subtotal( $_product, $cart_item['quantity'] ), $cart_item, $cart_item_key ) ); ?>
+								</div>
+							</div>
+							<?php
+						}
+					}
+					?>
+				</div>
 
-    <!-- Main Checkout Content -->
-    <div class="checkout-content">
-        <!-- Left Column - Checkout Form -->
-        <div class="checkout-form-column">
-            <!-- Express Checkout Section -->
-            <div class="express-checkout-section">
-                <h3 class="express-checkout-title">Express checkout</h3>
-                <button type="button" class="express-checkout-button">
-                    Shop Pay
-                </button>
-                <div class="express-checkout-divider">
-                    <span>OR</span>
-                </div>
-            </div>
+				<!-- Coupon Section -->
+				<div class="coupon-section">
+					<button type="button" class="coupon-toggle">Add discount code <span class="arrow">▼</span></button>
+				</div>
 
-            <!-- Checkout Form -->
-            <form name="checkout" method="post" class="checkout woocommerce-checkout" action="<?php echo esc_url( wc_get_checkout_url() ); ?>" enctype="multipart/form-data">
-                <?php if ( $checkout->get_checkout_fields() ) : ?>
-                    <?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
+				<!-- Order Totals -->
+				<div class="order-totals">
+					<div class="total-line">
+						<span class="total-label">Subtotal</span>
+						<span class="total-value"><?php wc_cart_totals_subtotal_html(); ?></span>
+					</div>
+					<div class="total-line final-total">
+						<span class="total-label">Total</span>
+						<span class="total-value"><?php wc_cart_totals_order_total_html(); ?></span>
+					</div>
+				</div>
 
-                    <!-- Contact Section -->
-                    <div class="checkout-form-section">
-                        <h3 class="checkout-form-section-title">
-                            Contact
-                            <a href="#" class="checkout-form-section-link">Sign in</a>
-                        </h3>
-                        <div class="checkout-form-fields">
-                            <div class="checkout-form-field">
-                                <input type="email" class="checkout-form-input" name="billing_email" id="billing_email" placeholder="Email" value="<?php echo esc_attr( $checkout->get_value( 'billing_email' ) ); ?>" required />
-                            </div>
-                            <div class="checkout-form-checkbox">
-                                <input type="checkbox" id="newsletter_signup" name="newsletter_signup" value="1" checked />
-                                <label for="newsletter_signup" class="checkout-form-checkbox-label">Email me with news and offers</label>
-                            </div>
-                            <div class="checkout-form-checkbox">
-                                <input type="checkbox" id="package_protection" name="package_protection" value="1" />
-                                <label for="package_protection" class="checkout-form-checkbox-label">Package Protection for <?php echo get_woocommerce_currency_symbol() . '100'; ?></label>
-                            </div>
-                        </div>
-                    </div>
+				<!-- Payment Options Section - Within Order Summary for Desktop -->
+				<div class="payment-options-section desktop-payment">
+					<h3 class="section-title">Payment options</h3>
+					<?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
+					<div id="order_review" class="woocommerce-checkout-review-order">
+						<?php do_action( 'woocommerce_checkout_order_review' ); ?>
+					</div>
+					<?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
+				</div>
+				</div> <!-- End summary-content -->
+			</div>
 
-                    <!-- Shipping Address Section -->
-                    <div class="checkout-form-section">
-                        <h3 class="checkout-form-section-title">Shipping address</h3>
-                        <div class="checkout-form-fields">
-                            <div class="checkout-form-field">
-                                <select name="billing_country" id="billing_country" class="checkout-form-select" required>
-                                    <option value="">Country/Region</option>
-                                    <?php
-                                    $countries = WC()->countries->get_countries();
-                                    foreach ( $countries as $code => $name ) {
-                                        $selected = ( $checkout->get_value( 'billing_country' ) === $code ) ? 'selected' : '';
-                                        echo '<option value="' . esc_attr( $code ) . '" ' . $selected . '>' . esc_html( $name ) . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div class="checkout-form-row">
-                                <div class="checkout-form-field half-width">
-                                    <input type="text" class="checkout-form-input" name="billing_first_name" id="billing_first_name" placeholder="First name" value="<?php echo esc_attr( $checkout->get_value( 'billing_first_name' ) ); ?>" required />
-                                </div>
-                                <div class="checkout-form-field half-width">
-                                    <input type="text" class="checkout-form-input" name="billing_last_name" id="billing_last_name" placeholder="Last name" value="<?php echo esc_attr( $checkout->get_value( 'billing_last_name' ) ); ?>" required />
-                                </div>
-                            </div>
-                            <div class="checkout-form-field">
-                                <input type="text" class="checkout-form-input" name="billing_address_1" id="billing_address_1" placeholder="Address" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_1' ) ); ?>" required />
-                            </div>
-                            <div class="checkout-form-field">
-                                <input type="text" class="checkout-form-input" name="billing_address_2" id="billing_address_2" placeholder="Apartment, suite, etc. (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_2' ) ); ?>" />
-                            </div>
-                            <div class="checkout-form-row">
-                                <div class="checkout-form-field half-width">
-                                    <input type="text" class="checkout-form-input" name="billing_city" id="billing_city" placeholder="City" value="<?php echo esc_attr( $checkout->get_value( 'billing_city' ) ); ?>" required />
-                                </div>
-                                <div class="checkout-form-field half-width">
-                                    <input type="text" class="checkout-form-input" name="billing_postcode" id="billing_postcode" placeholder="Postal code (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" />
-                                </div>
-                            </div>
-                            <div class="checkout-form-field">
-                                <input type="tel" class="checkout-form-input" name="billing_phone" id="billing_phone" placeholder="Phone" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" required />
-                                <span class="checkout-form-help" title="We'll use this to contact you about your order">?</span>
-                            </div>
-                            <div class="checkout-form-checkbox">
-                                <input type="checkbox" id="sms_signup" name="sms_signup" value="1" />
-                                <label for="sms_signup" class="checkout-form-checkbox-label">Text me with news and offers</label>
-                            </div>
-                        </div>
-                    </div>
+			<!-- Desktop: Right Column: Order Summary -->
+			<!-- Mobile: Contact Information (order: 2) -->
+			<div class="checkout-form-section">
+				
+				<!-- Contact Information -->
+				<div class="form-section">
+					<h3 class="section-title">Contact information</h3>
+					<p class="section-description">We'll use this email to send you details and updates about your order.</p>
+					
+					<div class="form-field">
+						<input type="email" name="billing_email" id="billing_email" placeholder="Email address" value="<?php echo esc_attr( $checkout->get_value( 'billing_email' ) ); ?>" required />
+					</div>
+					
+					<?php if ( ! is_user_logged_in() ) : ?>
+						<p class="guest-checkout-notice">You are currently checking out as a guest.</p>
+					<?php endif; ?>
+				</div>
 
-                    <!-- Processing Times Section -->
-                    <div class="processing-times-section">
-                        <h3 class="processing-times-title">Processing Times</h3>
-                        <p class="processing-times-text">
-                            Please allow 1-2 business days for order processing during normal business hours, regardless of your chosen shipping method. During sales and holidays, processing may take 5-7 business days.
-                        </p>
-                    </div>
+				<!-- Billing Address -->
+				<div class="form-section">
+					<h3 class="section-title">Billing address</h3>
+					<p class="section-description">Enter the billing address that matches your payment method.</p>
+					
+					<?php if ( $checkout->get_checkout_fields() ) : ?>
+						<?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
+						
+						<!-- Custom billing fields with placeholders -->
+						<div class="woocommerce-billing-fields">
+							<h3>Billing details</h3>
+							
+							<div class="form-row form-row-first">
+								<input type="text" name="billing_first_name" id="billing_first_name" placeholder="First name" value="<?php echo esc_attr( $checkout->get_value( 'billing_first_name' ) ); ?>" required />
+							</div>
+							
+							<div class="form-row form-row-last">
+								<input type="text" name="billing_last_name" id="billing_last_name" placeholder="Last name" value="<?php echo esc_attr( $checkout->get_value( 'billing_last_name' ) ); ?>" required />
+							</div>
+							
+							<div class="form-row form-row-wide">
+								<select name="billing_country" id="billing_country" required>
+									<option value="">Country / Region</option>
+									<?php
+									$countries = WC()->countries->get_countries();
+									$selected_country = $checkout->get_value( 'billing_country' );
+									foreach ( $countries as $code => $name ) {
+										echo '<option value="' . esc_attr( $code ) . '"' . selected( $selected_country, $code, false ) . '>' . esc_html( $name ) . '</option>';
+									}
+									?>
+								</select>
+							</div>
+							
+							<div class="form-row form-row-wide">
+								<input type="text" name="billing_address_1" id="billing_address_1" placeholder="House number and street name" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_1' ) ); ?>" required />
+							</div>
+							
+							<div class="form-row form-row-wide">
+								<input type="text" name="billing_address_2" id="billing_address_2" placeholder="Apartment, suite, unit, etc. (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_2' ) ); ?>" />
+							</div>
+							
+							<div class="form-row form-row-wide">
+								<input type="text" name="billing_city" id="billing_city" placeholder="City" value="<?php echo esc_attr( $checkout->get_value( 'billing_city' ) ); ?>" required />
+							</div>
+							
+							<div class="form-row form-row-wide">
+								<select name="billing_state" id="billing_state">
+									<option value="">County</option>
+									<?php
+									$selected_state = $checkout->get_value( 'billing_state' );
+									$selected_country = $checkout->get_value( 'billing_country' );
+									if ( $selected_country ) {
+										$states = WC()->countries->get_states( $selected_country );
+										if ( $states ) {
+											foreach ( $states as $code => $name ) {
+												echo '<option value="' . esc_attr( $code ) . '"' . selected( $selected_state, $code, false ) . '>' . esc_html( $name ) . '</option>';
+											}
+										}
+									}
+									?>
+								</select>
+							</div>
+							
+							<div class="form-row form-row-first">
+								<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" required />
+							</div>
+							
+							<div class="form-row form-row-last">
+								<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" />
+							</div>
+						</div>
+						
+						<?php do_action( 'woocommerce_checkout_after_customer_details' ); ?>
+					<?php endif; ?>
+				</div>
 
-                    <!-- Hidden WooCommerce Fields -->
-                    <?php do_action( 'woocommerce_checkout_billing' ); ?>
-                    <?php do_action( 'woocommerce_checkout_shipping' ); ?>
+			</div>
 
-                    <!-- Checkout Actions -->
-                    <div class="checkout-actions">
-                        <a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="checkout-back-link">&lt; Return to cart</a>
-                        <button type="submit" class="checkout-continue-button">Continue to shipping</button>
-                    </div>
+			<!-- Mobile: Payment Options (order: 3) -->
+			<div class="payment-options-section mobile-payment">
+				<h3 class="section-title">Payment options</h3>
+				<?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
+				<div id="order_review_mobile" class="woocommerce-checkout-review-order">
+					<?php do_action( 'woocommerce_checkout_order_review' ); ?>
+				</div>
+				<?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
+			</div>
 
-                    <?php do_action( 'woocommerce_checkout_after_customer_details' ); ?>
-                <?php endif; ?>
+		</div>
 
-                <!-- Order Review Section (Hidden by default, shown on next step) -->
-                <div class="woocommerce-checkout-review-order" style="display: none;">
-                    <?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
-                    <div id="order_review" class="woocommerce-checkout-review-order">
-                        <?php do_action( 'woocommerce_checkout_order_review' ); ?>
-                    </div>
-                    <?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
-                </div>
-
-                <?php wp_nonce_field( 'woocommerce-process_checkout', 'woocommerce-process-checkout-nonce' ); ?>
-            </form>
-        </div>
-
-        <!-- Right Column - Order Summary -->
-        <div class="checkout-summary-column">
-            <div class="order-summary-header">
-                <h3 class="order-summary-title">Order summary</h3>
-                <span class="order-summary-total"><?php echo $cart_total; ?></span>
-            </div>
-
-            <!-- Order Items -->
-            <div class="order-summary-items">
-                <?php foreach ( $cart_contents as $cart_item_key => $cart_item ) :
-                    $_product = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
-                    if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_checkout_cart_item_visible', true, $cart_item, $cart_item_key ) ) :
-                        $product_name = apply_filters( 'woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key );
-                        $thumbnail = apply_filters( 'woocommerce_cart_item_thumbnail', $_product->get_image( 'thumbnail' ), $cart_item, $cart_item_key );
-                        $product_price = apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key );
-                        $variation_data = $cart_item['variation'];
-                        ?>
-                        <div class="order-summary-item">
-                            <div class="order-summary-item-image">
-                                <?php echo $thumbnail; ?>
-                                <div class="order-summary-item-quantity"><?php echo $cart_item['quantity']; ?></div>
-                            </div>
-                            <div class="order-summary-item-details">
-                                <h4 class="order-summary-item-name"><?php echo $product_name; ?></h4>
-                                <?php if ( ! empty( $variation_data ) ) : ?>
-                                    <p class="order-summary-item-variant">
-                                        <?php echo wc_get_formatted_variation( $variation_data, true ); ?>
-                                    </p>
-                                <?php endif; ?>
-                                <p class="order-summary-item-price"><?php echo $product_price; ?></p>
-                            </div>
-                        </div>
-                    <?php endif;
-                endforeach; ?>
-            </div>
-
-            <!-- Discount Code Section -->
-            <div class="discount-section">
-                <div class="discount-input-group">
-                    <input type="text" class="discount-input" placeholder="Discount code or gift card" />
-                    <button type="button" class="discount-apply-btn">Apply</button>
-                </div>
-            </div>
-
-            <!-- Order Totals -->
-            <div class="order-totals">
-                <div class="order-total-line">
-                    <span class="order-total-label">Subtotal</span>
-                    <span class="order-total-value"><?php echo WC()->cart->get_cart_subtotal(); ?></span>
-                </div>
-                <div class="order-total-line">
-                    <span class="order-total-label">Shipping</span>
-                    <span class="order-total-value"><?php echo WC()->cart->get_cart_shipping_total(); ?></span>
-                </div>
-                <div class="order-total-line total">
-                    <span class="order-total-label">Total</span>
-                    <span class="order-total-value"><?php echo $cart_total; ?></span>
-                </div>
-            </div>
-        </div>
-    </div>
+	</form>
 </div>
 
 <?php do_action( 'woocommerce_after_checkout_form', $checkout ); ?>
+
+
