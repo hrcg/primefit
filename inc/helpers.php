@@ -30,6 +30,23 @@ function primefit_get_asset_uri( array $candidates ) {
 }
 
 /**
+ * Get file modification time for cache busting
+ *
+ * @param string $file_path Relative path to file from theme directory
+ * @return string|int File modification time or theme version as fallback
+ */
+function primefit_get_file_version( $file_path ) {
+	$full_path = get_theme_file_path( $file_path );
+	
+	if ( file_exists( $full_path ) ) {
+		return filemtime( $full_path );
+	}
+	
+	// Fallback to theme version if file doesn't exist
+	return PRIMEFIT_VERSION;
+}
+
+/**
  * Get hero image for WooCommerce category
  *
  * @param object $category WooCommerce category object

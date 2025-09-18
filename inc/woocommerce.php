@@ -635,6 +635,11 @@ function primefit_mini_cart_recommended_items() {
 }
 
 /**
+ * Note: Mini cart quantity controls are now handled by the custom template override
+ * at woocommerce/cart/mini-cart.php instead of using filters
+ */
+
+/**
  * Get recommended products for mini cart
  */
 function primefit_get_mini_cart_recommended_products() {

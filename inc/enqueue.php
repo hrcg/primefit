@@ -40,7 +40,7 @@ function primefit_enqueue_assets() {
 		'primefit-app', 
 		PRIMEFIT_THEME_URI . '/assets/css/app.css', 
 		[ 'primefit-fonts' ], 
-		PRIMEFIT_VERSION 
+		primefit_get_file_version( '/assets/css/app.css' )
 	);
 
 	// Header-specific styles
@@ -48,7 +48,7 @@ function primefit_enqueue_assets() {
 		'primefit-header',
 		PRIMEFIT_THEME_URI . '/assets/css/header.css',
 		[ 'primefit-app' ],
-		PRIMEFIT_VERSION
+		primefit_get_file_version( '/assets/css/header.css' )
 	);
 
 	// Cart-specific styles
@@ -56,7 +56,7 @@ function primefit_enqueue_assets() {
 		'primefit-cart',
 		PRIMEFIT_THEME_URI . '/assets/css/cart.css',
 		[ 'primefit-app' ],
-		PRIMEFIT_VERSION
+		primefit_get_file_version( '/assets/css/cart.css' )
 	);
 	
 	// Footer-specific styles
@@ -64,7 +64,7 @@ function primefit_enqueue_assets() {
 		'primefit-footer',
 		PRIMEFIT_THEME_URI . '/assets/css/footer.css',
 		[ 'primefit-app' ],
-		PRIMEFIT_VERSION
+		primefit_get_file_version( '/assets/css/footer.css' )
 	);
 	// WooCommerce styles
 	if ( class_exists( 'WooCommerce' ) ) {
@@ -72,7 +72,7 @@ function primefit_enqueue_assets() {
 			'primefit-woocommerce', 
 			PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css', 
 			[ 'primefit-app' ], 
-			PRIMEFIT_VERSION 
+			primefit_get_file_version( '/assets/css/woocommerce.css' )
 		);
 		
 		// Single product page styles
@@ -81,7 +81,7 @@ function primefit_enqueue_assets() {
 				'primefit-single-product', 
 				PRIMEFIT_THEME_URI . '/assets/css/single-product.css', 
 				[ 'primefit-woocommerce' ], 
-				PRIMEFIT_VERSION 
+				primefit_get_file_version( '/assets/css/single-product.css' )
 			);
 		}
 	}
@@ -91,7 +91,7 @@ function primefit_enqueue_assets() {
 		'primefit-app', 
 		PRIMEFIT_THEME_URI . '/assets/js/app.js', 
 		[ 'jquery' ], 
-		PRIMEFIT_VERSION, 
+		primefit_get_file_version( '/assets/js/app.js' ), 
 		true 
 	);
 	
@@ -140,7 +140,7 @@ function primefit_enqueue_product_scripts() {
 			'primefit-product', 
 			PRIMEFIT_THEME_URI . '/assets/js/product.js', 
 			[ 'jquery' ], 
-			PRIMEFIT_VERSION, 
+			primefit_get_file_version( '/assets/js/product.js' ), 
 			true 
 		);
 		
@@ -150,7 +150,7 @@ function primefit_enqueue_product_scripts() {
 				'primefit-single-product', 
 				PRIMEFIT_THEME_URI . '/assets/js/single-product.js', 
 				[ 'jquery', 'primefit-product' ], 
-				PRIMEFIT_VERSION, 
+				primefit_get_file_version( '/assets/js/single-product.js' ), 
 				true 
 			);
 		}

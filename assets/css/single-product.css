@@ -54,7 +54,7 @@ body.single-product .site-header {
   background: var(--product-bg);
   color: var(--product-text);
   min-height: 100vh;
-  padding: 40px 0;
+  padding: 10px 0 80px 0;
 }
 
 /* Force override any conflicting styles */
@@ -75,6 +75,10 @@ body.single-product .single-product-page {
   gap: 40px;
   margin-bottom: 40px;
   align-items: start;
+}
+
+.added_to_cart {
+  display: none !important;
 }
 
 /* ========================================
@@ -236,6 +240,7 @@ body.single-product .single-product-page {
   }
 }
 
+
 /* Image Navigation Dots */
 .image-navigation-dots {
   display: flex;
@@ -245,9 +250,8 @@ body.single-product .single-product-page {
 }
 
 .image-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  width: auto;
+  height: 6px;
   border: none;
   background: var(--product-border);
   cursor: pointer;
@@ -257,7 +261,7 @@ body.single-product .single-product-page {
 
 .image-dot.active {
   background: var(--product-text);
-  transform: scale(1.3);
+  transform: scale(1.2);
 }
 
 .image-dot:hover {
@@ -593,15 +597,13 @@ body.single-product .single-product-page {
   width: 60px;
   height: 40px;
   padding: 0 8px;
-  border: 1px solid var(--product-border);
   background: transparent;
   color: var(--product-text);
   font-size: 14px;
   font-weight: 500;
   text-align: center;
+  border: none;
   border-radius: 0;
-  border-left: none;
-  border-right: none;
   appearance: textfield; /* Standard */
   -moz-appearance: textfield; /* Firefox */
 }

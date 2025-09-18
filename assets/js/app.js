@@ -150,10 +150,10 @@
     closeCart(this);
   });
 
-  // Cart quantity controls
+  // Cart quantity controls - Mini cart increment/decrement
   $(document).on(
     "click",
-    ".woocommerce-mini-cart__item-quantity .plus",
+    ".woocommerce-mini-cart__item-quantity .plus, .mini_cart_item-quantity .plus, .woocommerce-mini-cart-item-quantity .plus",
     function (e) {
       e.preventDefault();
       const cartItemKey = $(this).data("cart-item-key");
@@ -164,6 +164,7 @@
       if (currentQty < maxQty) {
         // Add loading state
         $(this).addClass("loading").prop("disabled", true);
+        $input.prop("disabled", true);
         updateCartQuantity(cartItemKey, currentQty + 1, $(this));
       }
     }
@@ -171,7 +172,7 @@
 
   $(document).on(
     "click",
-    ".woocommerce-mini-cart__item-quantity .minus",
+    ".woocommerce-mini-cart__item-quantity .minus, .mini_cart_item-quantity .minus, .woocommerce-mini-cart-item-quantity .minus",
     function (e) {
       e.preventDefault();
       const cartItemKey = $(this).data("cart-item-key");
@@ -181,6 +182,7 @@
       if (currentQty > 1) {
         // Add loading state
         $(this).addClass("loading").prop("disabled", true);
+        $input.prop("disabled", true);
         updateCartQuantity(cartItemKey, currentQty - 1, $(this));
       }
     }
@@ -188,13 +190,13 @@
 
   $(document).on(
     "change",
-    ".woocommerce-mini-cart__item-quantity input",
+    ".woocommerce-mini-cart__item-quantity input, .mini_cart_item-quantity input, .woocommerce-mini-cart-item-quantity input",
     function (e) {
       const cartItemKey = $(this).data("cart-item-key");
       const newQty = parseInt($(this).val());
       const maxQty = parseInt($(this).attr("max"));
 
-      if (newQty >= 1 && newQty <= maxQty) {
+      if (newQty >= 1 && newQty <= maxQty && newQty !== parseInt($(this).data("original-value"))) {
         // Add loading state to input
         $(this).addClass("loading").prop("disabled", true);
         updateCartQuantity(cartItemKey, newQty, $(this));
@@ -272,9 +274,14 @@
         }
       },
       complete: function () {
-        // Remove loading state
+        // Remove loading state from both button and input
         if ($element) {
           $element.removeClass("loading").prop("disabled", false);
+          // Also re-enable the input field
+          const $input = $element.siblings("input");
+          if ($input.length) {
+            $input.removeClass("loading").prop("disabled", false);
+          }
         }
       },
     });
@@ -441,35 +448,6 @@
     }
   }
 
-  // Function to show empty cart state
-  function showEmptyCartState() {
-    console.log('Showing empty cart state'); // Debug log
-    
-    const $cartContent = $('.cart-panel-content');
-    const $cartItems = $('.woocommerce-mini-cart__items');
-    const $cartTotal = $('.woocommerce-mini-cart__total');
-    const $cartButtons = $('.woocommerce-mini-cart__buttons');
-    const $cartRecommendations = $('.cart-recommendations');
-    const $cartCheckoutSummary = $('.cart-checkout-summary');
-    
-    // Hide all cart content 
-    $cartItems.hide();
-    $cartTotal.hide();
-    $cartButtons.hide();
-    $cartRecommendations.hide();
-    $cartCheckoutSummary.hide();
-    
-    // Ensure empty message exists and is shown
-    let $emptyMessage = $('.woocommerce-mini-cart__empty-message');
-    if ($emptyMessage.length === 0) {
-      console.log('Creating empty cart message'); // Debug log
-      $cartContent.append('<p class="woocommerce-mini-cart__empty-message">No products in the cart.</p>');
-      $emptyMessage = $('.woocommerce-mini-cart__empty-message');
-    }
-    $emptyMessage.show();
-    
-    console.log('Empty message is now visible:', $emptyMessage.is(':visible')); // Debug log
-  }
 
   // Close when clicking overlay
   $(document).on("click", ".cart-overlay", function (e) {
@@ -520,7 +498,6 @@
     const $cartButtons = $('.woocommerce-mini-cart__buttons');
     const $cartRecommendations = $('.cart-recommendations');
     const $cartCheckoutSummary = $('.cart-checkout-summary');
-    const $emptyMessage = $('.woocommerce-mini-cart__empty-message');
     
     // Show all cart content if it exists
     if ($cartItems.length) $cartItems.show();

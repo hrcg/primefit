@@ -302,6 +302,22 @@
         }
       });
 
+      // Collapsible sections used in product summary
+      $(document).on("click", ".collapsible-toggle", (e) => {
+        e.preventDefault();
+        const $toggle = $(e.currentTarget);
+        const $content = $toggle.closest(".collapsible-section").find(".collapsible-content").first();
+        const $icon = $toggle.find(".collapsible-icon");
+
+        if ($content.hasClass("open")) {
+          $content.removeClass("open");
+          $icon.css("transform", "rotate(0deg)");
+        } else {
+          $content.addClass("open");
+          $icon.css("transform", "rotate(180deg)");
+        }
+      });
+
       // Keyboard support
       $(document).on("keydown", ".information-toggle", (e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -417,7 +433,6 @@
 
       const color = $option.data("color");
       const variationImage = $option.data("variation-image");
-      const availableSizes = $option.data("available-sizes");
 
       // Update product color display
       $(".color-value").text(color);
@@ -427,12 +442,9 @@
         this.updateGalleryImage(variationImage);
       }
 
-      // Update available sizes
-      this.updateAvailableSizes(availableSizes);
-
-      // Update variation ID
-      const variationId = $option.data("variation-id");
-      $(".variation_id").val(variationId || "0");
+      // Update available sizes from variation stock for this color
+      const sizesForColor = this.getAvailableSizesForColor(color);
+      this.updateAvailableSizes(sizesForColor);
 
       // Update add to cart button
       this.updateAddToCartButton();
@@ -446,7 +458,6 @@
 
       const color = $option.data("color");
       const variationImage = $option.data("variation-image");
-      const availableSizes = $option.data("available-sizes");
 
       // Update product color display
       $(".color-value").text(color);
@@ -456,18 +467,13 @@
         this.updateGalleryImage(variationImage);
       }
 
-      // Update available sizes
-      this.updateAvailableSizes(availableSizes);
-
-      // Update variation ID
-      const variationId = $option.data("variation-id");
-      $(".variation_id").val(variationId || "0");
+      // Update sizes based on actual stock for selected color
+      const sizesForColor = this.getAvailableSizesForColor(color);
+      this.updateAvailableSizes(sizesForColor);
 
       // Update add to cart button
       this.updateAddToCartButton();
-      
-      // Auto-add to cart if size is already selected
-      this.autoAddToCart();
+      // No auto add
     }
 
     selectSize($option) {
@@ -476,9 +482,7 @@
 
       // Update add to cart button
       this.updateAddToCartButton();
-      
-      // Auto-add to cart when size is selected
-      this.autoAddToCart();
+      // No auto add
     }
 
     updateGalleryImage(imageUrl) {
@@ -534,39 +538,74 @@
 
     updateAvailableSizes(availableSizes) {
       const sizes = Array.isArray(availableSizes) ? availableSizes : [];
-      let firstAvailableSize = null;
 
       $(".size-option").each(function () {
         const $sizeOption = $(this);
         const sizeValue = $sizeOption.data("size");
 
         if (sizes.includes(sizeValue)) {
-          $sizeOption.show().prop("disabled", false);
-
-          // Remember the first available size
-          if (!firstAvailableSize) {
-            firstAvailableSize = $sizeOption;
-          }
+          $sizeOption
+            .show()
+            .prop("disabled", false)
+            .attr("aria-disabled", "false")
+            .removeClass("unavailable");
         } else {
-          $sizeOption.hide().prop("disabled", true).removeClass("selected");
+          // Grey out but keep visible
+          $sizeOption
+            .show()
+            .prop("disabled", true)
+            .attr("aria-disabled", "true")
+            .addClass("unavailable")
+            .removeClass("selected");
         }
       });
 
-      // Auto-select the first available size if no size is currently selected
+      // If the selected size is no longer available, clear selection
       const $selectedSize = $(".size-option.selected");
-      if (!firstAvailableSize) {
-        // No sizes available for this color
-        return;
+      if ($selectedSize.length && $selectedSize.prop("disabled")) {
+        $selectedSize.removeClass("selected");
+      }
+    }
+
+    getAvailableSizesForColor(colorValue) {
+      const results = [];
+      const variations = window.primefitProductData?.variations || [];
+
+      for (let i = 0; i < variations.length; i++) {
+        const v = variations[i];
+        if (!v) continue;
+
+        // Only consider in-stock variations
+        if (v.is_in_stock === false) continue;
+
+        let colorMatches = false;
+        let sizeValue = null;
+
+        for (const key in v.attributes) {
+          const val = v.attributes[key];
+          if (
+            (key.toLowerCase().includes("color") ||
+              key.includes("pa_color") ||
+              key.includes("attribute_pa_color")) &&
+            val === colorValue
+          ) {
+            colorMatches = true;
+          }
+          if (
+            key.toLowerCase().includes("size") ||
+            key.includes("pa_size") ||
+            key.includes("attribute_pa_size")
+          ) {
+            sizeValue = val;
+          }
+        }
+
+        if (colorMatches && sizeValue && !results.includes(sizeValue)) {
+          results.push(sizeValue);
+        }
       }
 
-      if (
-        !$selectedSize.length ||
-        !$selectedSize.is(":visible") ||
-        $selectedSize.prop("disabled")
-      ) {
-        // No size selected or selected size is not available, select the first available
-        this.selectSize(firstAvailableSize);
-      }
+      return results;
     }
 
     updateAddToCartButton() {
@@ -576,8 +615,16 @@
 
       if ($selectedColor.length && $selectedSize.length) {
         $addToCartButton.prop("disabled", false).text("ADD TO CART");
+        // Ensure variation_id is set when both options selected
+        const colorValue = $selectedColor.data("color");
+        const sizeValue = $selectedSize.data("size");
+        const variationId = this.findVariationId(colorValue, sizeValue);
+        if (variationId) {
+          $(".variation_id").val(variationId);
+        }
       } else {
         $addToCartButton.prop("disabled", true).text("SELECT OPTIONS");
+        $(".variation_id").val("0");
       }
     }
 
@@ -799,7 +846,7 @@
       this.hideAutoAddLoadingState($button, true);
       
       // Show success message
-      this.showAutoAddSuccess('Product added to cart successfully!');
+      this.showAutoAddSuccess('');
     }
 
     handleAjaxError(xhr, status, error, $button) {
@@ -845,85 +892,6 @@
       }
     }
 
-    showAutoAddSuccess(message) {
-      // Remove any existing notifications
-      $('.primefit-auto-add-notification').remove();
-      
-      // Show success notification
-      const $notification = $(`
-        <div class="primefit-auto-add-notification success" style="
-          position: fixed; 
-          top: 20px; 
-          right: 20px; 
-          background: #28a745; 
-          color: white; 
-          padding: 15px 20px; 
-          border-radius: 4px; 
-          z-index: 9999;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        ">
-          <strong>Success:</strong> ${message}
-          <button type="button" style="
-            background: none; 
-            border: none; 
-            color: white; 
-            float: right; 
-            font-size: 16px; 
-            margin-left: 10px;
-            cursor: pointer;
-          " onclick="$(this).parent().remove();">&times;</button>
-        </div>
-      `);
-      
-      $('body').append($notification);
-      
-      // Auto-remove after 3 seconds
-      setTimeout(() => {
-        $notification.fadeOut(300, function() {
-          $(this).remove();
-        });
-      }, 3000);
-    }
-
-    showAutoAddError(message) {
-      // Remove any existing notifications
-      $('.primefit-auto-add-notification').remove();
-      
-      // Show error notification
-      const $notification = $(`
-        <div class="primefit-auto-add-notification error" style="
-          position: fixed; 
-          top: 20px; 
-          right: 20px; 
-          background: #dc3545; 
-          color: white; 
-          padding: 15px 20px; 
-          border-radius: 4px; 
-          z-index: 9999;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        ">
-          <strong>Error:</strong> ${message}
-          <button type="button" style="
-            background: none; 
-            border: none; 
-            color: white; 
-            float: right; 
-            font-size: 16px; 
-            margin-left: 10px;
-            cursor: pointer;
-          " onclick="$(this).parent().remove();">&times;</button>
-        </div>
-      `);
-      
-      $('body').append($notification);
-      
-      // Auto-remove after 5 seconds
-      setTimeout(() => {
-        $notification.fadeOut(300, function() {
-          $(this).remove();
-        });
-      }, 5000);
-    }
 
     checkCartAfterAutoAdd($button) {
       // Force refresh cart fragments to check if product was actually added
@@ -953,7 +921,7 @@
 
             // Show success state
             this.hideAutoAddLoadingState($button, true);
-            this.showAutoAddSuccess('Product added to cart successfully!');
+            this.showAutoAddSuccess('');
           } else {
             // If no fragments, treat as error
             this.showAutoAddError('Unable to verify if product was added. Please check your cart.');
@@ -1692,7 +1660,7 @@
       this.hideLoadingState($button, true);
       
       // Show success message
-      this.showSuccess('Product added to cart successfully!');
+      this.showSuccess('');
 
       // Clean up URL to prevent issues with browser back/forward
       this.cleanUpURL();
@@ -1713,85 +1681,6 @@
       this.hideLoadingState($button, false);
     }
 
-    showError(message) {
-      // Remove any existing notifications
-      $('.primefit-cart-notification').remove();
-      
-      // Show error notification
-      const $notification = $(`
-        <div class="primefit-cart-notification error" style="
-          position: fixed; 
-          top: 20px; 
-          right: 20px; 
-          background: #dc3545; 
-          color: white; 
-          padding: 15px 20px; 
-          border-radius: 4px; 
-          z-index: 9999;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        ">
-          <strong>Error:</strong> ${message}
-          <button type="button" style="
-            background: none; 
-            border: none; 
-            color: white; 
-            float: right; 
-            font-size: 16px; 
-            margin-left: 10px;
-            cursor: pointer;
-          " onclick="$(this).parent().remove();">&times;</button>
-        </div>
-      `);
-      
-      $('body').append($notification);
-      
-      // Auto-remove after 5 seconds
-      setTimeout(() => {
-        $notification.fadeOut(300, function() {
-          $(this).remove();
-        });
-      }, 5000);
-    }
-
-    showSuccess(message) {
-      // Remove any existing notifications
-      $('.primefit-cart-notification').remove();
-      
-      // Show success notification
-      const $notification = $(`
-        <div class="primefit-cart-notification success" style="
-          position: fixed; 
-          top: 20px; 
-          right: 20px; 
-          background: #28a745; 
-          color: white; 
-          padding: 15px 20px; 
-          border-radius: 4px; 
-          z-index: 9999;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        ">
-          <strong>Success:</strong> ${message}
-          <button type="button" style="
-            background: none; 
-            border: none; 
-            color: white; 
-            float: right; 
-            font-size: 16px; 
-            margin-left: 10px;
-            cursor: pointer;
-          " onclick="$(this).parent().remove();">&times;</button>
-        </div>
-      `);
-      
-      $('body').append($notification);
-      
-      // Auto-remove after 3 seconds
-      setTimeout(() => {
-        $notification.fadeOut(300, function() {
-          $(this).remove();
-        });
-      }, 3000);
-    }
 
     checkCartAfterAdd($button) {
       // Force refresh cart fragments to check if product was actually added
@@ -1822,7 +1711,7 @@
 
             // Show success state
             this.hideLoadingState($button, true);
-            this.showSuccess('Product added to cart successfully!');
+            this.showSuccess('');
             this.cleanUpURL();
           } else {
             // If no fragments, treat as error
