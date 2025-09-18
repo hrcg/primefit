@@ -221,6 +221,92 @@ add_action( 'wp_ajax_primefit_notify_availability', 'primefit_handle_notify_avai
 add_action( 'wp_ajax_nopriv_primefit_notify_availability', 'primefit_handle_notify_availability' );
 
 /**
+ * AJAX: Update cart item quantity (used by mini-cart controls)
+ * Frontend action: wc_ajax_update_cart_item_quantity
+ */
+add_action( 'wp_ajax_wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
+add_action( 'wp_ajax_nopriv_wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
+function primefit_wc_update_cart_item_quantity() {
+    // Basic validation
+    if ( ! isset( $_POST['cart_item_key'], $_POST['quantity'], $_POST['security'] ) ) {
+        wp_send_json_error( __( 'Invalid request', 'primefit' ), 400 );
+    }
+
+    // Verify nonce matches the one localized in JS
+    if ( ! wp_verify_nonce( $_POST['security'], 'woocommerce_update_cart_nonce' ) ) {
+        wp_send_json_error( __( 'Security check failed', 'primefit' ), 403 );
+    }
+
+    $cart_item_key = sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) );
+    $quantity      = (int) $_POST['quantity'];
+
+    if ( $quantity < 1 ) {
+        $quantity = 1;
+    }
+
+    // Ensure cart exists
+    if ( ! WC()->cart ) {
+        wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
+    }
+
+    // Update quantity; set_quantity returns WC_Cart_Item or false
+    $updated = WC()->cart->set_quantity( $cart_item_key, $quantity, true );
+
+    if ( false === $updated ) {
+        wp_send_json_error( __( 'Failed to update quantity', 'primefit' ), 400 );
+    }
+
+    // Recalculate totals and refresh fragments
+    WC()->cart->calculate_totals();
+
+    $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
+
+    wp_send_json_success( array(
+        'fragments' => $fragments,
+        'cart_hash' => WC()->cart->get_cart_hash(),
+    ) );
+}
+
+/**
+ * AJAX: Remove cart item (used by mini-cart remove button fallback)
+ * Frontend action: wc_ajax_remove_cart_item
+ */
+add_action( 'wp_ajax_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
+add_action( 'wp_ajax_nopriv_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
+function primefit_wc_remove_cart_item() {
+    if ( ! isset( $_POST['cart_item_key'], $_POST['security'] ) ) {
+        wp_send_json_error( __( 'Invalid request', 'primefit' ), 400 );
+    }
+
+    if ( ! wp_verify_nonce( $_POST['security'], 'woocommerce_remove_cart_nonce' ) ) {
+        wp_send_json_error( __( 'Security check failed', 'primefit' ), 403 );
+    }
+
+    $cart_item_key = sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) );
+
+    if ( ! WC()->cart ) {
+        wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
+    }
+
+    $removed = WC()->cart->remove_cart_item( $cart_item_key );
+
+    if ( ! $removed ) {
+        wp_send_json_error( __( 'Failed to remove item', 'primefit' ), 400 );
+    }
+
+    WC()->cart->calculate_totals();
+
+    $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
+
+    wp_send_json_success( array(
+        'fragments' => $fragments,
+        'cart_hash' => WC()->cart->get_cart_hash(),
+        'cart_contents_count' => WC()->cart->get_cart_contents_count(),
+        'cart_is_empty' => WC()->cart->is_empty(),
+    ) );
+}
+
+/**
  * Register AJAX handlers at proper time
  */
 // Removed custom AJAX handlers in favor of WooCommerce core endpoints

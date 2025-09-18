@@ -74,7 +74,8 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 									max="<?php echo esc_attr( $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 999 ); ?>"
 									data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>"
 									data-original-value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
-									readonly
+									step="1"
+									inputmode="numeric"
 								>
 								<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>">+</button>
 							</div>

@@ -154,10 +154,6 @@
     padding-bottom: 0;
   }
   
-  .widget_shopping_cart_content .woocommerce-mini-cart-item:hover,
-  .widget_shopping_cart_content .mini_cart_item:hover {
-    background: rgba(0, 0, 0, 0.02);
-  }
   
   /* Mini cart item layout structure */
   .widget_shopping_cart_content .woocommerce-mini-cart-item > *,
@@ -268,10 +264,6 @@
     padding-bottom: 0;
   }
   
-  .woocommerce-mini-cart.cart_list.product_list_widget .woocommerce-mini-cart-item:hover,
-  .woocommerce-mini-cart.cart_list.product_list_widget .mini_cart_item:hover {
-    background: rgba(0, 0, 0, 0.02);
-  }
   
   /* Product images in cart list */
   .woocommerce-mini-cart.cart_list.product_list_widget img {
@@ -500,12 +492,6 @@
   .mini_cart_item:last-child {
     border-bottom: none;
     padding-bottom: 0;
-  }
-  
-  .woocommerce-mini-cart__item:hover,
-  .woocommerce-mini-cart-item:hover,
-  .mini_cart_item:hover {
-    background: rgba(0, 0, 0, 0.02);
   }
   
   /* Fade-out animation for removed items */

@@ -621,10 +621,14 @@
         const variationId = this.findVariationId(colorValue, sizeValue);
         if (variationId) {
           $(".variation_id").val(variationId);
+          // Update quantity min/max based on selected variation stock/limits
+          this.updateQuantityMaxForVariation(variationId);
         }
       } else {
         $addToCartButton.prop("disabled", true).text("SELECT OPTIONS");
         $(".variation_id").val("0");
+        // Reset quantity bounds to defaults when no valid variation is selected
+        this.setQuantityBounds(1, 999);
       }
     }
 
@@ -691,6 +695,65 @@
         }
       }
       return null;
+    }
+
+    // Update quantity inputs (main and sticky) with the correct bounds for the selected variation
+    updateQuantityMaxForVariation(variationId) {
+      try {
+        const list = (window.primefitProductData && window.primefitProductData.variations) ? window.primefitProductData.variations : [];
+        let maxQty = 999;
+        const minQty = 1;
+
+        for (let i = 0; i < list.length; i++) {
+          const v = list[i];
+          if (!v) continue;
+          if (String(v.variation_id) === String(variationId)) {
+            // Prefer WooCommerce provided max_qty on available_variations
+            if (typeof v.max_qty !== 'undefined' && v.max_qty !== null && v.max_qty !== '') {
+              const parsedMax = parseInt(v.max_qty);
+              if (!isNaN(parsedMax) && parsedMax > 0) {
+                maxQty = parsedMax;
+              }
+            } else if (typeof v.stock_quantity !== 'undefined' && v.stock_quantity !== null && v.stock_quantity !== '') {
+              const parsedStock = parseInt(v.stock_quantity);
+              if (!isNaN(parsedStock) && parsedStock > 0) {
+                maxQty = parsedStock;
+              }
+            }
+            break;
+          }
+        }
+
+        this.setQuantityBounds(minQty, maxQty);
+      } catch (err) {
+        this.setQuantityBounds(1, 999);
+      }
+    }
+
+    // Apply bounds and clamp current values; also refresh button enable/disable states
+    setQuantityBounds(minValue, maxValue) {
+      const $mainInput = $(".product-actions .quantity input[type='number']").first();
+      if ($mainInput.length) {
+        $mainInput.attr({ min: String(minValue), max: String(maxValue) });
+        const current = parseInt($mainInput.val()) || minValue;
+        const clamped = Math.max(minValue, Math.min(current, maxValue));
+        $mainInput.val(clamped);
+      }
+
+      const $stickyInput = $(".sticky-quantity-input");
+      if ($stickyInput.length) {
+        $stickyInput.attr({ min: String(minValue), max: String(maxValue) });
+        const currentSticky = parseInt($stickyInput.val()) || minValue;
+        const clampedSticky = Math.max(minValue, Math.min(currentSticky, maxValue));
+        $stickyInput.val(clampedSticky);
+        if (window.stickyAddToCartInstance && window.stickyAddToCartInstance.updateStickyQuantityButtons) {
+          window.stickyAddToCartInstance.updateStickyQuantityButtons();
+        }
+      }
+
+      if (window.quantityControlsInstance && window.quantityControlsInstance.updateButtonStates) {
+        window.quantityControlsInstance.updateButtonStates();
+      }
     }
 
     autoAddToCart() {
@@ -837,6 +900,9 @@
         });
       }
 
+      // Reset quantity inputs to 1 after successful auto-add
+      this.resetQuantityInputs();
+
       // Trigger WooCommerce events
       $(document.body).trigger('update_checkout');
       $(document.body).trigger('wc_fragment_refresh');
@@ -914,6 +980,9 @@
               $(key).replaceWith(value);
             });
 
+            // Reset quantity inputs to 1 after successful auto-add
+            this.resetQuantityInputs();
+
             // Trigger WooCommerce events
             $(document.body).trigger('update_checkout');
             $(document.body).trigger('wc_fragment_refresh');
@@ -934,6 +1003,46 @@
           this.hideAutoAddLoadingState($button, false);
         }.bind(this)
       });
+    }
+
+    resetQuantityInputs() {
+      // Reset main quantity input to 1
+      const $mainQuantityInput = $(".quantity input[type='number']");
+      if ($mainQuantityInput.length) {
+        $mainQuantityInput.val(1);
+      }
+      
+      // Reset sticky quantity input to 1
+      const $stickyQuantityInput = $(".sticky-quantity-input");
+      if ($stickyQuantityInput.length) {
+        $stickyQuantityInput.val(1);
+        
+        // Update sticky quantity button states
+        if (window.stickyAddToCartInstance && window.stickyAddToCartInstance.updateStickyQuantityButtons) {
+          window.stickyAddToCartInstance.updateStickyQuantityButtons();
+        }
+      }
+      
+      // Update main quantity button states
+      if (window.quantityControlsInstance && window.quantityControlsInstance.updateButtonStates) {
+        window.quantityControlsInstance.updateButtonStates();
+      }
+    }
+
+    showAutoAddSuccess(message) {
+      // Show success notification (can be customized)
+      if (message && message.trim()) {
+        console.log('Auto add to cart success:', message);
+      }
+    }
+
+    showAutoAddError(message) {
+      // Show error notification
+      console.error('Auto add to cart error:', message);
+      if (message && message.trim()) {
+        // You can implement a toast notification system here
+        alert(message);
+      }
     }
   }
 
@@ -1042,28 +1151,29 @@
 
     init() {
       this.bindEvents();
+      this.ensureIndependentQuantity();
       this.initializeButtonStates();
     }
 
     bindEvents() {
       // Handle quantity button clicks
-      $(document).on("click", ".quantity .plus", (e) => {
+      $(document).on("click", ".product-actions .quantity .plus", (e) => {
         e.preventDefault();
         this.increaseQuantity();
       });
 
-      $(document).on("click", ".quantity .minus", (e) => {
+      $(document).on("click", ".product-actions .quantity .minus", (e) => {
         e.preventDefault();
         this.decreaseQuantity();
       });
 
       // Handle input changes
-      $(document).on("change", ".quantity input[type='number']", (e) => {
+      $(document).on("change", ".product-actions .quantity input[type='number']", (e) => {
         this.validateQuantity();
       });
 
       // Handle input keydown
-      $(document).on("keydown", ".quantity input[type='number']", (e) => {
+      $(document).on("keydown", ".product-actions .quantity input[type='number']", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           this.validateQuantity();
@@ -1072,27 +1182,35 @@
     }
 
     increaseQuantity() {
-      const $input = $(".quantity input[type='number']");
+      const $input = $(".product-actions .quantity input[type='number']");
       const currentValue = parseInt($input.val()) || 1;
       const maxValue = parseInt($input.attr("max")) || 999;
       const newValue = Math.min(currentValue + 1, maxValue);
 
-      $input.val(newValue).trigger("change");
+      // Set value without triggering change event to prevent WooCommerce interference
+      $input.val(newValue);
       this.updateButtonStates();
+      
+      // Sync with sticky quantity controls
+      this.syncOriginalQuantityToSticky();
     }
 
     decreaseQuantity() {
-      const $input = $(".quantity input[type='number']");
+      const $input = $(".product-actions .quantity input[type='number']");
       const currentValue = parseInt($input.val()) || 1;
       const minValue = parseInt($input.attr("min")) || 1;
       const newValue = Math.max(currentValue - 1, minValue);
 
-      $input.val(newValue).trigger("change");
+      // Set value without triggering change event to prevent WooCommerce interference
+      $input.val(newValue);
       this.updateButtonStates();
+      
+      // Sync with sticky quantity controls
+      this.syncOriginalQuantityToSticky();
     }
 
     validateQuantity() {
-      const $input = $(".quantity input[type='number']");
+      const $input = $(".product-actions .quantity input[type='number']");
       const currentValue = parseInt($input.val()) || 1;
       const minValue = parseInt($input.attr("min")) || 1;
       const maxValue = parseInt($input.attr("max")) || 999;
@@ -1102,6 +1220,25 @@
       $input.val(validValue);
 
       this.updateButtonStates();
+      
+      // Sync with sticky quantity controls
+      this.syncOriginalQuantityToSticky();
+    }
+
+    ensureIndependentQuantity() {
+      // Force quantity to start at 1, independent of cart contents
+      const $input = $(".product-actions .quantity input[type='number']");
+      if ($input.length) {
+        $input.val(1);
+        
+        // Listen for external changes that might sync with cart and override them
+        $input.on('input.independent-quantity', function() {
+          const value = parseInt($(this).val()) || 1;
+          if (value < 1) {
+            $(this).val(1);
+          }
+        });
+      }
     }
 
     initializeButtonStates() {
@@ -1112,9 +1249,9 @@
     }
 
     updateButtonStates() {
-      const $input = $(".quantity input[type='number']");
-      const $decreaseBtn = $(".quantity .minus");
-      const $increaseBtn = $(".quantity .plus");
+      const $input = $(".product-actions .quantity input[type='number']");
+      const $decreaseBtn = $(".product-actions .quantity .minus");
+      const $increaseBtn = $(".product-actions .quantity .plus");
 
       if ($input.length && $decreaseBtn.length && $increaseBtn.length) {
         const currentValue = parseInt($input.val()) || 1;
@@ -1133,6 +1270,41 @@
           $increaseBtn.prop("disabled", true);
         } else {
           $increaseBtn.prop("disabled", false);
+        }
+      }
+    }
+
+    syncOriginalQuantityToSticky() {
+      const $stickyInput = $(".sticky-quantity-input");
+      const $originalInput = $(".quantity input[type='number']");
+
+      if ($stickyInput.length && $originalInput.length) {
+        const originalValue = $originalInput.val();
+        // Set value without triggering change event to prevent WooCommerce interference
+        $stickyInput.val(originalValue);
+        
+        // Update sticky button states
+        const currentValue = parseInt($stickyInput.val()) || 1;
+        const minValue = parseInt($stickyInput.attr("min")) || 1;
+        const maxValue = parseInt($stickyInput.attr("max")) || 999;
+
+        const $stickyMinus = $(".sticky-quantity .minus");
+        const $stickyPlus = $(".sticky-quantity .plus");
+
+        if ($stickyMinus.length && $stickyPlus.length) {
+          // Update decrease button state
+          if (currentValue <= minValue) {
+            $stickyMinus.prop("disabled", true);
+          } else {
+            $stickyMinus.prop("disabled", false);
+          }
+
+          // Update increase button state
+          if (currentValue >= maxValue) {
+            $stickyPlus.prop("disabled", true);
+          } else {
+            $stickyPlus.prop("disabled", false);
+          }
         }
       }
     }
@@ -1185,7 +1357,7 @@
       });
 
       // Sync when original quantity changes
-      $(document).on("change", ".quantity input[type='number']", () => {
+      $(document).on("change", ".product-actions .quantity input[type='number']", () => {
         this.syncButtonState();
       });
     }
@@ -1206,9 +1378,8 @@
       const buttonText = $sourceButton.text();
       const isDisabled = $sourceButton.prop("disabled");
 
-      // Get quantity information
-      const quantityValue =
-        $originalQuantity.find("input[type='number']").val() || "1";
+      // Get quantity information - always start at 1, independent of cart
+      const quantityValue = "1";
       const minValue =
         $originalQuantity.find("input[type='number']").attr("min") || "1";
       const maxValue =
@@ -1289,7 +1460,20 @@
 
       if ($stickyInput.length && $originalInput.length) {
         const stickyValue = $stickyInput.val();
-        $originalInput.val(stickyValue).trigger("change");
+        // Set value without triggering change event to prevent WooCommerce interference
+        $originalInput.val(stickyValue);
+        this.updateStickyQuantityButtons();
+      }
+    }
+
+    syncOriginalQuantityToSticky() {
+      const $stickyInput = $(".sticky-quantity-input");
+      const $originalInput = $(".quantity input[type='number']");
+
+      if ($stickyInput.length && $originalInput.length) {
+        const originalValue = $originalInput.val();
+        // Set value without triggering change event to prevent WooCommerce interference
+        $stickyInput.val(originalValue);
         this.updateStickyQuantityButtons();
       }
     }
@@ -1398,13 +1582,19 @@
         $stickyButton.prop("disabled", $sourceButton.prop("disabled"));
       }
 
-      // Sync quantity values
+      // Don't automatically sync quantity values to keep them independent
+      // Only sync when both are 1 or user has explicitly changed main quantity
       if ($stickyQuantityInput.length) {
         const $originalQuantityInput = $(".quantity input[type='number']");
         if ($originalQuantityInput.length) {
-          const originalValue = $originalQuantityInput.val();
-          $stickyQuantityInput.val(originalValue);
-          this.updateStickyQuantityButtons();
+          const originalValue = parseInt($originalQuantityInput.val()) || 1;
+          const stickyValue = parseInt($stickyQuantityInput.val()) || 1;
+          
+          // Only sync if both are at 1 (reset state) or if user has manually changed main quantity
+          if ((originalValue === 1 && stickyValue === 1) || (originalValue !== stickyValue && originalValue !== 1)) {
+            $stickyQuantityInput.val(originalValue);
+            this.updateStickyQuantityButtons();
+          }
         }
       }
     }
@@ -1650,6 +1840,9 @@
         });
       }
 
+      // Reset quantity inputs to 1 after successful add to cart
+      this.resetQuantityInputs();
+
       // Trigger WooCommerce events
       $(document.body).trigger('update_checkout');
       $(document.body).trigger('wc_fragment_refresh');
@@ -1703,6 +1896,9 @@
               $(key).replaceWith(value);
             });
 
+            // Reset quantity inputs to 1 after successful add to cart
+            this.resetQuantityInputs();
+
             // Trigger WooCommerce events
             $(document.body).trigger('update_checkout');
             $(document.body).trigger('wc_fragment_refresh');
@@ -1725,6 +1921,46 @@
           this.hideLoadingState($button, false);
         }.bind(this)
       });
+    }
+
+    resetQuantityInputs() {
+      // Reset main quantity input to 1
+      const $mainQuantityInput = $(".quantity input[type='number']");
+      if ($mainQuantityInput.length) {
+        $mainQuantityInput.val(1);
+      }
+      
+      // Reset sticky quantity input to 1
+      const $stickyQuantityInput = $(".sticky-quantity-input");
+      if ($stickyQuantityInput.length) {
+        $stickyQuantityInput.val(1);
+        
+        // Update sticky quantity button states
+        if (window.stickyAddToCartInstance && window.stickyAddToCartInstance.updateStickyQuantityButtons) {
+          window.stickyAddToCartInstance.updateStickyQuantityButtons();
+        }
+      }
+      
+      // Update main quantity button states
+      if (window.quantityControlsInstance && window.quantityControlsInstance.updateButtonStates) {
+        window.quantityControlsInstance.updateButtonStates();
+      }
+    }
+
+    showSuccess(message) {
+      // Show success notification (can be customized)
+      if (message && message.trim()) {
+        console.log('Add to cart success:', message);
+      }
+    }
+
+    showError(message) {
+      // Show error notification
+      console.error('Add to cart error:', message);
+      if (message && message.trim()) {
+        // You can implement a toast notification system here
+        alert(message);
+      }
     }
 
     cleanUpURL() {
@@ -1757,8 +1993,10 @@
       new ProductInformation();
       new ProductVariations();
       new NotifyAvailability();
-      new WooCommerceQuantityControls();
-      new StickyAddToCart();
+      
+      // Store instances globally for quantity reset functionality
+      window.quantityControlsInstance = new WooCommerceQuantityControls();
+      window.stickyAddToCartInstance = new StickyAddToCart();
       new AjaxAddToCart(); // Initialize AJAX cart functionality
     }
   });

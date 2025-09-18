@@ -153,10 +153,14 @@
   // Cart quantity controls - Mini cart increment/decrement
   $(document).on(
     "click",
-    ".woocommerce-mini-cart__item-quantity .plus, .mini_cart_item-quantity .plus, .woocommerce-mini-cart-item-quantity .plus",
+    ".woocommerce-mini-cart__item-quantity .plus",
     function (e) {
       e.preventDefault();
       const cartItemKey = $(this).data("cart-item-key");
+      if (!cartItemKey) {
+        return; // Exit early if this isn't a cart item quantity button
+      }
+
       const $input = $(this).siblings("input");
       const currentQty = parseInt($input.val());
       const maxQty = parseInt($input.attr("max"));
@@ -172,10 +176,14 @@
 
   $(document).on(
     "click",
-    ".woocommerce-mini-cart__item-quantity .minus, .mini_cart_item-quantity .minus, .woocommerce-mini-cart-item-quantity .minus",
+    ".woocommerce-mini-cart__item-quantity .minus",
     function (e) {
       e.preventDefault();
       const cartItemKey = $(this).data("cart-item-key");
+      if (!cartItemKey) {
+        return; // Exit early if this isn't a cart item quantity button
+      }
+
       const $input = $(this).siblings("input");
       const currentQty = parseInt($input.val());
 
@@ -190,18 +198,76 @@
 
   $(document).on(
     "change",
-    ".woocommerce-mini-cart__item-quantity input, .mini_cart_item-quantity input, .woocommerce-mini-cart-item-quantity input",
+    ".woocommerce-mini-cart__item-quantity input",
     function (e) {
+      // Only handle cart quantity inputs that have cart-item-key data
       const cartItemKey = $(this).data("cart-item-key");
+      if (!cartItemKey) {
+        return; // Exit early if this isn't a cart item quantity input
+      }
+
+      // Skip processing if this input is currently being updated via AJAX
+      if ($(this).hasClass("loading") || $(this).prop("disabled")) {
+        return;
+      }
+
       const newQty = parseInt($(this).val());
       const maxQty = parseInt($(this).attr("max"));
+      const originalValue = parseInt($(this).data("original-value"));
 
-      if (newQty >= 1 && newQty <= maxQty && newQty !== parseInt($(this).data("original-value"))) {
+      // Validate the new quantity
+      if (isNaN(newQty) || newQty < 1) {
+        $(this).val(originalValue || 1);
+        return;
+      }
+
+      if (newQty > maxQty) {
+        $(this).val(maxQty);
+        return;
+      }
+
+      // Only update if the quantity actually changed
+      if (newQty !== originalValue) {
         // Add loading state to input
         $(this).addClass("loading").prop("disabled", true);
         updateCartQuantity(cartItemKey, newQty, $(this));
-      } else {
-        $(this).val($(this).data("original-value") || 1);
+      }
+    }
+  );
+
+  // Handle quantity input focus to store the current value
+  $(document).on(
+    "focus",
+    ".woocommerce-mini-cart__item-quantity input",
+    function (e) {
+      // Only handle cart quantity inputs that have cart-item-key data
+      const cartItemKey = $(this).data("cart-item-key");
+      if (!cartItemKey) {
+        return;
+      }
+      
+      // Store the current value as the focus value for comparison later
+      $(this).data("focus-value", $(this).val());
+    }
+  );
+
+  // Handle quantity input blur to trigger update if value changed
+  $(document).on(
+    "blur",
+    ".woocommerce-mini-cart__item-quantity input",
+    function (e) {
+      // Only handle cart quantity inputs that have cart-item-key data
+      const cartItemKey = $(this).data("cart-item-key");
+      if (!cartItemKey) {
+        return;
+      }
+      
+      const focusValue = parseInt($(this).data("focus-value")) || 1;
+      const currentValue = parseInt($(this).val()) || 1;
+      
+      // If value changed during focus, trigger change event
+      if (focusValue !== currentValue) {
+        $(this).trigger("change");
       }
     }
   );
@@ -245,7 +311,19 @@
             $.each(response.data.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
+            
+            // After fragments are updated, ensure all quantity inputs have proper data attributes
+            setTimeout(function() {
+              $('.woocommerce-mini-cart__item-quantity input[data-cart-item-key]').each(function() {
+                const $input = $(this);
+                const currentVal = $input.val();
+                if (currentVal && !$input.data('original-value')) {
+                  $input.attr('data-original-value', currentVal);
+                }
+              });
+            }, 50);
           }
+          
           // Trigger WooCommerce cart update events
           $(document.body).trigger("update_checkout");
           $(document.body).trigger("wc_fragment_refresh");
@@ -274,15 +352,9 @@
         }
       },
       complete: function () {
-        // Remove loading state from both button and input
-        if ($element) {
-          $element.removeClass("loading").prop("disabled", false);
-          // Also re-enable the input field
-          const $input = $element.siblings("input");
-          if ($input.length) {
-            $input.removeClass("loading").prop("disabled", false);
-          }
-        }
+        // Remove loading state - but don't try to re-enable elements after fragments update
+        // The fragments replace the entire mini-cart HTML, so the element references become stale
+        // This is handled by the fragment update mechanism instead
       },
     });
   }
@@ -354,10 +426,8 @@
             // Check cart state using server data
             setTimeout(function () {
               if (response.data.cart_is_empty === true || response.data.cart_contents_count === 0) {
-                console.log('Server confirms cart is empty - showing empty state');
                 showEmptyCartState();
               } else {
-                console.log('Server says cart has items - hiding empty state');
                 hideEmptyCartState();
               }
             }, 50);
@@ -371,8 +441,6 @@
           // Note: Avoid triggering removed_from_cart without required params
           
         } else {
-          console.error("CART DEBUG: Server failed to remove cart item:", response);
-          console.error("CART DEBUG: Response data:", response.data);
           
           // Remove loading state and fade class on error
           $element.removeClass("loading").prop("disabled", false);
@@ -489,6 +557,35 @@
     }, 5000);
   });
 
+  // Function to show empty cart state
+  function showEmptyCartState() {
+    console.log('Showing empty cart state'); // Debug log
+    
+    const $cartItems = $('.woocommerce-mini-cart__items');
+    const $cartTotal = $('.woocommerce-mini-cart__total');
+    const $cartButtons = $('.woocommerce-mini-cart__buttons');
+    const $cartRecommendations = $('.cart-recommendations');
+    const $cartCheckoutSummary = $('.cart-checkout-summary');
+    const $emptyMessage = $('.woocommerce-mini-cart__empty-message');
+    const $customEmptyCart = $('.pf-mini-cart-empty');
+    
+    // Hide all cart content
+    if ($cartItems.length) $cartItems.hide();
+    if ($cartTotal.length) $cartTotal.hide();
+    if ($cartButtons.length) $cartButtons.hide();
+    if ($cartRecommendations.length) $cartRecommendations.hide();
+    if ($cartCheckoutSummary.length) $cartCheckoutSummary.hide();
+    
+    // Show empty message (either default or custom)
+    if ($emptyMessage.length) {
+      $emptyMessage.show();
+    } else if ($customEmptyCart.length) {
+      $customEmptyCart.show();
+    }
+    
+    console.log('Empty cart state is now visible'); // Debug log
+  }
+
   // Function to hide empty cart state
   function hideEmptyCartState() {
     console.log('Hiding empty cart state'); // Debug log
@@ -498,6 +595,8 @@
     const $cartButtons = $('.woocommerce-mini-cart__buttons');
     const $cartRecommendations = $('.cart-recommendations');
     const $cartCheckoutSummary = $('.cart-checkout-summary');
+    const $emptyMessage = $('.woocommerce-mini-cart__empty-message');
+    const $customEmptyCart = $('.pf-mini-cart-empty');
     
     // Show all cart content if it exists
     if ($cartItems.length) $cartItems.show();
@@ -506,8 +605,9 @@
     if ($cartRecommendations.length) $cartRecommendations.show();
     if ($cartCheckoutSummary.length) $cartCheckoutSummary.show();
     
-    // Hide empty message
-    $emptyMessage.hide();
+    // Hide empty message (both default and custom)
+    if ($emptyMessage.length) $emptyMessage.hide();
+    if ($customEmptyCart.length) $customEmptyCart.hide();
     
     console.log('Cart content is now visible'); // Debug log
   }
