@@ -54,7 +54,7 @@ body.single-product .site-header {
   background: var(--product-bg);
   color: var(--product-text);
   min-height: 100vh;
-  padding: 10px 0 80px 0;
+  padding: 20px 0 80px 0;
 }
 
 /* Force override any conflicting styles */
@@ -71,7 +71,7 @@ body.single-product .single-product-page {
 
 .product-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 40px;
   margin-bottom: 40px;
   align-items: start;
@@ -139,7 +139,7 @@ body.single-product .single-product-page {
   position: relative;
   overflow: hidden;
   background: var(--product-card-bg);
-  aspect-ratio: 4/5;
+  aspect-ratio: 1;
   /* Performance optimization for animations */
   will-change: transform;
   transform: translateZ(0);

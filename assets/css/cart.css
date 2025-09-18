@@ -96,19 +96,18 @@
     font-size: 18px;
     letter-spacing: 0.02em;
     color: #000000 !important;
+    text-transform: uppercase;
   }
   
   .cart-panel-header .cart-close {
     background: transparent;
     border: 0;
-    font-size: 24px;
+    font-size: 28px;
     line-height: 1;
     cursor: pointer;
     color: #666666 !important;
     transition: color 0.3s ease;
     padding: 0;
-    width: 24px;
-    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;

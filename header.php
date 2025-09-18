@@ -130,7 +130,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				
 				<?php if ( class_exists('WooCommerce') ) { ?>
 					<div class="cart-wrap" data-behavior="click">
-						<a class="header-cart cart-toggle" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="View cart" aria-expanded="false" aria-controls="mini-cart-panel">
+						<a class="header-cart cart-toggle" href="#" aria-label="View cart" aria-expanded="false" aria-controls="mini-cart-panel">
 							<span class="cart-label">Cart</span>
 							<span class="cart-corners" aria-hidden="true"><span class="cart-count" data-cart-count><?php echo WC()->cart ? intval( WC()->cart->get_cart_contents_count() ) : 0; ?></span></span>
 						</a>

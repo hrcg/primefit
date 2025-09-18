@@ -20,10 +20,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_action( 'wp_enqueue_scripts', 'primefit_enqueue_assets' );
 function primefit_enqueue_assets() {
-	// Google Fonts - Montserrat
+	// Google Fonts - Figtree
 	wp_enqueue_style( 
 		'primefit-fonts', 
-		'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap', 
+		'https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap', 
 		[], 
 		null 
 	);
@@ -82,6 +82,16 @@ function primefit_enqueue_assets() {
 				PRIMEFIT_THEME_URI . '/assets/css/single-product.css', 
 				[ 'primefit-woocommerce' ], 
 				primefit_get_file_version( '/assets/css/single-product.css' )
+			);
+		}
+		
+		// Checkout page styles
+		if ( is_checkout() ) {
+			wp_enqueue_style( 
+				'primefit-checkout', 
+				PRIMEFIT_THEME_URI . '/assets/css/checkout.css', 
+				[ 'primefit-woocommerce' ], 
+				primefit_get_file_version( '/assets/css/checkout.css' )
 			);
 		}
 	}
@@ -161,6 +171,17 @@ function primefit_enqueue_product_scripts() {
 				PRIMEFIT_THEME_URI . '/assets/js/single-product.js', 
 				[ 'jquery', 'primefit-product' ], 
 				primefit_get_file_version( '/assets/js/single-product.js' ), 
+				true 
+			);
+		}
+		
+		// Checkout page specific scripts
+		if ( is_checkout() ) {
+			wp_enqueue_script( 
+				'primefit-checkout', 
+				PRIMEFIT_THEME_URI . '/assets/js/checkout.js', 
+				[ 'jquery', 'wc-checkout' ], 
+				primefit_get_file_version( '/assets/js/checkout.js' ), 
 				true 
 			);
 		}
