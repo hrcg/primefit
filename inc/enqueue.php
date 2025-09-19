@@ -113,12 +113,34 @@ function primefit_enqueue_assets() {
 			);
 		}
 		
-		// Payment summary styles
-		if ( is_account_page() || is_wc_endpoint_url( 'order-received' ) || is_wc_endpoint_url( 'payment-summary' ) ) {
+		// Payment summary styles - Load on account pages, checkout pages, and order received pages
+		$load_payment_summary = false;
+		
+		// Check for account pages
+		if ( is_account_page() ) {
+			$load_payment_summary = true;
+		}
+		
+		// Check for checkout pages (including order received)
+		if ( is_checkout() ) {
+			$load_payment_summary = true;
+		}
+		
+		// Check for specific WooCommerce endpoints
+		if ( is_wc_endpoint_url( 'order-received' ) || is_wc_endpoint_url( 'payment-summary' ) ) {
+			$load_payment_summary = true;
+		}
+		
+		// Check if we're on the order received page by checking for order key parameter
+		if ( isset( $_GET['key'] ) && isset( $_GET['order'] ) ) {
+			$load_payment_summary = true;
+		}
+		
+		if ( $load_payment_summary ) {
 			wp_enqueue_style( 
 				'primefit-payment-summary', 
 				PRIMEFIT_THEME_URI . '/assets/css/payment-summary.css', 
-				[ 'primefit-account' ], 
+				[ 'primefit-woocommerce' ], 
 				primefit_get_file_version( '/assets/css/payment-summary.css' )
 			);
 			
@@ -228,25 +250,6 @@ function primefit_enqueue_product_scripts() {
 				true 
 			);
 			
-			// Enqueue checkout AJAX fix (emergency fix for URL issues)
-			wp_enqueue_script( 
-				'primefit-checkout-ajax-fix', 
-				PRIMEFIT_THEME_URI . '/fix-checkout-ajax.js', 
-				[ 'jquery' ], 
-				time(), // Force reload
-				false // Load in head before other scripts
-			);
-			
-			// Enqueue checkout test script in development
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				wp_enqueue_script( 
-					'primefit-checkout-test', 
-					PRIMEFIT_THEME_URI . '/assets/js/checkout-test.js', 
-					[ 'jquery', 'primefit-checkout' ], 
-					primefit_get_file_version( '/assets/js/checkout-test.js' ), 
-					true 
-				);
-			}
 			
 			// Localize checkout script with shop URL and redirect flag
 			$should_redirect = get_transient( 'primefit_checkout_redirect_to_shop' );

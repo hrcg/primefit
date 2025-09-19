@@ -557,9 +557,19 @@ function primefit_redirect_cart_page() {
 
 /**
  * Redirect checkout page to shop if cart is empty
+ * BUT NOT during order processing or on order-received page
  */
 add_action( 'template_redirect', 'primefit_redirect_empty_checkout' );
 function primefit_redirect_empty_checkout() {
+	// Don't redirect if we're processing an order or on order-received page
+	if ( is_wc_endpoint_url( 'order-received' ) || 
+		 is_wc_endpoint_url( 'order-pay' ) || 
+		 is_wc_endpoint_url( 'order-received' ) ||
+		 isset( $_POST['woocommerce_checkout_place_order'] ) ||
+		 wp_doing_ajax() ) {
+		return;
+	}
+	
 	// Check if we're on the checkout page and cart is empty
 	if ( is_checkout() && WC()->cart && WC()->cart->is_empty() ) {
 		// Get the shop page URL
@@ -629,6 +639,61 @@ function primefit_auto_open_mini_cart() {
  * Removed general AJAX request debugging that was interfering with checkout
  * The excessive logging was causing output buffer issues
  */
+
+/**
+ * Register payment summary endpoint for My Account page
+ */
+add_action( 'init', 'primefit_add_payment_summary_endpoint' );
+function primefit_add_payment_summary_endpoint() {
+	add_rewrite_endpoint( 'payment-summary', EP_ROOT | EP_PAGES );
+}
+
+/**
+ * Flush rewrite rules on theme activation to register new endpoints
+ */
+add_action( 'after_switch_theme', 'primefit_flush_rewrite_rules' );
+function primefit_flush_rewrite_rules() {
+	flush_rewrite_rules();
+}
+
+/**
+ * Add payment summary to My Account menu
+ */
+add_filter( 'woocommerce_account_menu_items', 'primefit_add_payment_summary_menu_item' );
+function primefit_add_payment_summary_menu_item( $items ) {
+	// Insert payment summary after orders
+	$new_items = array();
+	foreach ( $items as $key => $item ) {
+		$new_items[ $key ] = $item;
+		if ( $key === 'orders' ) {
+			$new_items['payment-summary'] = __( 'Payment Summary', 'primefit' );
+		}
+	}
+	return $new_items;
+}
+
+/**
+ * Handle payment summary endpoint content
+ */
+add_action( 'woocommerce_account_payment-summary_endpoint', 'primefit_payment_summary_endpoint_content' );
+function primefit_payment_summary_endpoint_content() {
+	// Get order ID from URL parameter
+	$order_id = isset( $_GET['order_id'] ) ? intval( $_GET['order_id'] ) : 0;
+	
+	if ( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( $order && ( $order->get_user_id() === get_current_user_id() || current_user_can( 'manage_woocommerce' ) ) ) {
+			// Load the payment summary template with the specific order
+			wc_get_template( 'myaccount/payment-summary.php', array( 'order' => $order ) );
+			return;
+		}
+	}
+	
+	// If no specific order, show general payment summary or recent orders
+	wc_get_template( 'myaccount/payment-summary.php' );
+}
+
+// Redirect function removed - now using custom order-received template
 
 /**
  * Removed WooCommerce fragments interceptor that was causing JSON parsing issues
@@ -1355,103 +1420,75 @@ function primefit_redirect_dashboard_to_orders() {
 }
 
 /**
+ * Ensure proper order completion and redirect handling
+ */
+add_action( 'woocommerce_checkout_order_processed', 'primefit_ensure_order_completion', 10, 1 );
+function primefit_ensure_order_completion( $order_id ) {
+	if ( ! $order_id ) {
+		return;
+	}
+	
+	$order = wc_get_order( $order_id );
+	if ( ! $order ) {
+		return;
+	}
+	
+	// Log successful order completion for debugging
+	error_log( 'Order completed successfully - ID: ' . $order_id . ', Status: ' . $order->get_status() );
+}
+
+/**
+ * Debug checkout redirect issues (only for admins)
+ */
+add_action( 'template_redirect', 'primefit_debug_checkout_redirect', 1 );
+function primefit_debug_checkout_redirect() {
+	// Only run for admins and on checkout-related pages
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	
+	// Debug checkout page access
+	if ( is_checkout() ) {
+		error_log( 'Checkout page accessed - Cart empty: ' . ( WC()->cart->is_empty() ? 'Yes' : 'No' ) );
+		error_log( 'Checkout page accessed - AJAX: ' . ( wp_doing_ajax() ? 'Yes' : 'No' ) );
+		error_log( 'Checkout page accessed - POST data: ' . ( ! empty( $_POST ) ? 'Yes' : 'No' ) );
+	}
+	
+	// Debug order received page access
+	if ( is_wc_endpoint_url( 'order-received' ) ) {
+		$order_id = get_query_var( 'order-received' );
+		$order_key = isset( $_GET['key'] ) ? sanitize_text_field( $_GET['key'] ) : '';
+		
+		error_log( 'Order received page accessed - Order ID: ' . $order_id . ', Key: ' . $order_key );
+		
+		if ( $order_id ) {
+			$order = wc_get_order( $order_id );
+			if ( $order ) {
+				error_log( 'Order found - Status: ' . $order->get_status() . ', Key match: ' . ( $order->get_order_key() === $order_key ? 'Yes' : 'No' ) );
+			} else {
+				error_log( 'Order NOT found for ID: ' . $order_id );
+			}
+		}
+	}
+}
+
+/**
  * Customize checkout page layout
  */
 // Checkout customizations removed - using default WooCommerce checkout
 
-/**
- * Redirect to payment summary page after successful order completion
- * Using a later hook to avoid interfering with checkout processing
- */
-add_action( 'woocommerce_thankyou', 'primefit_redirect_to_payment_summary', 5, 1 );
-function primefit_redirect_to_payment_summary( $order_id ) {
-    if ( ! $order_id ) {
-        return;
-    }
-    
-    $order = wc_get_order( $order_id );
-    if ( ! $order ) {
-        return;
-    }
-    
-    // Only redirect for successful orders (not failed/cancelled)
-    $order_status = $order->get_status();
-    if ( in_array( $order_status, array( 'failed', 'cancelled', 'refunded' ) ) ) {
-        return;
-    }
-    
-    // Get the payment summary URL
-    $payment_summary_url = wc_get_account_endpoint_url( 'payment-summary' );
-    
-    // Redirect to payment summary page
-    wp_redirect( $payment_summary_url );
-    exit;
-}
+// Redirect function removed - now using custom order-received template
 
-/**
- * Fallback redirect for payment completion (for async payment gateways)
- * Only used for specific payment gateways that complete payment after redirect
- */
-add_action( 'woocommerce_payment_complete', 'primefit_redirect_after_payment_complete', 10, 1 );
-function primefit_redirect_after_payment_complete( $order_id ) {
-    // Only redirect if we're on the order received page and not already redirected
-    if ( ! is_wc_endpoint_url( 'order-received' ) ) {
-        return;
-    }
-    
-    // Check if this is an async payment gateway that needs special handling
-    $order = wc_get_order( $order_id );
-    if ( ! $order ) {
-        return;
-    }
-    
-    $payment_method = $order->get_payment_method();
-    
-    // Only redirect for specific payment methods that complete asynchronously
-    $async_payment_methods = array( 'paypal', 'stripe', 'square' );
-    if ( ! in_array( $payment_method, $async_payment_methods ) ) {
-        return;
-    }
-    
-    // Get the payment summary URL
-    $payment_summary_url = wc_get_account_endpoint_url( 'payment-summary' );
-    
-    // Redirect to payment summary page
-    wp_redirect( $payment_summary_url );
-    exit;
-}
+// Fallback redirect function removed - now using custom order-received template
 
 /**
  * Add custom payment summary after order completion
  * Note: This is now handled by the payment summary endpoint page
  */
 
-/**
- * Add payment summary to order received page
- */
-add_action( 'woocommerce_order_details_after_order_table', 'primefit_add_payment_summary_to_order_details', 10, 1 );
-function primefit_add_payment_summary_to_order_details( $order ) {
-    // Only show on order received page
-    if ( ! is_wc_endpoint_url( 'order-received' ) ) {
-        return;
-    }
-    
-    // Show for all order statuses
-    // Set global order for template
-    global $wp_query;
-    $wp_query->query_vars['view-order'] = $order->get_id();
-    
-    // Load the payment summary template
-    get_template_part( 'woocommerce/myaccount/payment-summary' );
-}
+// Payment summary is now handled directly in thankyou.php template
 
-/**
- * Add payment summary endpoint to my account
- */
-add_action( 'init', 'primefit_add_payment_summary_endpoint' );
-function primefit_add_payment_summary_endpoint() {
-    add_rewrite_endpoint( 'payment-summary', EP_ROOT | EP_PAGES );
-}
+// Payment summary endpoint already declared above
 
 /**
  * Add JavaScript redirect for order received page (disabled to avoid conflicts)
@@ -1471,14 +1508,7 @@ function primefit_force_flush_rewrite_rules() {
     }
 }
 
-/**
- * Flush rewrite rules on theme activation
- */
-add_action( 'after_switch_theme', 'primefit_flush_rewrite_rules' );
-function primefit_flush_rewrite_rules() {
-    primefit_add_payment_summary_endpoint();
-    flush_rewrite_rules();
-}
+// Flush rewrite rules function already declared above
 
 /**
  * Debug function to check payment summary status (disabled in production)
@@ -1559,39 +1589,4 @@ function primefit_handle_payment_summary_query() {
     }
 }
 
-/**
- * Handle payment summary endpoint content
- */
-add_action( 'woocommerce_account_payment-summary_endpoint', 'primefit_payment_summary_endpoint_content' );
-function primefit_payment_summary_endpoint_content() {
-    // Get the most recent order for the current user
-    $customer_orders = wc_get_orders( array(
-        'customer' => get_current_user_id(),
-        'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
-        'limit'    => 1,
-        'orderby'  => 'date',
-        'order'    => 'DESC',
-    ) );
-    
-    if ( empty( $customer_orders ) ) {
-        echo '<div class="payment-summary-container">';
-        echo '<div class="payment-summary-header">';
-        echo '<h1 class="payment-summary-title">' . esc_html__( 'No Orders Found', 'primefit' ) . '</h1>';
-        echo '<p class="payment-summary-subtitle">' . esc_html__( 'You haven\'t placed any orders yet.', 'primefit' ) . '</p>';
-        echo '</div>';
-        echo '<div class="payment-summary-actions">';
-        echo '<a href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '" class="button button--primary">' . esc_html__( 'Start Shopping', 'primefit' ) . '</a>';
-        echo '</div>';
-        echo '</div>';
-        return;
-    }
-    
-    $order = $customer_orders[0];
-    
-    // Set global order for template
-    global $wp_query;
-    $wp_query->query_vars['view-order'] = $order->get_id();
-    
-    // Load the payment summary template
-    get_template_part( 'woocommerce/myaccount/payment-summary' );
-}
+// Payment summary endpoint content function already declared above

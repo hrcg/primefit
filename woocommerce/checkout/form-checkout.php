@@ -208,7 +208,7 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 			<div class="payment-options-section mobile-payment">
 				<h3 class="section-title">Payment options</h3>
 				<?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
-				<div id="order_review_mobile" class="woocommerce-checkout-review-order">
+				<div class="woocommerce-checkout-review-order mobile-order-review">
 					<?php do_action( 'woocommerce_checkout_order_review' ); ?>
 				</div>
 				<?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
