@@ -191,7 +191,10 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 							</div>
 							
 							<div class="form-row form-row-last">
-								<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" />
+								<div class="phone-field-with-help">
+									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" />
+									<span class="help-icon-inside" data-tooltip="In case we need to contact you about your order">?</span>
+								</div>
 							</div>
 						</div>
 						

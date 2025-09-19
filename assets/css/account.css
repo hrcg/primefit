@@ -1,0 +1,1635 @@
+/**
+ * PrimeFit Theme - Account Page Styles
+ * Modern dark-themed account page design matching checkout styling
+ *
+ * @package PrimeFit
+ * @since 1.0.0
+ */
+
+/* ==========================================================================
+   Basic Variables - Dark Theme
+   ========================================================================== */
+
+:root {
+  --account-bg: #000000;
+  --account-text: #ffffff;
+  --account-text-muted: #cccccc;
+  --account-text-light: #999999;
+  --account-input-bg: #1a1a1a;
+  --account-input-border: #333333;
+  --account-input-focus-border: #ffffff;
+  --account-button-bg: #000000;
+  --account-button-hover-bg: #333333;
+  --account-button-text: #ffffff;
+  --account-border: #333333;
+  --account-card-bg: #000000;
+  --account-error-bg: #ff4444;
+  --account-error-text: #ffffff;
+  --account-success-bg: #44ff44;
+  --account-success-text: #000000;
+  --account-dropdown-bg: #1a1a1a;
+  --account-dropdown-text: #ffffff;
+  --account-dropdown-hover: #333333;
+  --account-dropdown-selected: #444444;
+  --account-nav-bg: #1a1a1a;
+  --account-nav-active-bg: #333333;
+  --account-nav-text: #ffffff;
+  --account-nav-hover-bg: #2a2a2a;
+}
+
+/* Light mode variables */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --account-bg: #ffffff;
+    --account-text: #000000;
+    --account-text-muted: #666666;
+    --account-text-light: #999999;
+    --account-input-bg: #ffffff;
+    --account-input-border: #cccccc;
+    --account-input-focus-border: #000000;
+    --account-button-bg: #000000;
+    --account-button-hover-bg: #333333;
+    --account-button-text: #ffffff;
+    --account-border: #cccccc;
+    --account-card-bg: #ffffff;
+    --account-dropdown-bg: #ffffff;
+    --account-dropdown-text: #000000;
+    --account-dropdown-hover: #f0f0f0;
+    --account-dropdown-selected: #e0e0e0;
+    --account-nav-bg: #f8f8f8;
+    --account-nav-active-bg: #e0e0e0;
+    --account-nav-text: #000000;
+    --account-nav-hover-bg: #f0f0f0;
+  }
+}
+
+/* Dark theme override */
+[data-theme="dark"] {
+  --account-bg: #000000;
+  --account-text: #ffffff;
+  --account-text-muted: #cccccc;
+  --account-text-light: #999999;
+  --account-input-bg: #1a1a1a;
+  --account-input-border: #333333;
+  --account-input-focus-border: #ffffff;
+  --account-button-bg: #000000;
+  --account-button-hover-bg: #333333;
+  --account-button-text: #ffffff;
+  --account-border: #333333;
+  --account-card-bg: #000000;
+  --account-dropdown-bg: #1a1a1a;
+  --account-dropdown-text: #ffffff;
+  --account-dropdown-hover: #333333;
+  --account-dropdown-selected: #444444;
+  --account-nav-bg: #1a1a1a;
+  --account-nav-active-bg: #333333;
+  --account-nav-text: #ffffff;
+  --account-nav-hover-bg: #2a2a2a;
+}
+
+/* ==========================================================================
+   Account Page Layout & Structure
+   ========================================================================== */
+
+.woocommerce-account {
+  background: var(--account-bg);
+  margin: 0;
+  padding: 0;
+}
+
+.account-container {
+  padding: 80px 0;
+}
+
+/* Main account layout */
+.account-layout {
+  display: flex;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Account content section - now full width */
+.account-content-section {
+  width: 100%;
+  background: var(--account-bg);
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Account Navigation Styles
+   ========================================================================== */
+
+.account-navigation {
+  background: var(--account-nav-bg);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--account-border);
+}
+
+.account-navigation-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--account-text);
+  margin: 0 0 20px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.account-navigation-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.account-navigation-menu li {
+  margin-bottom: 8px;
+}
+
+.account-navigation-menu a {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--account-nav-text);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.account-navigation-menu a:hover {
+  background: var(--account-nav-hover-bg);
+  color: var(--account-text);
+}
+
+.account-navigation-menu a.is-active {
+  background: var(--account-nav-active-bg);
+  color: var(--account-text);
+  font-weight: 600;
+}
+
+.account-navigation-menu a::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  margin-right: 12px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.7;
+}
+
+/* Navigation icons */
+.account-navigation-menu a[href*="orders"]::before {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M16 11V7a4 4 0 0 0-8 0v4'%3e%3c/path%3e%3crect x='3' y='11' width='18' height='11' rx='2' ry='2'%3e%3c/rect%3e%3c/svg%3e");
+}
+
+.account-navigation-menu a[href*="account-details"]::before {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3e%3c/path%3e%3ccircle cx='12' cy='7' r='4'%3e%3c/circle%3e%3c/svg%3e");
+}
+
+.account-navigation-menu a[href*="customer-logout"]::before {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'%3e%3c/path%3e%3cpolyline points='16,17 21,12 16,7'%3e%3c/polyline%3e%3cline x1='21' y1='12' x2='9' y2='12'%3e%3c/line%3e%3c/svg%3e");
+}
+
+/* ==========================================================================
+   Account Content Styles
+   ========================================================================== */
+
+.account-content {
+  background: var(--account-card-bg);
+}
+
+.account-content-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--account-text);
+  margin: 0 0 24px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.account-content-subtitle {
+  font-size: 16px;
+  color: var(--account-text-muted);
+  margin: 0 0 32px 0;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   Dashboard Styles
+   ========================================================================== */
+
+.dashboard-header {
+  margin-bottom: 40px;
+}
+
+.dashboard-navigation {
+  margin-bottom: 16px;
+}
+
+.back-to-dashboard {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--account-text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.back-to-dashboard:hover {
+  color: var(--account-text-primary);
+}
+
+.back-to-dashboard svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+.dashboard-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--account-text-muted);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-welcome {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--account-text);
+  margin: 0;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.dashboard-card {
+  background: var(--account-card-bg);
+  border: 1px solid var(--account-border);
+  border-radius: 12px;
+  padding: 32px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--account-nav-bg);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover .card-icon {
+  background: var(--account-input-focus-border);
+}
+
+.card-icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--account-text);
+  transition: color 0.3s ease;
+}
+
+.dashboard-card:hover .card-icon svg {
+  color: var(--account-bg);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--account-text);
+  margin: 0 0 12px 0;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.card-description {
+  font-size: 14px;
+  color: var(--account-text-muted);
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.card-link {
+  display: inline-flex;
+  align-items: center;
+  max-width: fit-content;
+  padding: 12px 24px;
+  background: #000000;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.card-link:hover {
+  background: #333333;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.card-link::after {
+  content: "→";
+  margin-left: 8px;
+  transition: transform 0.3s ease;
+}
+
+.card-link:hover::after {
+  transform: translateX(4px);
+}
+
+/* ==========================================================================
+   Login Page Styles - Minimalist Design
+   ========================================================================== */
+
+.login-page-container {
+  background: var(--account-bg);
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-form-wrapper {
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+}
+
+/* Account form container */
+.account-form {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.form-field {
+  margin-top: 10px;
+}
+
+.account-form.active {
+  opacity: 1;
+  visibility: visible;
+  position: relative;
+}
+
+.login-form {
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+.login-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--account-text);
+  margin: 0 0 48px 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.login-form .form-field {
+  margin-bottom: 24px;
+}
+
+.login-form .form-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--account-text);
+  margin-bottom: 12px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.login-form .form-field input:not(.password-input-wrapper input) {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1px solid var(--account-input-border);
+  border-radius: 8px;
+  background: var(--account-input-bg);
+  color: var(--account-text);
+  font-size: 16px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.login-form .form-field input:not(.password-input-wrapper input):focus {
+  outline: none;
+  border-color: var(--account-input-focus-border);
+  background: var(--account-input-bg);
+}
+
+.login-form .form-field input:not(.password-input-wrapper input)::placeholder {
+  color: var(--account-text-light);
+  opacity: 1;
+}
+
+/* Password field with toggle */
+.password-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.forgot-password-link {
+  color: var(--account-text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.forgot-password-link:hover {
+  color: var(--account-text);
+  opacity: 0.8;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--account-input-border);
+  border-radius: 8px;
+  background: var(--account-input-bg);
+  transition: all 0.2s ease;
+}
+
+.password-input-wrapper:focus-within {
+  border-color: var(--account-input-focus-border);
+  background: var(--account-input-bg);
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  flex: 1;
+  padding: 16px 50px 16px 20px;
+  background: transparent;
+  border: none;
+  color: var(--account-text);
+  font-size: 16px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.password-input-wrapper input:focus {
+  outline: none;
+}
+
+.password-input-wrapper input::placeholder {
+  color: var(--account-text-light);
+  opacity: 1;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--account-text);
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  z-index: 10;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.password-toggle:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+/* Ensure the button is clickable */
+.password-toggle:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+/* Ensure button is above other elements */
+.password-toggle {
+  z-index: 10;
+}
+
+/* Make sure the button area is large enough for touch devices */
+@media (max-width: 768px) {
+  .password-toggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
+  }
+}
+
+/* Submit button */
+.form-submit {
+  margin-top: 48px;
+  text-align: center;
+}
+
+.login-form .woocommerce-form-login__submit {
+  width: 100%;
+  padding: 16px 32px;
+  background: var(--account-button-bg);
+  color: var(--account-button-text);
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.login-form .woocommerce-form-login__submit:hover {
+  background: var(--account-button-hover-bg);
+}
+
+/* No account section */
+.no-account-section {
+  margin-top: 24px;
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--account-border);
+}
+
+.no-account-text {
+  color: var(--account-text);
+  font-size: 14px;
+  margin-bottom: 16px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  opacity: 0.8;
+}
+
+.create-account-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--account-text);
+  border: 2px solid var(--account-text);
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.create-account-button:hover {
+  background: var(--account-text);
+  color: var(--account-bg);
+  text-decoration: none;
+}
+
+/* Has account section */
+.has-account-section {
+  margin-top: 24px;
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--account-border);
+}
+
+.has-account-text {
+  color: var(--account-text);
+  font-size: 14px;
+  margin-bottom: 16px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  opacity: 0.8;
+}
+
+.sign-in-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--account-text);
+  border: 2px solid var(--account-text);
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.sign-in-button:hover {
+  background: var(--account-text);
+  color: var(--account-bg);
+  text-decoration: none;
+}
+
+/* Privacy Policy Section */
+.privacy-policy-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--account-border);
+}
+
+.privacy-policy-text {
+  color: var(--account-text);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  opacity: 0.8;
+}
+
+.privacy-policy-link {
+  color: #4a9eff;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.privacy-policy-link:hover {
+  color: #6bb6ff;
+  text-decoration: underline;
+}
+
+/* Create account link */
+.create-account-link {
+  margin-top: 32px;
+  text-align: center;
+}
+
+.create-account-link p {
+  color: var(--account-text);
+  font-size: 14px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  margin: 0;
+}
+
+.create-account-link a {
+  color: var(--account-text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.create-account-link a:hover {
+  color: var(--account-text);
+  opacity: 0.8;
+}
+
+/* Error states */
+.login-form .form-field.error input:not(.password-input-wrapper input) {
+  border-color: var(--account-error-bg);
+}
+
+.login-form .form-field.error .password-input-wrapper {
+  border-color: var(--account-error-bg);
+}
+
+.login-form .error-message {
+  color: var(--account-error-bg);
+  font-size: 12px;
+  margin-top: 4px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.show-password-input {
+  display: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .login-title {
+    font-size: 28px;
+    margin-bottom: 40px;
+  }
+
+  .login-form .form-field {
+    margin-bottom: 28px;
+  }
+
+  .form-submit {
+    margin-top: 40px;
+  }
+
+  .no-account-section {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  .create-account-button {
+    padding: 14px 28px;
+    font-size: 15px;
+  }
+
+  .has-account-section {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  .sign-in-button {
+    padding: 14px 28px;
+    font-size: 15px;
+  }
+
+  .privacy-policy-section {
+    margin-top: 28px;
+    padding-top: 20px;
+  }
+
+  .create-account-link {
+    margin-top: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-title {
+    font-size: 24px;
+    margin-bottom: 32px;
+  }
+
+  .login-form .form-field {
+    margin-bottom: 24px;
+  }
+
+  .form-submit {
+    margin-top: 32px;
+  }
+
+  .no-account-section {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .create-account-button {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .has-account-section {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .sign-in-button {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .privacy-policy-section {
+    margin-top: 24px;
+    padding-top: 16px;
+  }
+
+  .create-account-link {
+    margin-top: 24px;
+  }
+}
+
+/* ==========================================================================
+   Register Form Styles
+   ========================================================================== */
+
+.woocommerce-form-register {
+  background: var(--account-card-bg);
+  border-radius: 8px;
+  padding: 32px;
+  border: 1px solid var(--account-border);
+}
+
+.woocommerce-form-register h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--account-text);
+  margin: 0 0 24px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-form-register .form-row {
+  margin-bottom: 20px;
+}
+
+.woocommerce-form-register .form-row label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--account-text);
+  margin-bottom: 8px;
+}
+
+.woocommerce-form-register .form-row input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--account-input-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--account-input-bg);
+  color: var(--account-text);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.woocommerce-form-register .form-row input:focus {
+  outline: none;
+  border-color: var(--account-input-focus-border);
+}
+
+.woocommerce-form-register .form-row input::placeholder {
+  color: var(--account-text-light);
+}
+
+.woocommerce-form-register .woocommerce-form-register__submit {
+  width: 100%;
+  padding: 16px;
+  background: var(--account-button-bg);
+  color: var(--account-button-text);
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-form-register .woocommerce-form-register__submit:hover {
+  background: var(--account-button-hover-bg);
+}
+
+/* ==========================================================================
+   Orders Table Styles
+   ========================================================================== */
+
+.woocommerce-orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+  background: var(--account-card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--account-border);
+}
+
+.woocommerce-orders-table th,
+.woocommerce-orders-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--account-border);
+}
+
+.woocommerce-orders-table th {
+  background: var(--account-nav-bg);
+  font-weight: 600;
+  color: var(--account-text);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-orders-table td {
+  color: var(--account-text-muted);
+  font-size: 14px;
+}
+
+.woocommerce-orders-table tr:last-child td {
+  border-bottom: none;
+}
+
+.woocommerce-orders-table .woocommerce-orders-table__cell-order-number a {
+  color: var(--account-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.woocommerce-orders-table .woocommerce-orders-table__cell-order-number a:hover {
+  color: var(--account-text-muted);
+}
+
+.woocommerce-orders-table .woocommerce-orders-table__cell-order-status {
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.woocommerce-orders-table
+  .woocommerce-orders-table__cell-order-status.status-completed {
+  color: #44ff44;
+}
+
+.woocommerce-orders-table
+  .woocommerce-orders-table__cell-order-status.status-processing {
+  color: #ffaa00;
+}
+
+.woocommerce-orders-table
+  .woocommerce-orders-table__cell-order-status.status-pending {
+  color: #ffaa00;
+}
+
+.woocommerce-orders-table
+  .woocommerce-orders-table__cell-order-status.status-cancelled {
+  color: #ff4444;
+}
+
+.woocommerce-orders-table
+  .woocommerce-orders-table__cell-order-status.status-failed {
+  color: #ff4444;
+}
+
+.woocommerce-orders-table .woocommerce-orders-table__cell-order-total {
+  font-weight: 600;
+  color: var(--account-text);
+}
+
+/* ==========================================================================
+   Order Details Styles
+   ========================================================================== */
+
+.woocommerce-order-details {
+  background: var(--account-card-bg);
+  border-radius: 8px;
+  padding: 32px;
+  border: 1px solid var(--account-border);
+  margin-bottom: 24px;
+}
+
+.woocommerce-order-details h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--account-text);
+  margin: 0 0 24px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-order-details .woocommerce-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.woocommerce-order-details .woocommerce-table th,
+.woocommerce-order-details .woocommerce-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--account-border);
+}
+
+.woocommerce-order-details .woocommerce-table th {
+  background: var(--account-nav-bg);
+  font-weight: 600;
+  color: var(--account-text);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-order-details .woocommerce-table td {
+  color: var(--account-text-muted);
+  font-size: 14px;
+}
+
+.woocommerce-order-details .woocommerce-table tr:last-child td {
+  border-bottom: none;
+}
+
+.woocommerce-order-details .woocommerce-table .product-name {
+  font-weight: 500;
+  color: var(--account-text);
+}
+
+.woocommerce-order-details .woocommerce-table .product-total {
+  font-weight: 600;
+  color: var(--account-text);
+}
+
+/* ==========================================================================
+   Addresses Styles
+   ========================================================================== */
+
+.woocommerce-Addresses {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.woocommerce-Address {
+  background: var(--account-card-bg);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--account-border);
+}
+
+.woocommerce-Address h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--account-text);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-Address address {
+  font-style: normal;
+  color: var(--account-text-muted);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.woocommerce-Address .woocommerce-Address-edit {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--account-button-bg);
+  color: var(--account-button-text);
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-Address .woocommerce-Address-edit:hover {
+  background: var(--account-button-hover-bg);
+}
+
+/* ==========================================================================
+   Account Details Form Styles
+   ========================================================================== */
+
+.woocommerce-EditAccountForm h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--account-text);
+  margin: 0 0 24px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-EditAccountForm .form-row {
+  margin-bottom: 20px;
+}
+
+.woocommerce-EditAccountForm .form-row label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--account-text);
+  margin-bottom: 8px;
+}
+
+.woocommerce-EditAccountForm .form-row input {
+  width: 100%;
+  border: 1px solid var(--account-input-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--account-input-bg);
+  color: var(--account-text);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.woocommerce-EditAccountForm .form-row input:focus {
+  outline: none;
+  border-color: var(--account-input-focus-border);
+}
+
+.woocommerce-EditAccountForm .form-row input::placeholder {
+  color: var(--account-text-light);
+}
+
+.woocommerce-EditAccountForm .woocommerce-Button {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-EditAccountForm .woocommerce-Button:hover {
+  background: #333333;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Downloads Table Styles
+   ========================================================================== */
+
+.woocommerce-table--order-downloads {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+  background: var(--account-card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--account-border);
+}
+
+.woocommerce-table--order-downloads th,
+.woocommerce-table--order-downloads td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--account-border);
+}
+
+.woocommerce-table--order-downloads th {
+  background: var(--account-nav-bg);
+  font-weight: 600;
+  color: var(--account-text);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.woocommerce-table--order-downloads td {
+  color: var(--account-text-muted);
+  font-size: 14px;
+}
+
+.woocommerce-table--order-downloads tr:last-child td {
+  border-bottom: none;
+}
+
+.woocommerce-table--order-downloads .download-file a {
+  color: var(--account-text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.woocommerce-table--order-downloads .download-file a:hover {
+  color: var(--account-text-muted);
+}
+
+.woocommerce-table--order-downloads .download-remaining {
+  font-weight: 600;
+  color: var(--account-text);
+}
+
+/* ==========================================================================
+   Error and Success Messages
+   ========================================================================== */
+
+.woocommerce-error,
+.woocommerce-message,
+.woocommerce-info {
+  font-size: 14px;
+  display: flex;
+  align-items: start;
+  gap: 20px;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .account-layout {
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .dashboard-cards {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .dashboard-card {
+    padding: 24px;
+  }
+
+  .woocommerce-Addresses {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .account-content-title {
+    font-size: 20px;
+  }
+
+  .account-content {
+    border: none;
+    padding: 0;
+  }
+
+  .dashboard-welcome {
+    font-size: 24px;
+  }
+
+  .dashboard-cards {
+    gap: 16px;
+  }
+
+  .dashboard-card {
+    padding: 20px;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 16px;
+  }
+
+  .card-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .card-title {
+    font-size: 16px;
+  }
+
+  .card-description {
+    font-size: 13px;
+  }
+
+  .woocommerce-form-login h2,
+  .woocommerce-form-register h2 {
+    font-size: 20px;
+  }
+
+  .woocommerce-order-details {
+    padding: 24px;
+  }
+
+  .woocommerce-order-details h2 {
+    font-size: 18px;
+  }
+
+  .woocommerce-Address {
+    padding: 20px;
+  }
+
+  .woocommerce-Address h3 {
+    font-size: 16px;
+  }
+
+  /* Make tables responsive */
+  .woocommerce-orders-table,
+  .woocommerce-table--order-downloads {
+    font-size: 12px;
+  }
+
+  .woocommerce-orders-table th,
+  .woocommerce-orders-table td,
+  .woocommerce-table--order-downloads th,
+  .woocommerce-table--order-downloads td {
+    padding: 12px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-content-title {
+    font-size: 18px;
+  }
+
+  .dashboard-welcome {
+    font-size: 20px;
+  }
+
+  .dashboard-cards {
+    gap: 12px;
+  }
+
+  .dashboard-card {
+    padding: 16px;
+  }
+
+  .card-icon {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 12px;
+  }
+
+  .card-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .card-title {
+    font-size: 15px;
+  }
+
+  .card-description {
+    font-size: 12px;
+    margin-bottom: 30px;
+  }
+
+  .card-link {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .woocommerce-form-login h2,
+  .woocommerce-form-register h2 {
+    font-size: 18px;
+  }
+
+  .woocommerce-order-details {
+    padding: 20px;
+  }
+
+  .woocommerce-order-details h2 {
+    font-size: 16px;
+  }
+
+  .woocommerce-Address {
+    padding: 16px;
+  }
+
+  .woocommerce-Address h3 {
+    font-size: 14px;
+  }
+
+  /* Stack table columns on very small screens */
+  .woocommerce-orders-table,
+  .woocommerce-table--order-downloads {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .woocommerce-orders-table th,
+  .woocommerce-orders-table td,
+  .woocommerce-table--order-downloads th,
+  .woocommerce-table--order-downloads td {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+}
+
+/* ==========================================================================
+   Additional WooCommerce Overrides
+   ========================================================================== */
+
+/* Hide default WooCommerce notices on account pages */
+.woocommerce-account .woocommerce-notices-wrapper {
+  display: none;
+}
+
+/* Override WooCommerce form styling */
+.woocommerce-account .form-row {
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.woocommerce-account .form-row label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--account-text);
+  margin-bottom: 8px;
+}
+
+.woocommerce-account .form-row input,
+.woocommerce-account .form-row select,
+.woocommerce-account .form-row textarea {
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--account-input-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--account-input-bg) !important;
+  color: var(--account-text) !important;
+  box-sizing: border-box;
+  display: block;
+}
+
+.woocommerce-account .form-row input:focus,
+.woocommerce-account .form-row select:focus,
+.woocommerce-account .form-row textarea:focus {
+  outline: none;
+  border-color: var(--account-input-focus-border);
+}
+
+.woocommerce-account .form-row input::placeholder,
+.woocommerce-account .form-row textarea::placeholder {
+  color: var(--account-text-light);
+}
+
+/* Ensure consistent field widths */
+.woocommerce-account .form-row-wide {
+  width: 100%;
+}
+
+.woocommerce-account .form-row-first,
+.woocommerce-account .form-row-last {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   Order Details Page Styles
+   ========================================================================== */
+.woocommerce-customer-details {
+  display: none;
+}
+/* Order Status Card */
+.order-status-card .order-status-info {
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--account-text);
+}
+
+.order-status-card .order-number,
+.order-status-card .order-date,
+.order-status-card .order-status {
+  font-weight: 600;
+  color: #ffff00; /* Yellow highlight */
+}
+
+/* Order Details Card */
+.order-details-card .order-items {
+  margin-top: 16px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--account-border);
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item .item-details {
+  flex: 1;
+}
+
+.order-item .item-name {
+  color: var(--account-text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.order-item .item-name:hover {
+  color: var(--account-text-muted);
+}
+
+.order-item .item-total {
+  font-weight: 600;
+  color: var(--account-text);
+}
+
+/* Order Totals */
+.order-totals {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid var(--account-border);
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.total-line.total-final {
+  border-top: 1px solid var(--account-border);
+  margin-top: 12px;
+  padding-top: 16px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.total-label {
+  color: var(--account-text);
+  font-weight: 500;
+}
+
+.total-value {
+  color: var(--account-text);
+  font-weight: 600;
+}
+
+/* Address Cards */
+.address-details {
+  margin-top: 16px;
+  color: var(--account-text);
+  line-height: 1.6;
+}
+
+.address-details p {
+  margin: 0;
+}
+
+/* Customer Note Card */
+.note-content {
+  margin-top: 16px;
+  color: var(--account-text);
+  line-height: 1.6;
+  padding: 16px;
+  background: var(--account-input-bg);
+  border: 1px solid var(--account-border);
+  border-radius: 4px;
+}
+
+/* Responsive adjustments for order details */
+@media (max-width: 768px) {
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .order-item .item-total {
+    align-self: flex-end;
+  }
+
+  .total-line {
+    font-size: 14px;
+  }
+
+  .total-line.total-final {
+    font-size: 16px;
+  }
+}

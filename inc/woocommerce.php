@@ -15,13 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Only load if WooCommerce is active
 if ( ! class_exists( 'WooCommerce' ) ) {
-	// Log that WooCommerce isn't available yet
-	error_log('CART DEBUG: WooCommerce class not available when woocommerce.php is loaded');
+	// WooCommerce not available yet
 	return;
 }
 
-// Log that WooCommerce is available
-error_log('CART DEBUG: WooCommerce class is available - setting up cart functions');
+// WooCommerce is available - setting up cart functions
 
 /**
  * Disable default WooCommerce stylesheets
@@ -159,20 +157,11 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
 add_action( 'wp_ajax_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_nopriv_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
 
-// Debug: Add hook to catch validation errors
-add_action( 'woocommerce_add_to_cart_validation', 'primefit_debug_add_to_cart_validation', 5, 5 );
-function primefit_debug_add_to_cart_validation( $valid, $product_id, $quantity, $variation_id = 0, $variations = array() ) {
-	error_log('Add to Cart Validation: valid=' . ($valid ? 'true' : 'false') . ', product_id=' . $product_id . ', variation_id=' . $variation_id . ', variations=' . print_r($variations, true));
-	return $valid;
-}
+// Removed add to cart validation debugging
 function primefit_ensure_wc_ajax_add_to_cart() {
-	// Debug: Log the request data
-	error_log('AJAX Add to Cart Request: ' . print_r($_POST, true));
-	
 	// Ensure variation_id is properly set
 	if ( isset( $_POST['variation_id'] ) && ! empty( $_POST['variation_id'] ) ) {
 		$_POST['variation_id'] = intval( $_POST['variation_id'] );
-		error_log('Fixed variation_id: ' . $_POST['variation_id']);
 	}
 	
 	// Let WooCommerce handle the AJAX add to cart
@@ -355,16 +344,7 @@ function primefit_header_cart_fragment( $fragments ) {
 	<?php
 	$fragments['div.widget_shopping_cart_content'] = ob_get_clean();
 	
-	// Debug: Log cart contents for troubleshooting
-	if ( WC()->cart && ! WC()->cart->is_empty() ) {
-		error_log( 'CART DEBUG: Fragment update - Cart contents: ' . print_r( array_map( function( $item ) {
-			return array(
-				'product_id' => $item['product_id'],
-				'quantity' => $item['quantity'],
-				'variation_id' => $item['variation_id']
-			);
-		}, WC()->cart->get_cart() ), true ) );
-	}
+	// Cart fragment updated successfully
 	
 	return $fragments;
 }
@@ -451,6 +431,11 @@ add_action( 'wp_ajax_nopriv_primefit_notify_availability', 'primefit_handle_noti
 add_action( 'wp_ajax_wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
 add_action( 'wp_ajax_nopriv_wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
 function primefit_wc_update_cart_item_quantity() {
+    // Ensure clean output buffer for JSON response
+    if ( ob_get_level() ) {
+        ob_clean();
+    }
+    
     // Basic validation
     if ( ! isset( $_POST['cart_item_key'], $_POST['quantity'], $_POST['security'] ) ) {
         wp_send_json_error( __( 'Invalid request', 'primefit' ), 400 );
@@ -473,8 +458,7 @@ function primefit_wc_update_cart_item_quantity() {
         wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
     }
 
-    // Debug: Log the update request
-    error_log( 'CART DEBUG: Update quantity request - Key: ' . $cart_item_key . ', Quantity: ' . $quantity );
+    // Update cart item quantity
 
     // Update quantity; set_quantity returns WC_Cart_Item or false
     $updated = WC()->cart->set_quantity( $cart_item_key, $quantity, true );
@@ -486,11 +470,7 @@ function primefit_wc_update_cart_item_quantity() {
     // Recalculate totals and refresh fragments
     WC()->cart->calculate_totals();
 
-    // Debug: Log cart state after update
-    $cart_contents = WC()->cart->get_cart();
-    if ( isset( $cart_contents[ $cart_item_key ] ) ) {
-        error_log( 'CART DEBUG: After update - Item quantity: ' . $cart_contents[ $cart_item_key ]['quantity'] );
-    }
+    // Cart quantity updated successfully
 
     $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
 
@@ -509,32 +489,30 @@ function primefit_wc_update_cart_item_quantity() {
 add_action( 'wp_ajax_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
 add_action( 'wp_ajax_nopriv_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
 function primefit_wc_remove_cart_item() {
-    error_log('CART DEBUG: Remove cart item AJAX handler called');
-    error_log('CART DEBUG: POST data: ' . print_r($_POST, true));
+    // Ensure clean output buffer for JSON response
+    if ( ob_get_level() ) {
+        ob_clean();
+    }
+    
+    // Remove cart item AJAX handler called
     
     if ( ! isset( $_POST['cart_item_key'], $_POST['security'] ) ) {
-        error_log('CART DEBUG: Missing required parameters');
         wp_send_json_error( __( 'Invalid request', 'primefit' ), 400 );
     }
 
     if ( ! wp_verify_nonce( $_POST['security'], 'woocommerce_remove_cart_nonce' ) ) {
-        error_log('CART DEBUG: Nonce verification failed');
         wp_send_json_error( __( 'Security check failed', 'primefit' ), 403 );
     }
 
     $cart_item_key = sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) );
-    error_log('CART DEBUG: Cart item key: ' . $cart_item_key);
 
     if ( ! WC()->cart ) {
-        error_log('CART DEBUG: WooCommerce cart not available');
         wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
     }
 
     $removed = WC()->cart->remove_cart_item( $cart_item_key );
-    error_log('CART DEBUG: Remove result: ' . ($removed ? 'SUCCESS' : 'FAILED'));
 
     if ( ! $removed ) {
-        error_log('CART DEBUG: Failed to remove item');
         wp_send_json_error( __( 'Failed to remove item', 'primefit' ), 400 );
     }
 
@@ -546,7 +524,7 @@ function primefit_wc_remove_cart_item() {
     $is_checkout_page = is_checkout();
     $cart_is_empty = WC()->cart->is_empty();
     
-    error_log('CART DEBUG: Sending success response');
+    // Sending success response
     wp_send_json_success( array(
         'fragments' => $fragments,
         'cart_hash' => WC()->cart->get_cart_hash(),
@@ -628,6 +606,37 @@ function primefit_auto_open_mini_cart() {
 		<?php
 	}
 }
+
+/**
+ * Remove custom checkout AJAX handler - let WooCommerce handle it natively
+ * The custom handler was causing JSON parsing errors
+ */
+// Removed custom checkout AJAX handler to fix JavaScript syntax errors
+
+/**
+ * Remove custom apply coupon AJAX handler - let WooCommerce handle it natively
+ * The custom handler was causing JSON parsing errors
+ */
+// Removed custom apply coupon AJAX handler to fix JavaScript syntax errors
+
+/**
+ * Remove custom get states AJAX handler - let WooCommerce handle it natively
+ * The custom handler was causing JSON parsing errors
+ */
+// Removed custom get states AJAX handler to fix JavaScript syntax errors
+
+/**
+ * Removed general AJAX request debugging that was interfering with checkout
+ * The excessive logging was causing output buffer issues
+ */
+
+/**
+ * Removed WooCommerce fragments interceptor that was causing JSON parsing issues
+ */
+
+/**
+ * Removed AJAX output catching that was interfering with WooCommerce responses
+ */
 
 /**
  * Register AJAX handlers at proper time
@@ -1037,7 +1046,7 @@ function primefit_mini_cart_recommended_items() {
 			</div>
 		</div>
 	</div>
-	<ul class="woocommerce-mini-cart <?php echo esc_attr( $args['list_class'] ); ?> hidden-list-start"> <!-- Reopen the list for WooCommerce -->
+	<ul class="woocommerce-mini-cart hidden-list-start"> <!-- Reopen the list for WooCommerce -->
 	<?php
 }
 
@@ -1232,6 +1241,11 @@ add_action( 'wp_ajax_apply_coupon', 'primefit_handle_apply_coupon' );
 add_action( 'wp_ajax_nopriv_apply_coupon', 'primefit_handle_apply_coupon' );
 
 function primefit_handle_apply_coupon() {
+	// Ensure clean output buffer for JSON response
+	if ( ob_get_level() ) {
+		ob_clean();
+	}
+	
 	// Verify nonce
 	if ( ! wp_verify_nonce( $_POST['security'], 'apply_coupon' ) ) {
 		wp_send_json_error( __( 'Security check failed', 'primefit' ) );
@@ -1264,6 +1278,11 @@ add_action( 'wp_ajax_remove_coupon', 'primefit_handle_remove_coupon' );
 add_action( 'wp_ajax_nopriv_remove_coupon', 'primefit_handle_remove_coupon' );
 
 function primefit_handle_remove_coupon() {
+	// Ensure clean output buffer for JSON response
+	if ( ob_get_level() ) {
+		ob_clean();
+	}
+	
 	// Verify nonce
 	if ( ! wp_verify_nonce( $_POST['security'], 'remove_coupon' ) ) {
 		wp_send_json_error( __( 'Security check failed', 'primefit' ) );
@@ -1287,6 +1306,292 @@ function primefit_handle_remove_coupon() {
 }
 
 /**
+ * Customize account menu items - simplify to only show orders, payment summary, account details, and logout
+ */
+add_filter( 'woocommerce_account_menu_items', 'primefit_customize_account_menu_items' );
+function primefit_customize_account_menu_items( $items ) {
+	// Remove unwanted menu items
+	unset( $items['dashboard'] );
+	unset( $items['downloads'] );
+	unset( $items['addresses'] );
+	unset( $items['payment-methods'] );
+	
+	// Keep only orders, payment summary, account details, and logout
+	$custom_items = array();
+	
+	// Add orders if it exists
+	if ( isset( $items['orders'] ) ) {
+		$custom_items['orders'] = $items['orders'];
+	}
+	
+	// Add payment summary
+	$custom_items['payment-summary'] = __( 'Payment Summary', 'primefit' );
+	
+	// Add account details if it exists
+	if ( isset( $items['edit-account'] ) ) {
+		$custom_items['edit-account'] = $items['edit-account'];
+	}
+	
+	// Add logout if it exists
+	if ( isset( $items['customer-logout'] ) ) {
+		$custom_items['customer-logout'] = $items['customer-logout'];
+	}
+	
+	return $custom_items;
+}
+
+/**
+ * Redirect dashboard to orders page since we removed dashboard from menu
+ */
+add_action( 'template_redirect', 'primefit_redirect_dashboard_to_orders' );
+function primefit_redirect_dashboard_to_orders() {
+	// Check if we're on the my account dashboard page
+	if ( is_account_page() && is_wc_endpoint_url( 'dashboard' ) ) {
+		// Redirect to orders page
+		$orders_url = wc_get_account_endpoint_url( 'orders' );
+		wp_redirect( $orders_url );
+		exit;
+	}
+}
+
+/**
  * Customize checkout page layout
  */
 // Checkout customizations removed - using default WooCommerce checkout
+
+/**
+ * Redirect to payment summary page after successful order completion
+ * Using a later hook to avoid interfering with checkout processing
+ */
+add_action( 'woocommerce_thankyou', 'primefit_redirect_to_payment_summary', 5, 1 );
+function primefit_redirect_to_payment_summary( $order_id ) {
+    if ( ! $order_id ) {
+        return;
+    }
+    
+    $order = wc_get_order( $order_id );
+    if ( ! $order ) {
+        return;
+    }
+    
+    // Only redirect for successful orders (not failed/cancelled)
+    $order_status = $order->get_status();
+    if ( in_array( $order_status, array( 'failed', 'cancelled', 'refunded' ) ) ) {
+        return;
+    }
+    
+    // Get the payment summary URL
+    $payment_summary_url = wc_get_account_endpoint_url( 'payment-summary' );
+    
+    // Redirect to payment summary page
+    wp_redirect( $payment_summary_url );
+    exit;
+}
+
+/**
+ * Fallback redirect for payment completion (for async payment gateways)
+ * Only used for specific payment gateways that complete payment after redirect
+ */
+add_action( 'woocommerce_payment_complete', 'primefit_redirect_after_payment_complete', 10, 1 );
+function primefit_redirect_after_payment_complete( $order_id ) {
+    // Only redirect if we're on the order received page and not already redirected
+    if ( ! is_wc_endpoint_url( 'order-received' ) ) {
+        return;
+    }
+    
+    // Check if this is an async payment gateway that needs special handling
+    $order = wc_get_order( $order_id );
+    if ( ! $order ) {
+        return;
+    }
+    
+    $payment_method = $order->get_payment_method();
+    
+    // Only redirect for specific payment methods that complete asynchronously
+    $async_payment_methods = array( 'paypal', 'stripe', 'square' );
+    if ( ! in_array( $payment_method, $async_payment_methods ) ) {
+        return;
+    }
+    
+    // Get the payment summary URL
+    $payment_summary_url = wc_get_account_endpoint_url( 'payment-summary' );
+    
+    // Redirect to payment summary page
+    wp_redirect( $payment_summary_url );
+    exit;
+}
+
+/**
+ * Add custom payment summary after order completion
+ * Note: This is now handled by the payment summary endpoint page
+ */
+
+/**
+ * Add payment summary to order received page
+ */
+add_action( 'woocommerce_order_details_after_order_table', 'primefit_add_payment_summary_to_order_details', 10, 1 );
+function primefit_add_payment_summary_to_order_details( $order ) {
+    // Only show on order received page
+    if ( ! is_wc_endpoint_url( 'order-received' ) ) {
+        return;
+    }
+    
+    // Show for all order statuses
+    // Set global order for template
+    global $wp_query;
+    $wp_query->query_vars['view-order'] = $order->get_id();
+    
+    // Load the payment summary template
+    get_template_part( 'woocommerce/myaccount/payment-summary' );
+}
+
+/**
+ * Add payment summary endpoint to my account
+ */
+add_action( 'init', 'primefit_add_payment_summary_endpoint' );
+function primefit_add_payment_summary_endpoint() {
+    add_rewrite_endpoint( 'payment-summary', EP_ROOT | EP_PAGES );
+}
+
+/**
+ * Add JavaScript redirect for order received page (disabled to avoid conflicts)
+ * Server-side redirect should handle this properly
+ */
+
+/**
+ * Force flush rewrite rules if needed
+ */
+add_action( 'init', 'primefit_force_flush_rewrite_rules', 999 );
+function primefit_force_flush_rewrite_rules() {
+    // Only flush if we're on the payment summary page and it's not working
+    if ( isset( $_GET['flush_rules'] ) && current_user_can( 'manage_options' ) ) {
+        flush_rewrite_rules();
+        wp_redirect( remove_query_arg( 'flush_rules' ) );
+        exit;
+    }
+}
+
+/**
+ * Flush rewrite rules on theme activation
+ */
+add_action( 'after_switch_theme', 'primefit_flush_rewrite_rules' );
+function primefit_flush_rewrite_rules() {
+    primefit_add_payment_summary_endpoint();
+    flush_rewrite_rules();
+}
+
+/**
+ * Debug function to check payment summary status (disabled in production)
+ */
+// add_action( 'wp_footer', 'primefit_debug_payment_summary' );
+function primefit_debug_payment_summary() {
+    if ( current_user_can( 'manage_options' ) && isset( $_GET['debug_payment'] ) ) {
+        echo '<div style="position: fixed; top: 0; left: 0; background: #000; color: #fff; padding: 10px; z-index: 9999; font-size: 12px;">';
+        echo '<strong>Payment Summary Debug:</strong><br>';
+        echo 'Is Account Page: ' . ( is_account_page() ? 'Yes' : 'No' ) . '<br>';
+        echo 'Is Payment Summary Endpoint: ' . ( is_wc_endpoint_url( 'payment-summary' ) ? 'Yes' : 'No' ) . '<br>';
+        echo 'Current User ID: ' . get_current_user_id() . '<br>';
+        
+        $customer_orders = wc_get_orders( array(
+            'customer' => get_current_user_id(),
+            'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
+            'limit'    => 1,
+            'orderby'  => 'date',
+            'order'    => 'DESC',
+        ) );
+        
+        echo 'Orders Found: ' . count( $customer_orders ) . '<br>';
+        if ( ! empty( $customer_orders ) ) {
+            $order = $customer_orders[0];
+            echo 'Latest Order ID: ' . $order->get_id() . '<br>';
+            echo 'Order Status: ' . $order->get_status() . '<br>';
+        }
+        echo '</div>';
+    }
+}
+
+
+/**
+ * Alternative approach: Use query var instead of rewrite endpoint
+ */
+add_action( 'init', 'primefit_add_payment_summary_query_var' );
+function primefit_add_payment_summary_query_var() {
+    add_rewrite_endpoint( 'payment-summary', EP_ROOT | EP_PAGES );
+}
+
+/**
+ * Handle payment summary via query var
+ */
+add_action( 'template_redirect', 'primefit_handle_payment_summary_query' );
+function primefit_handle_payment_summary_query() {
+    if ( is_account_page() && get_query_var( 'payment-summary' ) ) {
+        // Get the most recent order for the current user
+        $customer_orders = wc_get_orders( array(
+            'customer' => get_current_user_id(),
+            'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
+            'limit'    => 1,
+            'orderby'  => 'date',
+            'order'    => 'DESC',
+        ) );
+        
+        if ( empty( $customer_orders ) ) {
+            echo '<div class="payment-summary-container">';
+            echo '<div class="payment-summary-header">';
+            echo '<h1 class="payment-summary-title">' . esc_html__( 'No Orders Found', 'primefit' ) . '</h1>';
+            echo '<p class="payment-summary-subtitle">' . esc_html__( 'You haven\'t placed any orders yet.', 'primefit' ) . '</p>';
+            echo '</div>';
+            echo '<div class="payment-summary-actions">';
+            echo '<a href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '" class="button button--primary">' . esc_html__( 'Start Shopping', 'primefit' ) . '</a>';
+            echo '</div>';
+            echo '</div>';
+            return;
+        }
+        
+        $order = $customer_orders[0];
+        
+        // Set global order for template
+        global $wp_query;
+        $wp_query->query_vars['view-order'] = $order->get_id();
+        
+        // Load the payment summary template
+        get_template_part( 'woocommerce/myaccount/payment-summary' );
+        exit;
+    }
+}
+
+/**
+ * Handle payment summary endpoint content
+ */
+add_action( 'woocommerce_account_payment-summary_endpoint', 'primefit_payment_summary_endpoint_content' );
+function primefit_payment_summary_endpoint_content() {
+    // Get the most recent order for the current user
+    $customer_orders = wc_get_orders( array(
+        'customer' => get_current_user_id(),
+        'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
+        'limit'    => 1,
+        'orderby'  => 'date',
+        'order'    => 'DESC',
+    ) );
+    
+    if ( empty( $customer_orders ) ) {
+        echo '<div class="payment-summary-container">';
+        echo '<div class="payment-summary-header">';
+        echo '<h1 class="payment-summary-title">' . esc_html__( 'No Orders Found', 'primefit' ) . '</h1>';
+        echo '<p class="payment-summary-subtitle">' . esc_html__( 'You haven\'t placed any orders yet.', 'primefit' ) . '</p>';
+        echo '</div>';
+        echo '<div class="payment-summary-actions">';
+        echo '<a href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '" class="button button--primary">' . esc_html__( 'Start Shopping', 'primefit' ) . '</a>';
+        echo '</div>';
+        echo '</div>';
+        return;
+    }
+    
+    $order = $customer_orders[0];
+    
+    // Set global order for template
+    global $wp_query;
+    $wp_query->query_vars['view-order'] = $order->get_id();
+    
+    // Load the payment summary template
+    get_template_part( 'woocommerce/myaccount/payment-summary' );
+}

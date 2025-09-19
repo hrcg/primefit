@@ -106,6 +106,252 @@
     };
   }
 
+  // Mobile cart drawer drag functionality
+  class MobileCartDrawer {
+    constructor() {
+      this.isDragging = false;
+      this.startY = 0;
+      this.currentY = 0;
+      this.startTransform = 0;
+      this.startTime = 0;
+      this.threshold = 50; // Minimum drag distance to close
+      this.isMobile = window.matchMedia("(max-width: 1024px)").matches;
+      this.init();
+    }
+
+    init() {
+      if (!this.isMobile) return;
+
+      this.bindEvents();
+      this.handleResize();
+    }
+
+    bindEvents() {
+      // Touch events for drag functionality
+      $(document).on(
+        "touchstart",
+        ".cart-panel-header",
+        this.handleTouchStart.bind(this)
+      );
+      $(document).on(
+        "touchmove",
+        ".cart-panel-header",
+        this.handleTouchMove.bind(this)
+      );
+      $(document).on(
+        "touchend",
+        ".cart-panel-header",
+        this.handleTouchEnd.bind(this)
+      );
+
+      // Mouse events for desktop testing
+      $(document).on(
+        "mousedown",
+        ".cart-panel-header",
+        this.handleMouseDown.bind(this)
+      );
+      $(document).on("mousemove", this.handleMouseMove.bind(this));
+      $(document).on("mouseup", this.handleMouseUp.bind(this));
+
+      // Handle window resize
+      $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
+    }
+
+    handleTouchStart(e) {
+      if (!this.isMobile || !this.isCartOpen()) return;
+
+      // Don't start drag if touching the close button
+      if (
+        $(e.target).hasClass("cart-close") ||
+        $(e.target).closest(".cart-close").length
+      ) {
+        return;
+      }
+
+      e.preventDefault();
+      this.startDragging(e.touches[0].clientY);
+    }
+
+    handleTouchMove(e) {
+      if (!this.isDragging || !this.isMobile) return;
+
+      e.preventDefault();
+      this.updateDrag(e.touches[0].clientY);
+    }
+
+    handleTouchEnd(e) {
+      if (!this.isDragging || !this.isMobile) return;
+
+      e.preventDefault();
+      this.endDrag();
+    }
+
+    handleMouseDown(e) {
+      if (this.isMobile || !this.isCartOpen()) return;
+
+      // Don't start drag if clicking the close button
+      if (
+        $(e.target).hasClass("cart-close") ||
+        $(e.target).closest(".cart-close").length
+      ) {
+        return;
+      }
+
+      e.preventDefault();
+      this.startDragging(e.clientY);
+    }
+
+    handleMouseMove(e) {
+      if (!this.isDragging || this.isMobile) return;
+
+      e.preventDefault();
+      this.updateDrag(e.clientY);
+    }
+
+    handleMouseUp(e) {
+      if (!this.isDragging || this.isMobile) return;
+
+      e.preventDefault();
+      this.endDrag();
+    }
+
+    startDragging(y) {
+      this.isDragging = true;
+      this.startY = y;
+      this.currentY = y;
+      this.startTime = Date.now();
+
+      const $panel = $(".cart-panel");
+      $panel.addClass("dragging");
+
+      // Get current transform value
+      const transform = $panel.css("transform");
+      if (transform && transform !== "none") {
+        const matrix = transform.match(/matrix.*\((.+)\)/);
+        if (matrix) {
+          this.startTransform = parseFloat(matrix[1].split(",")[5]) || 0;
+        }
+      }
+    }
+
+    updateDrag(y) {
+      if (!this.isDragging) return;
+
+      this.currentY = y;
+      const deltaY = y - this.startY;
+
+      // Only allow downward dragging (positive deltaY)
+      if (deltaY > 0) {
+        const $panel = $(".cart-panel");
+        const maxDrag = window.innerHeight * 0.6; // Allow dragging up to 60% of screen height
+        const translateY = Math.min(deltaY, maxDrag);
+
+        $panel.css("transform", `translateY(${translateY}px)`);
+
+        // Add visual feedback when dragging down
+        if (deltaY > 20) {
+          $panel.addClass("drag-down");
+        } else {
+          $panel.removeClass("drag-down");
+        }
+
+        // Add resistance effect - harder to drag as you get further
+        if (deltaY > 100) {
+          const resistance = 0.3; // Reduce movement by 70%
+          const resistedY = 100 + (deltaY - 100) * resistance;
+          $panel.css(
+            "transform",
+            `translateY(${Math.min(resistedY, maxDrag)}px)`
+          );
+        }
+      }
+    }
+
+    endDrag() {
+      if (!this.isDragging) return;
+
+      const $panel = $(".cart-panel");
+      const deltaY = this.currentY - this.startY;
+
+      $panel.removeClass("dragging drag-down");
+
+      // Determine if we should close the cart
+      // Use a dynamic threshold based on drag velocity and distance
+      const velocity = Math.abs(deltaY) / (Date.now() - this.startTime);
+      const dynamicThreshold = velocity > 0.5 ? 30 : this.threshold; // Lower threshold for fast swipes
+
+      if (deltaY > dynamicThreshold) {
+        // Close the cart with animation
+        $panel.css("transform", "translateY(100%)");
+        setTimeout(() => {
+          this.closeCart();
+        }, 300);
+      } else {
+        // Snap back to open position
+        $panel.css("transform", "translateY(0)");
+      }
+
+      this.isDragging = false;
+      this.startY = 0;
+      this.currentY = 0;
+      this.startTransform = 0;
+      this.startTime = 0;
+    }
+
+    isCartOpen() {
+      return $(".cart-wrap").hasClass("open");
+    }
+
+    closeCart() {
+      const { $wrap, $panel, $toggle } = getCartContext();
+      $wrap.removeClass("open").attr("data-open", "false");
+      $panel.attr("hidden", true);
+      $toggle.attr("aria-expanded", "false");
+
+      document.body.classList.remove("cart-open");
+      allowPageScroll();
+
+      // Reset cart panel state completely
+      $panel.removeClass("dragging drag-down");
+      $panel.css("transform", ""); // Remove any inline transform styles
+
+      // Reset form submission flag to allow new submissions
+      if (
+        window.ajaxAddToCartInstance &&
+        typeof window.ajaxAddToCartInstance.resetSubmissionFlag === "function"
+      ) {
+        window.ajaxAddToCartInstance.resetSubmissionFlag();
+      }
+    }
+
+    handleResize() {
+      const wasMobile = this.isMobile;
+      this.isMobile = window.matchMedia("(max-width: 1024px)").matches;
+
+      if (wasMobile !== this.isMobile) {
+        // Reset any ongoing drag when switching between mobile/desktop
+        if (this.isDragging) {
+          this.endDrag();
+        }
+      }
+    }
+
+    debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+  }
+
+  // Initialize mobile cart drawer
+  const mobileCartDrawer = new MobileCartDrawer();
+
   function openCart(clickedEl) {
     console.log("openCart called with:", clickedEl); // Debug log
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
@@ -114,6 +360,10 @@
       panel: $panel.length,
       toggle: $toggle.length,
     }); // Debug log
+
+    // Reset any drag states before opening
+    $panel.removeClass("dragging drag-down");
+    $panel.css("transform", ""); // Remove any inline transform styles
 
     $wrap.addClass("open").attr("data-open", "true");
     $panel.removeAttr("hidden");
@@ -224,6 +474,10 @@
     $toggle.attr("aria-expanded", "false");
 
     document.body.classList.remove("cart-open");
+
+    // Reset cart panel state completely
+    $panel.removeClass("dragging drag-down");
+    $panel.css("transform", ""); // Remove any inline transform styles
 
     // Re-enable page scrolling when cart is closed
     allowPageScroll();

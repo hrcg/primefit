@@ -94,6 +94,42 @@ function primefit_enqueue_assets() {
 				primefit_get_file_version( '/assets/css/checkout.css' )
 			);
 		}
+		
+		// Account page styles
+		if ( is_account_page() ) {
+			wp_enqueue_style( 
+				'primefit-account', 
+				PRIMEFIT_THEME_URI . '/assets/css/account.css', 
+				[ 'primefit-woocommerce' ], 
+				primefit_get_file_version( '/assets/css/account.css' )
+			);
+			
+			wp_enqueue_script( 
+				'primefit-account', 
+				PRIMEFIT_THEME_URI . '/assets/js/account.js', 
+				[ 'jquery' ], 
+				primefit_get_file_version( '/assets/js/account.js' ), 
+				true 
+			);
+		}
+		
+		// Payment summary styles
+		if ( is_account_page() || is_wc_endpoint_url( 'order-received' ) || is_wc_endpoint_url( 'payment-summary' ) ) {
+			wp_enqueue_style( 
+				'primefit-payment-summary', 
+				PRIMEFIT_THEME_URI . '/assets/css/payment-summary.css', 
+				[ 'primefit-account' ], 
+				primefit_get_file_version( '/assets/css/payment-summary.css' )
+			);
+			
+			wp_enqueue_script( 
+				'primefit-payment-summary', 
+				PRIMEFIT_THEME_URI . '/assets/js/payment-summary.js', 
+				[ 'jquery' ], 
+				primefit_get_file_version( '/assets/js/payment-summary.js' ), 
+				true 
+			);
+		}
 	}
 	
 	// Theme scripts
@@ -180,13 +216,37 @@ function primefit_enqueue_product_scripts() {
 		
 		// Checkout page specific scripts
 		if ( is_checkout() ) {
+			// Ensure WooCommerce scripts are loaded
+			wp_enqueue_script( 'woocommerce' );
+			wp_enqueue_script( 'wc-checkout' );
+			
 			wp_enqueue_script( 
 				'primefit-checkout', 
 				PRIMEFIT_THEME_URI . '/assets/js/checkout.js', 
-				[ 'jquery', 'wc-checkout' ], 
+				[ 'jquery', 'woocommerce', 'wc-checkout' ], 
 				primefit_get_file_version( '/assets/js/checkout.js' ), 
 				true 
 			);
+			
+			// Enqueue checkout AJAX fix (emergency fix for URL issues)
+			wp_enqueue_script( 
+				'primefit-checkout-ajax-fix', 
+				PRIMEFIT_THEME_URI . '/fix-checkout-ajax.js', 
+				[ 'jquery' ], 
+				time(), // Force reload
+				false // Load in head before other scripts
+			);
+			
+			// Enqueue checkout test script in development
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				wp_enqueue_script( 
+					'primefit-checkout-test', 
+					PRIMEFIT_THEME_URI . '/assets/js/checkout-test.js', 
+					[ 'jquery', 'primefit-checkout' ], 
+					primefit_get_file_version( '/assets/js/checkout-test.js' ), 
+					true 
+				);
+			}
 			
 			// Localize checkout script with shop URL and redirect flag
 			$should_redirect = get_transient( 'primefit_checkout_redirect_to_shop' );
@@ -194,7 +254,9 @@ function primefit_enqueue_product_scripts() {
 				delete_transient( 'primefit_checkout_redirect_to_shop' );
 			}
 			
-			wp_localize_script( 'primefit-checkout', 'wc_checkout_params', array(
+			// Don't override WooCommerce's checkout params - let WC handle it
+			// Only add our custom params that don't conflict
+			wp_localize_script( 'primefit-checkout', 'primefit_checkout_params', array(
 				'shop_url' => wc_get_page_permalink( 'shop' ),
 				'should_redirect' => $should_redirect,
 			) );

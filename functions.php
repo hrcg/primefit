@@ -21,6 +21,19 @@ define( 'PRIMEFIT_THEME_DIR', get_template_directory() );
 define( 'PRIMEFIT_THEME_URI', get_template_directory_uri() );
 
 /**
+ * Enable debug logging for AJAX troubleshooting
+ */
+if ( ! defined( 'WP_DEBUG' ) ) {
+	define( 'WP_DEBUG', true );
+}
+if ( ! defined( 'WP_DEBUG_LOG' ) ) {
+	define( 'WP_DEBUG_LOG', true );
+}
+if ( ! defined( 'WP_DEBUG_DISPLAY' ) ) {
+	define( 'WP_DEBUG_DISPLAY', false );
+}
+
+/**
  * Load theme includes
  */
 $includes = [
@@ -84,3 +97,13 @@ add_action( 'init', function() {
 		return $allowed_blocks;
 	}, 10, 2 );
 }, 5 );
+
+/**
+ * Elegant WooCommerce integration - let WC handle its own AJAX natively
+ * No forced interceptions needed
+ */
+
+/**
+ * Removed problematic AJAX output cleaning that was interfering with WooCommerce
+ * Let WooCommerce handle its own AJAX responses natively
+ */

@@ -1,6 +1,7 @@
 /**
- * PrimeFit Theme - Checkout JavaScript
- * Basic checkout functionality for WooCommerce
+ * PrimeFit Theme - Elegant Checkout JavaScript
+ * Works harmoniously with WooCommerce's native systems
+ * No forced interceptions - pure UI enhancements
  *
  * @package PrimeFit
  * @since 1.0.0
@@ -10,16 +11,33 @@
   "use strict";
 
   /**
-   * Basic Checkout Enhancement
+   * Elegant Checkout Enhancement
+   * Enhances UX without interfering with WooCommerce core functionality
    */
   const CheckoutManager = {
+    // State management to prevent race conditions
+    isInitialized: false,
+    isPaymentMethodsEnhanced: false,
+    initializationTimeout: null,
+    paymentMethodObserver: null,
+
     init: function () {
-      // Only add basic enhancements that don't interfere with WooCommerce
+      // Prevent multiple initializations
+      if (this.isInitialized) {
+        return;
+      }
+
+      // Initialize UI enhancements only
       this.improveFormUsability();
       this.initCouponToggle();
-      this.initCountryStateHandler();
       this.initSummaryToggle();
-      this.initCartRemovalHandler();
+      this.initHelpTooltips();
+
+      // Initialize payment methods with proper timing
+      this.initPaymentMethodEnhancements();
+
+      this.isInitialized = true;
+      console.log("✨ PrimeFit checkout enhancements loaded");
     },
 
     /**
@@ -52,14 +70,14 @@
     },
 
     /**
-     * Initialize coupon toggle functionality
+     * Initialize coupon toggle functionality - UI only
      */
     initCouponToggle: function () {
       const $couponToggle = $(".coupon-toggle");
       const $couponSection = $(".coupon-section");
 
       if ($couponToggle.length) {
-        // Create coupon form HTML
+        // Create coupon form HTML that integrates with WooCommerce
         const couponFormHTML = `
           <div class="coupon-form" style="display: none;">
             <div class="coupon-input-group">
@@ -87,13 +105,13 @@
           }
         });
 
-        // Handle coupon application
+        // Handle coupon application - delegate to WooCommerce
         $couponSection.on("click", ".coupon-apply-btn", function (e) {
           e.preventDefault();
           const couponCode = $couponSection.find(".coupon-input").val().trim();
 
           if (couponCode) {
-            CheckoutManager.applyCoupon(couponCode);
+            CheckoutManager.applyCouponElegantly(couponCode);
           }
         });
 
@@ -105,7 +123,7 @@
             const couponCode = $(this).val().trim();
 
             if (couponCode) {
-              CheckoutManager.applyCoupon(couponCode);
+              CheckoutManager.applyCouponElegantly(couponCode);
             }
           }
         });
@@ -113,9 +131,9 @@
     },
 
     /**
-     * Apply coupon code
+     * Apply coupon elegantly - work with WooCommerce's native system
      */
-    applyCoupon: function (couponCode) {
+    applyCouponElegantly: function (couponCode) {
       const $couponSection = $(".coupon-section");
       const $applyBtn = $couponSection.find(".coupon-apply-btn");
       const $input = $couponSection.find(".coupon-input");
@@ -123,71 +141,37 @@
       // Show loading state
       $applyBtn.text("Applying...").prop("disabled", true);
 
-      // Use WooCommerce AJAX to apply coupon
-      $.ajax({
-        type: "POST",
-        url: wc_checkout_params.ajax_url,
-        data: {
-          action: "woocommerce_apply_coupon",
-          security: wc_checkout_params.apply_coupon_nonce,
-          coupon_code: couponCode,
-        },
-        success: function (response) {
-          if (response.success) {
-            // Reload checkout to update totals
-            $("body").trigger("update_checkout");
-            $input.val(""); // Clear input
-          } else {
-            // Show error message
-            alert(response.data || "Invalid coupon code");
-          }
-        },
-        error: function () {
-          alert("Error applying coupon. Please try again.");
-        },
-        complete: function () {
-          $applyBtn.text("Apply").prop("disabled", false);
-        },
-      });
-    },
+      // Look for WooCommerce's native coupon form
+      let $wcCouponInput = $(
+        '.woocommerce-form-coupon input[name="coupon_code"]'
+      );
+      let $wcCouponBtn = $(
+        '.woocommerce-form-coupon button[name="apply_coupon"]'
+      );
 
-    /**
-     * Initialize country-state handler for dynamic state dropdown
-     */
-    initCountryStateHandler: function () {
-      const $countrySelect = $("#billing_country");
-      const $stateSelect = $("#billing_state");
+      // If WooCommerce coupon form exists, use it
+      if ($wcCouponInput.length && $wcCouponBtn.length) {
+        $wcCouponInput.val(couponCode);
+        $wcCouponBtn.trigger("click");
+      } else {
+        // Create a hidden WooCommerce-compatible form and submit it
+        const $hiddenForm = $(`
+          <form class="woocommerce-form-coupon" method="post" style="display: none;">
+            <input type="text" name="coupon_code" value="${couponCode}" />
+            <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
+          </form>
+        `);
 
-      if ($countrySelect.length && $stateSelect.length) {
-        $countrySelect.on("change", function () {
-          const countryCode = $(this).val();
-
-          // Clear current state options
-          $stateSelect.empty();
-          $stateSelect.append('<option value="">County</option>');
-
-          if (countryCode) {
-            // Use WooCommerce AJAX to get states for selected country
-            $.ajax({
-              type: "POST",
-              url: wc_checkout_params.ajax_url,
-              data: {
-                action: "woocommerce_get_states",
-                country: countryCode,
-              },
-              success: function (response) {
-                if (response && response.length > 0) {
-                  $.each(response, function (code, name) {
-                    $stateSelect.append(
-                      '<option value="' + code + '">' + name + "</option>"
-                    );
-                  });
-                }
-              },
-            });
-          }
-        });
+        $("body").append($hiddenForm);
+        $hiddenForm.submit();
+        $hiddenForm.remove();
       }
+
+      // Reset UI state
+      setTimeout(() => {
+        $applyBtn.text("Apply").prop("disabled", false);
+        $input.val("");
+      }, 2000);
     },
 
     /**
@@ -205,9 +189,8 @@
           $content.addClass("collapsed");
         }
 
-        // Toggle functionality - click anywhere on header
+        // Toggle functionality
         $header.on("click", function (e) {
-          // Prevent event bubbling if clicking the toggle button specifically
           if (
             $(e.target).hasClass("summary-toggle") ||
             $(e.target).closest(".summary-toggle").length
@@ -216,38 +199,28 @@
           }
 
           const $summaryContent = $(".summary-content");
-
-          // Toggle both ways - expand if collapsed, collapse if expanded
           $toggle.toggleClass("collapsed");
           $summaryContent.toggleClass("collapsed");
         });
 
-        // Toggle button functionality (for explicit toggle)
         $toggle.on("click", function (e) {
-          e.stopPropagation(); // Prevent header click
-          const $this = $(this);
+          e.stopPropagation();
           const $summaryContent = $(".summary-content");
-
-          $this.toggleClass("collapsed");
+          $(this).toggleClass("collapsed");
           $summaryContent.toggleClass("collapsed");
         });
 
         // Handle window resize
         $(window).on("resize", function () {
           if (window.innerWidth > 1024) {
-            // Desktop - always show content
             $toggle.removeClass("collapsed");
             $content.removeClass("collapsed");
+          } else if (
+            !$toggle.hasClass("collapsed") &&
+            !$content.hasClass("collapsed")
+          ) {
+            return;
           } else {
-            // Mobile - maintain current state or default to collapsed
-            if (
-              !$toggle.hasClass("collapsed") &&
-              !$content.hasClass("collapsed")
-            ) {
-              // If currently expanded, keep it expanded
-              return;
-            }
-            // Otherwise default to collapsed
             $toggle.addClass("collapsed");
             $content.addClass("collapsed");
           }
@@ -256,100 +229,285 @@
     },
 
     /**
-     * Initialize cart removal handler for checkout page
+     * Initialize payment method enhancements - UI only
      */
-    initCartRemovalHandler: function () {
-      // Check for server-side redirect flag on page load
-      if (
-        typeof wc_checkout_params !== "undefined" &&
-        wc_checkout_params.should_redirect
-      ) {
-        CheckoutManager.redirectToShop();
-        return;
-      }
+    initPaymentMethodEnhancements: function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods");
 
-      // Listen for WooCommerce cart removal events
-      $(document).on(
-        "removed_from_cart",
-        function (event, fragments, cart_hash, button) {
-          console.log("CART DEBUG: removed_from_cart event triggered");
-          CheckoutManager.checkCartAndRedirect();
+      if ($paymentMethods.length && !this.isPaymentMethodsEnhanced) {
+        // Clear any existing timeout
+        if (this.initializationTimeout) {
+          clearTimeout(this.initializationTimeout);
         }
-      );
 
-      // Listen for cart updates
-      $(document).on("updated_cart_totals", function () {
-        console.log("CART DEBUG: updated_cart_totals event triggered");
-        CheckoutManager.checkCartAndRedirect();
-      });
+        // Use a single, consistent delay
+        this.initializationTimeout = setTimeout(() => {
+          this.enhancePaymentMethodCards();
+          this.addPaymentMethodIcons();
+          this.addPaymentMethodBadges();
+          this.initPaymentMethodInteractions();
+          this.setupPaymentMethodObserver();
 
-      // Listen for checkout updates
-      $(document).on("updated_checkout", function () {
-        console.log("CART DEBUG: updated_checkout event triggered");
-        CheckoutManager.checkCartAndRedirect();
-      });
+          // Add enhanced class to show the styled payment methods
+          $paymentMethods.addClass("enhanced");
+          this.isPaymentMethodsEnhanced = true;
+        }, 150);
+      }
+    },
 
-      // Monitor all AJAX responses for cart-related actions
-      $(document).ajaxSuccess(function (event, xhr, settings) {
-        // Check if this is any cart-related request
-        if (
-          settings.data &&
-          (settings.data.indexOf("wc_ajax_remove_cart_item") !== -1 ||
-            settings.data.indexOf("remove_cart_item") !== -1 ||
-            settings.data.indexOf("update_cart") !== -1)
-        ) {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            if (response.success && response.data) {
-              // Check if cart is empty from response
+    /**
+     * Setup mutation observer to watch for changes to payment methods
+     */
+    setupPaymentMethodObserver: function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods");
+
+      if (
+        $paymentMethods.length &&
+        window.MutationObserver &&
+        !this.paymentMethodObserver
+      ) {
+        this.paymentMethodObserver = new MutationObserver((mutations) => {
+          let shouldReapply = false;
+
+          mutations.forEach((mutation) => {
+            if (
+              mutation.type === "childList" ||
+              mutation.type === "attributes"
+            ) {
+              // Check if payment method structure has changed
+              const $currentPaymentMethods = $(
+                ".woocommerce-checkout .payment_methods"
+              );
               if (
-                response.data.cart_is_empty ||
-                response.data.cart_contents_count === 0
+                $currentPaymentMethods.length &&
+                !$currentPaymentMethods.find(".payment_method").length
               ) {
-                console.log("CART DEBUG: Cart is empty from AJAX response");
-                CheckoutManager.redirectToShop(response.data.shop_url);
+                shouldReapply = true;
               }
             }
-          } catch (e) {
-            // Ignore JSON parse errors
+          });
+
+          if (shouldReapply && this.isPaymentMethodsEnhanced) {
+            // Reset the enhancement flag and reapply
+            this.isPaymentMethodsEnhanced = false;
+            const $currentPaymentMethods = $(
+              ".woocommerce-checkout .payment_methods"
+            );
+            $currentPaymentMethods.removeClass("enhanced");
+
+            setTimeout(() => {
+              this.enhancePaymentMethodCards();
+              this.addPaymentMethodIcons();
+              this.addPaymentMethodBadges();
+              $currentPaymentMethods.addClass("enhanced");
+              this.isPaymentMethodsEnhanced = true;
+            }, 100);
+          }
+        });
+
+        this.paymentMethodObserver.observe($paymentMethods[0], {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["class"],
+        });
+      }
+    },
+
+    /**
+     * Enhance payment method cards with better structure
+     */
+    enhancePaymentMethodCards: function () {
+      $(".woocommerce-checkout .payment_methods li").each(function () {
+        const $li = $(this);
+        const $label = $li.find("label");
+        const $radio = $li.find('input[type="radio"]');
+        const $paymentBox = $li.find(".payment_box");
+
+        // Only enhance if not already enhanced
+        if (!$li.find(".payment_method").length && $label.length) {
+          $li.wrapInner('<div class="payment_method"></div>');
+        }
+
+        // Only restructure if payment-method-content doesn't exist
+        if ($label.length && !$label.find(".payment-method-content").length) {
+          const labelText = $label.text().trim();
+          const $paymentContent = $(
+            '<div class="payment-method-content"></div>'
+          );
+
+          const parts = labelText.split(" - ");
+          const title = parts[0] || labelText;
+          const description = parts[1] || "";
+
+          $paymentContent.html(`
+            <div class="payment-method-title">${title}</div>
+            ${
+              description
+                ? `<div class="payment-method-description">${description}</div>`
+                : ""
+            }
+          `);
+
+          $paymentContent.css("position", "relative");
+
+          $label.empty();
+          $label.append($radio);
+          $label.append($paymentContent);
+
+          if ($paymentBox.length) {
+            $paymentBox.appendTo($li.find(".payment_method"));
           }
         }
       });
-
-      // Also check cart state periodically (fallback)
-      setInterval(function () {
-        CheckoutManager.checkCartAndRedirect();
-      }, 2000);
     },
 
     /**
-     * Check cart state and redirect if empty
+     * Add payment method icons
      */
-    checkCartAndRedirect: function () {
-      // Check if cart items exist in DOM
-      const cartItems = $(
-        ".order-item, .woocommerce-mini-cart__item, .cart_item"
+    addPaymentMethodIcons: function () {
+      $(".woocommerce-checkout .payment_methods li").each(function () {
+        const $li = $(this);
+        const $label = $li.find("label");
+        const title = $li.find(".payment-method-title").text().toLowerCase();
+
+        let iconClass = "payment-method-icon";
+        if (title.includes("cash") || title.includes("delivery")) {
+          iconClass += " cash";
+        } else if (
+          title.includes("card") ||
+          title.includes("credit") ||
+          title.includes("debit")
+        ) {
+          iconClass += " card";
+        } else if (title.includes("paypal")) {
+          iconClass += " paypal";
+        } else if (title.includes("apple")) {
+          iconClass += " apple-pay";
+        }
+
+        if (!$label.find(".payment-method-icon").length) {
+          const $icon = $(`<div class="${iconClass}">💳</div>`);
+          $label.prepend($icon);
+        }
+      });
+    },
+
+    /**
+     * Add payment method badges
+     */
+    addPaymentMethodBadges: function () {
+      $(".woocommerce-checkout .payment_methods li").each(function () {
+        const $li = $(this);
+        const $paymentMethod = $li.find(".payment_method");
+        const title = $li.find(".payment-method-title").text().toLowerCase();
+
+        if (title.includes("cash") || title.includes("delivery")) {
+          if (!$paymentMethod.find(".payment-method-badge").length) {
+            $paymentMethod.append(
+              '<div class="payment-method-badge recommended">Recommended</div>'
+            );
+          }
+        } else if (
+          title.includes("card") ||
+          title.includes("credit") ||
+          title.includes("debit")
+        ) {
+          if (!$paymentMethod.find(".payment-method-badge").length) {
+            $paymentMethod.append(
+              '<div class="payment-method-badge secure">Secure</div>'
+            );
+          }
+        }
+      });
+    },
+
+    /**
+     * Initialize payment method interactions
+     */
+    initPaymentMethodInteractions: function () {
+      $(".woocommerce-checkout .payment_methods li").on("click", function (e) {
+        const $li = $(this);
+        const $radio = $li.find('input[type="radio"]');
+
+        if (!$(e.target).is('input[type="radio"]')) {
+          $radio.prop("checked", true).trigger("change");
+        }
+      });
+
+      $(".woocommerce-checkout .payment_methods input[type='radio']").on(
+        "change",
+        function () {
+          const $radio = $(this);
+          const $li = $radio.closest("li");
+          const $paymentMethod = $li.find(".payment_method");
+
+          $(
+            ".woocommerce-checkout .payment_methods .payment_method"
+          ).removeClass("selected");
+
+          if ($radio.is(":checked")) {
+            $paymentMethod.addClass("selected");
+          }
+        }
       );
-      if (cartItems.length === 0) {
-        console.log(
-          "CART DEBUG: No cart items found in DOM, redirecting to shop"
-        );
-        CheckoutManager.redirectToShop();
+
+      // Auto-select the first payment method
+      const $firstPaymentMethod = $(
+        ".woocommerce-checkout .payment_methods input[type='radio']"
+      ).first();
+      if ($firstPaymentMethod.length && !$firstPaymentMethod.is(":checked")) {
+        $firstPaymentMethod.prop("checked", true).trigger("change");
       }
+
+      $(
+        ".woocommerce-checkout .payment_methods input[type='radio']:checked"
+      ).trigger("change");
     },
 
     /**
-     * Redirect to shop page
+     * Initialize help tooltip functionality
      */
-    redirectToShop: function (shopUrl) {
-      const url =
-        shopUrl ||
-        (typeof wc_checkout_params !== "undefined"
-          ? wc_checkout_params.shop_url
-          : "/shop/");
+    initHelpTooltips: function () {
+      $(".help-icon-inside").each(function () {
+        const $helpIcon = $(this);
 
-      // Redirect immediately
-      window.location.href = url;
+        $helpIcon.on("click", function (e) {
+          e.preventDefault();
+
+          if ($(window).width() <= 768) {
+            $helpIcon.toggleClass("mobile-tooltip-active");
+          }
+        });
+
+        $(document).on("click", function (e) {
+          if (!$(e.target).closest(".help-icon-inside").length) {
+            $helpIcon.removeClass("mobile-tooltip-active");
+          }
+        });
+      });
+
+      $(window).on("resize", function () {
+        $(".help-icon-inside").removeClass("mobile-tooltip-active");
+      });
+    },
+
+    /**
+     * Cleanup method to dispose of observers and timeouts
+     */
+    cleanup: function () {
+      if (this.initializationTimeout) {
+        clearTimeout(this.initializationTimeout);
+        this.initializationTimeout = null;
+      }
+
+      if (this.paymentMethodObserver) {
+        this.paymentMethodObserver.disconnect();
+        this.paymentMethodObserver = null;
+      }
+
+      this.isInitialized = false;
+      this.isPaymentMethodsEnhanced = false;
     },
   };
 
@@ -360,6 +518,34 @@
     // Only initialize on checkout page
     if ($("body").hasClass("woocommerce-checkout")) {
       CheckoutManager.init();
+
+      // Handle WooCommerce checkout updates - only reapply if needed
+      $(document.body).on("updated_checkout", function () {
+        // Only reinitialize if payment methods were reset
+        const $paymentMethods = $(".woocommerce-checkout .payment_methods");
+        if (
+          $paymentMethods.length &&
+          !$paymentMethods.find(".payment_method").length
+        ) {
+          $paymentMethods.removeClass("enhanced");
+          CheckoutManager.isPaymentMethodsEnhanced = false;
+          CheckoutManager.initPaymentMethodEnhancements();
+        }
+      });
+
+      // Handle WooCommerce fragments refresh - only reapply if needed
+      $(document.body).on("wc_fragments_refreshed", function () {
+        // Only reinitialize if payment methods were reset
+        const $paymentMethods = $(".woocommerce-checkout .payment_methods");
+        if (
+          $paymentMethods.length &&
+          !$paymentMethods.find(".payment_method").length
+        ) {
+          $paymentMethods.removeClass("enhanced");
+          CheckoutManager.isPaymentMethodsEnhanced = false;
+          CheckoutManager.initPaymentMethodEnhancements();
+        }
+      });
     }
   });
 
