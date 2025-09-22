@@ -2,9 +2,12 @@
   "use strict";
 
   // Prevent accidental re-adding product on refresh when URL has add-to-cart params
+  // and handle URL coupon detection
   $(function () {
     try {
       var url = new URL(window.location.href);
+
+      // Handle add-to-cart URL cleanup
       if (
         url.searchParams.has("add-to-cart") ||
         url.searchParams.has("added-to-cart")
@@ -24,10 +27,211 @@
           window.history.replaceState({}, "", newUrl);
         }
       }
+
+      // Handle URL coupon detection and application
+      if (url.searchParams.has("coupon")) {
+        var couponCode = url.searchParams.get("coupon");
+
+        if (couponCode && couponCode.trim()) {
+          console.log("🎫 Found coupon in URL:", couponCode);
+
+          // Check if we're on checkout page - let checkout.js handle it
+          if (isCheckoutPage) {
+            console.log("Checkout page detected - letting checkout.js handle coupon");
+            return;
+          }
+
+          // Check if coupon is already applied
+          var appliedCoupons = getAppliedCoupons();
+          if (appliedCoupons.includes(couponCode.toUpperCase())) {
+            console.log("✅ Coupon " + couponCode + " is already applied");
+            return;
+          }
+
+          // Apply the coupon with a slight delay to ensure DOM is ready
+          setTimeout(function() {
+            applyCouponFromUrl(couponCode.trim());
+          }, 500);
+        }
+      } else {
+        // Check for pending coupon from session (base URL case)
+        checkForPendingCouponFromSession();
+      }
     } catch (e) {
       // Ignore if URL API not available
     }
   });
+
+  // Function to get currently applied coupons
+  function getAppliedCoupons() {
+    var appliedCoupons = [];
+
+    // Check WooCommerce's applied coupons
+    if (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.applied_coupons) {
+      appliedCoupons.push.apply(appliedCoupons, wc_add_to_cart_params.applied_coupons);
+    }
+
+    // Also check from cart data if available
+    if (window.wc_cart_fragments_params && window.wc_cart_fragments_params.cart_hash) {
+      // Try to get from any visible coupon displays
+      jQuery('.applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code').each(function() {
+        var code = jQuery(this).text().trim();
+        if (code && appliedCoupons.indexOf(code) === -1) {
+          appliedCoupons.push(code);
+        }
+      });
+    }
+
+    return appliedCoupons.map(function(code) { return code.toUpperCase(); });
+  }
+
+  // Function to apply coupon from URL parameter
+  function applyCouponFromUrl(couponCode) {
+    console.log("🚀 Applying coupon from URL:", couponCode);
+
+    // Show loading state if mini cart coupon form exists
+    var $couponForm = jQuery(".mini-cart-coupon-form");
+    if ($couponForm.length) {
+      var $input = $couponForm.find(".coupon-code-input");
+      var $button = $couponForm.find(".apply-coupon-btn");
+
+      if ($input.length && $button.length) {
+        $input.val("Loading...");
+        $button.addClass("loading").prop("disabled", true).text("Applying...");
+      }
+    }
+
+    // Apply coupon via AJAX using existing handler
+    jQuery.ajax({
+      type: "POST",
+      url: window.primefit_cart_params ? window.primefit_cart_params.ajax_url : "/wp-admin/admin-ajax.php",
+      data: {
+        action: "apply_coupon",
+        security: window.primefit_cart_params ? window.primefit_cart_params.apply_coupon_nonce : "",
+        coupon_code: couponCode,
+      },
+      success: function (response) {
+        if (response.success) {
+          console.log("✅ Coupon applied successfully from URL");
+
+          // Clear loading state
+          if ($couponForm.length) {
+            $input.val("");
+            $button.removeClass("loading").prop("disabled", false).text("APPLY");
+          }
+
+          // Refresh cart fragments
+          jQuery(document.body).trigger("update_checkout");
+          jQuery(document.body).trigger("wc_fragment_refresh");
+
+          // Show success message
+          if ($couponForm.length) {
+            $couponForm.after(
+              '<div class="coupon-message success">Coupon applied successfully!</div>'
+            );
+
+            setTimeout(function () {
+              jQuery(".coupon-message").fadeOut();
+            }, 3000);
+          }
+        } else {
+          console.log("❌ Failed to apply coupon from URL:", response.data);
+
+          // Clear loading state
+          if ($couponForm.length) {
+            $input.val("");
+            $button.removeClass("loading").prop("disabled", false).text("APPLY");
+
+            // Show error message
+            var errorMsg = response.data || "Failed to apply coupon";
+            $couponForm.after(
+              '<div class="coupon-message error">' + errorMsg + "</div>"
+            );
+
+            setTimeout(function () {
+              jQuery(".coupon-message").fadeOut();
+            }, 5000);
+          }
+        }
+      },
+      error: function () {
+        console.log("❌ Network error applying coupon from URL");
+
+        if ($couponForm.length) {
+          $input.val("");
+          $button.removeClass("loading").prop("disabled", false).text("APPLY");
+
+          $couponForm.after(
+            '<div class="coupon-message error">Network error. Please try again.</div>'
+          );
+
+          setTimeout(function () {
+            jQuery(".coupon-message").fadeOut();
+          }, 5000);
+        }
+      },
+      complete: function () {
+        // Clean URL after application attempt
+        cleanUrlAfterCouponApplication(couponCode);
+      }
+    });
+  }
+
+  // Function to check for pending coupon from session
+  function checkForPendingCouponFromSession() {
+    // Check for pending coupon data from cart fragments (hidden element)
+    var $couponData = jQuery('.primefit-coupon-data');
+    if ($couponData.length) {
+      var pendingCoupon = $couponData.data('pending-coupon');
+      if (pendingCoupon && pendingCoupon.trim()) {
+        console.log("🎫 Found pending coupon from session:", pendingCoupon);
+
+        // Check if coupon is already applied
+        var appliedCoupons = getAppliedCoupons();
+        if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
+          console.log("✅ Pending coupon " + pendingCoupon + " is already applied");
+          return;
+        }
+
+        // Apply the pending coupon with additional safety check
+        setTimeout(function() {
+          // Double-check that WooCommerce is loaded before applying
+          if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-mini-cart').length) {
+            applyCouponFromUrl(pendingCoupon.trim());
+          } else {
+            console.log("⏳ Waiting for WooCommerce to load before applying session coupon");
+            // Try again after another delay
+            setTimeout(function() {
+              if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-mini-cart').length) {
+                applyCouponFromUrl(pendingCoupon.trim());
+              } else {
+                console.log("❌ WooCommerce not loaded, cannot apply session coupon:", pendingCoupon);
+              }
+            }, 2000);
+          }
+        }, 1000); // Slightly longer delay for session-based coupons
+      }
+    }
+  }
+
+  // Function to clean URL after coupon application attempt
+  function cleanUrlAfterCouponApplication(couponCode) {
+    setTimeout(function() {
+      try {
+        if (window.history && window.history.replaceState) {
+          var url = new URL(window.location);
+          url.searchParams.delete('coupon');
+
+          // Only update if there are other parameters or if this is the only parameter
+          if (url.searchParams.toString() || url.search === '?coupon=' + encodeURIComponent(couponCode)) {
+            window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+          }
+        }
+      } catch (e) {
+        // Ignore URL manipulation errors
+      }
+    }, 3000);
+  }
 
   // Scroll prevention utilities
   let scrollPosition = 0;

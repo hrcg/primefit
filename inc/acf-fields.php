@@ -19,9 +19,60 @@ if ( ! function_exists( 'acf_add_local_field_group' ) ) {
 }
 
 /**
+ * Get color options from WooCommerce product variations
+ */
+function primefit_get_product_color_choices( $product_id ) {
+	$product = wc_get_product( $product_id );
+	if ( ! $product || ! $product->is_type( 'variable' ) ) {
+		return array();
+	}
+
+	$colors = array();
+	$variations = $product->get_available_variations();
+
+	foreach ( $variations as $variation ) {
+		$attributes = $variation['attributes'];
+
+		// Look for color attributes
+		foreach ( $attributes as $attribute_name => $attribute_value ) {
+			if ( stripos( $attribute_name, 'color' ) !== false && ! empty( $attribute_value ) ) {
+				// Clean up the color value for display
+				$color_name = ucwords( str_replace( array( 'attribute_', 'pa_' ), '', $attribute_value ) );
+				// Use normalized color value as key for consistent matching
+				$normalized_color = strtolower( trim( $attribute_value ) );
+				$colors[ $normalized_color ] = $color_name;
+			}
+		}
+	}
+
+	return $colors;
+}
+
+/**
+ * Filter ACF field choices to populate color options from variations
+ */
+add_filter( 'acf/load_field/key=field_variation_color', 'primefit_populate_color_choices' );
+function primefit_populate_color_choices( $field ) {
+	// Get the current product ID from the post context
+	$product_id = get_the_ID();
+
+	if ( $product_id ) {
+		$color_choices = primefit_get_product_color_choices( $product_id );
+		$field['choices'] = $color_choices;
+	}
+
+	return $field;
+}
+
+/**
  * Register ACF field groups for WooCommerce products
  */
 add_action( 'acf/init', 'primefit_register_acf_product_fields' );
+
+/**
+ * Register ACF field groups for WooCommerce coupons
+ */
+add_action( 'acf/init', 'primefit_register_acf_coupon_fields' );
 function primefit_register_acf_product_fields() {
 	
 	/**
@@ -304,6 +355,96 @@ function primefit_register_acf_product_fields() {
 		'description' => 'Product information sections',
 	));
 
+	/**
+	 * Variation Gallery Field Group
+	 */
+	acf_add_local_field_group( array(
+		'key' => 'group_variation_gallery',
+		'title' => 'Variation Gallery Images',
+		'fields' => array(
+			array(
+				'key' => 'field_variation_gallery',
+				'label' => 'Variation Gallery Images',
+				'name' => 'variation_gallery',
+				'type' => 'repeater',
+				'instructions' => 'Add gallery images for different product variations (color combinations)',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'collapsed' => 'field_variation_color',
+				'min' => 0,
+				'max' => 0,
+				'layout' => 'table',
+				'button_label' => 'Add Variation Gallery',
+				'sub_fields' => array(
+					array(
+						'key' => 'field_variation_color',
+						'label' => 'Color',
+						'name' => 'color',
+						'type' => 'select',
+						'instructions' => 'Select a color from your product variations',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '30',
+							'class' => '',
+							'id' => '',
+						),
+						'choices' => array(),
+						'default_value' => '',
+						'allow_null' => 0,
+						'multiple' => 0,
+						'ui' => 0,
+						'return_format' => 'value',
+						'ajax' => 0,
+						'placeholder' => 'Select Color',
+					),
+					array(
+						'key' => 'field_variation_images',
+						'label' => 'Gallery Images',
+						'name' => 'images',
+						'type' => 'gallery',
+						'instructions' => 'Select images for this color variation gallery',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '70',
+							'class' => '',
+							'id' => '',
+						),
+						'return_format' => 'id',
+						'preview_size' => 'thumbnail',
+						'insert' => 'append',
+						'library' => 'all',
+						'min' => 1,
+						'max' => 10,
+					),
+				),
+			),
+		),
+		'location' => array(
+			array(
+				array(
+					'param' => 'post_type',
+					'operator' => '==',
+					'value' => 'product',
+				),
+			),
+		),
+		'menu_order' => 3,
+		'position' => 'normal',
+		'style' => 'default',
+		'label_placement' => 'top',
+		'instruction_placement' => 'label',
+		'hide_on_screen' => '',
+		'active' => true,
+		'description' => 'Gallery images for different color variations',
+	));
+
 }
 
 /**
@@ -379,6 +520,120 @@ function primefit_get_technical_highlights( $product_id = null ) {
 }
 
 /**
+ * Helper function to get variation gallery images
+ */
+function primefit_get_variation_gallery( $product_id = null, $color = null ) {
+	if ( ! $product_id ) {
+		global $product;
+		$product_id = $product ? $product->get_id() : get_the_ID();
+	}
+
+	// Try ACF variation gallery field first
+	$variation_galleries = get_field( 'variation_gallery', $product_id );
+
+	if ( empty( $variation_galleries ) ) {
+		return array();
+	}
+
+	// If no specific color requested, return empty array to use default gallery
+	if ( empty( $color ) ) {
+		return array();
+	}
+
+	// Find gallery for specific color
+	$normalized_color = strtolower( trim( $color ) );
+	foreach ( $variation_galleries as $gallery ) {
+		if ( ! empty( $gallery['color'] ) && strtolower( trim( $gallery['color'] ) ) === $normalized_color ) {
+			return ! empty( $gallery['images'] ) ? $gallery['images'] : array();
+		}
+	}
+
+	// If specific color not found, return first gallery as fallback
+	return ! empty( $variation_galleries[0]['images'] ) ? $variation_galleries[0]['images'] : array();
+}
+
+/**
+ * Helper function to get all variation galleries
+ */
+function primefit_get_all_variation_galleries( $product_id = null ) {
+	if ( ! $product_id ) {
+		global $product;
+		$product_id = $product ? $product->get_id() : get_the_ID();
+	}
+
+	$variation_galleries = get_field( 'variation_gallery', $product_id );
+
+	if ( empty( $variation_galleries ) ) {
+		return array();
+	}
+
+	$galleries = array();
+	foreach ( $variation_galleries as $gallery ) {
+		if ( ! empty( $gallery['color'] ) && ! empty( $gallery['images'] ) ) {
+			$galleries[ $gallery['color'] ] = $gallery['images'];
+		}
+	}
+
+	return $galleries;
+}
+
+/**
+ * Helper function to get variation gallery data with color matching
+ */
+function primefit_get_variation_gallery_data( $product_id = null ) {
+	if ( ! $product_id ) {
+		global $product;
+		$product_id = $product ? $product->get_id() : get_the_ID();
+	}
+
+	$variation_galleries = get_field( 'variation_gallery', $product_id );
+
+	if ( empty( $variation_galleries ) ) {
+		return array();
+	}
+
+	$gallery_data = array();
+	foreach ( $variation_galleries as $gallery ) {
+		if ( ! empty( $gallery['color'] ) && ! empty( $gallery['images'] ) ) {
+			// Use normalized color value as key for consistent matching
+			$color_key = strtolower( trim( $gallery['color'] ) );
+			$gallery_data[ $color_key ] = array(
+				'images' => $gallery['images'],
+				'count' => count( $gallery['images'] )
+			);
+		}
+	}
+
+	return $gallery_data;
+}
+
+/**
+ * Helper function to get available colors from product variations
+ */
+function primefit_get_product_colors( $product_id = null ) {
+	if ( ! $product_id ) {
+		global $product;
+		$product_id = $product ? $product->get_id() : get_the_ID();
+	}
+
+	$color_choices = primefit_get_product_color_choices( $product_id );
+	return array_keys( $color_choices );
+}
+
+/**
+ * Helper function to check if a product has variation galleries configured
+ */
+function primefit_has_variation_galleries( $product_id = null ) {
+	if ( ! $product_id ) {
+		global $product;
+		$product_id = $product ? $product->get_id() : get_the_ID();
+	}
+
+	$variation_galleries = get_field( 'variation_gallery', $product_id );
+	return ! empty( $variation_galleries );
+}
+
+/**
  * Helper function to get product description with fallbacks
  */
 function primefit_get_product_description( $product_id = null ) {
@@ -399,4 +654,275 @@ function primefit_get_product_description( $product_id = null ) {
 	}
 	
 	return $description;
+}
+
+/**
+ * Register ACF field groups for WooCommerce coupons
+ */
+function primefit_register_acf_coupon_fields() {
+
+	/**
+	 * Coupon Email Association Field Group
+	 */
+	acf_add_local_field_group( array(
+		'key' => 'group_coupon_emails',
+		'title' => 'Coupon Email Management',
+		'fields' => array(
+			array(
+				'key' => 'field_associated_emails',
+				'label' => 'Associated Email Addresses',
+				'name' => 'associated_emails',
+				'type' => 'repeater',
+				'instructions' => 'Add email addresses that can use this coupon code. Leave empty to allow any email.',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'collapsed' => 'field_email_address',
+				'min' => 0,
+				'max' => 0,
+				'layout' => 'table',
+				'button_label' => 'Add Email',
+				'sub_fields' => array(
+					array(
+						'key' => 'field_email_address',
+						'label' => 'Email Address',
+						'name' => 'email',
+						'type' => 'email',
+						'instructions' => 'Enter the email address allowed to use this coupon',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '60',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => 'customer@example.com',
+					),
+					array(
+						'key' => 'field_email_notes',
+						'label' => 'Notes',
+						'name' => 'notes',
+						'type' => 'text',
+						'instructions' => 'Optional notes about this email association',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array(
+							'width' => '40',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => 'VIP customer, newsletter subscriber, etc.',
+						'maxlength' => 100,
+					),
+				),
+			),
+			array(
+				'key' => 'field_email_restrictions',
+				'label' => 'Email Usage Restrictions',
+				'name' => 'email_restrictions',
+				'type' => 'select',
+				'instructions' => 'Choose how to handle emails not in the associated list',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'choices' => array(
+					'allow_all' => 'Allow any email address',
+					'restrict_list' => 'Only allow emails in the associated list',
+					'require_verification' => 'Require email verification for new addresses',
+				),
+				'default_value' => 'allow_all',
+				'allow_null' => 0,
+				'multiple' => 0,
+				'ui' => 0,
+				'return_format' => 'value',
+				'ajax' => 0,
+				'placeholder' => '',
+			),
+			array(
+				'key' => 'field_usage_notifications',
+				'label' => 'Usage Notifications',
+				'name' => 'usage_notifications',
+				'type' => 'true_false',
+				'instructions' => 'Send email notifications when this coupon is used',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'message' => 'Enable usage notifications',
+				'default_value' => 0,
+				'ui' => 1,
+				'ui_on_text' => 'Enabled',
+				'ui_off_text' => 'Disabled',
+			),
+			array(
+				'key' => 'field_notification_emails',
+				'label' => 'Notification Recipients',
+				'name' => 'notification_emails',
+				'type' => 'textarea',
+				'instructions' => 'Email addresses to receive usage notifications (one per line)',
+				'required' => 0,
+				'conditional_logic' => array(
+					array(
+						array(
+							'field' => 'field_usage_notifications',
+							'operator' => '==',
+							'value' => '1',
+						),
+					),
+				),
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'default_value' => get_option( 'admin_email' ),
+				'placeholder' => "admin@yourstore.com\nmanager@yourstore.com",
+				'maxlength' => '',
+				'rows' => 3,
+				'new_lines' => '',
+			),
+		),
+		'location' => array(
+			array(
+				array(
+					'param' => 'post_type',
+					'operator' => '==',
+					'value' => 'shop_coupon',
+				),
+			),
+		),
+		'menu_order' => 0,
+		'position' => 'normal',
+		'style' => 'default',
+		'label_placement' => 'top',
+		'instruction_placement' => 'label',
+		'hide_on_screen' => '',
+		'active' => true,
+		'description' => 'Email association and notification settings for coupons',
+	));
+
+	/**
+	 * Coupon Analytics Field Group
+	 */
+	acf_add_local_field_group( array(
+		'key' => 'group_coupon_analytics',
+		'title' => 'Coupon Analytics',
+		'fields' => array(
+			array(
+				'key' => 'field_enable_analytics',
+				'label' => 'Enable Advanced Analytics',
+				'name' => 'enable_analytics',
+				'type' => 'true_false',
+				'instructions' => 'Track detailed usage analytics for this coupon',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'message' => 'Enable detailed analytics tracking',
+				'default_value' => 1,
+				'ui' => 1,
+				'ui_on_text' => 'Enabled',
+				'ui_off_text' => 'Disabled',
+			),
+			array(
+				'key' => 'field_analytics_goal',
+				'label' => 'Usage Goal',
+				'name' => 'analytics_goal',
+				'type' => 'number',
+				'instructions' => 'Target number of uses for this coupon',
+				'required' => 0,
+				'conditional_logic' => array(
+					array(
+						array(
+							'field' => 'field_enable_analytics',
+							'operator' => '==',
+							'value' => '1',
+						),
+					),
+				),
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'default_value' => '',
+				'placeholder' => '100',
+				'min' => 1,
+				'max' => '',
+				'step' => 1,
+			),
+			array(
+				'key' => 'field_target_audience',
+				'label' => 'Target Audience',
+				'name' => 'target_audience',
+				'type' => 'textarea',
+				'instructions' => 'Describe the target audience for this coupon campaign',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'default_value' => '',
+				'placeholder' => 'Newsletter subscribers, first-time customers, VIP members, etc.',
+				'maxlength' => '',
+				'rows' => 3,
+				'new_lines' => '',
+			),
+			array(
+				'key' => 'field_campaign_notes',
+				'label' => 'Campaign Notes',
+				'name' => 'campaign_notes',
+				'type' => 'wysiwyg',
+				'instructions' => 'Additional notes about this coupon campaign',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'default_value' => '',
+				'tabs' => 'all',
+				'toolbar' => 'basic',
+				'media_upload' => 0,
+				'delay' => 1,
+			),
+		),
+		'location' => array(
+			array(
+				array(
+					'param' => 'post_type',
+					'operator' => '==',
+					'value' => 'shop_coupon',
+				),
+			),
+		),
+		'menu_order' => 1,
+		'position' => 'normal',
+		'style' => 'default',
+		'label_placement' => 'top',
+		'instruction_placement' => 'label',
+		'hide_on_screen' => '',
+		'active' => true,
+		'description' => 'Advanced analytics and campaign tracking for coupons',
+	));
+
 }

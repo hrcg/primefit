@@ -440,15 +440,14 @@
       $option.addClass("active");
 
       const color = $option.data("color");
-      const variationImage = $option.data("variation-image");
 
-      // Update product color display
-      $(".color-value").text(color);
+      // Update product color display - use display name if available
+      const $colorOption = $(`.color-option[data-color="${color}"]`);
+      const displayColor = $colorOption.data("color-display") || color;
+      $(".color-value").text(displayColor);
 
-      // Update gallery image if variation image exists
-      if (variationImage) {
-        this.updateGalleryImage(variationImage);
-      }
+      // Update gallery - switch to variation-specific gallery if available
+      this.updateGalleryForColor(color);
 
       // Update available sizes from variation stock for this color
       const sizesForColor = this.getAvailableSizesForColor(color);
@@ -467,13 +466,13 @@
       const color = $option.data("color");
       const variationImage = $option.data("variation-image");
 
-      // Update product color display
-      $(".color-value").text(color);
+      // Update product color display - use display name if available
+      const $colorOption = $(`.color-option[data-color="${color}"]`);
+      const displayColor = $colorOption.data("color-display") || color;
+      $(".color-value").text(displayColor);
 
-      // Update gallery image if variation image exists
-      if (variationImage) {
-        this.updateGalleryImage(variationImage);
-      }
+      // Update gallery - switch to variation-specific gallery if available
+      this.updateGalleryForColor(color);
 
       // Update sizes based on actual stock for selected color
       const sizesForColor = this.getAvailableSizesForColor(color);
@@ -491,6 +490,24 @@
       // Update add to cart button
       this.updateAddToCartButton();
       // No auto add
+    }
+
+    updateGalleryForColor(color) {
+      // Check if we have variation galleries available
+      if (window.primefitProductData && window.primefitProductData.variationGalleries && window.primefitProductData.variationGalleries[color]) {
+        // Switch to variation-specific gallery
+        if (window.switchProductGallery) {
+          window.switchProductGallery(color);
+        }
+      } else {
+        // Fallback to updating main image with variation image
+        const $colorOption = $(`.color-option[data-color="${color}"]`);
+        const variationImage = $colorOption.data("variation-image");
+
+        if (variationImage) {
+          this.updateGalleryImage(variationImage);
+        }
+      }
     }
 
     updateGalleryImage(imageUrl) {

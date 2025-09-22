@@ -129,7 +129,7 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 					$color_value = '';
 					foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
 						if ( stripos( $attr_name, 'color' ) !== false ) {
-							$color_value = $attr_value;
+							$color_value = strtolower( trim( $attr_value ) );
 							break;
 						}
 					}
@@ -140,14 +140,21 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 				
 				// Determine which color should be active (default or first)
 				$default_color_index = 0;
-				if ( $default_color && in_array( $default_color, $color_options ) ) {
-					$default_color_index = array_search( $default_color, $color_options );
+				$normalized_default_color = $default_color ? strtolower( trim( $default_color ) ) : '';
+				if ( $normalized_default_color && in_array( $normalized_default_color, $color_options ) ) {
+					$default_color_index = array_search( $normalized_default_color, $color_options );
 				}
 				
 				foreach ( $color_options as $index => $color_option ) :
 					$color_name = wc_attribute_label( $color_option );
 					$color_slug = sanitize_title( $color_option );
 					$is_default_color = ( $index === $default_color_index );
+
+					// Debug logging for color matching
+					if ( $index === 0 ) { // Only log for first color to avoid spam
+						echo "<!-- Debug: Color option: " . esc_html( $color_option ) . " -->";
+						error_log('Product Color Options Debug: ' . print_r($color_options, true));
+					}
 					
 					// Try to get variation image for this color
 					$variation_image = '';
@@ -195,12 +202,13 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 					
 
 				?>
-					<button 
+					<button
 						class="color-option <?php echo $is_default_color ? 'active' : ''; ?>"
 						data-color="<?php echo esc_attr( $color_option ); ?>"
 						data-variation-image="<?php echo esc_attr( $variation_image ); ?>"
 						data-variation-id="<?php echo esc_attr( $variation_id ); ?>"
 						data-available-sizes="<?php echo esc_attr( json_encode( $available_sizes ) ); ?>"
+						data-color-display="<?php echo esc_attr( $color_name ); ?>"
 						aria-label="<?php printf( esc_attr__( 'Select color %s', 'primefit' ), $color_name ); ?>"
 					>
 						<?php if ( $variation_image ) : ?>
@@ -460,6 +468,7 @@ window.primefitProductData = {
 	productId: <?php echo absint( $product->get_id() ); ?>,
 	defaultColor: <?php echo json_encode( $default_color ); ?>,
 	defaultSize: <?php echo json_encode( $default_size ); ?>,
+	variationGalleries: <?php echo json_encode( primefit_get_variation_gallery_data( $product->get_id() ) ); ?>,
 	debugInfo: {
 		defaultAttributes: <?php echo json_encode( $default_attributes ); ?>,
 		colorOptions: <?php echo json_encode( $color_options ?? array() ); ?>,

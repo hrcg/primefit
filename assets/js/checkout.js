@@ -27,6 +27,9 @@
         return;
       }
 
+      // Check for coupon in URL parameter first
+      this.checkUrlCoupon();
+
       // Initialize UI enhancements only
       this.improveFormUsability();
       this.initCouponToggle();
@@ -38,6 +41,165 @@
 
       this.isInitialized = true;
       console.log("✨ PrimeFit checkout enhancements loaded");
+    },
+
+    /**
+     * Check for coupon in URL parameter and apply it automatically
+     */
+    checkUrlCoupon: function () {
+      // Get URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const couponCode = urlParams.get('coupon');
+
+      if (couponCode && couponCode.trim()) {
+        console.log(`🎫 Found coupon in URL: ${couponCode}`);
+
+        // Check if coupon is already applied
+        const appliedCoupons = this.getAppliedCoupons();
+        if (appliedCoupons.includes(couponCode.toUpperCase())) {
+          console.log(`✅ Coupon ${couponCode} is already applied`);
+          return;
+        }
+
+        // Apply the coupon with a slight delay to ensure DOM is ready
+        setTimeout(() => {
+          this.applyCouponFromUrl(couponCode.trim());
+        }, 500);
+      } else {
+        // Check for pending coupon from session (base URL case)
+        this.checkForPendingCouponFromSession();
+      }
+    },
+
+    /**
+     * Check for pending coupon from session
+     */
+    checkForPendingCouponFromSession: function () {
+      // Check for pending coupon data from cart fragments (hidden element)
+      const $couponData = jQuery('.primefit-coupon-data');
+      if ($couponData.length) {
+        const pendingCoupon = $couponData.data('pending-coupon');
+        if (pendingCoupon && pendingCoupon.trim()) {
+          console.log(`🎫 Found pending coupon from session: ${pendingCoupon}`);
+
+          // Check if coupon is already applied
+          const appliedCoupons = this.getAppliedCoupons();
+          if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
+            console.log(`✅ Pending coupon ${pendingCoupon} is already applied`);
+            return;
+          }
+
+          // Apply the pending coupon with additional safety check
+          setTimeout(() => {
+            // Double-check that WooCommerce is loaded before applying
+            if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-checkout').length) {
+              this.applyCouponFromUrl(pendingCoupon.trim());
+            } else {
+              console.log("⏳ Waiting for WooCommerce to load before applying session coupon");
+              // Try again after another delay
+              setTimeout(() => {
+                if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-checkout').length) {
+                  this.applyCouponFromUrl(pendingCoupon.trim());
+                } else {
+                  console.log("❌ WooCommerce not loaded, cannot apply session coupon:", pendingCoupon);
+                }
+              }, 2000);
+            }
+          }, 1000); // Slightly longer delay for session-based coupons
+        }
+      }
+    },
+
+    /**
+     * Get currently applied coupons
+     */
+    getAppliedCoupons: function () {
+      const appliedCoupons = [];
+
+      // Check WooCommerce's applied coupons
+      if (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.applied_coupons) {
+        appliedCoupons.push(...wc_add_to_cart_params.applied_coupons);
+      }
+
+      // Also check from cart data if available
+      if (window.wc_cart_fragments_params && window.wc_cart_fragments_params.cart_hash) {
+        // Try to get from any visible coupon displays
+        $('.applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code').each(function() {
+          const code = $(this).text().trim();
+          if (code && !appliedCoupons.includes(code)) {
+            appliedCoupons.push(code);
+          }
+        });
+      }
+
+      return appliedCoupons.map(code => code.toUpperCase());
+    },
+
+    /**
+     * Apply coupon from URL parameter
+     */
+    applyCouponFromUrl: function (couponCode) {
+      console.log(`🚀 Applying coupon from URL: ${couponCode}`);
+
+      // Show loading state
+      this.showCouponLoadingState();
+
+      // Apply the coupon using existing method
+      this.applyCouponElegantly(couponCode);
+
+      // Clean URL after application attempt
+      this.cleanUrlAfterCouponApplication(couponCode);
+    },
+
+    /**
+     * Show loading state for coupon application
+     */
+    showCouponLoadingState: function () {
+      const $couponToggle = $(".coupon-toggle");
+      const $couponSection = $(".coupon-section");
+
+      // If coupon form is visible, show loading
+      if ($couponSection.find(".coupon-form").is(":visible")) {
+        const $input = $couponSection.find(".coupon-input");
+        const $applyBtn = $couponSection.find(".coupon-apply-btn");
+
+        if ($input.length && $applyBtn.length) {
+          $input.val("Loading...");
+          $applyBtn.text("Applying...").prop("disabled", true);
+        }
+      } else {
+        // Show the coupon form first
+        $couponToggle.trigger("click");
+
+        // Wait for form to appear, then show loading state
+        setTimeout(() => {
+          const $input = $couponSection.find(".coupon-input");
+          const $applyBtn = $couponSection.find(".coupon-apply-btn");
+
+          if ($input.length && $applyBtn.length) {
+            $input.val("Loading...");
+            $applyBtn.text("Applying...").prop("disabled", true);
+          }
+        }, 350);
+      }
+    },
+
+    /**
+     * Clean URL after coupon application attempt
+     */
+    cleanUrlAfterCouponApplication: function (couponCode) {
+      // Remove coupon parameter from URL after 3 seconds
+      setTimeout(() => {
+        if (window.history && window.history.replaceState) {
+          const url = new URL(window.location);
+          url.searchParams.delete('coupon');
+
+          // Only update if there are other parameters or if this is the only parameter
+          if (url.searchParams.toString() || url.search === '?coupon=' + encodeURIComponent(couponCode)) {
+            window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+          }
+        }
+      }, 3000);
     },
 
     /**
