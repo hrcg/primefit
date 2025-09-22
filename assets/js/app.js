@@ -116,6 +116,7 @@
       this.startTime = 0;
       this.threshold = 50; // Minimum drag distance to close
       this.isMobile = window.matchMedia("(max-width: 1024px)").matches;
+      this.preventPullToRefresh = false;
       this.init();
     }
 
@@ -143,6 +144,11 @@
         ".cart-panel-header",
         this.handleTouchEnd.bind(this)
       );
+
+      // Prevent pull-to-refresh when cart is open
+      $(document).on("touchstart", this.handleGlobalTouchStart.bind(this));
+      $(document).on("touchmove", this.handleGlobalTouchMove.bind(this));
+      $(document).on("touchend", this.handleGlobalTouchEnd.bind(this));
 
       // Mouse events for desktop testing
       $(document).on(
@@ -184,6 +190,40 @@
 
       e.preventDefault();
       this.endDrag();
+    }
+
+    handleGlobalTouchStart(e) {
+      if (!this.isMobile || !this.isCartOpen()) return;
+
+      // Check if touch starts at the top of the screen (potential pull-to-refresh)
+      const touch = e.touches[0];
+      if (touch.clientY < 50) {
+        // Within 50px of top
+        this.preventPullToRefresh = true;
+        this.globalStartY = touch.clientY;
+      }
+    }
+
+    handleGlobalTouchMove(e) {
+      if (!this.isMobile || !this.isCartOpen() || !this.preventPullToRefresh)
+        return;
+
+      const touch = e.touches[0];
+      const deltaY = touch.clientY - this.globalStartY;
+
+      // If user is pulling down from top, prevent default to stop pull-to-refresh
+      if (deltaY > 0 && touch.clientY < 100) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+
+    handleGlobalTouchEnd(e) {
+      if (!this.isMobile || !this.isCartOpen()) return;
+
+      // Reset pull-to-refresh prevention flag
+      this.preventPullToRefresh = false;
+      this.globalStartY = 0;
     }
 
     handleMouseDown(e) {
@@ -311,9 +351,16 @@
       document.body.classList.remove("cart-open");
       allowPageScroll();
 
+      // Remove iOS Safari specific prevention
+      removeIOSPrevention();
+
       // Reset cart panel state completely
       $panel.removeClass("dragging drag-down");
       $panel.css("transform", ""); // Remove any inline transform styles
+
+      // Reset pull-to-refresh prevention
+      this.preventPullToRefresh = false;
+      this.globalStartY = 0;
 
       // Reset form submission flag to allow new submissions
       if (
@@ -351,6 +398,7 @@
 
   // Initialize mobile cart drawer
   const mobileCartDrawer = new MobileCartDrawer();
+  window.mobileCartDrawer = mobileCartDrawer;
 
   function openCart(clickedEl) {
     console.log("openCart called with:", clickedEl); // Debug log
@@ -371,10 +419,19 @@
 
     if (window.matchMedia("(max-width: 1024px)").matches) {
       document.body.classList.add("cart-open");
+
+      // Add iOS Safari specific prevention
+      this.addIOSPrevention();
     }
 
     // Prevent page scrolling when cart is open
     preventPageScroll();
+
+    // Reset pull-to-refresh prevention state
+    if (window.mobileCartDrawer) {
+      window.mobileCartDrawer.preventPullToRefresh = false;
+      window.mobileCartDrawer.globalStartY = 0;
+    }
 
     // Ensure all quantity inputs are properly synced when cart opens
     // First try to get fresh cart fragments to ensure we have the latest data
@@ -467,6 +524,26 @@
     console.log("Cart opened successfully"); // Debug log
   }
 
+  function addIOSPrevention() {
+    // Add iOS Safari specific prevention for pull-to-refresh
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      const originalContent = viewport.getAttribute("content");
+      viewport.setAttribute("content", originalContent + ", user-scalable=no");
+      viewport.setAttribute("data-original-content", originalContent);
+    }
+  }
+
+  function removeIOSPrevention() {
+    // Remove iOS Safari specific prevention
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport && viewport.hasAttribute("data-original-content")) {
+      const originalContent = viewport.getAttribute("data-original-content");
+      viewport.setAttribute("content", originalContent);
+      viewport.removeAttribute("data-original-content");
+    }
+  }
+
   function closeCart(clickedEl) {
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
     $wrap.removeClass("open").attr("data-open", "false");
@@ -474,6 +551,9 @@
     $toggle.attr("aria-expanded", "false");
 
     document.body.classList.remove("cart-open");
+
+    // Remove iOS Safari specific prevention
+    removeIOSPrevention();
 
     // Reset cart panel state completely
     $panel.removeClass("dragging drag-down");
