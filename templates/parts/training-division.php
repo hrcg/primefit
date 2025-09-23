@@ -9,7 +9,6 @@
  * - 'subheading' => subheading/description text
  * - 'cta_primary_text' => primary call-to-action button text
  * - 'cta_primary_link' => primary call-to-action button URL
- * - 'cta_secondary_text' => secondary call-to-action button text
  * - 'cta_secondary_link' => secondary call-to-action button URL
  * - 'image' => background image path
  */
@@ -23,7 +22,6 @@ $defaults = array(
 	'subheading' => $customizer_config['subheading'],
 	'cta_primary_text' => $customizer_config['cta_primary_text'],
 	'cta_primary_link' => $customizer_config['cta_primary_link'],
-	'cta_secondary_text' => $customizer_config['cta_secondary_text'],
 	'cta_secondary_link' => $customizer_config['cta_secondary_link'],
 	'image' => $customizer_config['image'],
 	'show_secondary_button' => $customizer_config['show_secondary_button']
@@ -63,12 +61,6 @@ $section_id = 'training-division-' . uniqid();
 					<?php if (!empty($section['cta_primary_text']) && !empty($section['cta_primary_link'])) : ?>
 						<a href="<?php echo esc_url($section['cta_primary_link']); ?>" class="training-division-button button button--primary">
 							<?php echo esc_html($section['cta_primary_text']); ?>
-						</a>
-					<?php endif; ?>
-					
-					<?php if ($section['show_secondary_button'] && !empty($section['cta_secondary_text']) && !empty($section['cta_secondary_link'])) : ?>
-						<a href="<?php echo esc_url($section['cta_secondary_link']); ?>" class="training-division-button button button--outline">
-							<?php echo esc_html($section['cta_secondary_text']); ?>
 						</a>
 					<?php endif; ?>
 				</div>

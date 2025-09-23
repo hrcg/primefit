@@ -64,16 +64,26 @@ function primefit_loop_product_thumbnail() {
 	echo '<div class="product-image-container">';
 	
 	if ( $main_image_id ) {
-		echo wp_get_attachment_image( $main_image_id, 'full', false, [
+		// Use optimized image size for product loops
+		$image_size = wp_is_mobile() ? 'primefit-product-loop-small' : 'primefit-product-loop';
+		
+		echo wp_get_attachment_image( $main_image_id, $image_size, false, [
 			'class' => 'attachment-woocommerce_thumbnail',
-			'alt' => esc_attr( $product->get_name() )
+			'alt' => esc_attr( $product->get_name() ),
+			'loading' => 'lazy',
+			'decoding' => 'async'
 		] );
 	}
 	
 	if ( $second_image_id ) {
-		echo wp_get_attachment_image( $second_image_id, 'full', false, [
+		// Use optimized image size for hover image
+		$image_size = wp_is_mobile() ? 'primefit-product-loop-small' : 'primefit-product-loop';
+		
+		echo wp_get_attachment_image( $second_image_id, $image_size, false, [
 			'class' => 'product-second-image',
-			'alt' => esc_attr( $product->get_name() )
+			'alt' => esc_attr( $product->get_name() ),
+			'loading' => 'lazy',
+			'decoding' => 'async'
 		] );
 	}
 	

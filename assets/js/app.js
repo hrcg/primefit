@@ -1572,7 +1572,10 @@
           .siblings(".menu-item-has-children")
           .removeClass("mobile-submenu-open");
 
-        if (!isOpen) {
+        // Toggle the current submenu
+        if (isOpen) {
+          $parent.removeClass("mobile-submenu-open");
+        } else {
           $parent.addClass("mobile-submenu-open");
         }
       }

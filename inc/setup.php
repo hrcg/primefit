@@ -53,6 +53,11 @@ function primefit_setup_theme() {
 	add_theme_support( 'wc-product-gallery-lightbox' );
 	add_theme_support( 'wc-product-gallery-slider' );
 	
+	// Add optimized image sizes for product loops
+	add_image_size( 'primefit-product-loop', 400, 500, true ); // 4:5 aspect ratio for product loops
+	add_image_size( 'primefit-product-loop-2x', 800, 1000, true ); // Retina version
+	add_image_size( 'primefit-product-loop-small', 200, 250, true ); // Mobile/small screens
+	
 	// Register navigation menus
 	register_nav_menus( [
 		'primary'        => esc_html__( 'Primary Menu', 'primefit' ),
@@ -179,4 +184,107 @@ function primefit_handle_webp_avif_metadata( $metadata, $attachment_id ) {
 	}
 	
 	return $metadata;
+}
+
+/**
+ * Add custom image sizes to admin media library
+ */
+add_filter( 'image_size_names_choose', 'primefit_custom_image_sizes' );
+function primefit_custom_image_sizes( $sizes ) {
+	return array_merge( $sizes, array(
+		'primefit-product-loop' => __( 'Product Loop (400x500)', 'primefit' ),
+		'primefit-product-loop-2x' => __( 'Product Loop Retina (800x1000)', 'primefit' ),
+		'primefit-product-loop-small' => __( 'Product Loop Mobile (200x250)', 'primefit' ),
+	) );
+}
+
+/**
+ * Add performance optimization for image loading
+ */
+add_action( 'wp_head', 'primefit_image_loading_optimizations' );
+function primefit_image_loading_optimizations() {
+	?>
+	<style>
+		/* Optimize image loading performance */
+		.attachment-woocommerce_thumbnail,
+		.product-second-image {
+			content-visibility: auto;
+			contain-intrinsic-size: 400px 500px;
+		}
+		
+		/* Mobile optimizations */
+		@media (max-width: 768px) {
+			.attachment-woocommerce_thumbnail,
+			.product-second-image {
+				contain-intrinsic-size: 200px 250px;
+			}
+		}
+	</style>
+	<?php
+}
+
+/**
+ * Admin notice to regenerate thumbnails after adding new image sizes
+ */
+add_action( 'admin_notices', 'primefit_thumbnail_regeneration_notice' );
+function primefit_thumbnail_regeneration_notice() {
+	// Only show on admin pages and if user has permission
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	
+	// Check if thumbnails have been regenerated
+	$regenerated = get_option( 'primefit_thumbnails_regenerated', false );
+	
+	if ( ! $regenerated ) {
+		?>
+		<div class="notice notice-info is-dismissible">
+			<p>
+				<strong><?php _e( 'PrimeFit Theme:', 'primefit' ); ?></strong>
+				<?php _e( 'New optimized image sizes have been added for better performance. ', 'primefit' ); ?>
+				<a href="<?php echo admin_url( 'admin.php?page=primefit-regenerate-thumbnails' ); ?>" class="button button-primary">
+					<?php _e( 'Regenerate Thumbnails', 'primefit' ); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+}
+
+/**
+ * Add admin menu for thumbnail regeneration
+ */
+add_action( 'admin_menu', 'primefit_add_thumbnail_regeneration_menu' );
+function primefit_add_thumbnail_regeneration_menu() {
+	add_management_page(
+		__( 'Regenerate Thumbnails', 'primefit' ),
+		__( 'Regenerate Thumbnails', 'primefit' ),
+		'manage_options',
+		'primefit-regenerate-thumbnails',
+		'primefit_thumbnail_regeneration_page'
+	);
+}
+
+/**
+ * Thumbnail regeneration admin page
+ */
+function primefit_thumbnail_regeneration_page() {
+	if ( isset( $_POST['regenerate_thumbnails'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'primefit_regenerate_thumbnails' ) ) {
+		$processed_count = primefit_regenerate_product_thumbnails();
+		update_option( 'primefit_thumbnails_regenerated', true );
+		echo '<div class="notice notice-success"><p>' . sprintf( __( 'Successfully processed %d images.', 'primefit' ), $processed_count ) . '</p></div>';
+	}
+	?>
+	<div class="wrap">
+		<h1><?php _e( 'Regenerate Product Thumbnails', 'primefit' ); ?></h1>
+		<p><?php _e( 'This will regenerate optimized thumbnails for all product images to improve front page performance.', 'primefit' ); ?></p>
+		
+		<form method="post">
+			<?php wp_nonce_field( 'primefit_regenerate_thumbnails' ); ?>
+			<p>
+				<input type="submit" name="regenerate_thumbnails" class="button button-primary" value="<?php _e( 'Regenerate Thumbnails', 'primefit' ); ?>" />
+			</p>
+		</form>
+	</div>
+	<?php
 }

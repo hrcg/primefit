@@ -73,6 +73,73 @@ function primefit_get_category_hero_image( $category, $size = 'full' ) {
 }
 
 /**
+ * Regenerate optimized thumbnails for product images
+ * This should be run once after adding new image sizes
+ */
+function primefit_regenerate_product_thumbnails() {
+	if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+	}
+	
+	// Get all product images
+	$args = array(
+		'post_type' => 'product',
+		'posts_per_page' => -1,
+		'post_status' => 'publish'
+	);
+	
+	$products = get_posts( $args );
+	$processed_images = array();
+	
+	foreach ( $products as $product ) {
+		$product_obj = wc_get_product( $product->ID );
+		if ( ! $product_obj ) continue;
+		
+		// Get main image
+		$main_image_id = $product_obj->get_image_id();
+		if ( $main_image_id && ! in_array( $main_image_id, $processed_images ) ) {
+			$processed_images[] = $main_image_id;
+			wp_generate_attachment_metadata( $main_image_id, get_attached_file( $main_image_id ) );
+		}
+		
+		// Get gallery images
+		$gallery_ids = $product_obj->get_gallery_image_ids();
+		foreach ( $gallery_ids as $gallery_id ) {
+			if ( ! in_array( $gallery_id, $processed_images ) ) {
+				$processed_images[] = $gallery_id;
+				wp_generate_attachment_metadata( $gallery_id, get_attached_file( $gallery_id ) );
+			}
+		}
+	}
+	
+	return count( $processed_images );
+}
+
+/**
+ * Get optimized product image URL with fallback
+ */
+function primefit_get_optimized_product_image_url( $image_id, $size = 'primefit-product-loop' ) {
+	if ( ! $image_id ) {
+		return '';
+	}
+	
+	// Try to get the optimized size first
+	$image_url = wp_get_attachment_image_url( $image_id, $size );
+	
+	// Fallback to medium if optimized size doesn't exist
+	if ( ! $image_url ) {
+		$image_url = wp_get_attachment_image_url( $image_id, 'medium' );
+	}
+	
+	// Final fallback to full size
+	if ( ! $image_url ) {
+		$image_url = wp_get_attachment_image_url( $image_id, 'full' );
+	}
+	
+	return $image_url;
+}
+
+/**
  * Get shop hero configuration
  *
  * @since 1.0.0

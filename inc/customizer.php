@@ -375,38 +375,6 @@ function primefit_customize_register( $wp_customize ) {
 		'type'    => 'url',
 	) );
 
-	// Second Training Division Secondary CTA Text
-	$wp_customize->add_setting( 'primefit_training_division_2_cta_secondary_text', array(
-		'default'           => '',
-		'sanitize_callback' => 'sanitize_text_field',
-	) );
-	$wp_customize->add_control( 'primefit_training_division_2_cta_secondary_text', array(
-		'label'   => __( 'Secondary Button Text', 'primefit' ),
-		'section' => 'primefit_training_division_2',
-		'type'    => 'text',
-	) );
-
-	// Second Training Division Secondary CTA Link
-	$wp_customize->add_setting( 'primefit_training_division_2_cta_secondary_link', array(
-		'default'           => '',
-		'sanitize_callback' => 'esc_url_raw',
-	) );
-	$wp_customize->add_control( 'primefit_training_division_2_cta_secondary_link', array(
-		'label'   => __( 'Secondary Button Link', 'primefit' ),
-		'section' => 'primefit_training_division_2',
-		'type'    => 'url',
-	) );
-
-	// Second Training Division Show Secondary Button
-	$wp_customize->add_setting( 'primefit_training_division_2_show_secondary_button', array(
-		'default'           => false,
-		'sanitize_callback' => 'wp_validate_boolean',
-	) );
-	$wp_customize->add_control( 'primefit_training_division_2_show_secondary_button', array(
-		'label'   => __( 'Show Secondary Button', 'primefit' ),
-		'section' => 'primefit_training_division_2',
-		'type'    => 'checkbox',
-	) );
 
 	// Mega Menu Section Panel
 	$wp_customize->add_section( 'primefit_mega_menu', array(
@@ -649,19 +617,12 @@ function primefit_get_training_division_2_config() {
 		$cta_primary_link = wc_get_page_permalink( 'shop' );
 	}
 
-	$cta_secondary_link = get_theme_mod( 'primefit_training_division_2_cta_secondary_link' );
-	if ( empty( $cta_secondary_link ) ) {
-		$cta_secondary_link = '#';
-	}
-
 	return array(
 		'image' => $training_image_url,
 		'heading' => get_theme_mod( 'primefit_training_division_2_heading', 'Become your best self' ),
 		'subheading' => get_theme_mod( 'primefit_training_division_2_subheading', 'Unlock your potential with purpose-built gear designed for resilience, comfort, and top-tier performance.' ),
 		'cta_primary_text' => get_theme_mod( 'primefit_training_division_2_cta_primary_text', 'Arise Now' ),
 		'cta_primary_link' => $cta_primary_link,
-		'cta_secondary_text' => get_theme_mod( 'primefit_training_division_2_cta_secondary_text', '' ),
-		'cta_secondary_link' => $cta_secondary_link,
 		'show_secondary_button' => get_theme_mod( 'primefit_training_division_2_show_secondary_button', false ),
 	);
 }

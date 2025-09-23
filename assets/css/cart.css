@@ -668,7 +668,7 @@
 
 .coupon-code-input {
   flex: 1;
-  padding: 12px 16px;
+  padding: 8px 20px;
   outline: none;
   font-size: 14px;
   color: #333;
@@ -686,7 +686,7 @@
   background: #000;
   color: #fff;
   border: none;
-  padding: 12px 20px;
+  padding: 10px 20px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -820,7 +820,7 @@
 .woocommerce-mini-cart__buttons .button {
   display: block;
   width: 100%;
-  padding: 16px 20px;
+  padding: 10px 20px;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -999,14 +999,6 @@
   .recommendation-add-btn {
     padding: 6px 12px;
     font-size: 10px;
-  }
-
-  .coupon-input-group {
-    flex-direction: column;
-  }
-
-  .apply-coupon-btn {
-    border-top: 1px solid #ddd;
   }
 }
 
@@ -1237,7 +1229,7 @@
 
 .woocommerce-mini-cart__buttons .button {
   width: 100%;
-  padding: 16px;
+  padding: 10px 20px;
   background: #000000;
   color: #ffffff;
   border: 1px solid #000000;
@@ -1469,7 +1461,7 @@
   /* Stack buttons vertically with reduced spacing */
   .woocommerce-mini-cart__buttons .button {
     margin-bottom: 8px;
-    padding: 14px;
+    padding: 10px 20px;
   }
 
   .woocommerce-mini-cart__buttons .button:last-child {
@@ -1486,7 +1478,7 @@
   }
 
   .cart-checkout-summary .checkout-button {
-    padding: 14px;
+    padding: 10px 20px;
   }
 
   /* Ensure cart content doesn't overflow */
@@ -1551,7 +1543,7 @@
   /* Smaller buttons on very small screens */
   .woocommerce-mini-cart__buttons .button,
   .cart-checkout-summary .checkout-button {
-    padding: 12px;
+    padding: 10px 20px;
     font-size: 13px;
   }
 
