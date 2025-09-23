@@ -855,15 +855,106 @@
   }
 }
 
+/* Dark mode specific styling for sign-in button */
+@media (prefers-color-scheme: dark) {
+  .sign-in-button {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #ffffff;
+  }
+
+  .sign-in-button:hover {
+    background: #f0f0f0;
+    color: #000000;
+  }
+
+  /* Login submit button in dark mode */
+  .login-form .woocommerce-form-login__submit {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .login-form .woocommerce-form-login__submit:hover {
+    background: #f0f0f0;
+    color: #000000;
+  }
+
+  /* Create account button in dark mode */
+  .create-account-button {
+    background: #ffffff;
+    color: #000000;
+    border: 2px solid #ffffff;
+  }
+
+  .create-account-button:hover {
+    background: #f0f0f0;
+    color: #000000;
+  }
+
+  /* Register form submit button in dark mode */
+  .woocommerce-form-register .woocommerce-form-register__submit {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .woocommerce-form-register .woocommerce-form-register__submit:hover {
+    background: #f0f0f0 !important;
+    color: #000000 !important;
+  }
+}
+
+[data-theme="dark"] .sign-in-button {
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #ffffff;
+}
+
+[data-theme="dark"] .sign-in-button:hover {
+  background: #f0f0f0;
+  color: #000000;
+}
+
+[data-theme="dark"] .login-form .woocommerce-form-login__submit {
+  background: #ffffff;
+  color: #000000;
+}
+
+[data-theme="dark"] .login-form .woocommerce-form-login__submit:hover {
+  background: #f0f0f0;
+  color: #000000;
+}
+
+[data-theme="dark"] .create-account-button {
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #ffffff;
+}
+
+[data-theme="dark"] .create-account-button:hover {
+  background: #f0f0f0;
+  color: #000000;
+}
+
+[data-theme="dark"]
+  .woocommerce-form-register
+  .woocommerce-form-register__submit {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+[data-theme="dark"]
+  .woocommerce-form-register
+  .woocommerce-form-register__submit:hover {
+  background: #f0f0f0 !important;
+  color: #000000 !important;
+}
+
 /* ==========================================================================
    Register Form Styles
    ========================================================================== */
 
 .woocommerce-form-register {
   background: var(--account-card-bg);
-  border-radius: 8px;
-  padding: 32px;
-  border: 1px solid var(--account-border);
 }
 
 .woocommerce-form-register h2 {

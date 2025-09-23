@@ -4,6 +4,8 @@
   // Prevent accidental re-adding product on refresh when URL has add-to-cart params
   // and handle URL coupon detection
   $(function () {
+    // Critical initialization - runs immediately
+    // URL parameter cleanup
     try {
       var url = new URL(window.location.href);
 
@@ -37,7 +39,9 @@
 
           // Check if we're on checkout page - let checkout.js handle it
           if (isCheckoutPage) {
-            console.log("Checkout page detected - letting checkout.js handle coupon");
+            console.log(
+              "Checkout page detected - letting checkout.js handle coupon"
+            );
             return;
           }
 
@@ -49,7 +53,7 @@
           }
 
           // Apply the coupon with a slight delay to ensure DOM is ready
-          setTimeout(function() {
+          setTimeout(function () {
             applyCouponFromUrl(couponCode.trim());
           }, 500);
         }
@@ -60,6 +64,13 @@
     } catch (e) {
       // Ignore if URL API not available
     }
+
+    // Non-critical initialization - deferred to next animation frame
+    requestAnimationFrame(function () {
+      initSmartLazyLoading();
+      initImageQualityPreferences();
+      initConnectionAwareImageLoading();
+    });
   });
 
   // Function to get currently applied coupons
@@ -67,14 +78,25 @@
     var appliedCoupons = [];
 
     // Check WooCommerce's applied coupons
-    if (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.applied_coupons) {
-      appliedCoupons.push.apply(appliedCoupons, wc_add_to_cart_params.applied_coupons);
+    if (
+      typeof wc_add_to_cart_params !== "undefined" &&
+      wc_add_to_cart_params.applied_coupons
+    ) {
+      appliedCoupons.push.apply(
+        appliedCoupons,
+        wc_add_to_cart_params.applied_coupons
+      );
     }
 
     // Also check from cart data if available
-    if (window.wc_cart_fragments_params && window.wc_cart_fragments_params.cart_hash) {
+    if (
+      window.wc_cart_fragments_params &&
+      window.wc_cart_fragments_params.cart_hash
+    ) {
       // Try to get from any visible coupon displays
-      jQuery('.applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code').each(function() {
+      jQuery(
+        ".applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code"
+      ).each(function () {
         var code = jQuery(this).text().trim();
         if (code && appliedCoupons.indexOf(code) === -1) {
           appliedCoupons.push(code);
@@ -82,10 +104,145 @@
       });
     }
 
-    return appliedCoupons.map(function(code) { return code.toUpperCase(); });
+    return appliedCoupons.map(function (code) {
+      return code.toUpperCase();
+    });
   }
 
-  // Function to apply coupon from URL parameter
+  // Smart lazy loading with intersection observer
+  function initSmartLazyLoading() {
+    // Check if browser supports Intersection Observer
+    if ("IntersectionObserver" in window) {
+      var lazyImages = document.querySelectorAll('img[loading="lazy"]');
+      var imageObserver = new IntersectionObserver(
+        function (entries, observer) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              var img = entry.target;
+
+              // Check if user has requested reduced data usage
+              var reducedData =
+                window.matchMedia &&
+                window.matchMedia("(prefers-reduced-data: reduce)").matches;
+
+              if (reducedData) {
+                // Skip loading if user prefers reduced data
+                img.classList.add("reduced-data");
+                observer.unobserve(img);
+                return;
+              }
+
+              // Add loading class for smooth transition
+              img.classList.add("loading");
+
+              // For images without data-src, just mark as loaded immediately
+              // since native lazy loading will handle the actual loading
+              if (img.dataset.src) {
+                // Preload the image
+                var newImg = new Image();
+                newImg.onload = function () {
+                  img.src = img.dataset.src;
+                  img.classList.remove("loading");
+                  img.classList.add("loaded");
+                };
+                newImg.onerror = function () {
+                  img.classList.remove("loading");
+                  img.classList.add("error");
+                };
+                newImg.src = img.dataset.src;
+              } else {
+                // For native lazy loading, just add loaded class
+                img.classList.remove("loading");
+                img.classList.add("loaded");
+              }
+
+              observer.unobserve(img);
+            }
+          });
+        },
+        {
+          rootMargin: "50px 0px", // Load images 50px before they come into view
+          threshold: 0.01,
+        }
+      );
+
+      lazyImages.forEach(function (img) {
+        imageObserver.observe(img);
+      });
+    }
+  }
+
+  // Initialize image quality preferences
+  function initImageQualityPreferences() {
+    // Check for user's data preference
+    if (window.matchMedia) {
+      var reducedDataQuery = window.matchMedia(
+        "(prefers-reduced-data: reduce)"
+      );
+
+      // Set initial preference based on system settings
+      if (reducedDataQuery.matches) {
+        document.documentElement.classList.add("reduced-data-mode");
+      }
+
+      // Listen for changes
+      reducedDataQuery.addListener(function (e) {
+        if (e.matches) {
+          document.documentElement.classList.add("reduced-data-mode");
+        } else {
+          document.documentElement.classList.remove("reduced-data-mode");
+        }
+      });
+    }
+
+    // Check for save data header
+    if (navigator.connection && navigator.connection.saveData) {
+      document.documentElement.classList.add("save-data-mode");
+    }
+  }
+
+  // Connection-aware image loading
+  function initConnectionAwareImageLoading() {
+    if ("connection" in navigator) {
+      var connection = navigator.connection;
+
+      // Adjust image loading based on connection type
+      if (
+        connection.effectiveType === "slow-2g" ||
+        connection.effectiveType === "2g"
+      ) {
+        document.documentElement.classList.add("slow-connection");
+        // Reduce image quality for slow connections
+        var style = document.createElement("style");
+        style.textContent = `
+          .slow-connection img[loading="lazy"] {
+            opacity: 0.7;
+            filter: blur(1px);
+            transition: all 0.5s ease;
+          }
+          .slow-connection img[loading="lazy"].loaded {
+            opacity: 1;
+            filter: none;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
+      // Listen for connection changes
+      connection.addEventListener("change", function () {
+        if (
+          connection.effectiveType === "slow-2g" ||
+          connection.effectiveType === "2g"
+        ) {
+          document.documentElement.classList.add("slow-connection");
+        } else {
+          document.documentElement.classList.remove("slow-connection");
+        }
+      });
+    }
+  }
+
+  // Function to apply coupon from URL parameter - optimized with better error handling
   function applyCouponFromUrl(couponCode) {
     console.log("🚀 Applying coupon from URL:", couponCode);
 
@@ -101,15 +258,20 @@
       }
     }
 
-    // Apply coupon via AJAX using existing handler
-    jQuery.ajax({
+    // Apply coupon via AJAX using existing handler with timeout
+    var ajaxRequest = jQuery.ajax({
       type: "POST",
-      url: window.primefit_cart_params ? window.primefit_cart_params.ajax_url : "/wp-admin/admin-ajax.php",
+      url: window.primefit_cart_params
+        ? window.primefit_cart_params.ajax_url
+        : "/wp-admin/admin-ajax.php",
       data: {
         action: "apply_coupon",
-        security: window.primefit_cart_params ? window.primefit_cart_params.apply_coupon_nonce : "",
+        security: window.primefit_cart_params
+          ? window.primefit_cart_params.apply_coupon_nonce
+          : "",
         coupon_code: couponCode,
       },
+      timeout: 10000, // 10 second timeout
       success: function (response) {
         if (response.success) {
           console.log("✅ Coupon applied successfully from URL");
@@ -117,10 +279,13 @@
           // Clear loading state
           if ($couponForm.length) {
             $input.val("");
-            $button.removeClass("loading").prop("disabled", false).text("APPLY");
+            $button
+              .removeClass("loading")
+              .prop("disabled", false)
+              .text("APPLY");
           }
 
-          // Refresh cart fragments
+          // Refresh cart fragments efficiently
           jQuery(document.body).trigger("update_checkout");
           jQuery(document.body).trigger("wc_fragment_refresh");
 
@@ -140,7 +305,10 @@
           // Clear loading state
           if ($couponForm.length) {
             $input.val("");
-            $button.removeClass("loading").prop("disabled", false).text("APPLY");
+            $button
+              .removeClass("loading")
+              .prop("disabled", false)
+              .text("APPLY");
 
             // Show error message
             var errorMsg = response.data || "Failed to apply coupon";
@@ -173,39 +341,52 @@
       complete: function () {
         // Clean URL after application attempt
         cleanUrlAfterCouponApplication(couponCode);
-      }
+      },
     });
   }
 
   // Function to check for pending coupon from session
   function checkForPendingCouponFromSession() {
     // Check for pending coupon data from cart fragments (hidden element)
-    var $couponData = jQuery('.primefit-coupon-data');
+    var $couponData = jQuery(".primefit-coupon-data");
     if ($couponData.length) {
-      var pendingCoupon = $couponData.data('pending-coupon');
+      var pendingCoupon = $couponData.data("pending-coupon");
       if (pendingCoupon && pendingCoupon.trim()) {
         console.log("🎫 Found pending coupon from session:", pendingCoupon);
 
         // Check if coupon is already applied
         var appliedCoupons = getAppliedCoupons();
         if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
-          console.log("✅ Pending coupon " + pendingCoupon + " is already applied");
+          console.log(
+            "✅ Pending coupon " + pendingCoupon + " is already applied"
+          );
           return;
         }
 
         // Apply the pending coupon with additional safety check
-        setTimeout(function() {
+        setTimeout(function () {
           // Double-check that WooCommerce is loaded before applying
-          if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-mini-cart').length) {
+          if (
+            typeof wc_add_to_cart_params !== "undefined" ||
+            jQuery(".woocommerce-mini-cart").length
+          ) {
             applyCouponFromUrl(pendingCoupon.trim());
           } else {
-            console.log("⏳ Waiting for WooCommerce to load before applying session coupon");
+            console.log(
+              "⏳ Waiting for WooCommerce to load before applying session coupon"
+            );
             // Try again after another delay
-            setTimeout(function() {
-              if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-mini-cart').length) {
+            setTimeout(function () {
+              if (
+                typeof wc_add_to_cart_params !== "undefined" ||
+                jQuery(".woocommerce-mini-cart").length
+              ) {
                 applyCouponFromUrl(pendingCoupon.trim());
               } else {
-                console.log("❌ WooCommerce not loaded, cannot apply session coupon:", pendingCoupon);
+                console.log(
+                  "❌ WooCommerce not loaded, cannot apply session coupon:",
+                  pendingCoupon
+                );
               }
             }, 2000);
           }
@@ -216,15 +397,22 @@
 
   // Function to clean URL after coupon application attempt
   function cleanUrlAfterCouponApplication(couponCode) {
-    setTimeout(function() {
+    setTimeout(function () {
       try {
         if (window.history && window.history.replaceState) {
           var url = new URL(window.location);
-          url.searchParams.delete('coupon');
+          url.searchParams.delete("coupon");
 
           // Only update if there are other parameters or if this is the only parameter
-          if (url.searchParams.toString() || url.search === '?coupon=' + encodeURIComponent(couponCode)) {
-            window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+          if (
+            url.searchParams.toString() ||
+            url.search === "?coupon=" + encodeURIComponent(couponCode)
+          ) {
+            window.history.replaceState(
+              {},
+              document.title,
+              url.pathname + url.search + url.hash
+            );
           }
         }
       } catch (e) {

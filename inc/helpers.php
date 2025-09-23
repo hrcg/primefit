@@ -141,6 +141,8 @@ function primefit_get_shop_hero_config() {
 	return $hero_args;
 }
 
+
+
 /**
  * Render size selection overlay for variable products in product loops
  *

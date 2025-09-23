@@ -27,20 +27,24 @@
         return;
       }
 
-      // Check for coupon in URL parameter first
-      this.checkUrlCoupon();
+      // Use requestAnimationFrame for smoother initialization
+      requestAnimationFrame(() => {
+        // Check for coupon in URL parameter first
+        this.checkUrlCoupon();
 
-      // Initialize UI enhancements only
-      this.improveFormUsability();
-      this.initCouponToggle();
-      this.initSummaryToggle();
-      this.initHelpTooltips();
+        // Initialize UI enhancements only - batch DOM operations
+        this.improveFormUsability();
+        this.initCouponToggle();
+        this.initSummaryToggle();
+        this.initHelpTooltips();
+        this.initFieldSpecificErrors();
 
-      // Initialize payment methods with proper timing
-      this.initPaymentMethodEnhancements();
+        // Initialize payment methods with proper timing
+        this.initPaymentMethodEnhancements();
 
-      this.isInitialized = true;
-      console.log("✨ PrimeFit checkout enhancements loaded");
+        this.isInitialized = true;
+        console.log("✨ PrimeFit checkout enhancements loaded");
+      });
     },
 
     /**
@@ -49,7 +53,7 @@
     checkUrlCoupon: function () {
       // Get URL parameters
       const urlParams = new URLSearchParams(window.location.search);
-      const couponCode = urlParams.get('coupon');
+      const couponCode = urlParams.get("coupon");
 
       if (couponCode && couponCode.trim()) {
         console.log(`🎫 Found coupon in URL: ${couponCode}`);
@@ -76,32 +80,45 @@
      */
     checkForPendingCouponFromSession: function () {
       // Check for pending coupon data from cart fragments (hidden element)
-      const $couponData = jQuery('.primefit-coupon-data');
+      const $couponData = jQuery(".primefit-coupon-data");
       if ($couponData.length) {
-        const pendingCoupon = $couponData.data('pending-coupon');
+        const pendingCoupon = $couponData.data("pending-coupon");
         if (pendingCoupon && pendingCoupon.trim()) {
           console.log(`🎫 Found pending coupon from session: ${pendingCoupon}`);
 
           // Check if coupon is already applied
           const appliedCoupons = this.getAppliedCoupons();
           if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
-            console.log(`✅ Pending coupon ${pendingCoupon} is already applied`);
+            console.log(
+              `✅ Pending coupon ${pendingCoupon} is already applied`
+            );
             return;
           }
 
           // Apply the pending coupon with additional safety check
           setTimeout(() => {
             // Double-check that WooCommerce is loaded before applying
-            if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-checkout').length) {
+            if (
+              typeof wc_add_to_cart_params !== "undefined" ||
+              jQuery(".woocommerce-checkout").length
+            ) {
               this.applyCouponFromUrl(pendingCoupon.trim());
             } else {
-              console.log("⏳ Waiting for WooCommerce to load before applying session coupon");
+              console.log(
+                "⏳ Waiting for WooCommerce to load before applying session coupon"
+              );
               // Try again after another delay
               setTimeout(() => {
-                if (typeof wc_add_to_cart_params !== 'undefined' || jQuery('.woocommerce-checkout').length) {
+                if (
+                  typeof wc_add_to_cart_params !== "undefined" ||
+                  jQuery(".woocommerce-checkout").length
+                ) {
                   this.applyCouponFromUrl(pendingCoupon.trim());
                 } else {
-                  console.log("❌ WooCommerce not loaded, cannot apply session coupon:", pendingCoupon);
+                  console.log(
+                    "❌ WooCommerce not loaded, cannot apply session coupon:",
+                    pendingCoupon
+                  );
                 }
               }, 2000);
             }
@@ -117,14 +134,22 @@
       const appliedCoupons = [];
 
       // Check WooCommerce's applied coupons
-      if (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.applied_coupons) {
+      if (
+        typeof wc_add_to_cart_params !== "undefined" &&
+        wc_add_to_cart_params.applied_coupons
+      ) {
         appliedCoupons.push(...wc_add_to_cart_params.applied_coupons);
       }
 
       // Also check from cart data if available
-      if (window.wc_cart_fragments_params && window.wc_cart_fragments_params.cart_hash) {
+      if (
+        window.wc_cart_fragments_params &&
+        window.wc_cart_fragments_params.cart_hash
+      ) {
         // Try to get from any visible coupon displays
-        $('.applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code').each(function() {
+        $(
+          ".applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code"
+        ).each(function () {
           const code = $(this).text().trim();
           if (code && !appliedCoupons.includes(code)) {
             appliedCoupons.push(code);
@@ -132,7 +157,7 @@
         });
       }
 
-      return appliedCoupons.map(code => code.toUpperCase());
+      return appliedCoupons.map((code) => code.toUpperCase());
     },
 
     /**
@@ -192,11 +217,18 @@
       setTimeout(() => {
         if (window.history && window.history.replaceState) {
           const url = new URL(window.location);
-          url.searchParams.delete('coupon');
+          url.searchParams.delete("coupon");
 
           // Only update if there are other parameters or if this is the only parameter
-          if (url.searchParams.toString() || url.search === '?coupon=' + encodeURIComponent(couponCode)) {
-            window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+          if (
+            url.searchParams.toString() ||
+            url.search === "?coupon=" + encodeURIComponent(couponCode)
+          ) {
+            window.history.replaceState(
+              {},
+              document.title,
+              url.pathname + url.search + url.hash
+            );
           }
         }
       }, 3000);
@@ -294,46 +326,55 @@
 
     /**
      * Apply coupon elegantly - work with WooCommerce's native system
+     * Optimized to prevent duplicate submissions and improve performance
      */
     applyCouponElegantly: function (couponCode) {
       const $couponSection = $(".coupon-section");
       const $applyBtn = $couponSection.find(".coupon-apply-btn");
       const $input = $couponSection.find(".coupon-input");
 
+      // Prevent duplicate submissions
+      if ($applyBtn.prop("disabled")) {
+        return;
+      }
+
       // Show loading state
       $applyBtn.text("Applying...").prop("disabled", true);
 
-      // Look for WooCommerce's native coupon form
-      let $wcCouponInput = $(
-        '.woocommerce-form-coupon input[name="coupon_code"]'
-      );
-      let $wcCouponBtn = $(
-        '.woocommerce-form-coupon button[name="apply_coupon"]'
-      );
+      // Use requestAnimationFrame for smoother UI updates
+      requestAnimationFrame(() => {
+        // Look for WooCommerce's native coupon form
+        let $wcCouponInput = $(
+          '.woocommerce-form-coupon input[name="coupon_code"]'
+        );
+        let $wcCouponBtn = $(
+          '.woocommerce-form-coupon button[name="apply_coupon"]'
+        );
 
-      // If WooCommerce coupon form exists, use it
-      if ($wcCouponInput.length && $wcCouponBtn.length) {
-        $wcCouponInput.val(couponCode);
-        $wcCouponBtn.trigger("click");
-      } else {
-        // Create a hidden WooCommerce-compatible form and submit it
-        const $hiddenForm = $(`
-          <form class="woocommerce-form-coupon" method="post" style="display: none;">
-            <input type="text" name="coupon_code" value="${couponCode}" />
-            <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
-          </form>
-        `);
+        // If WooCommerce coupon form exists, use it
+        if ($wcCouponInput.length && $wcCouponBtn.length) {
+          $wcCouponInput.val(couponCode);
+          $wcCouponBtn.trigger("click");
+        } else {
+          // Create a hidden WooCommerce-compatible form and submit it
+          const $hiddenForm = $(`
+            <form class="woocommerce-form-coupon" method="post" style="display: none;">
+              <input type="text" name="coupon_code" value="${couponCode}" />
+              <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
+            </form>
+          `);
 
-        $("body").append($hiddenForm);
-        $hiddenForm.submit();
-        $hiddenForm.remove();
-      }
+          $("body").append($hiddenForm);
+          $hiddenForm.submit();
+          $hiddenForm.remove();
+        }
 
-      // Reset UI state
-      setTimeout(() => {
-        $applyBtn.text("Apply").prop("disabled", false);
-        $input.val("");
-      }, 2000);
+        // Reset UI state with reduced timeout
+        setTimeout(() => {
+          $applyBtn.text("Apply").prop("disabled", false);
+          $input.val("");
+        }, 1500);
+      });
     },
 
     /**
@@ -345,10 +386,10 @@
       const $header = $(".summary-header");
 
       if ($toggle.length && $content.length && $header.length) {
-        // Set initial state - collapsed on mobile
+        // Set initial state - open by default on mobile
         if (window.innerWidth <= 1024) {
-          $toggle.addClass("collapsed");
-          $content.addClass("collapsed");
+          $toggle.removeClass("collapsed");
+          $content.removeClass("collapsed");
         }
 
         // Toggle functionality
@@ -377,14 +418,10 @@
           if (window.innerWidth > 1024) {
             $toggle.removeClass("collapsed");
             $content.removeClass("collapsed");
-          } else if (
-            !$toggle.hasClass("collapsed") &&
-            !$content.hasClass("collapsed")
-          ) {
-            return;
           } else {
-            $toggle.addClass("collapsed");
-            $content.addClass("collapsed");
+            // Keep open by default on mobile
+            $toggle.removeClass("collapsed");
+            $content.removeClass("collapsed");
           }
         });
       }
@@ -392,6 +429,7 @@
 
     /**
      * Initialize payment method enhancements - UI only
+     * Optimized with better timing and reduced DOM queries
      */
     initPaymentMethodEnhancements: function () {
       const $paymentMethods = $(".woocommerce-checkout .payment_methods");
@@ -402,23 +440,26 @@
           clearTimeout(this.initializationTimeout);
         }
 
-        // Use a single, consistent delay
+        // Use requestAnimationFrame for better performance
         this.initializationTimeout = setTimeout(() => {
-          this.enhancePaymentMethodCards();
-          this.addPaymentMethodIcons();
-          this.addPaymentMethodBadges();
-          this.initPaymentMethodInteractions();
-          this.setupPaymentMethodObserver();
+          requestAnimationFrame(() => {
+            this.enhancePaymentMethodCards();
+            this.addPaymentMethodIcons();
+            this.addPaymentMethodBadges();
+            this.initPaymentMethodInteractions();
+            this.setupPaymentMethodObserver();
 
-          // Add enhanced class to show the styled payment methods
-          $paymentMethods.addClass("enhanced");
-          this.isPaymentMethodsEnhanced = true;
-        }, 150);
+            // Add enhanced class to show the styled payment methods
+            $paymentMethods.addClass("enhanced");
+            this.isPaymentMethodsEnhanced = true;
+          });
+        }, 100); // Reduced delay
       }
     },
 
     /**
      * Setup mutation observer to watch for changes to payment methods
+     * Optimized to reduce unnecessary reprocessing
      */
     setupPaymentMethodObserver: function () {
       const $paymentMethods = $(".woocommerce-checkout .payment_methods");
@@ -428,43 +469,53 @@
         window.MutationObserver &&
         !this.paymentMethodObserver
       ) {
-        this.paymentMethodObserver = new MutationObserver((mutations) => {
-          let shouldReapply = false;
+        // Debounce mutations to avoid excessive processing
+        let timeoutId = null;
 
-          mutations.forEach((mutation) => {
-            if (
-              mutation.type === "childList" ||
-              mutation.type === "attributes"
-            ) {
-              // Check if payment method structure has changed
+        this.paymentMethodObserver = new MutationObserver((mutations) => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+
+          timeoutId = setTimeout(() => {
+            let shouldReapply = false;
+
+            mutations.forEach((mutation) => {
+              if (
+                mutation.type === "childList" ||
+                mutation.type === "attributes"
+              ) {
+                // Check if payment method structure has changed
+                const $currentPaymentMethods = $(
+                  ".woocommerce-checkout .payment_methods"
+                );
+                if (
+                  $currentPaymentMethods.length &&
+                  !$currentPaymentMethods.find(".payment_method").length
+                ) {
+                  shouldReapply = true;
+                }
+              }
+            });
+
+            if (shouldReapply && this.isPaymentMethodsEnhanced) {
+              // Reset the enhancement flag and reapply
+              this.isPaymentMethodsEnhanced = false;
               const $currentPaymentMethods = $(
                 ".woocommerce-checkout .payment_methods"
               );
-              if (
-                $currentPaymentMethods.length &&
-                !$currentPaymentMethods.find(".payment_method").length
-              ) {
-                shouldReapply = true;
-              }
+              $currentPaymentMethods.removeClass("enhanced");
+
+              // Use requestAnimationFrame for smoother UI updates
+              requestAnimationFrame(() => {
+                this.enhancePaymentMethodCards();
+                this.addPaymentMethodIcons();
+                this.addPaymentMethodBadges();
+                $currentPaymentMethods.addClass("enhanced");
+                this.isPaymentMethodsEnhanced = true;
+              });
             }
-          });
-
-          if (shouldReapply && this.isPaymentMethodsEnhanced) {
-            // Reset the enhancement flag and reapply
-            this.isPaymentMethodsEnhanced = false;
-            const $currentPaymentMethods = $(
-              ".woocommerce-checkout .payment_methods"
-            );
-            $currentPaymentMethods.removeClass("enhanced");
-
-            setTimeout(() => {
-              this.enhancePaymentMethodCards();
-              this.addPaymentMethodIcons();
-              this.addPaymentMethodBadges();
-              $currentPaymentMethods.addClass("enhanced");
-              this.isPaymentMethodsEnhanced = true;
-            }, 100);
-          }
+          }, 50); // 50ms debounce
         });
 
         this.paymentMethodObserver.observe($paymentMethods[0], {
@@ -670,6 +721,131 @@
 
       this.isInitialized = false;
       this.isPaymentMethodsEnhanced = false;
+    },
+
+    /**
+     * Initialize field-specific error messages
+     * Moves error messages from the banner to individual fields
+     */
+    initFieldSpecificErrors: function () {
+      // Field mapping for error messages
+      const fieldMapping = {
+        billing_first_name: "billing_first_name",
+        billing_last_name: "billing_last_name",
+        billing_address_1: "billing_address_1",
+        billing_city: "billing_city",
+        billing_postcode: "billing_postcode",
+        billing_email: "billing_email",
+        billing_phone: "billing_phone",
+        billing_country: "billing_country",
+        billing_state: "billing_state",
+        billing_address_2: "billing_address_2",
+      };
+
+      // Process error messages
+      this.processFieldErrors(fieldMapping);
+
+      // Listen for WooCommerce checkout updates
+      $(document.body).on("updated_checkout", () => {
+        this.processFieldErrors(fieldMapping);
+      });
+
+      // Listen for form validation errors
+      $(document.body).on("checkout_error", () => {
+        setTimeout(() => {
+          this.processFieldErrors(fieldMapping);
+        }, 100);
+      });
+    },
+
+    /**
+     * Process and move error messages to individual fields
+     */
+    processFieldErrors: function (fieldMapping) {
+      const $errorBanner = $(".woocommerce-error");
+
+      if (!$errorBanner.length) {
+        return;
+      }
+
+      // Clear existing field errors
+      $(".field-error").remove();
+      $(".form-row").removeClass("error");
+
+      // Process each error message
+      $errorBanner.find("li").each((index, errorItem) => {
+        const $errorItem = $(errorItem);
+        const errorText = $errorItem.text().trim();
+
+        // Extract field name from error message
+        const fieldName = this.extractFieldNameFromError(
+          errorText,
+          fieldMapping
+        );
+
+        if (fieldName) {
+          // Find the corresponding form field
+          const $formRow = $(`#${fieldName}`).closest(".form-row");
+
+          if ($formRow.length) {
+            // Add error class to form row
+            $formRow.addClass("error");
+
+            // Create field-specific error message
+            const $fieldError = $(`
+              <div class="field-error">
+                ${errorText}
+              </div>
+            `);
+
+            // Insert error message above the field
+            $formRow.prepend($fieldError);
+          }
+        }
+      });
+
+      // Hide the main error banner
+      $errorBanner.hide();
+    },
+
+    /**
+     * Extract field name from error message text
+     */
+    extractFieldNameFromError: function (errorText, fieldMapping) {
+      // Convert error text to lowercase for matching
+      const lowerErrorText = errorText.toLowerCase();
+
+      // Look for field names in the error text
+      for (const [fieldId, fieldName] of Object.entries(fieldMapping)) {
+        const fieldLabel = fieldId.replace("billing_", "").replace("_", " ");
+
+        if (
+          lowerErrorText.includes(fieldLabel) ||
+          lowerErrorText.includes(fieldId)
+        ) {
+          return fieldId;
+        }
+      }
+
+      // Fallback: try to match common patterns
+      if (lowerErrorText.includes("first name")) return "billing_first_name";
+      if (lowerErrorText.includes("last name")) return "billing_last_name";
+      if (
+        lowerErrorText.includes("street address") ||
+        lowerErrorText.includes("address")
+      )
+        return "billing_address_1";
+      if (lowerErrorText.includes("city") || lowerErrorText.includes("town"))
+        return "billing_city";
+      if (lowerErrorText.includes("postcode") || lowerErrorText.includes("zip"))
+        return "billing_postcode";
+      if (lowerErrorText.includes("email")) return "billing_email";
+      if (lowerErrorText.includes("phone")) return "billing_phone";
+      if (lowerErrorText.includes("country")) return "billing_country";
+      if (lowerErrorText.includes("state") || lowerErrorText.includes("county"))
+        return "billing_state";
+
+      return null;
     },
   };
 

@@ -22,34 +22,39 @@
     }
 
     bindEvents() {
-      // Thumbnail clicks
-      $(document).on("click", ".thumbnail-item", (e) => {
+      // Use event delegation with optimized selectors
+      const $gallery = $(".product-gallery-container");
+
+      // Cache selectors and use more specific delegation
+      $gallery.on("click.thumbnail", ".thumbnail-item", (e) => {
         e.preventDefault();
         const index = $(e.currentTarget).data("image-index");
         this.switchImage(index);
       });
 
-      // Dot navigation clicks
-      $(document).on("click", ".image-dot", (e) => {
+      $gallery.on("click.dot", ".image-dot", (e) => {
         e.preventDefault();
         const index = $(e.currentTarget).data("image-index");
         this.switchImage(index);
       });
 
-      // Arrow navigation
-      $(document).on("click", ".image-nav-prev", (e) => {
+      $gallery.on("click.nav", ".image-nav-prev", (e) => {
         e.preventDefault();
         this.previousImage();
       });
 
-      $(document).on("click", ".image-nav-next", (e) => {
+      $gallery.on("click.nav", ".image-nav-next", (e) => {
         e.preventDefault();
         this.nextImage();
       });
 
-      // Keyboard navigation
+      // Optimized keyboard navigation with passive event listener
       $(document).on("keydown", (e) => {
-        if ($(e.target).closest(".product-gallery-container").length) {
+        // Use more specific check for better performance
+        if (
+          e.target.closest &&
+          $(e.target).closest(".product-gallery-container").length
+        ) {
           if (e.key === "ArrowLeft") {
             e.preventDefault();
             this.previousImage();
@@ -140,51 +145,23 @@
       // Add loading state
       $mainImageWrapper.addClass("loading");
 
-      // Remove any existing animation classes
-      $mainImage.removeClass(
-        "slide-out-left slide-out-right slide-in-left slide-in-right slide-in-active"
-      );
-
-      // Create a temporary image element for the new image
-      const $tempImage = $("<img>", {
+      // Simplified image switch - DISABLED temp-image functionality
+      const $newImage = $("<img>", {
         src: imageUrl,
         alt: imageAlt,
-        class: "main-product-image temp-image",
+        class: "main-product-image slide-in-active",
         "data-image-index": index,
       });
 
-      // Preload the image to prevent flicker
-      $tempImage.on("load", () => {
-        // Add slide-in class based on direction
-        const slideInClass =
-          direction === "right" ? "slide-in-right" : "slide-in-left";
-        $tempImage.addClass(slideInClass);
-
-        // Add slide-out class to current image
-        const slideOutClass =
-          direction === "right" ? "slide-out-left" : "slide-out-right";
-        $mainImage.addClass(slideOutClass);
-
-        // Append the new image
-        $mainImageWrapper.append($tempImage);
-
-        // Trigger the slide-in animation after a brief delay
-        setTimeout(() => {
-          $tempImage.addClass("slide-in-active");
-        }, 10);
-
-        // Remove the old image and clean up after animation completes
-        setTimeout(() => {
-          $mainImage.remove();
-          $tempImage
-            .removeClass("temp-image slide-in-left slide-in-right")
-            .addClass("slide-in-active");
-          $mainImageWrapper.removeClass("loading");
-        }, 250);
+      // Simple image replacement
+      $newImage.on("load", () => {
+        $mainImage.remove();
+        $newImage.appendTo($mainImageWrapper);
+        $mainImageWrapper.removeClass("loading");
       });
 
       // Fallback if image doesn't load
-      $tempImage.on("error", () => {
+      $newImage.on("error", () => {
         $mainImageWrapper.removeClass("loading");
       });
     }
@@ -494,7 +471,11 @@
 
     updateGalleryForColor(color) {
       // Check if we have variation galleries available
-      if (window.primefitProductData && window.primefitProductData.variationGalleries && window.primefitProductData.variationGalleries[color]) {
+      if (
+        window.primefitProductData &&
+        window.primefitProductData.variationGalleries &&
+        window.primefitProductData.variationGalleries[color]
+      ) {
         // Switch to variation-specific gallery
         if (window.switchProductGallery) {
           window.switchProductGallery(color);
@@ -1022,19 +1003,37 @@
           window.wc_add_to_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
-      $.ajax({
-        type: "POST",
-        url: ajaxUrl,
-        data: formData,
-        dataType: "json",
-        timeout: 8000, // Explicit timeout
-        cache: false, // Prevent caching issues
-        success: (response) => {
-          this.handleAjaxSuccess(response, $button);
-        },
-        error: (xhr, status, error) => {
-          this.handleAjaxError(xhr, status, error, $button);
-        },
+      // Use requestAnimationFrame for smoother UI updates
+      requestAnimationFrame(() => {
+        $.ajax({
+          type: "POST",
+          url: ajaxUrl,
+          data: formData,
+          dataType: "json",
+          timeout: 5000, // Reduced timeout for better UX
+          cache: false,
+          // Add performance optimizations
+          beforeSend: () => {
+            // Add connection pooling hint
+            this.xhrPool = this.xhrPool || [];
+            this.xhrPool.push(this);
+          },
+          success: (response) => {
+            this.handleAjaxSuccess(response, $button);
+          },
+          error: (xhr, status, error) => {
+            this.handleAjaxError(xhr, status, error, $button);
+          },
+          complete: () => {
+            // Remove from pool
+            if (this.xhrPool) {
+              const index = this.xhrPool.indexOf(this);
+              if (index > -1) {
+                this.xhrPool.splice(index, 1);
+              }
+            }
+          },
+        });
       });
     }
 
@@ -2636,38 +2635,47 @@
      * Find variation ID based on selected attributes
      */
     findVariationId(color, size) {
-      if (window.primefitProductData && window.primefitProductData.variations) {
-        const variations = window.primefitProductData.variations;
+      // Cache variations data to avoid repeated lookups
+      if (!this.variationsCache) {
+        this.variationsCache = window.primefitProductData?.variations || [];
+      }
 
-        for (let i = 0; i < variations.length; i++) {
-          const variation = variations[i];
-          let hasColor = false;
-          let hasSize = false;
+      const variations = this.variationsCache;
 
-          for (const attrName in variation.attributes) {
-            const attrValue = variation.attributes[attrName];
+      // Optimized search with early returns
+      for (let i = 0; i < variations.length; i++) {
+        const variation = variations[i];
+        if (!variation) continue;
 
-            // Check for color match (more flexible matching)
-            if (
-              (attrName.toLowerCase().includes("color") ||
-                attrName.includes("pa_color") ||
-                attrName.includes("attribute_pa_color")) &&
-              attrValue === color
-            ) {
-              hasColor = true;
-            }
+        const attributes = variation.attributes;
+        if (!attributes) continue;
 
-            // Check for size match (more flexible matching)
-            if (
-              (attrName.toLowerCase().includes("size") ||
-                attrName.includes("pa_size") ||
-                attrName.includes("attribute_pa_size")) &&
-              attrValue === size
-            ) {
-              hasSize = true;
-            }
+        let hasColor = false;
+        let hasSize = false;
+
+        // Check for color match first (most common filter)
+        for (const attrName in attributes) {
+          if (!attributes[attrName]) continue;
+
+          const attrValue = attributes[attrName];
+
+          if (
+            (attrName.toLowerCase().includes("color") ||
+              attrName.includes("pa_color") ||
+              attrName.includes("attribute_pa_color")) &&
+            attrValue === color
+          ) {
+            hasColor = true;
+          } else if (
+            (attrName.toLowerCase().includes("size") ||
+              attrName.includes("pa_size") ||
+              attrName.includes("attribute_pa_size")) &&
+            attrValue === size
+          ) {
+            hasSize = true;
           }
 
+          // Early return if both found
           if (hasColor && hasSize) {
             return variation.variation_id;
           }

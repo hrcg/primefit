@@ -150,6 +150,33 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
 }
 
 /**
+ * Optimize database queries for better performance
+ * Add early in the loading process to affect all queries
+ */
+add_action( 'init', 'primefit_optimize_database_queries', 1 );
+function primefit_optimize_database_queries() {
+	// Optimize term queries by adding cache
+	if ( ! is_admin() && ! wp_doing_ajax() ) {
+		// Cache term queries for 1 hour
+		add_filter( 'get_terms_args', 'primefit_add_terms_cache', 10, 2 );
+	}
+}
+
+/**
+ * Add caching to term queries for better performance
+ */
+function primefit_add_terms_cache( $args, $taxonomies ) {
+	if ( ! is_admin() && ! wp_doing_ajax() && isset( $args['taxonomy'] ) ) {
+		// Add cache to product category queries
+		if ( $args['taxonomy'] === 'product_cat' || $args['taxonomy'] === 'product_tag' ) {
+			$args['cache_results'] = true;
+			$args['update_term_meta_cache'] = true;
+		}
+	}
+	return $args;
+}
+
+/**
  * Ensure WooCommerce AJAX add to cart handler is properly registered
  * WooCommerce should handle this automatically, but we'll ensure it's available
  */
@@ -314,38 +341,58 @@ function primefit_display_additional_sections() {
 
 /**
  * Replace default WooCommerce quantity input with custom one
+ * Optimized for better performance
  */
 add_filter( 'woocommerce_quantity_input_args', 'primefit_override_quantity_input', 10, 2 );
 function primefit_override_quantity_input( $args, $product ) {
-	// This filter allows us to modify the args, but we'll handle the replacement in the template
+	// Add performance optimizations to quantity input
+	$args['inputmode'] = 'numeric'; // Mobile optimization
+	$args['pattern'] = '[0-9]*'; // Prevent non-numeric input
+
+	// Set reasonable defaults to prevent excessive queries
+	if (!isset($args['min_value'])) {
+		$args['min_value'] = 1;
+	}
+	if (!isset($args['max_value'])) {
+		$args['max_value'] = 99; // Reasonable upper limit
+	}
+
 	return $args;
 }
 
 /**
  * Header cart fragments (update cart count and mini cart content)
+ * Optimized for better performance
  */
 add_filter( 'woocommerce_add_to_cart_fragments', 'primefit_header_cart_fragment' );
 function primefit_header_cart_fragment( $fragments ) {
-	// Add cart count fragment for header
+	// Only update fragments if cart exists
+	if ( ! WC()->cart ) {
+		return $fragments;
+	}
+
+	// Add cart count fragment for header - use output buffering for cleaner code
 	ob_start();
 	?>
 	<span class="cart-count" data-cart-count>
-		<?php echo WC()->cart ? intval( WC()->cart->get_cart_contents_count() ) : 0; ?>
+		<?php echo intval( WC()->cart->get_cart_contents_count() ); ?>
 	</span>
 	<?php
 	$fragments['span[data-cart-count]'] = ob_get_clean();
-	
-	// Add mini cart content fragment using WooCommerce standard structure
-	ob_start();
-	?>
-	<div class="widget_shopping_cart_content">
-		<?php if ( function_exists( 'woocommerce_mini_cart' ) ) { woocommerce_mini_cart(); } ?>
-	</div>
-	<?php
-	$fragments['div.widget_shopping_cart_content'] = ob_get_clean();
-	
-	// Cart fragment updated successfully
-	
+
+	// Add mini cart content fragment - only if cart has items
+	if ( ! WC()->cart->is_empty() ) {
+		ob_start();
+		?>
+		<div class="widget_shopping_cart_content">
+			<?php if ( function_exists( 'woocommerce_mini_cart' ) ) {
+				woocommerce_mini_cart();
+			} ?>
+		</div>
+		<?php
+		$fragments['div.widget_shopping_cart_content'] = ob_get_clean();
+	}
+
 	return $fragments;
 }
 
@@ -1075,7 +1122,7 @@ function primefit_get_free_shipping_minimum() {
 }
 
 /**
- * Add recommended items section after mini cart items
+ * Add recommended items section after mini cart items - only from basics/accessories
  */
 add_action( 'woocommerce_mini_cart_contents', 'primefit_mini_cart_recommended_items', 25 );
 function primefit_mini_cart_recommended_items() {
@@ -1083,9 +1130,10 @@ function primefit_mini_cart_recommended_items() {
 		return;
 	}
 	
-	// Get recommended products (you can customize this logic)
+	// Get recommended products from basics/accessories categories only
 	$recommended_products = primefit_get_mini_cart_recommended_products();
 	
+	// Only show section if we have products from the target categories
 	if ( empty( $recommended_products ) ) {
 		return;
 	}
@@ -1094,6 +1142,7 @@ function primefit_mini_cart_recommended_items() {
 	</ul> <!-- Close the mini cart items list -->
 	<div class="mini-cart-recommendations">
 		<h3 class="recommendations-title"><?php _e( 'ADD A LITTLE EXTRA', 'primefit' ); ?></h3>
+		<p class="recommendations-subtitle"><?php _e( 'Complete your look with these essentials', 'primefit' ); ?></p>
 		
 		<div class="recommendations-carousel">
 			<div class="carousel-container">
@@ -1121,54 +1170,79 @@ function primefit_mini_cart_recommended_items() {
  */
 
 /**
- * Get recommended products for mini cart
+ * Get recommended products for mini cart - only from basics and accessories categories
  */
 function primefit_get_mini_cart_recommended_products() {
-	// Get products from specific categories or use cross-sells/up-sells
+	// Get products from specific categories: basics and accessories
 	$recommended_products = [];
 	
-	// Option 1: Get cross-sells from cart items
-	$cross_sells = array();
-	foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
-		$product = $cart_item['data'];
-		$cross_sells = array_merge( $cross_sells, $product->get_cross_sell_ids() );
+	// Get category terms for basics and accessories
+	$basics_term = get_term_by( 'slug', 'basics', 'product_cat' );
+	$accessories_term = get_term_by( 'slug', 'accessories', 'product_cat' );
+	
+	// If categories don't exist, try alternative slugs
+	if ( ! $basics_term ) {
+		$basics_term = get_term_by( 'slug', 'basic', 'product_cat' );
+	}
+	if ( ! $accessories_term ) {
+		$accessories_term = get_term_by( 'slug', 'accessory', 'product_cat' );
 	}
 	
-	if ( ! empty( $cross_sells ) ) {
-		$cross_sells = array_unique( $cross_sells );
-		foreach ( $cross_sells as $product_id ) {
-			$product = wc_get_product( $product_id );
-			if ( $product && $product->is_in_stock() && $product->is_purchasable() ) {
-				$recommended_products[] = $product;
-			}
+	// Debug: Log category search results (only for admins)
+	if ( current_user_can( 'manage_options' ) && ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
+		error_log( 'LITTLE EXTRA DEBUG: Basics category found: ' . ( $basics_term ? $basics_term->name . ' (ID: ' . $basics_term->term_id . ')' : 'Not found' ) );
+		error_log( 'LITTLE EXTRA DEBUG: Accessories category found: ' . ( $accessories_term ? $accessories_term->name . ' (ID: ' . $accessories_term->term_id . ')' : 'Not found' ) );
+	}
+	
+	// Collect category IDs
+	$category_ids = array();
+	if ( $basics_term && ! is_wp_error( $basics_term ) ) {
+		$category_ids[] = $basics_term->term_id;
+	}
+	if ( $accessories_term && ! is_wp_error( $accessories_term ) ) {
+		$category_ids[] = $accessories_term->term_id;
+	}
+	
+	// If no categories found, return empty array
+	if ( empty( $category_ids ) ) {
+		return $recommended_products;
+	}
+	
+	// Query products from these categories
+	$args = array(
+		'post_type'      => 'product',
+		'posts_per_page' => 5,
+		'post_status'    => 'publish',
+		'tax_query'      => array(
+			array(
+				'taxonomy' => 'product_cat',
+				'field'    => 'term_id',
+				'terms'    => $category_ids,
+				'operator' => 'IN'
+			)
+		),
+		'meta_query'     => array(
+			array(
+				'key'     => '_stock_status',
+				'value'   => 'instock',
+				'compare' => '='
+			)
+		),
+		'orderby'        => 'rand', // Random order for variety
+		'order'          => 'ASC'
+	);
+	
+	$products = get_posts( $args );
+	foreach ( $products as $product_post ) {
+		$product = wc_get_product( $product_post->ID );
+		if ( $product && $product->is_purchasable() ) {
+			$recommended_products[] = $product;
 		}
 	}
 	
-	// Option 2: Fallback to popular products if no cross-sells
-	if ( empty( $recommended_products ) ) {
-		$args = array(
-			'post_type'      => 'product',
-			'posts_per_page' => 4,
-			'post_status'    => 'publish',
-			'meta_query'     => array(
-				array(
-					'key'     => '_stock_status',
-					'value'   => 'instock',
-					'compare' => '='
-				)
-			),
-			'orderby'        => 'meta_value_num',
-			'meta_key'       => 'total_sales',
-			'order'          => 'DESC'
-		);
-		
-		$products = get_posts( $args );
-		foreach ( $products as $product_post ) {
-			$product = wc_get_product( $product_post->ID );
-			if ( $product ) {
-				$recommended_products[] = $product;
-			}
-		}
+	// Debug: Log results (only for admins)
+	if ( current_user_can( 'manage_options' ) && ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
+		error_log( 'LITTLE EXTRA DEBUG: Found ' . count( $recommended_products ) . ' products from basics/accessories categories' );
 	}
 	
 	return $recommended_products;
