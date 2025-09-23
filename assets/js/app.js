@@ -35,20 +35,15 @@
         var couponCode = url.searchParams.get("coupon");
 
         if (couponCode && couponCode.trim()) {
-          console.log("🎫 Found coupon in URL:", couponCode);
 
           // Check if we're on checkout page - let checkout.js handle it
           if (isCheckoutPage) {
-            console.log(
-              "Checkout page detected - letting checkout.js handle coupon"
-            );
             return;
           }
 
           // Check if coupon is already applied
           var appliedCoupons = getAppliedCoupons();
           if (appliedCoupons.includes(couponCode.toUpperCase())) {
-            console.log("✅ Coupon " + couponCode + " is already applied");
             return;
           }
 
@@ -245,12 +240,10 @@
   // Function to apply coupon from URL parameter - optimized with better error handling
   // FIXED: Added state management to prevent race conditions
   function applyCouponFromUrl(couponCode) {
-    console.log("🚀 Applying coupon from URL:", couponCode);
 
     // Check if coupon is already applied
     var appliedCoupons = getAppliedCoupons();
     if (appliedCoupons.includes(couponCode.toUpperCase())) {
-      console.log("✅ Coupon " + couponCode + " is already applied");
       // Clear processing flag since we're done
       delete window.primefitCouponProcessing;
       return;
@@ -298,7 +291,6 @@
       },
       success: function (response) {
         if (response.success) {
-          console.log("✅ Coupon applied successfully from URL");
 
           // Clear loading state
           if ($couponForm.length) {
@@ -324,7 +316,6 @@
             }, 3000);
           }
         } else {
-          console.log("❌ Failed to apply coupon from URL:", response.data);
 
           // Clear loading state
           if ($couponForm.length) {
@@ -349,7 +340,6 @@
         }
       },
       error: function (jqXHR, textStatus, errorThrown) {
-        console.log("❌ Network error applying coupon from URL:", textStatus, errorThrown);
 
         // Handle different error types
         var errorMessage = "Network error. Please try again.";
@@ -407,20 +397,15 @@
     if ($couponData.length) {
       var pendingCoupon = $couponData.data("pending-coupon");
       if (pendingCoupon && pendingCoupon.trim()) {
-        console.log("🎫 Found pending coupon from session:", pendingCoupon);
 
         // Check if coupon is already applied
         var appliedCoupons = getAppliedCoupons();
         if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
-          console.log(
-            "✅ Pending coupon " + pendingCoupon + " is already applied"
-          );
           return;
         }
 
         // CRITICAL: Check if coupon is already being processed to prevent race conditions
         if (window.primefitCouponProcessing && window.primefitCouponProcessing === pendingCoupon.toUpperCase()) {
-          console.log("⏳ Coupon " + pendingCoupon + " is already being processed, skipping duplicate attempt");
           return;
         }
 
@@ -436,9 +421,6 @@
           ) {
             applyCouponFromUrl(pendingCoupon.trim());
           } else {
-            console.log(
-              "⏳ Waiting for WooCommerce to load before applying session coupon"
-            );
             // Try again after another delay
             setTimeout(function () {
               if (
@@ -447,10 +429,6 @@
               ) {
                 applyCouponFromUrl(pendingCoupon.trim());
               } else {
-                console.log(
-                  "❌ WooCommerce not loaded, cannot apply session coupon:",
-                  pendingCoupon
-                );
                 // Clear processing flag on failure
                 delete window.primefitCouponProcessing;
               }
@@ -566,13 +544,7 @@
 
 
   function openCart(clickedEl) {
-    console.log("openCart called with:", clickedEl); // Debug log
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
-    console.log("Cart context:", {
-      wrap: $wrap.length,
-      panel: $panel.length,
-      toggle: $toggle.length,
-    }); // Debug log
 
 
     $wrap.addClass("open").attr("data-open", "true");
@@ -619,12 +591,6 @@
                 if (currentVal && cartItemKey) {
                   $input.val(currentVal);
                   $input.attr("data-original-value", currentVal);
-                  console.log(
-                    "CART DEBUG: Synced quantity on cart open (fresh data) for item",
-                    cartItemKey,
-                    "to",
-                    currentVal
-                  );
                 }
               });
             }, 50);
@@ -643,12 +609,6 @@
               if (currentVal && cartItemKey) {
                 $input.val(currentVal);
                 $input.attr("data-original-value", currentVal);
-                console.log(
-                  "CART DEBUG: Fallback sync quantity on cart open for item",
-                  cartItemKey,
-                  "to",
-                  currentVal
-                );
               }
             });
           }, 50);
@@ -667,18 +627,11 @@
           if (currentVal && cartItemKey) {
             $input.val(currentVal);
             $input.attr("data-original-value", currentVal);
-            console.log(
-              "CART DEBUG: Basic sync quantity on cart open for item",
-              cartItemKey,
-              "to",
-              currentVal
-            );
           }
         });
       }, 50);
     }
 
-    console.log("Cart opened successfully"); // Debug log
   }
 
   function addIOSPrevention() {
@@ -874,16 +827,11 @@
         e.preventDefault();
         const $btn = $(this);
         const cartItemKey = $btn.data("cart_item_key");
-        console.log(
-          "CART DEBUG: Remove button clicked, cart item key:",
-          cartItemKey
-        );
 
         if (cartItemKey) {
           $btn.addClass("loading").prop("disabled", true);
           removeCartItem(cartItemKey, $btn);
         } else {
-          console.error("CART DEBUG: No cart item key found");
         }
       }
     );
@@ -910,7 +858,6 @@
   function updateCartQuantity(cartItemKey, quantity, $element) {
     // Validate parameters
     if (!cartItemKey || !quantity || !window.primefit_cart_params) {
-      console.error("Invalid parameters for cart update");
       if ($element) {
         $element.removeClass("loading").prop("disabled", false);
       }
@@ -960,12 +907,6 @@
                   $input.attr("data-original-value", actualQuantity);
 
                   // Debug log to track quantity sync
-                  console.log(
-                    "CART DEBUG: Synced quantity for item",
-                    cartItemKey,
-                    "to",
-                    actualQuantity
-                  );
                 }
               });
             }, 100);
@@ -981,7 +922,6 @@
             checkAndShowEmptyCartState();
           }, 100);
         } else {
-          console.error("Failed to update cart quantity:", response.data);
           // Fallback: reload page if AJAX fails
           if (
             response.data &&
@@ -992,7 +932,6 @@
         }
       },
       error: function (xhr, status, error) {
-        console.error("AJAX error updating cart quantity:", error);
         // Fallback: reload page on critical errors
         if (xhr.status === 403 || xhr.status === 500) {
           window.location.reload();
@@ -1010,7 +949,6 @@
   function removeCartItem(cartItemKey, $element) {
     // Validate parameters
     if (!cartItemKey || !window.primefit_cart_params) {
-      console.error("Invalid parameters for cart item removal");
       if ($element) {
         $element.removeClass("loading").prop("disabled", false);
       }
@@ -1025,18 +963,14 @@
     // Add loading state to the remove button
     $element.addClass("loading").prop("disabled", true);
 
-    console.log("CART DEBUG: Removing cart item:", cartItemKey); // Debug log
-    console.log("CART DEBUG: primefit_cart_params:", primefit_cart_params); // Debug log
 
     // Validate we have the required parameters
     if (!primefit_cart_params.ajax_url) {
-      console.error("CART DEBUG: No AJAX URL available");
       alert("Configuration error: No AJAX URL");
       return;
     }
 
     if (!primefit_cart_params.remove_cart_nonce) {
-      console.error("CART DEBUG: No remove cart nonce available");
       alert("Configuration error: No security nonce");
       return;
     }
@@ -1047,14 +981,12 @@
       security: primefit_cart_params.remove_cart_nonce,
     };
 
-    console.log("CART DEBUG: AJAX data being sent:", ajaxData);
 
     $.ajax({
       type: "POST",
       url: primefit_cart_params.ajax_url,
       data: ajaxData,
       success: function (response) {
-        console.log("Server response:", response); // Debug log
 
         if (response.success) {
           // Start fade-out animation immediately
@@ -1081,25 +1013,11 @@
                 if (currentVal && cartItemKey) {
                   $input.val(currentVal);
                   $input.attr("data-original-value", currentVal);
-                  console.log(
-                    "CART DEBUG: Synced quantity after removal for item",
-                    cartItemKey,
-                    "to",
-                    currentVal
-                  );
                 }
               });
             }, 100);
 
             // Use server's cart state to determine if empty
-            console.log(
-              "Server says cart is empty:",
-              response.data.cart_is_empty
-            );
-            console.log(
-              "Server cart contents count:",
-              response.data.cart_contents_count
-            );
 
             // Check cart state using server data
             setTimeout(function () {
@@ -1113,7 +1031,6 @@
               }
             }, 50);
           } else {
-            console.error("No fragments returned from server");
           }
 
           // Trigger WooCommerce cart update events
@@ -1142,13 +1059,11 @@
             typeof response.data === "string" &&
             response.data.includes("Security check failed")
           ) {
-            console.log("CART DEBUG: Security check failed - reloading page");
             window.location.reload();
           }
         }
       },
       error: function (xhr, status, error) {
-        console.error("AJAX error removing cart item:", { xhr, status, error });
 
         // Remove loading state and fade class on error
         $element.removeClass("loading").prop("disabled", false);
@@ -1178,8 +1093,6 @@
     const $cartItems = $(".woocommerce-mini-cart__items");
     const $cartContent = $(".cart-panel-content");
 
-    console.log("Checking empty cart state..."); // Debug log
-    console.log("Cart items container exists:", $cartItems.length > 0); // Debug log
 
     // Check multiple indicators to ensure cart is truly empty
     const hasCartItemsContainer = $cartItems.length > 0;
@@ -1189,15 +1102,11 @@
     const hasEmptyMessage =
       $(".woocommerce-mini-cart__empty-message").length > 0;
 
-    console.log("Cart items count:", cartItemsCount); // Debug log
-    console.log("Has empty message:", hasEmptyMessage); // Debug log
 
     // If no cart items container exists OR cart items container is empty
     if (!hasCartItemsContainer || cartItemsCount === 0) {
-      console.log("Cart is empty - showing empty state"); // Debug log
       showEmptyCartState();
     } else {
-      console.log("Cart has items - hiding empty state"); // Debug log
       hideEmptyCartState();
     }
   }
@@ -1226,8 +1135,6 @@
   $(document).on(
     "added_to_cart",
     function (event, fragments, cart_hash, $button) {
-      console.log("Product added to cart - auto-opening mini cart"); // Debug log
-      console.log("Event data:", { fragments, cart_hash, button: $button }); // Debug log
 
       // Update fragments if provided
       if (fragments) {
@@ -1268,12 +1175,6 @@
                       if (currentVal && cartItemKey) {
                         $input.val(currentVal);
                         $input.attr("data-original-value", currentVal);
-                        console.log(
-                          "CART DEBUG: Synced quantity after fresh fragments for item",
-                          cartItemKey,
-                          "to",
-                          currentVal
-                        );
                       }
                     });
                   }, 50);
@@ -1291,12 +1192,6 @@
                   if (currentVal && cartItemKey) {
                     $input.val(currentVal);
                     $input.attr("data-original-value", currentVal);
-                    console.log(
-                      "CART DEBUG: Fallback sync quantity for item",
-                      cartItemKey,
-                      "to",
-                      currentVal
-                    );
                   }
                 });
               },
@@ -1313,12 +1208,6 @@
               if (currentVal && cartItemKey) {
                 $input.val(currentVal);
                 $input.attr("data-original-value", currentVal);
-                console.log(
-                  "CART DEBUG: Basic sync quantity for item",
-                  cartItemKey,
-                  "to",
-                  currentVal
-                );
               }
             });
           }
@@ -1335,7 +1224,6 @@
 
       // Auto-close after 5 seconds
       setTimeout(function () {
-        console.log("Auto-closing mini cart after 5 seconds"); // Debug log
         closeCart();
       }, 5000);
     }
@@ -1343,7 +1231,6 @@
 
   // Function to show empty cart state
   function showEmptyCartState() {
-    console.log("Showing empty cart state"); // Debug log
 
     const $cartItems = $(".woocommerce-mini-cart__items");
     const $cartTotal = $(".woocommerce-mini-cart__total");
@@ -1367,12 +1254,10 @@
       $customEmptyCart.show();
     }
 
-    console.log("Empty cart state is now visible"); // Debug log
   }
 
   // Function to hide empty cart state
   function hideEmptyCartState() {
-    console.log("Hiding empty cart state"); // Debug log
 
     const $cartItems = $(".woocommerce-mini-cart__items");
     const $cartTotal = $(".woocommerce-mini-cart__total");
@@ -1393,7 +1278,6 @@
     if ($emptyMessage.length) $emptyMessage.hide();
     if ($customEmptyCart.length) $customEmptyCart.hide();
 
-    console.log("Cart content is now visible"); // Debug log
   }
 
   // Shop Filter Bar Controller (preserved)
@@ -2043,7 +1927,6 @@
         }
       },
       error: function () {
-        console.error("Failed to remove coupon");
       },
       complete: function () {
         // Remove loading state
@@ -2061,20 +1944,8 @@
     const colorValue = $colorSwatch.data("color");
     const sizeValue = $sizeOption.data("size");
 
-    console.log("Size option data:", {
-      variationId,
-      productId,
-      colorValue,
-      sizeValue,
-      isInStock: $sizeOption.data("is-in-stock"),
-      stockQuantity: $sizeOption.data("stock-quantity"),
-    });
 
     if (!variationId || !productId || variationId === 0) {
-      console.error("Missing or invalid variation/product ID:", {
-        variationId,
-        productId,
-      });
       showCartFeedback(
         $productContainer,
         "Invalid product configuration",
@@ -2168,7 +2039,6 @@
         window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce);
 
     if (!securityNonce) {
-      console.error("No security nonce available");
       showCartFeedback($productContainer, "Configuration error", "error");
       $sizeOption.removeClass("loading").prop("disabled", false);
       $colorSwatch.removeClass("loading");
@@ -2183,7 +2053,6 @@
       (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
       "/wp-admin/admin-ajax.php";
 
-    console.log("Adding to cart with form data:", formData);
 
     // Make AJAX request using WooCommerce's standard approach
     $.ajax({
@@ -2194,16 +2063,13 @@
       timeout: 8000,
       cache: false,
       success: function (response) {
-        console.log("Add to cart response:", response);
 
         // Handle the response exactly like WooCommerce does
         if (response.error && response.product_url) {
           // This might be a redirect response, check if product was actually added
-          console.log("Received redirect response, checking cart...");
           checkCartAfterAdd($productContainer, $sizeOption, $colorSwatch);
         } else if (response.error) {
           // Show error message
-          console.log("Error adding to cart:", response.error);
           showCartFeedback(
             $productContainer,
             "Error adding to cart: " + (response.error || "Unknown error"),
@@ -2211,7 +2077,6 @@
           );
         } else {
           // Success - update cart fragments
-          console.log("Successfully added to cart");
 
           // Trigger cart update events
           $(document.body).trigger("added_to_cart", [
@@ -2234,7 +2099,6 @@
         }
       },
       error: function (xhr, status, error) {
-        console.error("AJAX error:", { xhr, status, error });
         showCartFeedback($productContainer, "Error adding to cart", "error");
       },
       complete: function () {
@@ -2366,7 +2230,6 @@
       "click",
       ".product-loop-color-swatches .color-swatch",
       function (e) {
-        console.log('Color swatch click event triggered!');
         e.preventDefault();
         e.stopPropagation(); // Prevent triggering the product link
 
@@ -2383,18 +2246,6 @@
         const selectedColor = $swatch.data("color");
 
         // Debug logging
-        console.log('Color swatch clicked:', {
-          element: $swatch,
-          color: selectedColor,
-          variationImage: variationImage,
-          hasVariationImage: !!variationImage,
-          productId: $productContainer.data('product-id'),
-          swatchDataAttributes: {
-            color: $swatch.data('color'),
-            variationImage: $swatch.data('variation-image'),
-            productId: $swatch.data('product-id')
-          }
-        });
 
         // If no main image found, try to find any img element in the product container
         if ($mainImage.length === 0) {
@@ -2410,20 +2261,15 @@
 
         // If there's a variation image, update the main image
         if (variationImage && variationImage !== "" && $mainImage.length > 0) {
-          console.log('Updating main image to:', variationImage);
-          console.log('Main image element found:', $mainImage[0]);
           // Add a class to prevent hover effects from interfering
           $productContainer.addClass("color-swatch-active");
 
           // Update the main image directly
           const oldSrc = $mainImage.attr("src");
           const oldSrcset = $mainImage.attr("srcset");
-          console.log('Current image src:', oldSrc);
-          console.log('Current image srcset:', oldSrcset);
           
           // Add cache busting parameter to prevent browser caching
           const cacheBustedImage = variationImage.includes('?') ? variationImage + '&t=' + Date.now() : variationImage + '?t=' + Date.now();
-          console.log('Setting new image src to:', cacheBustedImage);
           
           // Update both src and srcset attributes
           $mainImage.attr("src", cacheBustedImage);
@@ -2434,37 +2280,26 @@
             $secondImage.css("opacity", "0");
           }
 
-          console.log('Image updated from', oldSrc, 'to', cacheBustedImage);
         } else if (variationImage && variationImage !== "") {
-          console.log('Using fallback image update method for:', variationImage);
-          console.log('Main image not found, searching for any image in product container');
           // Fallback: try to find and update any image in the product container
           const $anyImage = $productContainer.find('img').first();
-          console.log('Found fallback image element:', $anyImage[0]);
           if ($anyImage.length > 0) {
             const oldSrc = $anyImage.attr("src");
             const oldSrcset = $anyImage.attr("srcset");
-            console.log('Fallback current image src:', oldSrc);
-            console.log('Fallback current image srcset:', oldSrcset);
             // Add cache busting parameter to prevent browser caching
             const cacheBustedImage = variationImage.includes('?') ? variationImage + '&t=' + Date.now() : variationImage + '?t=' + Date.now();
-            console.log('Setting fallback image src to:', cacheBustedImage);
             $anyImage.attr("src", cacheBustedImage);
             $anyImage.removeAttr("srcset"); // Remove srcset to force browser to use src
             $productContainer.addClass("color-swatch-active");
-            console.log('Fallback image updated from', oldSrc, 'to', cacheBustedImage);
           } else {
-            console.log('No image element found to update');
           }
         } else {
-          console.log('No variation image available');
         }
 
         // Update size options based on selected color (safely wrapped in try-catch)
         try {
           updateSizeOptionsForColor($productContainer, selectedColor);
         } catch (error) {
-          console.warn('Error updating size options for color:', error);
           // Continue with the color switcher functionality even if size options fail
         }
       }
@@ -2497,9 +2332,6 @@
 
       // Only prevent if the exact same size option is already loading
       if ($sizeOption.hasClass("loading")) {
-        console.log(
-          "This size option is already processing, ignoring duplicate click"
-        );
         return;
       }
 

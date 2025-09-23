@@ -262,6 +262,21 @@
 
     init() {
       this.bindEvents();
+      this.initializeCollapsibleSections();
+    }
+
+    initializeCollapsibleSections() {
+      // Initialize collapsible sections to be open by default
+      $('.collapsible-content').each(function() {
+        const $content = $(this);
+        const $section = $content.closest('.collapsible-section');
+        const $icon = $section.find('.collapsible-icon');
+        
+        // Remove closed class if it exists and set initial icon rotation for open state
+        $content.removeClass("closed");
+        $icon.css("transform", "rotate(180deg)");
+        $content.attr("aria-expanded", "true");
+      });
     }
 
     bindEvents() {
@@ -289,12 +304,12 @@
           .first();
         const $icon = $toggle.find(".collapsible-icon");
 
-        if ($content.hasClass("open")) {
-          $content.removeClass("open");
-          $icon.css("transform", "rotate(0deg)");
-        } else {
-          $content.addClass("open");
+        if ($content.hasClass("closed")) {
+          $content.removeClass("closed");
           $icon.css("transform", "rotate(180deg)");
+        } else {
+          $content.addClass("closed");
+          $icon.css("transform", "rotate(0deg)");
         }
       });
 
@@ -1038,21 +1053,14 @@
     }
 
     handleAjaxSuccess(response, $button) {
-      console.log("Auto add to cart response:", response);
 
       // Check for actual errors vs success-with-redirect
       if (response.error) {
         // If there are fragments, it means the product was actually added successfully
         if (response.fragments && Object.keys(response.fragments).length > 0) {
-          console.log(
-            "Product added successfully (with fragments despite error flag)"
-          );
           // Treat as success since we have fragments
         } else if (response.product_url && !response.data && !response.notice) {
           // This might be a redirect response, which could be success
-          console.log(
-            "Received redirect response, checking if product was actually added..."
-          );
 
           // Force refresh cart fragments to check if item was added
           this.checkCartAfterAutoAdd($button);
@@ -1101,7 +1109,6 @@
     }
 
     handleAjaxError(xhr, status, error, $button) {
-      console.error("AJAX error auto adding to cart:", { xhr, status, error });
 
       let errorMessage = "Unable to add product to cart. Please try again.";
 
@@ -1166,7 +1173,6 @@
           action: "woocommerce_get_refreshed_fragments",
         },
         success: function (response) {
-          console.log("Cart check response:", response);
 
           if (response && response.fragments) {
             // Update fragments - this will show the new cart count if product was added
@@ -1240,13 +1246,11 @@
     showAutoAddSuccess(message) {
       // Show success notification (can be customized)
       if (message && message.trim()) {
-        console.log("Auto add to cart success:", message);
       }
     }
 
     showAutoAddError(message) {
       // Show error notification
-      console.error("Auto add to cart error:", message);
       if (message && message.trim()) {
         // You can implement a toast notification system here
         alert(message);
@@ -1850,9 +1854,6 @@
     handleFormSubmission(e) {
       // Prevent multiple simultaneous submissions
       if (this.isSubmitting) {
-        console.log(
-          "Form submission already in progress, ignoring duplicate submission"
-        );
         return false;
       }
 
@@ -2014,7 +2015,6 @@
             "Selected variation not found. Please refresh the page and try again.",
         };
       } catch (error) {
-        console.error("Error validating variation stock:", error);
         return {
           valid: false,
           message: "Unable to validate stock. Please try again.",
@@ -2077,7 +2077,6 @@
           const variationId = this.findVariationId(colorValue, sizeValue);
           if (variationId) {
             formData.variation_id = variationId;
-            console.log("Set variation_id in form data:", variationId);
           }
         }
 
@@ -2128,7 +2127,6 @@
           window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce;
       }
 
-      console.log("Form data (updated):", formData); // Debug log
 
       return formData;
     }
@@ -2176,7 +2174,6 @@
 
       // Set a shorter timeout for better user experience
       const timeoutId = setTimeout(() => {
-        console.log("AJAX timeout - resetting button state");
         this.hideLoadingState($button, false);
       }, 8000); // 8 second timeout
 
@@ -2199,7 +2196,6 @@
             retryCount < 2 &&
             (status === "timeout" || status === "error" || xhr.status === 0)
           ) {
-            console.log(`Retrying AJAX request (attempt ${retryCount + 1}/3)`);
             setTimeout(() => {
               this.submitToCart(formData, $button, retryCount + 1);
             }, 1000 * (retryCount + 1)); // Exponential backoff
@@ -2212,28 +2208,17 @@
     }
 
     handleSuccess(response, $button) {
-      console.log("Add to cart response:", response); // Debug log
 
       // Check for actual errors vs success-with-redirect
       if (response.error) {
-        console.log("Response has error flag:", response.error);
-        console.log("Response data:", response.data);
-        console.log("Response notice:", response.notice);
-        console.log("Response fragments:", response.fragments);
 
         // If there are fragments, it means the product was actually added successfully
         // WooCommerce sometimes returns error: true for redirects/notices, not actual errors
         if (response.fragments && Object.keys(response.fragments).length > 0) {
-          console.log(
-            "Product added successfully (with fragments despite error flag)"
-          );
           // Treat as success since we have fragments
         } else if (response.product_url && !response.data && !response.notice) {
           // This might be a redirect response, which could be success
           // Let's try to determine if it's actually an error or just a redirect
-          console.log(
-            "Received redirect response, checking if product was actually added..."
-          );
 
           // Force refresh cart fragments to check if item was added
           this.checkCartAfterAdd($button);
@@ -2266,13 +2251,9 @@
             }
           }
 
-          console.log("Actual error detected:", errorMessage);
 
           // If it's a variation error, try to fix the form and retry
           if (isVariationError) {
-            console.log(
-              "Variation validation error detected, attempting to fix form..."
-            );
             this.fixVariationFormAndRetry($button);
             return;
           }
@@ -2294,11 +2275,6 @@
       // Trigger WooCommerce events first
       $(document.body).trigger("update_checkout");
       $(document.body).trigger("wc_fragment_refresh");
-      console.log("Triggering added_to_cart event with:", {
-        fragments: response.fragments,
-        cart_hash: response.cart_hash,
-        button: $button,
-      }); // Debug log
       $(document.body).trigger("added_to_cart", [
         response.fragments,
         response.cart_hash,
@@ -2325,12 +2301,6 @@
     }
 
     handleError(xhr, status, error, $button, retryCount = 0) {
-      console.error("AJAX error adding to cart:", {
-        xhr,
-        status,
-        error,
-        retryCount,
-      }); // Debug logwoocommerce-mini-cart__item-details
 
       let errorMessage = "Unable to add product to cart. Please try again.";
 
@@ -2373,7 +2343,6 @@
           action: "woocommerce_get_refreshed_fragments",
         },
         success: function (response) {
-          console.log("Cart check response:", response);
 
           if (response && response.fragments) {
             // Update fragments - this will show the new cart count if product was added
@@ -2384,14 +2353,6 @@
             // Trigger WooCommerce events first
             $(document.body).trigger("update_checkout");
             $(document.body).trigger("wc_fragment_refresh");
-            console.log(
-              "Triggering added_to_cart event from checkCartAfterAdd with:",
-              {
-                fragments: response.fragments,
-                cart_hash: response.cart_hash,
-                button: $button,
-              }
-            ); // Debug log
             $(document.body).trigger("added_to_cart", [
               response.fragments,
               response.cart_hash,
@@ -2459,13 +2420,11 @@
     showSuccess(message) {
       // Show success notification (can be customized)
       if (message && message.trim()) {
-        console.log("Add to cart success:", message);
       }
     }
 
     showError(message) {
       // Show error notification
-      console.error("Add to cart error:", message);
       if (message && message.trim()) {
         // You can implement a toast notification system here
         alert(message);
@@ -2496,12 +2455,10 @@
      * Fix variation form validation and retry add to cart
      */
     fixVariationFormAndRetry($button) {
-      console.log("Attempting to fix variation form validation...");
 
       // Get the current form
       const $form = $(".primefit-variations-form");
       if (!$form.length) {
-        console.log("No variation form found, cannot fix validation");
         this.showError(
           "Please select all product options before adding to cart."
         );
@@ -2514,7 +2471,6 @@
       const $selectedSize = $(".size-option.selected");
 
       if (!$selectedColor.length || !$selectedSize.length) {
-        console.log("Missing color or size selection");
         this.showError("Please select both color and size options.");
         this.hideLoadingState($button, false);
         return;
@@ -2523,7 +2479,6 @@
       const colorValue = $selectedColor.data("color");
       const sizeValue = $selectedSize.data("size");
 
-      console.log("Selected options:", { color: colorValue, size: sizeValue });
 
       // Ensure variation form inputs are properly set
       this.updateVariationFormInputs(colorValue, sizeValue);
@@ -2531,7 +2486,6 @@
       // Find the correct variation ID
       const variationId = this.findVariationId(colorValue, sizeValue);
       if (!variationId) {
-        console.log("Could not find valid variation ID");
         this.showError(
           "Selected combination is not available. Please choose different options."
         );
@@ -2539,7 +2493,6 @@
         return;
       }
 
-      console.log("Found variation ID:", variationId);
 
       // Update the variation_id field
       $form.find('input[name="variation_id"]').val(variationId);
@@ -2551,7 +2504,6 @@
       // Wait a moment for WooCommerce to process the change
       setTimeout(() => {
         // Retry the add to cart with the corrected form
-        console.log("Retrying add to cart with corrected form...");
         this.retryAddToCart($form, $button);
       }, 100);
     }
@@ -2563,7 +2515,6 @@
       // Get updated form data
       const formData = this.getFormData($form);
 
-      console.log("Retry form data:", formData);
 
       // Submit via AJAX again
       this.submitToCart(formData, $button);
@@ -2574,10 +2525,6 @@
      * This ensures WooCommerce's variation validation works properly
      */
     updateVariationFormInputs(colorValue, sizeValue) {
-      console.log("Updating variation form inputs:", {
-        color: colorValue,
-        size: sizeValue,
-      });
 
       // Update color attribute input
       if (colorValue) {
@@ -2597,7 +2544,6 @@
             } else {
               $input.val(colorValue);
             }
-            console.log("Updated color input:", selector, "to", colorValue);
           }
         });
       }
@@ -2620,7 +2566,6 @@
             } else {
               $input.val(sizeValue);
             }
-            console.log("Updated size input:", selector, "to", sizeValue);
           }
         });
       }

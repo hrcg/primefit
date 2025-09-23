@@ -978,13 +978,13 @@ body.single-product .single-product-page {
 }
 
 .collapsible-content {
-  max-height: 0;
+  max-height: 500px;
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
 
-.collapsible-content.open {
-  max-height: 500px;
+.collapsible-content.closed {
+  max-height: 0;
 }
 
 .collapsible-inner {
@@ -1008,6 +1008,7 @@ body.single-product .single-product-page {
 
 .product-features-container {
   margin-bottom: 80px;
+  padding-top: 60px;
 }
 
 .features-title {
@@ -1063,7 +1064,7 @@ body.single-product .single-product-page {
    ======================================== */
 
 .product-technical-highlights-container {
-  margin-bottom: 80px;
+  margin-bottom: 120px;
 }
 
 .technical-highlights-title {

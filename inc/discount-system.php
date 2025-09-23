@@ -82,14 +82,12 @@ add_action( 'woocommerce_order_status_completed', 'primefit_track_discount_usage
 function primefit_track_discount_usage( $order_id ) {
 	// Validate order ID
 	if ( empty( $order_id ) || ! is_numeric( $order_id ) ) {
-		error_log( "PrimeFit: Invalid order ID provided to discount tracking: " . $order_id );
 		return;
 	}
 
 	$order = wc_get_order( $order_id );
 
 	if ( ! $order ) {
-		error_log( "PrimeFit: Could not retrieve order for discount tracking: " . $order_id );
 		return;
 	}
 
@@ -103,7 +101,6 @@ function primefit_track_discount_usage( $order_id ) {
 	// Get customer email and validate
 	$email = $order->get_billing_email();
 	if ( empty( $email ) || ! is_email( $email ) ) {
-		error_log( "PrimeFit: Invalid or missing email for order " . $order_id );
 		return;
 	}
 
@@ -121,7 +118,6 @@ function primefit_track_discount_usage( $order_id ) {
 			$coupon = new WC_Coupon( $coupon_code );
 
 			if ( ! $coupon || ! $coupon->get_id() ) {
-				error_log( "PrimeFit: Invalid coupon code: " . $coupon_code . " for order " . $order_id );
 				continue;
 			}
 
@@ -160,7 +156,6 @@ function primefit_track_discount_usage( $order_id ) {
 	} catch ( Exception $e ) {
 		// Rollback transaction on error
 		$wpdb->query( 'ROLLBACK' );
-		error_log( "PrimeFit: Transaction failed for order " . $order_id . " - " . $e->getMessage() );
 	}
 }
 

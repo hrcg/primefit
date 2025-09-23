@@ -122,6 +122,8 @@ add_action( 'woocommerce_before_shop_loop_item_title', 'primefit_add_product_sta
 function primefit_add_product_status_tag() {
 	global $product;
 	
+	$has_sale_label = false;
+	
 	// Check if product is on sale
 	if ( $product->is_on_sale() ) {
 		$sale_percentage = 'SALE';
@@ -137,11 +139,39 @@ function primefit_add_product_status_tag() {
 		}
 		
 		echo '<span class="product-status-tag ' . esc_attr( $tag_class ) . '">' . esc_html( $sale_percentage ) . '</span>';
+		$has_sale_label = true;
 	}
 	
 	// Check if product is out of stock
 	if ( ! $product->is_in_stock() ) {
 		echo '<span class="product-status-tag sold-out">SOLD OUT</span>';
+	}
+	
+	// Check for LIMITED STOCK on variable products with mixed stock availability
+	if ( $product->is_type( 'variable' ) && $product->is_in_stock() ) {
+		$variations = $product->get_available_variations();
+		$has_out_of_stock_variations = false;
+		$has_in_stock_variations = false;
+		
+		foreach ( $variations as $variation_data ) {
+			$variation = wc_get_product( $variation_data['variation_id'] );
+			if ( $variation ) {
+				if ( $variation->is_in_stock() ) {
+					$has_in_stock_variations = true;
+				} else {
+					$has_out_of_stock_variations = true;
+				}
+			}
+		}
+		
+		// Show LIMITED STOCK if some variations are out of stock but others are in stock
+		if ( $has_out_of_stock_variations && $has_in_stock_variations ) {
+			$limited_stock_class = 'limited-stock';
+			if ( $has_sale_label ) {
+				$limited_stock_class .= ' has-sale-label';
+			}
+			echo '<span class="product-status-tag ' . esc_attr( $limited_stock_class ) . '">LIMITED STOCK</span>';
+		}
 	}
 }
 

@@ -286,7 +286,7 @@ body.nav-open {
 }
 
 .product-loop-actions .button {
-  min-width: 120px;
+  min-width: 80px;
   text-align: center;
 }
 
@@ -403,7 +403,7 @@ body.nav-open {
   background: #fff;
   color: #000;
   border: 0;
-  padding: 12px 24px;
+  padding: 8px 20px;
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;

@@ -153,7 +153,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 					// Debug logging for color matching
 					if ( $index === 0 ) { // Only log for first color to avoid spam
 						echo "<!-- Debug: Color option: " . esc_html( $color_option ) . " -->";
-						error_log('Product Color Options Debug: ' . print_r($color_options, true));
 					}
 					
 					// Try to get variation image for this color
@@ -415,49 +414,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 			</div>
 		<?php endif; ?>
 		
-		<?php
-		// Additional Information Section
-		$additional_info = $product->get_short_description();
-		if ( $additional_info ) :
-		?>
-			<div class="collapsible-section">
-				<button class="collapsible-toggle" type="button">
-					<span class="collapsible-title"><?php esc_html_e( 'DESIGNED FOR', 'primefit' ); ?></span>
-					<span class="collapsible-icon">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-					</span>
-				</button>
-				<div class="collapsible-content">
-					<div class="collapsible-inner">
-						<?php echo wp_kses_post( wpautop( $additional_info ) ); ?>
-					</div>
-				</div>
-			</div>
-		<?php endif; ?>
-		
-		<?php
-		// Fabric + Technology Section (from ACF or custom fields)
-		$fabric_tech = get_field( 'fabric_technology', get_the_ID() );
-		if ( $fabric_tech ) :
-		?>
-			<div class="collapsible-section">
-				<button class="collapsible-toggle" type="button">
-					<span class="collapsible-title"><?php esc_html_e( 'FABRIC + TECHNOLOGY', 'primefit' ); ?></span>
-					<span class="collapsible-icon">
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-						</svg>
-					</span>
-				</button>
-				<div class="collapsible-content">
-					<div class="collapsible-inner">
-						<?php echo wp_kses_post( wpautop( $fabric_tech ) ); ?>
-					</div>
-				</div>
-			</div>
-		<?php endif; ?>
 	</div>
 </div>
 

@@ -193,7 +193,6 @@ function primefit_apply_coupon_if_valid( $coupon_code ) {
 
 	} catch ( Exception $e ) {
 		// If there's any error accessing cart, return false
-		error_log( "PrimeFit: Error applying coupon " . $coupon_code . " - " . $e->getMessage() );
 		return false;
 	}
 }
@@ -219,7 +218,6 @@ function primefit_apply_pending_coupon_from_session() {
 
 		// CRITICAL: Check if coupon is already being processed to prevent race conditions
 		if ( isset( $_SESSION['primefit_coupon_processing'] ) && $_SESSION['primefit_coupon_processing'] === $coupon_code ) {
-			error_log( "PrimeFit: Coupon " . $coupon_code . " is already being processed, skipping duplicate attempt" );
 			return;
 		}
 
@@ -233,7 +231,6 @@ function primefit_apply_pending_coupon_from_session() {
 			if ( $applied ) {
 				// Remove from session since it's now applied
 				unset( $_SESSION['primefit_pending_coupon'] );
-				error_log( "PrimeFit: Successfully applied pending coupon from session: " . $coupon_code );
 			}
 
 			// Remove processing flag
@@ -291,7 +288,6 @@ function primefit_check_pending_coupon_on_wc_init() {
 
 	// CRITICAL: Check if coupon is already being processed to prevent race conditions
 	if ( isset( $_SESSION['primefit_coupon_processing'] ) && $_SESSION['primefit_coupon_processing'] === $coupon_code ) {
-		error_log( "PrimeFit: Coupon " . $coupon_code . " is already being processed in another hook, skipping duplicate attempt" );
 		return;
 	}
 
@@ -302,7 +298,6 @@ function primefit_check_pending_coupon_on_wc_init() {
 		if ( $applied ) {
 			// Remove from session since it's now applied
 			unset( $_SESSION['primefit_pending_coupon'] );
-			error_log( "PrimeFit: Successfully applied pending coupon from session: " . $coupon_code );
 		}
 	}
 }

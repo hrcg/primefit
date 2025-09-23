@@ -787,13 +787,24 @@
 }
 
 .woocommerce ul.products li.product .product-status-tag.sale {
-  background: rgba(255, 255, 255, 0.9);
+  background: #f5f5f5;
   color: #333;
 }
 
 .woocommerce ul.products li.product .product-status-tag.sold-out {
-  background: rgba(255, 255, 255, 0.9);
-  color: #666;
+  background: #f5f5f5;
+  color: #333;
+}
+
+.woocommerce ul.products li.product .product-status-tag.limited-stock {
+  background: #f5f5f5;
+  color: #333;
+}
+
+/* Position LIMITED STOCK on the right when there's already a SALE label */
+.woocommerce ul.products li.product .product-status-tag.limited-stock.has-sale-label {
+  left: auto;
+  right: 12px;
 }
 
 /* Product Title */
@@ -1582,6 +1593,17 @@ body.woocommerce .hero {
 .woocommerce-page .product-status-tag.sold-out {
   background: #666;
   color: #fff;
+}
+
+.woocommerce-page .product-status-tag.limited-stock {
+  background: #ff9500;
+  color: #fff;
+}
+
+/* Position LIMITED STOCK on the right when there's already a SALE label */
+.woocommerce-page .product-status-tag.limited-stock.has-sale-label {
+  left: auto;
+  right: 12px;
 }
 
 @keyframes flash {

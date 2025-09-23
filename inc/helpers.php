@@ -1155,7 +1155,6 @@ function primefit_render_product_loop_color_swatches( $product ) {
 
 		// Debug: Log variation image data
 		if ( WP_DEBUG && $variation_image ) {
-			error_log( "Color: $color_option, Variation Image: $variation_image" );
 		}
 		
 		?>

@@ -92,7 +92,6 @@ $gallery_data = array(
 
 // Debug: Log the gallery data being sent to JavaScript
 if (!empty($variation_galleries)) {
-	error_log('Variation Galleries Debug: ' . print_r($variation_galleries, true));
 }
 
 ?>
@@ -177,29 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Gallery data from PHP
 	const galleryData = <?php echo json_encode( $gallery_data ); ?>;
 
-	// Debug logging (only in development)
-	if (typeof console !== 'undefined' && console.log) {
-		console.log('Variation Gallery Debug:', {
-			defaultImages: galleryData.default,
-			variations: Object.keys(galleryData.variations || {}),
-			hasVariations: Object.keys(galleryData.variations || {}).length > 0,
-			currentColor: galleryData.current_color,
-			imageUrlsCount: Object.keys(galleryData.image_urls || {}).length
-		});
-
-		// Log all available colors from variations
-		if (galleryData.variations) {
-			Object.keys(galleryData.variations).forEach(color => {
-				console.log('Color:', color, 'Images:', galleryData.variations[color].images);
-			});
-		}
-
-		// Log some sample URLs
-		if (galleryData.image_urls) {
-			const sampleUrls = Object.entries(galleryData.image_urls).slice(0, 3);
-			console.log('Sample image URLs:', sampleUrls);
-		}
-	}
 
 	let currentImages = galleryData.default;
 	let currentIndex = 0;
@@ -207,8 +183,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Initialize gallery with current images
 	function initializeGallery() {
-		console.log('Initializing gallery...');
-		console.log('Gallery data:', galleryData);
 
 		// Always start with default gallery
 		currentImages = galleryData.default;
@@ -225,12 +199,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// Final safety check
 		if (!currentImages || currentImages.length === 0) {
-			console.log('No images found, using fallback');
 			currentImages = galleryData.default;
 			currentColor = '';
 		}
 
-		console.log('Final images to use:', currentImages);
 
 		// Create thumbnails first
 		updateThumbnailGallery();
@@ -241,7 +213,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	function updateMainImage(index) {
 		if (!currentImages || !currentImages[index] || currentImages[index] === 0) {
-			console.log('Invalid image at index:', index, 'Images:', currentImages);
 			return;
 		}
 
@@ -249,13 +220,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		const imageUrl = galleryData.image_urls[imageId] || '';
 
 		if (!imageUrl) {
-			console.log('No URL found for image ID:', imageId, 'Available URLs:', galleryData.image_urls);
 			return;
 		}
 
 		const imageAlt = `Product image ${index + 1}`;
 
-		console.log('Loading image:', imageUrl, 'for index:', index, 'imageId:', imageId);
 
 		mainImage.src = imageUrl;
 		mainImage.alt = imageAlt;
@@ -278,26 +247,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Switch to a different color gallery
 	function switchColorGallery(color) {
-		console.log('Switching to color:', color);
-		console.log('Available colors in variations:', Object.keys(galleryData.variations || {}));
 
 		// Normalize color for consistent matching
 		const normalizedColor = color ? color.toLowerCase().trim() : '';
-		console.log('Normalized color:', normalizedColor);
 
 		if (!normalizedColor || !galleryData.variations || !galleryData.variations[normalizedColor]) {
 			// Switch back to default gallery
-			console.log('Color not found in variations, using default gallery');
 			currentImages = galleryData.default;
 			currentColor = '';
 		} else {
 			// Switch to specific color gallery
-			console.log('Found gallery for color:', normalizedColor, galleryData.variations[normalizedColor]);
 			currentImages = galleryData.variations[normalizedColor].images;
 			currentColor = color; // Keep original color for reference
 		}
 
-		console.log('New current images:', currentImages);
 
 		// Reset to first image
 		currentIndex = 0;
@@ -314,7 +277,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Ensure thumbnail container exists
 		let thumbnailContainer = galleryContainer.querySelector('.product-thumbnails');
 		if (!thumbnailContainer) {
-			console.log('Creating thumbnail container');
 			thumbnailContainer = document.createElement('div');
 			thumbnailContainer.className = 'product-thumbnails';
 			galleryContainer.appendChild(thumbnailContainer);
@@ -323,7 +285,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Ensure dots container exists
 		let dotsContainer = galleryContainer.querySelector('.image-navigation-dots');
 		if (!dotsContainer) {
-			console.log('Creating dots container');
 			dotsContainer = document.createElement('div');
 			dotsContainer.className = 'image-navigation-dots';
 			galleryContainer.appendChild(dotsContainer);
@@ -340,7 +301,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			const thumbnailAlt = `Product image ${index + 1}`;
 
 			if (!thumbnailUrl) {
-				console.log('No thumbnail URL found for image ID:', imageId);
 				return;
 			}
 

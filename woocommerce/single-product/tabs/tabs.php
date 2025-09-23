@@ -18,63 +18,14 @@ if ( ! $product ) {
 
 // Get custom product information using ACF with fallback to legacy meta
 $description = primefit_get_product_description( $product->get_id() );
-$designed_for = primefit_get_product_field( 'designed_for', $product->get_id(), 'primefit_designed_for' );
-$fabric_technology = primefit_get_product_field( 'fabric_technology', $product->get_id(), 'primefit_fabric_technology' );
 
 // Only show tabs if there's content
-if ( empty( $description ) && empty( $designed_for ) && empty( $fabric_technology ) ) {
+if ( empty( $description ) ) {
 	return;
 }
 ?>
 
-<div class="product-information-container">
-	<!-- Description Section -->
-	<?php if ( ! empty( $description ) ) : ?>
-		<div class="information-section description-section">
-			<h3 class="section-title"><?php esc_html_e( 'DESCRIPTION', 'primefit' ); ?></h3>
-			<div class="section-content">
-				<?php echo wp_kses_post( wpautop( $description ) ); ?>
-			</div>
-		</div>
-	<?php endif; ?>
-	
-	<!-- Designed For Section -->
-	<?php if ( ! empty( $designed_for ) ) : ?>
-		<div class="information-section">
-			<button class="information-toggle" data-target="designed-for">
-				<span class="section-title"><?php esc_html_e( 'DESIGNED FOR', 'primefit' ); ?></span>
-				<span class="toggle-icon">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-				</span>
-			</button>
-			<div class="information-content" id="designed-for">
-				<div class="content-inner">
-					<?php echo wp_kses_post( wpautop( $designed_for ) ); ?>
-				</div>
-			</div>
-		</div>
-	<?php endif; ?>
-	
-	<!-- Fabric + Technology Section -->
-	<?php if ( ! empty( $fabric_technology ) ) : ?>
-		<div class="information-section">
-			<button class="information-toggle" data-target="fabric-technology">
-				<span class="section-title"><?php esc_html_e( 'FABRIC + TECHNOLOGY', 'primefit' ); ?></span>
-				<span class="toggle-icon">
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-					</svg>
-				</span>
-			</button>
-			<div class="information-content" id="fabric-technology">
-				<div class="content-inner">
-					<?php echo wp_kses_post( wpautop( $fabric_technology ) ); ?>
-				</div>
-			</div>
-		</div>
-	<?php endif; ?>
+
 </div>
 
 <script type="text/javascript">

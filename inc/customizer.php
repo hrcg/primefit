@@ -314,39 +314,6 @@ function primefit_customize_register( $wp_customize ) {
 		'type'    => 'url',
 	) );
 
-	// Training Division Secondary CTA Text
-	$wp_customize->add_setting( 'primefit_training_division_cta_secondary_text', array(
-		'default'           => 'VIEW LOOKBOOK',
-		'sanitize_callback' => 'sanitize_text_field',
-	) );
-	$wp_customize->add_control( 'primefit_training_division_cta_secondary_text', array(
-		'label'   => __( 'Secondary Button Text', 'primefit' ),
-		'section' => 'primefit_training_division',
-		'type'    => 'text',
-	) );
-
-	// Training Division Secondary CTA Link
-	$wp_customize->add_setting( 'primefit_training_division_cta_secondary_link', array(
-		'default'           => '',
-		'sanitize_callback' => 'esc_url_raw',
-	) );
-	$wp_customize->add_control( 'primefit_training_division_cta_secondary_link', array(
-		'label'   => __( 'Secondary Button Link', 'primefit' ),
-		'section' => 'primefit_training_division',
-		'type'    => 'url',
-	) );
-
-	// Training Division Show Secondary Button
-	$wp_customize->add_setting( 'primefit_training_division_show_secondary_button', array(
-		'default'           => true,
-		'sanitize_callback' => 'wp_validate_boolean',
-	) );
-	$wp_customize->add_control( 'primefit_training_division_show_secondary_button', array(
-		'label'   => __( 'Show Secondary Button', 'primefit' ),
-		'section' => 'primefit_training_division',
-		'type'    => 'checkbox',
-	) );
-
 	// Second Training Division Section Panel
 	$wp_customize->add_section( 'primefit_training_division_2', array(
 		'title'    => __( 'Second Training Division Section', 'primefit' ),
@@ -658,7 +625,6 @@ function primefit_get_training_division_config() {
 		'subheading' => get_theme_mod( 'primefit_training_division_subheading', '[ FALL 2025 COLLECTION ] A PATH WITHOUT OBSTACLES LEADS NOWHERE' ),
 		'cta_primary_text' => get_theme_mod( 'primefit_training_division_cta_primary_text', 'SHOP NOW' ),
 		'cta_primary_link' => $cta_primary_link,
-		'cta_secondary_text' => get_theme_mod( 'primefit_training_division_cta_secondary_text', 'VIEW LOOKBOOK' ),
 		'cta_secondary_link' => $cta_secondary_link,
 		'show_secondary_button' => get_theme_mod( 'primefit_training_division_show_secondary_button', true ),
 	);

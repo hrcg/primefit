@@ -47,7 +47,6 @@
         this.overrideBlockUI();
 
         this.isInitialized = true;
-        console.log("✨ PrimeFit checkout enhancements loaded");
       });
     },
 
@@ -60,12 +59,10 @@
       const couponCode = urlParams.get("coupon");
 
       if (couponCode && couponCode.trim()) {
-        console.log(`🎫 Found coupon in URL: ${couponCode}`);
 
         // Check if coupon is already applied
         const appliedCoupons = this.getAppliedCoupons();
         if (appliedCoupons.includes(couponCode.toUpperCase())) {
-          console.log(`✅ Coupon ${couponCode} is already applied`);
           return;
         }
 
@@ -89,20 +86,15 @@
       if ($couponData.length) {
         const pendingCoupon = $couponData.data("pending-coupon");
         if (pendingCoupon && pendingCoupon.trim()) {
-          console.log(`🎫 Found pending coupon from session: ${pendingCoupon}`);
 
           // Check if coupon is already applied
           const appliedCoupons = this.getAppliedCoupons();
           if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
-            console.log(
-              `✅ Pending coupon ${pendingCoupon} is already applied`
-            );
             return;
           }
 
           // CRITICAL: Check if coupon is already being processed to prevent race conditions
           if (window.primefitCouponProcessing && window.primefitCouponProcessing === pendingCoupon.toUpperCase()) {
-            console.log(`⏳ Coupon ${pendingCoupon} is already being processed, skipping duplicate attempt`);
             return;
           }
 
@@ -118,9 +110,6 @@
             ) {
               this.applyCouponFromUrl(pendingCoupon.trim());
             } else {
-              console.log(
-                "⏳ Waiting for WooCommerce to load before applying session coupon"
-              );
               // Try again after another delay
               setTimeout(() => {
                 if (
@@ -129,10 +118,6 @@
                 ) {
                   this.applyCouponFromUrl(pendingCoupon.trim());
                 } else {
-                  console.log(
-                    "❌ WooCommerce not loaded, cannot apply session coupon:",
-                    pendingCoupon
-                  );
                   // Clear processing flag on failure
                   delete window.primefitCouponProcessing;
                 }
@@ -181,12 +166,10 @@
      * FIXED: Added proper state management to prevent race conditions
      */
     applyCouponFromUrl: function (couponCode) {
-      console.log(`🚀 Applying coupon from URL: ${couponCode}`);
 
       // Check if coupon is already applied
       const appliedCoupons = this.getAppliedCoupons();
       if (appliedCoupons.includes(couponCode.toUpperCase())) {
-        console.log(`✅ Coupon ${couponCode} is already applied`);
         // Clear processing flag since we're done
         delete window.primefitCouponProcessing;
         return;
@@ -410,7 +393,6 @@
             }
           }, 1500);
         } catch (error) {
-          console.error("Error applying coupon elegantly:", error);
 
           // Reset UI state on error
           $applyBtn.text("Apply").prop("disabled", false);
