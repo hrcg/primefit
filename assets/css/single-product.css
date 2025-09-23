@@ -1105,6 +1105,12 @@ body.single-product .single-product-page {
   color: var(--product-text);
 }
 
+.highlight-icon-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .highlight-content {
   flex: 1;
 }
@@ -1382,6 +1388,11 @@ body.single-product .single-product-page {
   }
 
   .highlight-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .highlight-icon-img {
     width: 20px;
     height: 20px;
   }

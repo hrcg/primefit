@@ -78,8 +78,21 @@ $highlights_data = primefit_get_technical_highlights( $product->get_id() );
 				<?php foreach ( $highlights_data as $highlight ) : ?>
 					<?php
 					$highlight_title = isset( $highlight['title'] ) ? $highlight['title'] : '';
-					$highlight_icon = isset( $highlight['icon'] ) ? $highlight['icon'] : '';
 					$highlight_description = isset( $highlight['description'] ) ? $highlight['description'] : '';
+					
+					// Handle image upload (new ACF format) and legacy SVG code format
+					$highlight_icon = '';
+					
+					if ( isset( $highlight['icon_image'] ) ) {
+						// New ACF format - uploaded image
+						$image_id = intval( $highlight['icon_image'] );
+						if ( $image_id ) {
+							$highlight_icon = wp_get_attachment_image( $image_id, 'full', false, array( 'class' => 'highlight-icon-img' ) );
+						}
+					} elseif ( isset( $highlight['icon'] ) ) {
+						// Legacy format - direct SVG code (for backward compatibility)
+						$highlight_icon = $highlight['icon'];
+					}
 					
 					if ( empty( $highlight_title ) ) {
 						continue;

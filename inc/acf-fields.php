@@ -246,11 +246,11 @@ function primefit_register_acf_product_fields() {
 						'maxlength' => '',
 					),
 					array(
-						'key' => 'field_highlight_icon',
-						'label' => 'Icon SVG',
-						'name' => 'icon',
-						'type' => 'textarea',
-						'instructions' => 'Paste the SVG icon code',
+						'key' => 'field_highlight_icon_image',
+						'label' => 'Icon Image',
+						'name' => 'icon_image',
+						'type' => 'image',
+						'instructions' => 'Upload an icon image (SVG, PNG, JPG)',
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array(
@@ -258,11 +258,16 @@ function primefit_register_acf_product_fields() {
 							'class' => '',
 							'id' => '',
 						),
-						'default_value' => '',
-						'placeholder' => '<svg width="24" height="24">...</svg>',
-						'maxlength' => '',
-						'rows' => 3,
-						'new_lines' => '',
+						'return_format' => 'id',
+						'preview_size' => 'thumbnail',
+						'library' => 'all',
+						'min_width' => '',
+						'min_height' => '',
+						'min_size' => '',
+						'max_width' => '',
+						'max_height' => '',
+						'max_size' => '',
+						'mime_types' => 'svg,png,jpg,jpeg',
 					),
 					array(
 						'key' => 'field_highlight_description',
@@ -305,70 +310,7 @@ function primefit_register_acf_product_fields() {
 		'description' => 'Technical highlights with icons and descriptions',
 	));
 
-	/**
-	 * Product Information Field Group
-	 */
-	acf_add_local_field_group( array(
-		'key' => 'group_product_information',
-		'title' => 'Product Information',
-		'fields' => array(
-			array(
-				'key' => 'field_designed_for',
-				'label' => 'Designed For',
-				'name' => 'designed_for',
-				'type' => 'wysiwyg',
-				'instructions' => 'Describe what this product is designed for',
-				'required' => 0,
-				'conditional_logic' => 0,
-				'wrapper' => array(
-					'width' => '',
-					'class' => '',
-					'id' => '',
-				),
-				'default_value' => '',
-				'tabs' => 'all',
-				'toolbar' => 'basic',
-				'media_upload' => 0,
-				'delay' => 1,
-			),
-			array(
-				'key' => 'field_fabric_technology',
-				'label' => 'Fabric + Technology',
-				'name' => 'fabric_technology',
-				'type' => 'wysiwyg',
-				'instructions' => 'Describe the fabric and technology used in this product',
-				'required' => 0,
-				'conditional_logic' => 0,
-				'wrapper' => array(
-					'width' => '',
-					'class' => '',
-					'id' => '',
-				),
-				'default_value' => '',
-				'tabs' => 'all',
-				'toolbar' => 'basic',
-				'media_upload' => 0,
-				'delay' => 1,
-			),
-		),
-		'location' => array(
-			array(
-				array(
-					'param' => 'post_type',
-					'operator' => '==',
-					'value' => 'product',
-				),
-			),
-		),
-		'menu_order' => 2,
-		'position' => 'normal',
-		'style' => 'default',
-		'label_placement' => 'top',
-		'instruction_placement' => 'label',
-		'hide_on_screen' => '',
-		'active' => true,
-		'description' => 'Product information sections',
-	));
+	
 
 	/**
 	 * Variation Gallery Field Group
