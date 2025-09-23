@@ -1110,11 +1110,13 @@ function primefit_render_product_loop_color_swatches( $product ) {
 			// Store variation image for this color
 			if ( ! empty( $variation['image']['src'] ) ) {
 				$variation_images[ $color_value ] = $variation['image']['src'];
+			} elseif ( ! empty( $variation['image_id'] ) ) {
+				$variation_images[ $color_value ] = wp_get_attachment_image_url( $variation['image_id'], 'full' );
 			}
 		}
 	}
 	
-	if ( empty( $color_options ) || count( $color_options ) <= 1 ) {
+	if ( empty( $color_options ) ) {
 		return;
 	}
 	
@@ -1141,7 +1143,19 @@ function primefit_render_product_loop_color_swatches( $product ) {
 			$main_image_id = $product->get_image_id();
 			if ( $main_image_id ) {
 				$variation_image = wp_get_attachment_image_url( $main_image_id, 'full' );
+			} else {
+				$variation_image = '';
 			}
+		}
+
+		// Add cache busting parameter to prevent image caching issues
+		if ( ! empty( $variation_image ) ) {
+			$variation_image = add_query_arg( 'v', '1.0', $variation_image );
+		}
+
+		// Debug: Log variation image data
+		if ( WP_DEBUG && $variation_image ) {
+			error_log( "Color: $color_option, Variation Image: $variation_image" );
 		}
 		
 		?>

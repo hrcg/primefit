@@ -42,6 +42,10 @@
         // Initialize payment methods with proper timing
         this.initPaymentMethodEnhancements();
 
+        // Override WooCommerce's checkout processing
+        this.overrideCheckoutProcessing();
+        this.overrideBlockUI();
+
         this.isInitialized = true;
         console.log("✨ PrimeFit checkout enhancements loaded");
       });
@@ -890,6 +894,92 @@
 
       return null;
     },
+
+    /**
+     * Override WooCommerce's default checkout processing
+     * Replace the white overlay with our custom dark theme overlay
+     */
+    overrideCheckoutProcessing: function () {
+      // Listen for checkout form submission
+      $(document.body).on('submit', '.woocommerce-checkout form', function(e) {
+        // Show our custom processing indicator
+        CheckoutManager.showCustomProcessingIndicator();
+
+        // Prevent the default WooCommerce blockUI overlay
+        e.preventDefault();
+
+        // Submit the form via AJAX to avoid the white overlay
+        const formData = new FormData(this);
+        formData.append('action', 'woocommerce_checkout');
+        formData.append('security', wc_checkout_params.checkout_nonce);
+
+        $.ajax({
+          url: wc_checkout_params.ajax_url,
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function(response) {
+            if (response.result === 'success') {
+              // Redirect to success page
+              window.location.href = response.redirect;
+            } else {
+              // Show errors
+              CheckoutManager.hideCustomProcessingIndicator();
+              $('.woocommerce-error').remove();
+              $('.woocommerce-notices-wrapper').prepend(response.messages);
+            }
+          },
+          error: function() {
+            CheckoutManager.hideCustomProcessingIndicator();
+            alert('There was an error processing your order. Please try again.');
+          }
+        });
+      });
+    },
+
+    /**
+     * Show custom processing indicator
+     */
+    showCustomProcessingIndicator: function () {
+      const indicator = `
+        <div class="checkout-processing-indicator">
+          <div class="spinner"></div>
+          <div class="message">Processing your order...</div>
+        </div>
+      `;
+
+      $('body').append(indicator);
+      $('body').addClass('checkout-processing');
+    },
+
+    /**
+     * Hide custom processing indicator
+     */
+    hideCustomProcessingIndicator: function () {
+      $('.checkout-processing-indicator').remove();
+      $('body').removeClass('checkout-processing');
+    },
+
+    /**
+     * Override WooCommerce's blockUI for checkout
+     */
+    overrideBlockUI: function () {
+      // Override the blockUI plugin for checkout pages
+      if (typeof $.blockUI !== 'undefined') {
+        const originalBlockUI = $.blockUI;
+
+        $.blockUI = function(opts) {
+          // Only override on checkout pages
+          if ($('body').hasClass('woocommerce-checkout')) {
+            return; // Don't show the default blockUI
+          }
+
+          // Use original blockUI for other pages
+          return originalBlockUI.apply(this, arguments);
+        };
+      }
+    }
   };
 
   /**

@@ -325,13 +325,3 @@ function primefit_redirect_without_coupon_param() {
 		// Don't use exit() to avoid headers already sent errors
 	}
 }
-
-/**
- * Elegant WooCommerce integration - let WC handle its own AJAX natively
- * No forced interceptions needed
- */
-
-/**
- * Removed problematic AJAX output cleaning that was interfering with WooCommerce
- * Let WooCommerce handle its own AJAX responses natively
- */

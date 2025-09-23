@@ -762,6 +762,12 @@
   opacity: 0;
 }
 
+/* Ensure color swatches remain functional when product is hovered */
+.product-loop-color-swatches:hover {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
 /* Product Status Tags */
 .woocommerce ul.products li.product .product-status-tag {
   position: absolute;
@@ -856,11 +862,12 @@
   position: absolute;
   bottom: 12px;
   left: 12px;
+  opacity: 0;
+  visibility: visible;
   right: 12px;
   display: flex;
   gap: 6px;
   justify-content: center;
-  opacity: 0;
   transform: translateY(10px);
   transition: opacity 0.3s ease, transform 0.3s ease;
   z-index: var(--z-content);
@@ -869,6 +876,18 @@
 .woocommerce ul.products li.product:hover .product-loop-color-swatches {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Ensure color swatches are always clickable */
+.woocommerce ul.products li.product .product-loop-color-swatches .color-swatch {
+  pointer-events: auto !important;
+  z-index: 20;
+  cursor: pointer !important;
+}
+
+/* Make sure color swatches are visible and accessible */
+.product-loop-color-swatches {
+  pointer-events: auto !important;
 }
 
 /* Show color swatches on touch devices */
@@ -889,6 +908,8 @@
   position: relative;
   overflow: hidden;
   padding: 0;
+  z-index: 10;
+  display: inline-block;
 }
 
 .woocommerce ul.products li.product .color-swatch-inner {
@@ -1652,20 +1673,17 @@ body.woocommerce .hero {
   text-decoration: none;
   color: var(--text);
   background: transparent;
-  border: 1px solid var(--border);
   transition: all 0.2s ease;
 }
 
 .woocommerce nav.woocommerce-pagination ul li a:hover {
   background: var(--text);
   color: var(--background);
-  border-color: var(--text);
 }
 
 .woocommerce nav.woocommerce-pagination ul li span.current {
   background: var(--text);
   color: var(--background);
-  border-color: var(--text);
 }
 
 /* Next/Previous buttons */
@@ -1812,9 +1830,6 @@ body.woocommerce .hero {
   }
 }
 
-.woocommerce nav.woocommerce-pagination ul li {
-  border: 1px solid var(--border);
-}
 /* Small mobile */
 @media (max-width: 480px) {
   .woocommerce-page .woocommerce ul.products {

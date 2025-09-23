@@ -285,7 +285,7 @@ $order_notes = $order->get_customer_order_notes();
         </a>
     </div>
 
-    <!-- Order Tracking Information -->
+    <!-- Order Tracking Information
     <?php if ( $order_status === 'processing' || $order_status === 'shipped' ) : ?>
     <div class="payment-summary-tracking">
         <div class="tracking-info">
@@ -294,4 +294,5 @@ $order_notes = $order->get_customer_order_notes();
         </div>
     </div>
     <?php endif; ?>
+    -->
 </div>

@@ -1674,3 +1674,91 @@ body.woocommerce-checkout .payment-method-description {
   margin: 0 !important;
   line-height: 1.4 !important;
 }
+
+/* ==========================================================================
+   WooCommerce Checkout Processing Overlay Fix
+   ========================================================================== */
+
+/* Override WooCommerce's default checkout processing overlay */
+body .blockUI.blockOverlay {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+  opacity: 1 !important;
+}
+
+body .blockUI.blockOverlay::before {
+  display: none !important;
+}
+
+/* Hide the default WooCommerce checkout processing message */
+body .blockUI.blockMsg {
+  display: none !important;
+}
+
+/* Custom checkout processing indicator */
+body .checkout-processing-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--checkout-bg);
+  color: var(--checkout-text);
+  padding: 20px 30px;
+  border-radius: 8px;
+  border: 1px solid var(--checkout-border);
+  z-index: 9999;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+body .checkout-processing-indicator .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--checkout-border);
+  border-top: 3px solid var(--checkout-text);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+body .checkout-processing-indicator .message {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--checkout-text);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Prevent white flash during checkout processing */
+body .woocommerce-checkout .blockUI {
+  background-color: transparent !important;
+}
+
+/* Ensure the checkout form doesn't show white background during processing */
+body .woocommerce-checkout.processing .checkout-container {
+  background: var(--checkout-bg) !important;
+}
+
+/* Alternative solution - completely hide WooCommerce's default processing overlay */
+body .woocommerce-checkout .blockUI {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Override any blockUI calls on checkout pages */
+body .woocommerce-checkout .blockOverlay,
+body .woocommerce-checkout .blockMsg,
+body .woocommerce-checkout .blockUI {
+  display: none !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide the default WooCommerce processing message */
+body .woocommerce-checkout .blockMsg h1 {
+  display: none !important;
+}

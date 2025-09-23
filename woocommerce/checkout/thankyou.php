@@ -327,6 +327,7 @@ endif;
         <a href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>" class="button button--primary">
             <?php esc_html_e( 'Continue Shopping', 'primefit' ); ?>
         </a>
+                    <!--
         <button class="print-order-btn button button--secondary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6,9 6,2 18,2 18,9"></polyline>
@@ -335,9 +336,10 @@ endif;
             </svg>
             <?php esc_html_e( 'Print Order', 'primefit' ); ?>
         </button>
+        -->
     </div>
 
-    <!-- Order Tracking Information -->
+    <!-- Order Tracking Information
     <?php if ( $order_status === 'processing' || $order_status === 'shipped' ) : ?>
     <div class="payment-summary-tracking">
         <div class="tracking-info">
@@ -346,4 +348,5 @@ endif;
         </div>
     </div>
     <?php endif; ?>
+    -->
 </div>

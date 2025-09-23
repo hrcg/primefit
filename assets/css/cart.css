@@ -244,7 +244,7 @@
 .woocommerce-mini-cart.cart_list.product_list_widget
   .woocommerce-mini-cart-item,
 .woocommerce-mini-cart.cart_list.product_list_widget .mini_cart_item {
-  padding: 16px 0;
+  padding: 16px 0 16px 0;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   gap: 12px;
@@ -255,8 +255,6 @@
   position: relative;
   border-radius: 6px;
   margin: 0;
-  padding-left: 0;
-  padding-right: 0;
 }
 
 .woocommerce-mini-cart.cart_list.product_list_widget
@@ -264,7 +262,6 @@
 .woocommerce-mini-cart.cart_list.product_list_widget
   .mini_cart_item:last-child {
   border-bottom: none;
-  padding-bottom: 0;
 }
 
 /* Product images in cart list */
@@ -450,7 +447,7 @@
 .woocommerce-mini-cart__item,
 .woocommerce-mini-cart-item,
 .mini_cart_item {
-  padding: 1rem 0;
+  padding: 1rem 0 1rem 0;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
@@ -672,12 +669,12 @@
 .coupon-code-input {
   flex: 1;
   padding: 12px 16px;
-  border: none;
   outline: none;
   font-size: 14px;
   color: #333;
   text-transform: uppercase;
   background: #fff;
+  border: 1px solid #f0f0f0;
 }
 
 .coupon-code-input::placeholder {
@@ -830,7 +827,6 @@
   text-transform: uppercase;
   text-align: center;
   text-decoration: none;
-  border-radius: 4px;
   transition: all 0.2s ease;
   margin-bottom: 12px;
 }
@@ -1442,37 +1438,6 @@
     overflow: hidden;
   }
 
-  /* Drag handle for mobile drawer */
-  .cart-panel-header::before {
-    content: "";
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 4px;
-    background: #ddd;
-    border-radius: 2px;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-  }
-
-  /* Make drag handle more prominent on hover/touch */
-  .cart-panel-header:hover::before,
-  .cart-panel-header:active::before {
-    opacity: 1;
-    background: #999;
-  }
-
-  /* Add cursor pointer to indicate draggable area */
-  .cart-panel-header {
-    cursor: grab;
-    position: relative;
-  }
-
-  .cart-panel-header:active {
-    cursor: grabbing;
-  }
 
   /* Ensure close button has proper touch target and is not affected by drag */
   .cart-panel-header .cart-close {
@@ -1482,41 +1447,7 @@
     pointer-events: auto;
   }
 
-  /* Make the drag handle area more obvious */
-  .cart-panel-header::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: transparent;
-    z-index: 1;
-  }
 
-  /* Dragging state - disable transitions during drag */
-  .cart-panel.dragging {
-    transition: none;
-  }
-
-  /* Visual feedback when dragging down */
-  .cart-panel.drag-down {
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
-  }
-
-  /* Smooth transition when snapping back */
-  .cart-panel:not(.dragging) {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Prevent text selection during drag */
-  .cart-panel.dragging * {
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-  }
 
   /* Reduce padding on mobile for better space utilization */
   .cart-panel-header {
@@ -1628,4 +1559,33 @@
   .cart-recommendations {
     display: none;
   }
+}
+
+/* ==========================================================================
+   WooCommerce Default Overlay Removal
+   ========================================================================== */
+
+/* Hide WooCommerce's default processing overlay when removing products from cart */
+body .blockUI.blockOverlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+/* Hide WooCommerce's default processing message */
+body .blockUI.blockMsg {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Hide any WooCommerce blockUI elements globally */
+body .blockUI {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }

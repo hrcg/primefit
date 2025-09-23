@@ -68,10 +68,7 @@
 .payment-summary-header {
   text-align: center;
   margin-bottom: 48px;
-  padding: 48px 0;
   background: var(--payment-summary-card-bg);
-  border-radius: 16px;
-  border: 1px solid var(--payment-summary-border);
   position: relative;
   overflow: hidden;
 }
@@ -334,15 +331,11 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid var(--payment-summary-border);
 }
 
-.summary-line:last-child {
-  border-bottom: none;
-}
 
 .summary-line.total {
-  border-top: 2px solid var(--payment-summary-border);
+  border-top: 1px solid var(--payment-summary-border);
   margin-top: 16px;
   padding-top: 20px;
   font-size: 18px;
@@ -623,10 +616,6 @@
 }
 
 @media (max-width: 768px) {
-  .payment-summary-header {
-    padding: 32px 20px;
-    margin-bottom: 32px;
-  }
 
   .payment-summary-title {
     font-size: 28px;
@@ -693,11 +682,6 @@
 }
 
 @media (max-width: 480px) {
-  .payment-summary-header {
-    padding: 24px 16px;
-    margin-bottom: 24px;
-  }
-
   .payment-summary-title {
     font-size: 24px;
   }

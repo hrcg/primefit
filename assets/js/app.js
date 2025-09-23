@@ -564,313 +564,6 @@
     };
   }
 
-  // Mobile cart drawer drag functionality - FIXED: Added proper cleanup to prevent memory leaks
-  class MobileCartDrawer {
-    constructor() {
-      this.isDragging = false;
-      this.startY = 0;
-      this.currentY = 0;
-      this.startTransform = 0;
-      this.startTime = 0;
-      this.threshold = 50; // Minimum drag distance to close
-      this.isMobile = window.matchMedia("(max-width: 1024px)").matches;
-      this.preventPullToRefresh = false;
-      this.eventNamespace = '.mobileCartDrawer' + Math.random().toString(36).substr(2, 9); // Unique namespace for event cleanup
-      this.init();
-    }
-
-    init() {
-      if (!this.isMobile) return;
-
-      this.bindEvents();
-      this.handleResize();
-    }
-
-    bindEvents() {
-      // Touch events for drag functionality with unique namespace for cleanup
-      $(document).on(
-        "touchstart" + this.eventNamespace,
-        ".cart-panel-header",
-        (e) => this.handleTouchStart(e)
-      );
-      $(document).on(
-        "touchmove" + this.eventNamespace,
-        ".cart-panel-header",
-        (e) => this.handleTouchMove(e)
-      );
-      $(document).on(
-        "touchend" + this.eventNamespace,
-        ".cart-panel-header",
-        (e) => this.handleTouchEnd(e)
-      );
-
-      // Prevent pull-to-refresh when cart is open with unique namespace
-      $(document).on("touchstart" + this.eventNamespace, (e) => this.handleGlobalTouchStart(e));
-      $(document).on("touchmove" + this.eventNamespace, (e) => this.handleGlobalTouchMove(e));
-      $(document).on("touchend" + this.eventNamespace, (e) => this.handleGlobalTouchEnd(e));
-
-      // Mouse events for desktop testing with unique namespace
-      $(document).on(
-        "mousedown" + this.eventNamespace,
-        ".cart-panel-header",
-        (e) => this.handleMouseDown(e)
-      );
-      $(document).on("mousemove" + this.eventNamespace, (e) => this.handleMouseMove(e));
-      $(document).on("mouseup" + this.eventNamespace, (e) => this.handleMouseUp(e));
-
-      // Handle window resize with unique namespace
-      $(window).on("resize" + this.eventNamespace, () => this.debounce(this.handleResize.bind(this), 250)());
-    }
-
-    // Cleanup method to prevent memory leaks
-    destroy() {
-      // Remove all event listeners using the unique namespace
-      $(document).off(this.eventNamespace);
-      $(window).off(this.eventNamespace);
-
-      // Reset dragging state
-      this.isDragging = false;
-      const $panel = $(".cart-panel");
-      $panel.removeClass("dragging drag-down");
-      $panel.css("transform", "");
-    }
-
-    handleTouchStart(e) {
-      if (!this.isMobile || !this.isCartOpen()) return;
-
-      // Don't start drag if touching the close button
-      if (
-        $(e.target).hasClass("cart-close") ||
-        $(e.target).closest(".cart-close").length
-      ) {
-        return;
-      }
-
-      e.preventDefault();
-      this.startDragging(e.touches[0].clientY);
-    }
-
-    handleTouchMove(e) {
-      if (!this.isDragging || !this.isMobile) return;
-
-      e.preventDefault();
-      this.updateDrag(e.touches[0].clientY);
-    }
-
-    handleTouchEnd(e) {
-      if (!this.isDragging || !this.isMobile) return;
-
-      e.preventDefault();
-      this.endDrag();
-    }
-
-    handleGlobalTouchStart(e) {
-      if (!this.isMobile || !this.isCartOpen()) return;
-
-      // Check if touch starts at the top of the screen (potential pull-to-refresh)
-      const touch = e.touches[0];
-      if (touch.clientY < 50) {
-        // Within 50px of top
-        this.preventPullToRefresh = true;
-        this.globalStartY = touch.clientY;
-      }
-    }
-
-    handleGlobalTouchMove(e) {
-      if (!this.isMobile || !this.isCartOpen() || !this.preventPullToRefresh)
-        return;
-
-      const touch = e.touches[0];
-      const deltaY = touch.clientY - this.globalStartY;
-
-      // If user is pulling down from top, prevent default to stop pull-to-refresh
-      if (deltaY > 0 && touch.clientY < 100) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }
-
-    handleGlobalTouchEnd(e) {
-      if (!this.isMobile || !this.isCartOpen()) return;
-
-      // Reset pull-to-refresh prevention flag
-      this.preventPullToRefresh = false;
-      this.globalStartY = 0;
-    }
-
-    handleMouseDown(e) {
-      if (this.isMobile || !this.isCartOpen()) return;
-
-      // Don't start drag if clicking the close button
-      if (
-        $(e.target).hasClass("cart-close") ||
-        $(e.target).closest(".cart-close").length
-      ) {
-        return;
-      }
-
-      e.preventDefault();
-      this.startDragging(e.clientY);
-    }
-
-    handleMouseMove(e) {
-      if (!this.isDragging || this.isMobile) return;
-
-      e.preventDefault();
-      this.updateDrag(e.clientY);
-    }
-
-    handleMouseUp(e) {
-      if (!this.isDragging || this.isMobile) return;
-
-      e.preventDefault();
-      this.endDrag();
-    }
-
-    startDragging(y) {
-      this.isDragging = true;
-      this.startY = y;
-      this.currentY = y;
-      this.startTime = Date.now();
-
-      const $panel = $(".cart-panel");
-      $panel.addClass("dragging");
-
-      // Get current transform value
-      const transform = $panel.css("transform");
-      if (transform && transform !== "none") {
-        const matrix = transform.match(/matrix.*\((.+)\)/);
-        if (matrix) {
-          this.startTransform = parseFloat(matrix[1].split(",")[5]) || 0;
-        }
-      }
-    }
-
-    updateDrag(y) {
-      if (!this.isDragging) return;
-
-      this.currentY = y;
-      const deltaY = y - this.startY;
-
-      // Only allow downward dragging (positive deltaY)
-      if (deltaY > 0) {
-        const $panel = $(".cart-panel");
-        const maxDrag = window.innerHeight * 0.6; // Allow dragging up to 60% of screen height
-        const translateY = Math.min(deltaY, maxDrag);
-
-        $panel.css("transform", `translateY(${translateY}px)`);
-
-        // Add visual feedback when dragging down
-        if (deltaY > 20) {
-          $panel.addClass("drag-down");
-        } else {
-          $panel.removeClass("drag-down");
-        }
-
-        // Add resistance effect - harder to drag as you get further
-        if (deltaY > 100) {
-          const resistance = 0.3; // Reduce movement by 70%
-          const resistedY = 100 + (deltaY - 100) * resistance;
-          $panel.css(
-            "transform",
-            `translateY(${Math.min(resistedY, maxDrag)}px)`
-          );
-        }
-      }
-    }
-
-    endDrag() {
-      if (!this.isDragging) return;
-
-      const $panel = $(".cart-panel");
-      const deltaY = this.currentY - this.startY;
-
-      $panel.removeClass("dragging drag-down");
-
-      // Determine if we should close the cart
-      // Use a dynamic threshold based on drag velocity and distance
-      const velocity = Math.abs(deltaY) / (Date.now() - this.startTime);
-      const dynamicThreshold = velocity > 0.5 ? 30 : this.threshold; // Lower threshold for fast swipes
-
-      if (deltaY > dynamicThreshold) {
-        // Close the cart with animation
-        $panel.css("transform", "translateY(100%)");
-        setTimeout(() => {
-          this.closeCart();
-        }, 300);
-      } else {
-        // Snap back to open position
-        $panel.css("transform", "translateY(0)");
-      }
-
-      this.isDragging = false;
-      this.startY = 0;
-      this.currentY = 0;
-      this.startTransform = 0;
-      this.startTime = 0;
-    }
-
-    isCartOpen() {
-      return $(".cart-wrap").hasClass("open");
-    }
-
-    closeCart() {
-      const { $wrap, $panel, $toggle } = getCartContext();
-      $wrap.removeClass("open").attr("data-open", "false");
-      $panel.attr("hidden", true);
-      $toggle.attr("aria-expanded", "false");
-
-      document.body.classList.remove("cart-open");
-      allowPageScroll();
-
-      // Remove iOS Safari specific prevention
-      removeIOSPrevention();
-
-      // Reset cart panel state completely
-      $panel.removeClass("dragging drag-down");
-      $panel.css("transform", ""); // Remove any inline transform styles
-
-      // Reset pull-to-refresh prevention
-      this.preventPullToRefresh = false;
-      this.globalStartY = 0;
-
-      // Reset form submission flag to allow new submissions
-      if (
-        window.ajaxAddToCartInstance &&
-        typeof window.ajaxAddToCartInstance.resetSubmissionFlag === "function"
-      ) {
-        window.ajaxAddToCartInstance.resetSubmissionFlag();
-      }
-    }
-
-    handleResize() {
-      const wasMobile = this.isMobile;
-      this.isMobile = window.matchMedia("(max-width: 1024px)").matches;
-
-      if (wasMobile !== this.isMobile) {
-        // Reset any ongoing drag when switching between mobile/desktop
-        if (this.isDragging) {
-          this.endDrag();
-        }
-      }
-    }
-
-    debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
-  }
-
-  // Initialize mobile cart drawer
-  const mobileCartDrawer = new MobileCartDrawer();
-  window.mobileCartDrawer = mobileCartDrawer;
 
   function openCart(clickedEl) {
     console.log("openCart called with:", clickedEl); // Debug log
@@ -881,9 +574,6 @@
       toggle: $toggle.length,
     }); // Debug log
 
-    // Reset any drag states before opening
-    $panel.removeClass("dragging drag-down");
-    $panel.css("transform", ""); // Remove any inline transform styles
 
     $wrap.addClass("open").attr("data-open", "true");
     $panel.removeAttr("hidden");
@@ -899,11 +589,6 @@
     // Prevent page scrolling when cart is open
     preventPageScroll();
 
-    // Reset pull-to-refresh prevention state
-    if (window.mobileCartDrawer) {
-      window.mobileCartDrawer.preventPullToRefresh = false;
-      window.mobileCartDrawer.globalStartY = 0;
-    }
 
     // Ensure all quantity inputs are properly synced when cart opens
     // First try to get fresh cart fragments to ensure we have the latest data
@@ -1027,17 +712,8 @@
     // Remove iOS Safari specific prevention
     removeIOSPrevention();
 
-    // Reset cart panel state completely
-    $panel.removeClass("dragging drag-down");
-    $panel.css("transform", ""); // Remove any inline transform styles
-
     // Re-enable page scrolling when cart is closed
     allowPageScroll();
-
-    // CRITICAL: Clean up event listeners to prevent memory leaks
-    if (window.mobileCartDrawer && typeof window.mobileCartDrawer.destroy === "function") {
-      window.mobileCartDrawer.destroy();
-    }
 
     // Reset form submission flag to allow new submissions
     if (
@@ -2690,6 +2366,7 @@
       "click",
       ".product-loop-color-swatches .color-swatch",
       function (e) {
+        console.log('Color swatch click event triggered!');
         e.preventDefault();
         e.stopPropagation(); // Prevent triggering the product link
 
@@ -2699,30 +2376,97 @@
           ".product-image-container"
         );
         const $mainImage = $imageContainer.find(
-          ".attachment-woocommerce_thumbnail"
-        );
+          ".attachment-woocommerce_thumbnail, img"
+        ).first();
         const $secondImage = $imageContainer.find(".product-second-image");
         const variationImage = $swatch.data("variation-image");
         const selectedColor = $swatch.data("color");
+
+        // Debug logging
+        console.log('Color swatch clicked:', {
+          element: $swatch,
+          color: selectedColor,
+          variationImage: variationImage,
+          hasVariationImage: !!variationImage,
+          productId: $productContainer.data('product-id'),
+          swatchDataAttributes: {
+            color: $swatch.data('color'),
+            variationImage: $swatch.data('variation-image'),
+            productId: $swatch.data('product-id')
+          }
+        });
+
+        // If no main image found, try to find any img element in the product container
+        if ($mainImage.length === 0) {
+          const $fallbackImage = $productContainer.find('img').first();
+          if ($fallbackImage.length > 0) {
+            $mainImage = $fallbackImage;
+          }
+        }
 
         // Update active state
         $productContainer.find(".color-swatch").removeClass("active");
         $swatch.addClass("active");
 
         // If there's a variation image, update the main image
-        if (variationImage && variationImage !== "") {
+        if (variationImage && variationImage !== "" && $mainImage.length > 0) {
+          console.log('Updating main image to:', variationImage);
+          console.log('Main image element found:', $mainImage[0]);
           // Add a class to prevent hover effects from interfering
           $productContainer.addClass("color-swatch-active");
 
           // Update the main image directly
-          $mainImage.attr("src", variationImage);
+          const oldSrc = $mainImage.attr("src");
+          const oldSrcset = $mainImage.attr("srcset");
+          console.log('Current image src:', oldSrc);
+          console.log('Current image srcset:', oldSrcset);
+          
+          // Add cache busting parameter to prevent browser caching
+          const cacheBustedImage = variationImage.includes('?') ? variationImage + '&t=' + Date.now() : variationImage + '?t=' + Date.now();
+          console.log('Setting new image src to:', cacheBustedImage);
+          
+          // Update both src and srcset attributes
+          $mainImage.attr("src", cacheBustedImage);
+          $mainImage.removeAttr("srcset"); // Remove srcset to force browser to use src
 
           // Hide the second image to prevent hover conflicts
-          $secondImage.css("opacity", "0");
+          if ($secondImage.length > 0) {
+            $secondImage.css("opacity", "0");
+          }
+
+          console.log('Image updated from', oldSrc, 'to', cacheBustedImage);
+        } else if (variationImage && variationImage !== "") {
+          console.log('Using fallback image update method for:', variationImage);
+          console.log('Main image not found, searching for any image in product container');
+          // Fallback: try to find and update any image in the product container
+          const $anyImage = $productContainer.find('img').first();
+          console.log('Found fallback image element:', $anyImage[0]);
+          if ($anyImage.length > 0) {
+            const oldSrc = $anyImage.attr("src");
+            const oldSrcset = $anyImage.attr("srcset");
+            console.log('Fallback current image src:', oldSrc);
+            console.log('Fallback current image srcset:', oldSrcset);
+            // Add cache busting parameter to prevent browser caching
+            const cacheBustedImage = variationImage.includes('?') ? variationImage + '&t=' + Date.now() : variationImage + '?t=' + Date.now();
+            console.log('Setting fallback image src to:', cacheBustedImage);
+            $anyImage.attr("src", cacheBustedImage);
+            $anyImage.removeAttr("srcset"); // Remove srcset to force browser to use src
+            $productContainer.addClass("color-swatch-active");
+            console.log('Fallback image updated from', oldSrc, 'to', cacheBustedImage);
+          } else {
+            console.log('No image element found to update');
+          }
+        } else {
+          console.log('No variation image available');
         }
 
-        // Update size options based on selected color
-        updateSizeOptionsForColor($productContainer, selectedColor);
+        // Update size options based on selected color (safely wrapped in try-catch)
+        try {
+          updateSizeOptionsForColor($productContainer, selectedColor);
+        } catch (error) {
+          console.warn('Error updating size options for color:', error);
+          // Continue with the color switcher functionality even if size options fail
+        }
       }
     );
 
@@ -2768,11 +2512,31 @@
       // Get the selected color
       const $selectedColor = $productContainer.find(".color-swatch.active");
       if (!$selectedColor.length) {
-        // If no color selected, use the first available color
+        // If no color selected, try to get the first available color
         const $firstColor = $productContainer.find(".color-swatch").first();
         if ($firstColor.length) {
           $firstColor.addClass("active");
           addVariationToCart($productContainer, $firstColor, $sizeOption);
+        } else {
+          // No color swatches available (single color product), create a dummy color swatch
+          const variationsData = $sizeOption.closest(".product-size-options").data("variations");
+          if (variationsData) {
+            // Get the first available color from variations data
+            let defaultColor = '';
+            for (const variationId in variationsData) {
+              const variation = variationsData[variationId];
+              if (variation.color) {
+                defaultColor = variation.color;
+                break;
+              }
+            }
+            
+            if (defaultColor) {
+              // Create a temporary color swatch element for single color products
+              const $tempColorSwatch = $('<div class="temp-color-swatch" data-color="' + defaultColor + '"></div>');
+              addVariationToCart($productContainer, $tempColorSwatch, $sizeOption);
+            }
+          }
         }
       } else {
         addVariationToCart($productContainer, $selectedColor, $sizeOption);
@@ -2795,8 +2559,36 @@
       if ($colorSwatches.find(".color-swatch.active").length === 0) {
         const $firstSwatch = $colorSwatches.find(".color-swatch").first();
         if ($firstSwatch.length > 0) {
+          $firstSwatch.addClass("active");
           const firstColor = $firstSwatch.data("color");
           updateSizeOptionsForColor($productContainer, firstColor);
+        }
+      }
+    });
+
+    // Handle products with size options but no color swatches (single color products)
+    $(".product-size-options").each(function () {
+      const $sizeOptions = $(this);
+      const $productContainer = $sizeOptions.closest(".product");
+      const $colorSwatches = $productContainer.find(".product-loop-color-swatches");
+      
+      // If there are no color swatches but there are size options, initialize with default color
+      if ($colorSwatches.length === 0 || $colorSwatches.find(".color-swatch").length === 0) {
+        const variationsData = $sizeOptions.data("variations");
+        if (variationsData) {
+          // Get the first available color from variations data
+          let defaultColor = '';
+          for (const variationId in variationsData) {
+            const variation = variationsData[variationId];
+            if (variation.color) {
+              defaultColor = variation.color;
+              break;
+            }
+          }
+          
+          if (defaultColor) {
+            updateSizeOptionsForColor($productContainer, defaultColor);
+          }
         }
       }
     });

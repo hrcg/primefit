@@ -22,6 +22,26 @@ if ( ! class_exists( 'WooCommerce' ) ) {
 // WooCommerce is available - setting up cart functions
 
 /**
+ * Add Kosovo to WooCommerce countries list
+ */
+add_filter( 'woocommerce_countries', 'primefit_add_kosovo' );
+function primefit_add_kosovo( $countries ) {
+    $new_countries = array(
+        'XK'  => __( 'Kosovo', 'woocommerce' ),
+    );
+    return array_merge( $countries, $new_countries );
+}
+
+/**
+ * Add Kosovo to European continent
+ */
+add_filter( 'woocommerce_continents', 'primefit_add_kosovo_to_continents' );
+function primefit_add_kosovo_to_continents( $continents ) {
+    $continents['EU']['countries'][] = 'XK';
+    return $continents;
+}
+
+/**
  * Disable default WooCommerce stylesheets
  * We use our own custom styles instead
  */

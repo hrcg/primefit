@@ -55,10 +55,12 @@ function primefit_setup_theme() {
 	
 	// Register navigation menus
 	register_nav_menus( [
-		'primary'   => esc_html__( 'Primary Menu', 'primefit' ),
-		'secondary' => esc_html__( 'Secondary Menu', 'primefit' ),
-		'tertiary'  => esc_html__( 'Tertiary Menu', 'primefit' ),
-		'footer'    => esc_html__( 'Footer Menu', 'primefit' ),
+		'primary'        => esc_html__( 'Primary Menu', 'primefit' ),
+		'secondary'      => esc_html__( 'Secondary Menu', 'primefit' ),
+		'tertiary'       => esc_html__( 'Tertiary Menu', 'primefit' ),
+		'footer'         => esc_html__( 'Footer Menu', 'primefit' ),
+		'footer-primary' => esc_html__( 'Footer Primary Menu', 'primefit' ),
+		'footer-secondary' => esc_html__( 'Footer Secondary Menu', 'primefit' ),
 	] );
 	
 	// Set content width
