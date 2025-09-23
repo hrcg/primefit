@@ -77,6 +77,7 @@
 
     /**
      * Check for pending coupon from session
+     * FIXED: Added state management to prevent race conditions
      */
     checkForPendingCouponFromSession: function () {
       // Check for pending coupon data from cart fragments (hidden element)
@@ -94,6 +95,15 @@
             );
             return;
           }
+
+          // CRITICAL: Check if coupon is already being processed to prevent race conditions
+          if (window.primefitCouponProcessing && window.primefitCouponProcessing === pendingCoupon.toUpperCase()) {
+            console.log(`⏳ Coupon ${pendingCoupon} is already being processed, skipping duplicate attempt`);
+            return;
+          }
+
+          // Mark as processing to prevent race conditions
+          window.primefitCouponProcessing = pendingCoupon.toUpperCase();
 
           // Apply the pending coupon with additional safety check
           setTimeout(() => {
@@ -119,6 +129,8 @@
                     "❌ WooCommerce not loaded, cannot apply session coupon:",
                     pendingCoupon
                   );
+                  // Clear processing flag on failure
+                  delete window.primefitCouponProcessing;
                 }
               }, 2000);
             }
@@ -162,9 +174,19 @@
 
     /**
      * Apply coupon from URL parameter
+     * FIXED: Added proper state management to prevent race conditions
      */
     applyCouponFromUrl: function (couponCode) {
       console.log(`🚀 Applying coupon from URL: ${couponCode}`);
+
+      // Check if coupon is already applied
+      const appliedCoupons = this.getAppliedCoupons();
+      if (appliedCoupons.includes(couponCode.toUpperCase())) {
+        console.log(`✅ Coupon ${couponCode} is already applied`);
+        // Clear processing flag since we're done
+        delete window.primefitCouponProcessing;
+        return;
+      }
 
       // Show loading state
       this.showCouponLoadingState();
@@ -327,6 +349,7 @@
     /**
      * Apply coupon elegantly - work with WooCommerce's native system
      * Optimized to prevent duplicate submissions and improve performance
+     * FIXED: Added better error handling and state management
      */
     applyCouponElegantly: function (couponCode) {
       const $couponSection = $(".coupon-section");
@@ -343,37 +366,57 @@
 
       // Use requestAnimationFrame for smoother UI updates
       requestAnimationFrame(() => {
-        // Look for WooCommerce's native coupon form
-        let $wcCouponInput = $(
-          '.woocommerce-form-coupon input[name="coupon_code"]'
-        );
-        let $wcCouponBtn = $(
-          '.woocommerce-form-coupon button[name="apply_coupon"]'
-        );
+        try {
+          // Look for WooCommerce's native coupon form
+          let $wcCouponInput = $(
+            '.woocommerce-form-coupon input[name="coupon_code"]'
+          );
+          let $wcCouponBtn = $(
+            '.woocommerce-form-coupon button[name="apply_coupon"]'
+          );
 
-        // If WooCommerce coupon form exists, use it
-        if ($wcCouponInput.length && $wcCouponBtn.length) {
-          $wcCouponInput.val(couponCode);
-          $wcCouponBtn.trigger("click");
-        } else {
-          // Create a hidden WooCommerce-compatible form and submit it
-          const $hiddenForm = $(`
-            <form class="woocommerce-form-coupon" method="post" style="display: none;">
-              <input type="text" name="coupon_code" value="${couponCode}" />
-              <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
-            </form>
-          `);
+          // If WooCommerce coupon form exists, use it
+          if ($wcCouponInput.length && $wcCouponBtn.length) {
+            $wcCouponInput.val(couponCode);
+            $wcCouponBtn.trigger("click");
+          } else {
+            // Create a hidden WooCommerce-compatible form and submit it
+            // SECURITY: Sanitize coupon code to prevent XSS
+            const sanitizedCouponCode = couponCode.replace(/[<>\"'&]/g, '');
+            const $hiddenForm = $(`
+              <form class="woocommerce-form-coupon" method="post" style="display: none;">
+                <input type="text" name="coupon_code" value="${sanitizedCouponCode}" />
+                <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
+              </form>
+            `);
 
-          $("body").append($hiddenForm);
-          $hiddenForm.submit();
-          $hiddenForm.remove();
-        }
+            $("body").append($hiddenForm);
+            $hiddenForm.submit();
+            $hiddenForm.remove();
+          }
 
-        // Reset UI state with reduced timeout
-        setTimeout(() => {
+          // Reset UI state with reduced timeout
+          setTimeout(() => {
+            $applyBtn.text("Apply").prop("disabled", false);
+            $input.val("");
+
+            // Clear processing flag since coupon application attempt is complete
+            if (window.primefitCouponProcessing) {
+              delete window.primefitCouponProcessing;
+            }
+          }, 1500);
+        } catch (error) {
+          console.error("Error applying coupon elegantly:", error);
+
+          // Reset UI state on error
           $applyBtn.text("Apply").prop("disabled", false);
           $input.val("");
-        }, 1500);
+
+          // Clear processing flag on error
+          if (window.primefitCouponProcessing) {
+            delete window.primefitCouponProcessing;
+          }
+        }
       });
     },
 

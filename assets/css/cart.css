@@ -350,7 +350,7 @@
   .woocommerce-mini-cart.cart_list.product_list_widget
     .woocommerce-mini-cart-item,
   .woocommerce-mini-cart.cart_list.product_list_widget .mini_cart_item {
-    padding: 16px 0;
+    padding: 16px 0 16px 0;
     gap: 15px;
   }
 

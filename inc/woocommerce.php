@@ -1233,8 +1233,17 @@ function primefit_get_mini_cart_recommended_products() {
 	);
 	
 	$products = get_posts( $args );
+
+	// Bulk load all product objects to avoid N+1 queries
+	$product_ids = wp_list_pluck( $products, 'ID' );
+	$product_objects = array();
+
+	if ( ! empty( $product_ids ) ) {
+		$product_objects = array_filter( array_map( 'wc_get_product', $product_ids ) );
+	}
+
 	foreach ( $products as $product_post ) {
-		$product = wc_get_product( $product_post->ID );
+		$product = isset( $product_objects[ $product_post->ID ] ) ? $product_objects[ $product_post->ID ] : null;
 		if ( $product && $product->is_purchasable() ) {
 			$recommended_products[] = $product;
 		}

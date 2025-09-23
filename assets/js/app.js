@@ -243,8 +243,18 @@
   }
 
   // Function to apply coupon from URL parameter - optimized with better error handling
+  // FIXED: Added state management to prevent race conditions
   function applyCouponFromUrl(couponCode) {
     console.log("🚀 Applying coupon from URL:", couponCode);
+
+    // Check if coupon is already applied
+    var appliedCoupons = getAppliedCoupons();
+    if (appliedCoupons.includes(couponCode.toUpperCase())) {
+      console.log("✅ Coupon " + couponCode + " is already applied");
+      // Clear processing flag since we're done
+      delete window.primefitCouponProcessing;
+      return;
+    }
 
     // Show loading state if mini cart coupon form exists
     var $couponForm = jQuery(".mini-cart-coupon-form");
@@ -258,7 +268,8 @@
       }
     }
 
-    // Apply coupon via AJAX using existing handler with timeout
+    // Apply coupon via AJAX using existing handler with improved error handling
+    // FIXED: Added request abortion and better error recovery
     var ajaxRequest = jQuery.ajax({
       type: "POST",
       url: window.primefit_cart_params
@@ -271,7 +282,20 @@
           : "",
         coupon_code: couponCode,
       },
-      timeout: 10000, // 10 second timeout
+      timeout: 8000, // Reduced timeout to 8 seconds for better UX
+      xhr: function() {
+        // Enable request abortion
+        var xhr = jQuery.ajaxSettings.xhr();
+        if (xhr) {
+          // Store reference for potential abortion
+          ajaxRequest.abortController = { xhr: xhr };
+        }
+        return xhr;
+      },
+      beforeSend: function(jqXHR, settings) {
+        // Store request reference for cleanup
+        ajaxRequest.jqXHR = jqXHR;
+      },
       success: function (response) {
         if (response.success) {
           console.log("✅ Coupon applied successfully from URL");
@@ -310,11 +334,13 @@
               .prop("disabled", false)
               .text("APPLY");
 
-            // Show error message
+            // Show error message with sanitized content
             var errorMsg = response.data || "Failed to apply coupon";
-            $couponForm.after(
-              '<div class="coupon-message error">' + errorMsg + "</div>"
-            );
+            if (typeof errorMsg === 'string') {
+              $couponForm.after(
+                '<div class="coupon-message error">' + errorMsg.replace(/[<>\"'&]/g, '') + "</div>"
+              );
+            }
 
             setTimeout(function () {
               jQuery(".coupon-message").fadeOut();
@@ -322,15 +348,23 @@
           }
         }
       },
-      error: function () {
-        console.log("❌ Network error applying coupon from URL");
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.log("❌ Network error applying coupon from URL:", textStatus, errorThrown);
+
+        // Handle different error types
+        var errorMessage = "Network error. Please try again.";
+        if (textStatus === "timeout") {
+          errorMessage = "Request timed out. Please check your connection.";
+        } else if (textStatus === "abort") {
+          errorMessage = "Request was cancelled.";
+        }
 
         if ($couponForm.length) {
           $input.val("");
           $button.removeClass("loading").prop("disabled", false).text("APPLY");
 
           $couponForm.after(
-            '<div class="coupon-message error">Network error. Please try again.</div>'
+            '<div class="coupon-message error">' + errorMessage + "</div>"
           );
 
           setTimeout(function () {
@@ -339,13 +373,34 @@
         }
       },
       complete: function () {
+        // Clear processing flag since coupon application attempt is complete
+        if (window.primefitCouponProcessing) {
+          delete window.primefitCouponProcessing;
+        }
+
+        // Clean up request references to prevent memory leaks
+        if (ajaxRequest.jqXHR) {
+          ajaxRequest.jqXHR = null;
+        }
+        if (ajaxRequest.abortController) {
+          ajaxRequest.abortController = null;
+        }
+
         // Clean URL after application attempt
         cleanUrlAfterCouponApplication(couponCode);
       },
     });
+
+    // Add request abortion capability for cleanup
+    applyCouponFromUrl.abort = function() {
+      if (ajaxRequest.jqXHR && ajaxRequest.jqXHR.readyState !== 4) {
+        ajaxRequest.jqXHR.abort();
+      }
+    };
   }
 
   // Function to check for pending coupon from session
+  // FIXED: Added state management to prevent race conditions
   function checkForPendingCouponFromSession() {
     // Check for pending coupon data from cart fragments (hidden element)
     var $couponData = jQuery(".primefit-coupon-data");
@@ -362,6 +417,15 @@
           );
           return;
         }
+
+        // CRITICAL: Check if coupon is already being processed to prevent race conditions
+        if (window.primefitCouponProcessing && window.primefitCouponProcessing === pendingCoupon.toUpperCase()) {
+          console.log("⏳ Coupon " + pendingCoupon + " is already being processed, skipping duplicate attempt");
+          return;
+        }
+
+        // Mark as processing to prevent race conditions
+        window.primefitCouponProcessing = pendingCoupon.toUpperCase();
 
         // Apply the pending coupon with additional safety check
         setTimeout(function () {
@@ -387,6 +451,8 @@
                   "❌ WooCommerce not loaded, cannot apply session coupon:",
                   pendingCoupon
                 );
+                // Clear processing flag on failure
+                delete window.primefitCouponProcessing;
               }
             }, 2000);
           }
@@ -498,7 +564,7 @@
     };
   }
 
-  // Mobile cart drawer drag functionality
+  // Mobile cart drawer drag functionality - FIXED: Added proper cleanup to prevent memory leaks
   class MobileCartDrawer {
     constructor() {
       this.isDragging = false;
@@ -509,6 +575,7 @@
       this.threshold = 50; // Minimum drag distance to close
       this.isMobile = window.matchMedia("(max-width: 1024px)").matches;
       this.preventPullToRefresh = false;
+      this.eventNamespace = '.mobileCartDrawer' + Math.random().toString(36).substr(2, 9); // Unique namespace for event cleanup
       this.init();
     }
 
@@ -520,39 +587,52 @@
     }
 
     bindEvents() {
-      // Touch events for drag functionality
+      // Touch events for drag functionality with unique namespace for cleanup
       $(document).on(
-        "touchstart",
+        "touchstart" + this.eventNamespace,
         ".cart-panel-header",
-        this.handleTouchStart.bind(this)
+        (e) => this.handleTouchStart(e)
       );
       $(document).on(
-        "touchmove",
+        "touchmove" + this.eventNamespace,
         ".cart-panel-header",
-        this.handleTouchMove.bind(this)
+        (e) => this.handleTouchMove(e)
       );
       $(document).on(
-        "touchend",
+        "touchend" + this.eventNamespace,
         ".cart-panel-header",
-        this.handleTouchEnd.bind(this)
+        (e) => this.handleTouchEnd(e)
       );
 
-      // Prevent pull-to-refresh when cart is open
-      $(document).on("touchstart", this.handleGlobalTouchStart.bind(this));
-      $(document).on("touchmove", this.handleGlobalTouchMove.bind(this));
-      $(document).on("touchend", this.handleGlobalTouchEnd.bind(this));
+      // Prevent pull-to-refresh when cart is open with unique namespace
+      $(document).on("touchstart" + this.eventNamespace, (e) => this.handleGlobalTouchStart(e));
+      $(document).on("touchmove" + this.eventNamespace, (e) => this.handleGlobalTouchMove(e));
+      $(document).on("touchend" + this.eventNamespace, (e) => this.handleGlobalTouchEnd(e));
 
-      // Mouse events for desktop testing
+      // Mouse events for desktop testing with unique namespace
       $(document).on(
-        "mousedown",
+        "mousedown" + this.eventNamespace,
         ".cart-panel-header",
-        this.handleMouseDown.bind(this)
+        (e) => this.handleMouseDown(e)
       );
-      $(document).on("mousemove", this.handleMouseMove.bind(this));
-      $(document).on("mouseup", this.handleMouseUp.bind(this));
+      $(document).on("mousemove" + this.eventNamespace, (e) => this.handleMouseMove(e));
+      $(document).on("mouseup" + this.eventNamespace, (e) => this.handleMouseUp(e));
 
-      // Handle window resize
-      $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
+      // Handle window resize with unique namespace
+      $(window).on("resize" + this.eventNamespace, () => this.debounce(this.handleResize.bind(this), 250)());
+    }
+
+    // Cleanup method to prevent memory leaks
+    destroy() {
+      // Remove all event listeners using the unique namespace
+      $(document).off(this.eventNamespace);
+      $(window).off(this.eventNamespace);
+
+      // Reset dragging state
+      this.isDragging = false;
+      const $panel = $(".cart-panel");
+      $panel.removeClass("dragging drag-down");
+      $panel.css("transform", "");
     }
 
     handleTouchStart(e) {
@@ -953,6 +1033,11 @@
 
     // Re-enable page scrolling when cart is closed
     allowPageScroll();
+
+    // CRITICAL: Clean up event listeners to prevent memory leaks
+    if (window.mobileCartDrawer && typeof window.mobileCartDrawer.destroy === "function") {
+      window.mobileCartDrawer.destroy();
+    }
 
     // Reset form submission flag to allow new submissions
     if (

@@ -201,6 +201,7 @@ function primefit_apply_coupon_if_valid( $coupon_code ) {
 /**
  * Apply pending coupon from session when cart is loaded
  * Moved to wp_loaded to avoid early cart access
+ * FIXED: Added state management to prevent race conditions
  */
 add_action( 'wp_loaded', 'primefit_apply_pending_coupon_from_session', 20 );
 function primefit_apply_pending_coupon_from_session() {
@@ -216,8 +217,17 @@ function primefit_apply_pending_coupon_from_session() {
 	if ( isset( $_SESSION['primefit_pending_coupon'] ) ) {
 		$coupon_code = $_SESSION['primefit_pending_coupon'];
 
+		// CRITICAL: Check if coupon is already being processed to prevent race conditions
+		if ( isset( $_SESSION['primefit_coupon_processing'] ) && $_SESSION['primefit_coupon_processing'] === $coupon_code ) {
+			error_log( "PrimeFit: Coupon " . $coupon_code . " is already being processed, skipping duplicate attempt" );
+			return;
+		}
+
 		// Only try to apply if cart exists and is not empty
 		if ( WC()->cart && ! WC()->cart->is_empty() ) {
+			// Mark as processing to prevent race conditions
+			$_SESSION['primefit_coupon_processing'] = $coupon_code;
+
 			$applied = primefit_apply_coupon_if_valid( $coupon_code );
 
 			if ( $applied ) {
@@ -225,6 +235,9 @@ function primefit_apply_pending_coupon_from_session() {
 				unset( $_SESSION['primefit_pending_coupon'] );
 				error_log( "PrimeFit: Successfully applied pending coupon from session: " . $coupon_code );
 			}
+
+			// Remove processing flag
+			unset( $_SESSION['primefit_coupon_processing'] );
 		}
 	}
 }
@@ -256,6 +269,7 @@ function primefit_add_coupon_data_to_fragments( $fragments ) {
 /**
  * Check for pending coupons when WooCommerce is ready
  * Moved to wp_loaded to avoid early cart access
+ * FIXED: Added state management to prevent race conditions
  */
 add_action( 'wp_loaded', 'primefit_check_pending_coupon_on_wc_init', 30 );
 function primefit_check_pending_coupon_on_wc_init() {
@@ -274,6 +288,12 @@ function primefit_check_pending_coupon_on_wc_init() {
 	}
 
 	$coupon_code = $_SESSION['primefit_pending_coupon'];
+
+	// CRITICAL: Check if coupon is already being processed to prevent race conditions
+	if ( isset( $_SESSION['primefit_coupon_processing'] ) && $_SESSION['primefit_coupon_processing'] === $coupon_code ) {
+		error_log( "PrimeFit: Coupon " . $coupon_code . " is already being processed in another hook, skipping duplicate attempt" );
+		return;
+	}
 
 	// Try to apply the coupon now that WC is fully loaded
 	if ( WC()->cart && ! WC()->cart->is_empty() ) {

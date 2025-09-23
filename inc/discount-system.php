@@ -42,7 +42,10 @@ function primefit_create_discount_tracking_table() {
 		KEY coupon_code (coupon_code),
 		KEY email (email),
 		KEY order_id (order_id),
-		KEY user_id (user_id)
+		KEY user_id (user_id),
+		KEY usage_date (usage_date),
+		KEY coupon_order (coupon_code, order_id),
+		KEY email_usage_date (email, usage_date)
 	) $charset_collate;";
 
 	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
@@ -73,12 +76,20 @@ function primefit_update_discount_tracking_table() {
 
 /**
  * Track discount code usage when order is completed
+ * FIXED: Added comprehensive error handling and validation
  */
 add_action( 'woocommerce_order_status_completed', 'primefit_track_discount_usage', 10, 1 );
 function primefit_track_discount_usage( $order_id ) {
+	// Validate order ID
+	if ( empty( $order_id ) || ! is_numeric( $order_id ) ) {
+		error_log( "PrimeFit: Invalid order ID provided to discount tracking: " . $order_id );
+		return;
+	}
+
 	$order = wc_get_order( $order_id );
 
 	if ( ! $order ) {
+		error_log( "PrimeFit: Could not retrieve order for discount tracking: " . $order_id );
 		return;
 	}
 
@@ -86,47 +97,70 @@ function primefit_track_discount_usage( $order_id ) {
 	$coupons = $order->get_coupon_codes();
 
 	if ( empty( $coupons ) ) {
+		return; // No coupons to track
+	}
+
+	// Get customer email and validate
+	$email = $order->get_billing_email();
+	if ( empty( $email ) || ! is_email( $email ) ) {
+		error_log( "PrimeFit: Invalid or missing email for order " . $order_id );
 		return;
 	}
 
-	// Get customer email
-	$email = $order->get_billing_email();
 	$user_id = $order->get_user_id();
 
-	// Track each coupon used
-	foreach ( $coupons as $coupon_code ) {
-		$coupon = new WC_Coupon( $coupon_code );
+	// Track each coupon used with proper error handling
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'discount_code_tracking';
 
-		if ( ! $coupon ) {
-			continue;
+	// Use transaction to prevent partial data corruption
+	$wpdb->query( 'START TRANSACTION' );
+
+	try {
+		foreach ( $coupons as $coupon_code ) {
+			$coupon = new WC_Coupon( $coupon_code );
+
+			if ( ! $coupon || ! $coupon->get_id() ) {
+				error_log( "PrimeFit: Invalid coupon code: " . $coupon_code . " for order " . $order_id );
+				continue;
+			}
+
+			// Calculate savings for this coupon
+			$savings_amount = primefit_calculate_coupon_savings( $coupon, $order );
+
+			// Get user IP and agent for tracking
+			$ip_address = primefit_get_client_ip();
+			$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
+
+			// Insert tracking record with proper error handling
+			$result = $wpdb->insert(
+				$table_name,
+				array(
+					'coupon_code' => sanitize_text_field( $coupon_code ),
+					'email' => sanitize_email( $email ),
+					'user_id' => intval( $user_id ),
+					'order_id' => intval( $order_id ),
+					'savings_amount' => floatval( $savings_amount ),
+					'ip_address' => sanitize_text_field( $ip_address ),
+					'user_agent' => substr( sanitize_text_field( $user_agent ), 0, 500 ) // Limit length to prevent overflow
+				),
+				array(
+					'%s', '%s', '%d', '%d', '%f', '%s', '%s'
+				)
+			);
+
+			if ( $result === false ) {
+				throw new Exception( "Database error inserting discount tracking record: " . $wpdb->last_error );
+			}
 		}
 
-		// Calculate savings for this coupon
-		$savings_amount = primefit_calculate_coupon_savings( $coupon, $order );
+		// Commit transaction if all inserts succeeded
+		$wpdb->query( 'COMMIT' );
 
-		// Get user IP and agent for tracking
-		$ip_address = primefit_get_client_ip();
-		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
-
-		// Insert tracking record
-		global $wpdb;
-		$table_name = $wpdb->prefix . 'discount_code_tracking';
-
-		$wpdb->insert(
-			$table_name,
-			array(
-				'coupon_code' => $coupon_code,
-				'email' => $email,
-				'user_id' => $user_id,
-				'order_id' => $order_id,
-				'savings_amount' => $savings_amount,
-				'ip_address' => $ip_address,
-				'user_agent' => $user_agent
-			),
-			array(
-				'%s', '%s', '%d', '%d', '%f', '%s', '%s'
-			)
-		);
+	} catch ( Exception $e ) {
+		// Rollback transaction on error
+		$wpdb->query( 'ROLLBACK' );
+		error_log( "PrimeFit: Transaction failed for order " . $order_id . " - " . $e->getMessage() );
 	}
 }
 
@@ -162,6 +196,7 @@ function primefit_calculate_coupon_savings( $coupon, $order ) {
 
 /**
  * Get client IP address
+ * FIXED: Prevent IP spoofing by validating and sanitizing input
  */
 function primefit_get_client_ip() {
 	$ip_headers = array(
@@ -179,19 +214,36 @@ function primefit_get_client_ip() {
 		if ( ! empty( $_SERVER[ $header ] ) ) {
 			$ip = $_SERVER[ $header ];
 
+			// SECURITY: Sanitize the input first
+			$ip = trim( $ip );
+
+			// SECURITY: Validate IP format before processing
+			if ( ! preg_match( '/^[0-9a-fA-F:.]+$/', $ip ) ) {
+				continue; // Skip invalid characters
+			}
+
 			// Handle comma-separated IPs (like X-Forwarded-For)
 			if ( strpos( $ip, ',' ) !== false ) {
 				$ip = trim( explode( ',', $ip )[0] );
 			}
 
-			// Validate IP
+			// SECURITY: Validate IP format and prevent spoofing
 			if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-				return $ip;
+				// Additional validation to prevent header injection
+				if ( ! preg_match( '/[\r\n\t]/', $ip ) ) {
+					return $ip;
+				}
 			}
 		}
 	}
 
-	return isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : '';
+	// Fallback to REMOTE_ADDR with additional validation
+	$remote_addr = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : '';
+	if ( ! empty( $remote_addr ) && filter_var( $remote_addr, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+		return $remote_addr;
+	}
+
+	return '';
 }
 
 /**

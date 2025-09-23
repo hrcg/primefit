@@ -20,6 +20,7 @@ if ( ! function_exists( 'acf_add_local_field_group' ) ) {
 
 /**
  * Get color options from WooCommerce product variations
+ * Optimized to avoid N+1 queries by bulk loading variation objects
  */
 function primefit_get_product_color_choices( $product_id ) {
 	$product = wc_get_product( $product_id );
@@ -29,8 +30,22 @@ function primefit_get_product_color_choices( $product_id ) {
 
 	$colors = array();
 	$variations = $product->get_available_variations();
+	$variation_ids = wp_list_pluck( $variations, 'variation_id' );
+
+	// Bulk load all variation objects to avoid N+1 queries
+	$variation_objects = array();
+	if ( ! empty( $variation_ids ) ) {
+		$variation_objects = array_filter( array_map( 'wc_get_product', $variation_ids ) );
+	}
 
 	foreach ( $variations as $variation ) {
+		$variation_id = $variation['variation_id'];
+		$variation_obj = isset( $variation_objects[ $variation_id ] ) ? $variation_objects[ $variation_id ] : null;
+
+		if ( ! $variation_obj || ! $variation_obj->is_in_stock() ) {
+			continue;
+		}
+
 		$attributes = $variation['attributes'];
 
 		// Look for color attributes

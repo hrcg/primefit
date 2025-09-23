@@ -349,38 +349,43 @@ function primefit_render_size_selection_overlay( $product ) {
 add_action( 'wp_footer', 'primefit_debug_size_overlay' );
 function primefit_debug_size_overlay() {
 	if ( isset( $_GET['debug_sizes'] ) && $_GET['debug_sizes'] == '1' ) {
+		// SECURITY: Only allow admin users to see debug info
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		echo '<div style="position: fixed; bottom: 0; left: 0; background: black; color: white; padding: 10px; z-index: 9999; max-width: 400px; font-size: 12px; max-height: 300px; overflow-y: auto;">';
 		echo '<strong>Size Overlay Debug:</strong><br>';
-		
+
 		global $woocommerce_loop;
 		if ( isset( $woocommerce_loop['is_shortcode'] ) && $woocommerce_loop['is_shortcode'] ) {
 			echo '✓ WooCommerce shortcode detected<br>';
 		}
-		
+
 		if ( function_exists( 'wc_get_products' ) ) {
 			$variable_products = wc_get_products( array(
 				'type' => 'variable',
 				'limit' => 5,
 				'status' => 'publish'
 			) );
-			
+
 			echo 'Variable products found: ' . count( $variable_products ) . '<br>';
-			
+
 			foreach ( $variable_products as $product ) {
 				echo '<hr style="margin: 5px 0;">';
-				echo '<strong>Product:</strong> ' . $product->get_name() . '<br>';
+				echo '<strong>Product:</strong> ' . esc_html( $product->get_name() ) . '<br>';
 				$attributes = $product->get_variation_attributes();
-				echo '<strong>Attributes:</strong> ' . implode( ', ', array_keys( $attributes ) ) . '<br>';
-				
+				echo '<strong>Attributes:</strong> ' . esc_html( implode( ', ', array_keys( $attributes ) ) ) . '<br>';
+
 				foreach ( $attributes as $attr_name => $options ) {
-					echo '<strong>' . $attr_name . ':</strong> ' . implode( ', ', $options ) . '<br>';
+					echo '<strong>' . esc_html( $attr_name ) . ':</strong> ' . esc_html( implode( ', ', $options ) ) . '<br>';
 				}
-				
+
 				$variations = $product->get_available_variations();
 				echo '<strong>Variations:</strong> ' . count( $variations ) . '<br>';
 			}
 		}
-		
+
 		echo '</div>';
 	}
 }
@@ -460,9 +465,9 @@ function primefit_get_shop_categories( $args = array() ) {
 			'image' => $image_url,
 			'url' => get_term_link( $category ),
 			'count' => $product_count,
-			'button_text' => sprintf( __( 'Shop %s', 'primefit' ), html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ),
+			'button_text' => sprintf( __( 'Shop %s', 'primefit' ), esc_html( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ) ),
 			'is_subcategory' => $is_subcategory,
-			'parent_name' => $parent_category ? html_entity_decode( $parent_category->name, ENT_QUOTES, 'UTF-8' ) : null,
+			'parent_name' => $parent_category ? esc_html( html_entity_decode( $parent_category->name, ENT_QUOTES, 'UTF-8' ) ) : null,
 			'parent_slug' => $parent_category ? $parent_category->slug : null
 		);
 	}
