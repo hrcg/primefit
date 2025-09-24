@@ -594,23 +594,33 @@ function primefit_get_variation_gallery_data( $product_id = null ) {
 		$product_id = $product ? $product->get_id() : get_the_ID();
 	}
 
+	// Try to get cached data first
+	$gallery_data = primefit_get_cached_acf_field( 'variation_gallery', $product_id );
+	
+	if ( false !== $gallery_data ) {
+		return $gallery_data;
+	}
+
 	$variation_galleries = get_field( 'variation_gallery', $product_id );
 
 	if ( empty( $variation_galleries ) ) {
-		return array();
-	}
-
-	$gallery_data = array();
-	foreach ( $variation_galleries as $gallery ) {
-		if ( ! empty( $gallery['color'] ) && ! empty( $gallery['images'] ) ) {
-			// Use normalized color value as key for consistent matching
-			$color_key = strtolower( trim( $gallery['color'] ) );
-			$gallery_data[ $color_key ] = array(
-				'images' => $gallery['images'],
-				'count' => count( $gallery['images'] )
-			);
+		$gallery_data = array();
+	} else {
+		$gallery_data = array();
+		foreach ( $variation_galleries as $gallery ) {
+			if ( ! empty( $gallery['color'] ) && ! empty( $gallery['images'] ) ) {
+				// Use normalized color value as key for consistent matching
+				$color_key = strtolower( trim( $gallery['color'] ) );
+				$gallery_data[ $color_key ] = array(
+					'images' => $gallery['images'],
+					'count' => count( $gallery['images'] )
+				);
+			}
 		}
 	}
+
+	// Cache the processed data
+	primefit_cache_acf_field( 'variation_gallery', $product_id, $gallery_data );
 
 	return $gallery_data;
 }
@@ -650,13 +660,25 @@ function primefit_get_size_guide_image( $product_id = null ) {
 		$product_id = $product ? $product->get_id() : get_the_ID();
 	}
 	
+	// Try to get cached data first
+	$size_guide_url = primefit_get_cached_acf_field( 'size_guide_image', $product_id );
+	
+	if ( false !== $size_guide_url ) {
+		return $size_guide_url;
+	}
+	
 	$size_guide_image_id = get_field( 'size_guide_image', $product_id );
 	
 	if ( $size_guide_image_id ) {
-		return wp_get_attachment_image_url( $size_guide_image_id, 'full' );
+		$size_guide_url = wp_get_attachment_image_url( $size_guide_image_id, 'full' );
+	} else {
+		$size_guide_url = false;
 	}
 	
-	return false;
+	// Cache the result
+	primefit_cache_acf_field( 'size_guide_image', $product_id, $size_guide_url );
+	
+	return $size_guide_url;
 }
 
 /**

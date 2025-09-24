@@ -622,9 +622,7 @@ function primefit_wc_remove_cart_item() {
     if ( ob_get_level() ) {
         ob_clean();
     }
-    
-    // Remove cart item AJAX handler called
-    
+
     if ( ! isset( $_POST['cart_item_key'], $_POST['security'] ) ) {
         wp_send_json_error( __( 'Invalid request', 'primefit' ), 400 );
     }
@@ -639,6 +637,12 @@ function primefit_wc_remove_cart_item() {
         wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
     }
 
+    $cart_contents = WC()->cart->get_cart();
+
+    if ( ! isset( $cart_contents[ $cart_item_key ] ) ) {
+        wp_send_json_error( __( 'Item not found in cart', 'primefit' ), 400 );
+    }
+
     $removed = WC()->cart->remove_cart_item( $cart_item_key );
 
     if ( ! $removed ) {
@@ -647,12 +651,24 @@ function primefit_wc_remove_cart_item() {
 
     WC()->cart->calculate_totals();
 
+    // Ensure cart cookies are set after removal
+    if ( function_exists( 'wc_setcookie' ) && method_exists( WC()->cart, 'maybe_set_cart_cookies' ) ) {
+        WC()->cart->maybe_set_cart_cookies();
+    }
+
+    // Update session data
+    if ( WC()->session ) {
+        WC()->session->set( 'cart', WC()->cart->get_cart_for_session() );
+        WC()->session->save_data();
+    }
+
     $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
 
     // Check if we're on checkout page and cart is now empty
     $is_checkout_page = is_checkout();
     $cart_is_empty = WC()->cart->is_empty();
-    
+
+
     // Sending success response
     wp_send_json_success( array(
         'fragments' => $fragments,
@@ -851,7 +867,6 @@ function primefit_register_cart_ajax_handlers() {
 	add_action( 'wp_ajax_woocommerce_remove_cart_item', 'primefit_remove_cart_item' );
 	add_action( 'wp_ajax_nopriv_woocommerce_remove_cart_item', 'primefit_remove_cart_item' );
 
-	// Debug: Log when actions are registered
 } */
 
 /**
@@ -1306,9 +1321,6 @@ function primefit_get_mini_cart_recommended_products() {
 		$accessories_term = get_term_by( 'slug', 'accessory', 'product_cat' );
 	}
 	
-	// Debug: Log category search results (only for admins)
-	if ( current_user_can( 'manage_options' ) && ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
-	}
 	
 	// Collect category IDs
 	$category_ids = array();
@@ -1342,9 +1354,6 @@ function primefit_get_mini_cart_recommended_products() {
 		}
 	}
 	
-	// Debug: Log results (only for admins)
-	if ( current_user_can( 'manage_options' ) && ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
-	}
 	
 	return $recommended_products;
 }
@@ -1621,11 +1630,7 @@ function primefit_debug_checkout_redirect() {
 		return;
 	}
 	
-	// Debug checkout page access
-	if ( is_checkout() ) {
-	}
 	
-	// Debug order received page access
 	if ( is_wc_endpoint_url( 'order-received' ) ) {
 		$order_id = get_query_var( 'order-received' );
 		$order_key = isset( $_GET['key'] ) ? sanitize_text_field( $_GET['key'] ) : '';
@@ -1685,7 +1690,7 @@ function primefit_force_flush_rewrite_rules() {
 function primefit_debug_payment_summary() {
     if ( current_user_can( 'manage_options' ) && isset( $_GET['debug_payment'] ) ) {
         echo '<div style="position: fixed; top: 0; left: 0; background: #000; color: #fff; padding: 10px; z-index: 9999; font-size: 12px;">';
-        echo '<strong>Payment Summary Debug:</strong><br>';
+        echo '<strong>Debug Information:</strong><br>';
         echo 'Is Account Page: ' . ( is_account_page() ? 'Yes' : 'No' ) . '<br>';
         echo 'Is Payment Summary Endpoint: ' . ( is_wc_endpoint_url( 'payment-summary' ) ? 'Yes' : 'No' ) . '<br>';
         echo 'Current User ID: ' . get_current_user_id() . '<br>';

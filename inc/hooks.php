@@ -299,3 +299,36 @@ function primefit_add_mega_menu_attribute( $atts, $item, $args ) {
 	
 	return $atts;
 }
+
+/**
+ * Clear product caches when product is updated
+ */
+add_action( 'save_post', 'primefit_clear_product_cache_on_save', 10, 2 );
+function primefit_clear_product_cache_on_save( $post_id, $post ) {
+	// Only clear cache for products
+	if ( $post->post_type === 'product' ) {
+		primefit_clear_product_performance_cache( $post_id );
+	}
+}
+
+/**
+ * Clear product caches when product meta is updated
+ */
+add_action( 'updated_post_meta', 'primefit_clear_product_cache_on_meta_update', 10, 4 );
+function primefit_clear_product_cache_on_meta_update( $meta_id, $post_id, $meta_key, $meta_value ) {
+	// Only clear cache for products
+	if ( get_post_type( $post_id ) === 'product' ) {
+		primefit_clear_product_performance_cache( $post_id );
+	}
+}
+
+/**
+ * Clear product caches when ACF fields are updated
+ */
+add_action( 'acf/save_post', 'primefit_clear_product_cache_on_acf_save', 20 );
+function primefit_clear_product_cache_on_acf_save( $post_id ) {
+	// Only clear cache for products
+	if ( get_post_type( $post_id ) === 'product' ) {
+		primefit_clear_product_performance_cache( $post_id );
+	}
+}

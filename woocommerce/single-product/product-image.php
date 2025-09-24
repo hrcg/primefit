@@ -36,32 +36,13 @@ if ( $main_image_id ) {
 // Remove duplicates
 $attachment_ids = array_unique( $attachment_ids );
 
-// Get variation gallery for the selected color (if any)
-$variation_gallery_ids = array();
-if ( ! empty( $selected_color ) ) {
-	$variation_gallery_ids = primefit_get_variation_gallery( $product->get_id(), $selected_color );
-
-	// If we have a variation gallery for the selected color, use it
-	if ( ! empty( $variation_gallery_ids ) ) {
-		$attachment_ids = $variation_gallery_ids;
-		$main_image_id = ! empty( $attachment_ids[0] ) ? $attachment_ids[0] : $product->get_image_id();
-
-		// If main image from variation gallery doesn't exist, use product main image
-		if ( ! $main_image_id ) {
-			$main_image_id = $product->get_image_id();
-			if ( $main_image_id ) {
-				array_unshift( $attachment_ids, $main_image_id );
-			}
-		}
-	}
-}
 
 if ( empty( $attachment_ids ) ) {
 	return;
 }
 
-// Get gallery data for JavaScript
-$variation_galleries = primefit_get_variation_gallery_data( $product->get_id() );
+// Gallery data for JavaScript (variation galleries removed)
+$variation_galleries = array();
 
 // Generate URLs for all images
 $image_urls = array();

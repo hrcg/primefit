@@ -395,17 +395,59 @@ function primefit_optimize_product_images( $html, $attachment_id ) {
 add_filter( 'woocommerce_product_get_image', 'primefit_optimize_product_loop_images', 10, 2 );
 function primefit_optimize_product_loop_images( $image, $product ) {
 	$image_id = $product->get_image_id();
-	
+
 	if ( $image_id ) {
 	$responsive_html = primefit_get_responsive_image( $image_id, 'primefit-product-loop', [
 		'class' => 'attachment-woocommerce_thumbnail',
 		'loading' => 'lazy',
 		'webp' => true
 	] );
-		
+
 		return $responsive_html ?: $image;
 	}
-	
+
+	return $image;
+}
+
+/**
+ * Optimize mini cart images
+ */
+add_filter( 'woocommerce_cart_item_thumbnail', 'primefit_optimize_mini_cart_images', 10, 3 );
+function primefit_optimize_mini_cart_images( $image, $cart_item, $cart_item_key ) {
+	$product = $cart_item['data'];
+	$image_id = $product->get_image_id();
+
+	if ( $image_id ) {
+		$responsive_html = primefit_get_responsive_image( $image_id, 'thumbnail', [
+			'class' => 'attachment-woocommerce_thumbnail',
+			'loading' => 'lazy',
+			'webp' => true
+		] );
+
+		return $responsive_html ?: $image;
+	}
+
+	return $image;
+}
+
+/**
+ * Optimize cart widget images
+ */
+add_filter( 'woocommerce_widget_cart_item_thumbnail', 'primefit_optimize_widget_cart_images', 10, 3 );
+function primefit_optimize_widget_cart_images( $image, $cart_item, $cart_item_key ) {
+	$product = $cart_item['data'];
+	$image_id = $product->get_image_id();
+
+	if ( $image_id ) {
+		$responsive_html = primefit_get_responsive_image( $image_id, 'thumbnail', [
+			'class' => 'attachment-woocommerce_thumbnail',
+			'loading' => 'lazy',
+			'webp' => true
+		] );
+
+		return $responsive_html ?: $image;
+	}
+
 	return $image;
 }
 

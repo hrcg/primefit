@@ -57,16 +57,16 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 	if ( empty( $image_url ) ) {
 		return $image_url;
 	}
-	
+
 	// Check if the image is already in the desired format
 	$current_format = strtolower( pathinfo( $image_url, PATHINFO_EXTENSION ) );
 	if ( $current_format === $format ) {
 		return $image_url;
 	}
-	
+
 	// Generate optimized URL
 	$optimized_url = str_replace( ['.jpg', '.jpeg', '.png'], '.' . $format, $image_url );
-	
+
 	// Check if optimized version exists (for local images)
 	if ( strpos( $optimized_url, home_url() ) === 0 ) {
 		$local_path = str_replace( home_url(), ABSPATH, $optimized_url );
@@ -74,8 +74,30 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 			return $optimized_url;
 		}
 	}
-	
-	// Return original URL if optimized version doesn't exist
+
+	// For theme assets, check multiple fallback formats
+	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
+		// Try multiple fallback formats
+		$fallback_formats = ['webp', 'jpg', 'jpeg', 'png'];
+
+		foreach ( $fallback_formats as $fallback_format ) {
+			if ( $fallback_format === $format ) {
+				continue; // Skip the requested format as we've already tried it
+			}
+
+			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp'], '.' . $fallback_format, $image_url );
+
+			if ( strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
+				$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $fallback_url );
+
+				if ( file_exists( $local_path ) ) {
+					return $fallback_url;
+				}
+			}
+		}
+	}
+
+	// Return original URL if no optimized version exists
 	return $image_url;
 }
 
@@ -90,10 +112,10 @@ function primefit_generate_responsive_sources_helper( $image_url, $sizes = [] ) 
 	if ( empty( $image_url ) ) {
 		return [];
 	}
-	
+
 	$sources = [];
 	$formats = ['webp'];
-	
+
 	foreach ( $formats as $format ) {
 		$optimized_url = primefit_get_optimized_image_url( $image_url, $format );
 		if ( $optimized_url !== $image_url ) {
@@ -104,8 +126,46 @@ function primefit_generate_responsive_sources_helper( $image_url, $sizes = [] ) 
 			$sources[$format] = implode( ', ', $srcset_parts );
 		}
 	}
-	
+
 	return $sources;
+}
+
+/**
+ * Get best available image URI with format fallback
+ *
+ * @param array $urls Array of image URLs with fallback formats
+ * @return string Best available image URL
+ */
+function primefit_get_best_image_uri( $urls = [] ) {
+	if ( empty( $urls ) || ! is_array( $urls ) ) {
+		return '';
+	}
+
+	foreach ( $urls as $url ) {
+		if ( empty( $url ) ) {
+			continue;
+		}
+
+		// If it's a relative path, convert to full URL
+		if ( strpos( $url, 'http' ) !== 0 ) {
+			$url = get_template_directory_uri() . $url;
+		}
+
+		// Check if file exists
+		if ( strpos( $url, get_template_directory_uri() ) === 0 ) {
+			$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $url );
+
+			if ( file_exists( $local_path ) ) {
+				return $url;
+			}
+		} else {
+			// For external URLs, just return the first one
+			return $url;
+		}
+	}
+
+	// If no files exist, return the first URL anyway as fallback
+	return $urls[0];
 }
 
 /**
@@ -128,7 +188,7 @@ function primefit_get_category_hero_image( $category, $size = 'full' ) {
 	
 	// Fallback to default hero image if no category image
 	if ( empty( $category_image_url ) ) {
-		$category_image_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+		$category_image_url = primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png'));
 	}
 	
 	return $category_image_url;
@@ -212,8 +272,8 @@ function primefit_get_shop_hero_config() {
 	
 	if ( is_shop() ) {
 		$hero_args = array(
-			'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
-			'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
+			'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png')),
+			'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png')),
 			'heading' => 'SHOP ALL',
 			'subheading' => 'DISCOVER OUR COMPLETE COLLECTION OF PREMIUM FITNESS APPAREL',
 			'cta_text' => '',
@@ -256,8 +316,8 @@ function primefit_get_shop_hero_config() {
 	} elseif ( is_product_tag() ) {
 		$tag = get_queried_object();
 		$hero_args = array(
-			'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
-			'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
+			'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png')),
+			'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png')),
 			'heading' => strtoupper( $tag->name ),
 			'subheading' => 'PRODUCTS TAGGED: ' . strtoupper( $tag->name ),
 			'cta_text' => '',
@@ -613,9 +673,9 @@ function primefit_get_shop_categories( $args = array() ) {
  */
 function primefit_get_default_category_image( $category ) {
 	$default_images = array(
-		'run' => '/assets/images/run.webp',
-		'train' => '/assets/images/train.webp',
-		'rec' => '/assets/images/rec.webp'
+		'run' => primefit_get_asset_uri(array('/assets/images/run.webp', '/assets/images/run.jpg', '/assets/images/run.jpeg', '/assets/images/run.png')),
+		'train' => primefit_get_asset_uri(array('/assets/images/train.webp', '/assets/images/train.jpg', '/assets/images/train.jpeg', '/assets/images/train.png')),
+		'rec' => primefit_get_asset_uri(array('/assets/images/rec.webp', '/assets/images/rec.jpg', '/assets/images/rec.jpeg', '/assets/images/rec.png'))
 	);
 	
 	$category_slug = strtolower( $category->slug );
@@ -631,7 +691,7 @@ function primefit_get_default_category_image( $category ) {
 	}
 	
 	// Fallback to hero image
-	return primefit_get_asset_uri( array( '/assets/images/hero-image.webp', '/assets/images/hero-image.jpg' ) );
+	return primefit_get_asset_uri( array( '/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png' ) );
 }
 
 /**
@@ -765,10 +825,10 @@ function primefit_render_hero( $args = array() ) {
 	
 	// Fallback to direct theme directory URI if no image found
 	if ( empty( $hero_image_desktop_url ) ) {
-		$hero_image_desktop_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+		$hero_image_desktop_url = primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png'));
 	}
 	if ( empty( $hero_image_mobile_url ) ) {
-		$hero_image_mobile_url = get_template_directory_uri() . '/assets/images/hero-image.webp';
+		$hero_image_mobile_url = primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg', '/assets/images/hero-image.jpeg', '/assets/images/hero-image.png'));
 	}
 	
 	// Build CSS classes
@@ -1430,4 +1490,74 @@ function primefit_clear_category_cache( $term_id ) {
 		// Update cache timestamp for better cache invalidation
 		update_option( 'primefit_last_cache_update', time() );
 	}
+}
+
+/**
+ * Cache WooCommerce product variations data
+ *
+ * @param int $product_id Product ID
+ * @param array $variations Variations data
+ * @param int $expiration Cache expiration in seconds (default: 1 hour)
+ */
+function primefit_cache_product_variations( $product_id, $variations, $expiration = 3600 ) {
+	$cache_key = "product_variations_{$product_id}";
+	wp_cache_set( $cache_key, $variations, 'primefit_variations', $expiration );
+}
+
+/**
+ * Get cached WooCommerce product variations data
+ *
+ * @param int $product_id Product ID
+ * @return array|false Cached variations data or false if not cached
+ */
+function primefit_get_cached_product_variations( $product_id ) {
+	$cache_key = "product_variations_{$product_id}";
+	return wp_cache_get( $cache_key, 'primefit_variations' );
+}
+
+/**
+ * Cache ACF field data
+ *
+ * @param string $field_name ACF field name
+ * @param int $post_id Post ID
+ * @param mixed $data Field data
+ * @param int $expiration Cache expiration in seconds (default: 1 hour)
+ */
+function primefit_cache_acf_field( $field_name, $post_id, $data, $expiration = 3600 ) {
+	$cache_key = "acf_{$field_name}_{$post_id}";
+	wp_cache_set( $cache_key, $data, 'primefit_acf', $expiration );
+}
+
+/**
+ * Get cached ACF field data
+ *
+ * @param string $field_name ACF field name
+ * @param int $post_id Post ID
+ * @return mixed|false Cached field data or false if not cached
+ */
+function primefit_get_cached_acf_field( $field_name, $post_id ) {
+	$cache_key = "acf_{$field_name}_{$post_id}";
+	return wp_cache_get( $cache_key, 'primefit_acf' );
+}
+
+/**
+ * Clear product-related caches when product is updated
+ *
+ * @param int $product_id Product ID
+ */
+function primefit_clear_product_performance_cache( $product_id ) {
+	// Clear variations cache
+	$variations_cache_key = "product_variations_{$product_id}";
+	wp_cache_delete( $variations_cache_key, 'primefit_variations' );
+	
+	// Clear ACF field caches
+	$acf_fields = array( 'variation_gallery', 'size_guide_image', 'primefit_description' );
+	foreach ( $acf_fields as $field_name ) {
+		$acf_cache_key = "acf_{$field_name}_{$product_id}";
+		wp_cache_delete( $acf_cache_key, 'primefit_acf' );
+	}
+	
+	// Clear WooCommerce product cache
+	wp_cache_delete( $product_id, 'posts' );
+	wp_cache_delete( $product_id, 'post_meta' );
 }

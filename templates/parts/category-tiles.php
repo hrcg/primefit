@@ -21,13 +21,23 @@ $section = $category_tiles_config;
 <section class="container tiles-3">
 	<?php foreach ($section['tiles'] as $tile) : ?>
 		<div class="tile">
+			<?php
+			// Use the asset URI function to get the best available image format
+			$tile_image = $tile['image'];
+			$tile_webp = primefit_get_optimized_image_url($tile_image, 'webp');
+			$best_tile_image = $tile_webp !== $tile_image ? $tile_webp : $tile_image;
+			?>
+
+			<?php if ($best_tile_image) : ?>
 			<picture>
+				<?php if ($tile_webp !== $tile_image) : ?>
 				<!-- WebP source for good compression -->
-				<source type="image/webp" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.webp', $tile['image']) ); ?>">
-				
+				<source type="image/webp" srcset="<?php echo esc_url($tile_webp); ?>">
+				<?php endif; ?>
+
 				<!-- Fallback image -->
-				<img 
-					src="<?php echo esc_url( $tile['image'] ); ?>" 
+				<img
+					src="<?php echo esc_url($tile_image); ?>"
 					alt="<?php echo esc_attr( $tile['alt'] ); ?>"
 					loading="lazy"
 					decoding="async"
@@ -35,6 +45,7 @@ $section = $category_tiles_config;
 					height="300"
 				/>
 			</picture>
+			<?php endif; ?>
 			<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-label">
 				<?php echo esc_html( $tile['label'] ); ?>
 			</a>

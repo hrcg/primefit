@@ -267,11 +267,11 @@
 
     initializeCollapsibleSections() {
       // Initialize collapsible sections to be open by default
-      $('.collapsible-content').each(function() {
+      $(".collapsible-content").each(function () {
         const $content = $(this);
-        const $section = $content.closest('.collapsible-section');
-        const $icon = $section.find('.collapsible-icon');
-        
+        const $section = $content.closest(".collapsible-section");
+        const $icon = $section.find(".collapsible-icon");
+
         // Remove closed class if it exists and set initial icon rotation for open state
         $content.removeClass("closed");
         $icon.css("transform", "rotate(180deg)");
@@ -485,24 +485,12 @@
     }
 
     updateGalleryForColor(color) {
-      // Check if we have variation galleries available
-      if (
-        window.primefitProductData &&
-        window.primefitProductData.variationGalleries &&
-        window.primefitProductData.variationGalleries[color]
-      ) {
-        // Switch to variation-specific gallery
-        if (window.switchProductGallery) {
-          window.switchProductGallery(color);
-        }
-      } else {
-        // Fallback to updating main image with variation image
-        const $colorOption = $(`.color-option[data-color="${color}"]`);
-        const variationImage = $colorOption.data("variation-image");
+      // Update main image with variation image
+      const $colorOption = $(`.color-option[data-color="${color}"]`);
+      const variationImage = $colorOption.data("variation-image");
 
-        if (variationImage) {
-          this.updateGalleryImage(variationImage);
-        }
+      if (variationImage) {
+        this.updateGalleryImage(variationImage);
       }
     }
 
@@ -1053,7 +1041,6 @@
     }
 
     handleAjaxSuccess(response, $button) {
-
       // Check for actual errors vs success-with-redirect
       if (response.error) {
         // If there are fragments, it means the product was actually added successfully
@@ -1109,7 +1096,6 @@
     }
 
     handleAjaxError(xhr, status, error, $button) {
-
       let errorMessage = "Unable to add product to cart. Please try again.";
 
       // More specific error messages based on status
@@ -1173,7 +1159,6 @@
           action: "woocommerce_get_refreshed_fragments",
         },
         success: function (response) {
-
           if (response && response.fragments) {
             // Update fragments - this will show the new cart count if product was added
             $.each(response.fragments, function (key, value) {
@@ -2127,7 +2112,6 @@
           window.wc_add_to_cart_params.wc_ajax_add_to_cart_nonce;
       }
 
-
       return formData;
     }
 
@@ -2208,10 +2192,8 @@
     }
 
     handleSuccess(response, $button) {
-
       // Check for actual errors vs success-with-redirect
       if (response.error) {
-
         // If there are fragments, it means the product was actually added successfully
         // WooCommerce sometimes returns error: true for redirects/notices, not actual errors
         if (response.fragments && Object.keys(response.fragments).length > 0) {
@@ -2250,7 +2232,6 @@
               isVariationError = true;
             }
           }
-
 
           // If it's a variation error, try to fix the form and retry
           if (isVariationError) {
@@ -2301,7 +2282,6 @@
     }
 
     handleError(xhr, status, error, $button, retryCount = 0) {
-
       let errorMessage = "Unable to add product to cart. Please try again.";
 
       // More specific error messages based on status
@@ -2343,7 +2323,6 @@
           action: "woocommerce_get_refreshed_fragments",
         },
         success: function (response) {
-
           if (response && response.fragments) {
             // Update fragments - this will show the new cart count if product was added
             $.each(response.fragments, function (key, value) {
@@ -2455,7 +2434,6 @@
      * Fix variation form validation and retry add to cart
      */
     fixVariationFormAndRetry($button) {
-
       // Get the current form
       const $form = $(".primefit-variations-form");
       if (!$form.length) {
@@ -2479,7 +2457,6 @@
       const colorValue = $selectedColor.data("color");
       const sizeValue = $selectedSize.data("size");
 
-
       // Ensure variation form inputs are properly set
       this.updateVariationFormInputs(colorValue, sizeValue);
 
@@ -2492,7 +2469,6 @@
         this.hideLoadingState($button, false);
         return;
       }
-
 
       // Update the variation_id field
       $form.find('input[name="variation_id"]').val(variationId);
@@ -2515,7 +2491,6 @@
       // Get updated form data
       const formData = this.getFormData($form);
 
-
       // Submit via AJAX again
       this.submitToCart(formData, $button);
     }
@@ -2525,7 +2500,6 @@
      * This ensures WooCommerce's variation validation works properly
      */
     updateVariationFormInputs(colorValue, sizeValue) {
-
       // Update color attribute input
       if (colorValue) {
         const colorInputs = [
@@ -2652,12 +2626,12 @@
    */
   class SizeGuideModal {
     constructor() {
-      this.modal = document.getElementById('size-guide-modal');
-      this.modalImage = document.getElementById('size-guide-modal-image');
-      this.closeButton = document.querySelector('.size-guide-modal-close');
-      this.overlay = document.querySelector('.size-guide-modal-overlay');
+      this.modal = document.getElementById("size-guide-modal");
+      this.modalImage = document.getElementById("size-guide-modal-image");
+      this.closeButton = document.querySelector(".size-guide-modal-close");
+      this.overlay = document.querySelector(".size-guide-modal-overlay");
       this.isOpen = false;
-      
+
       this.init();
     }
 
@@ -2667,11 +2641,11 @@
 
     bindEvents() {
       // Handle size guide link clicks
-      document.addEventListener('click', (e) => {
-        const sizeGuideLink = e.target.closest('.size-guide-link');
+      document.addEventListener("click", (e) => {
+        const sizeGuideLink = e.target.closest(".size-guide-link");
         if (sizeGuideLink) {
           e.preventDefault();
-          const imageUrl = sizeGuideLink.getAttribute('data-size-guide-image');
+          const imageUrl = sizeGuideLink.getAttribute("data-size-guide-image");
           if (imageUrl) {
             this.openModal(imageUrl);
           }
@@ -2680,21 +2654,21 @@
 
       // Handle close button clicks
       if (this.closeButton) {
-        this.closeButton.addEventListener('click', () => {
+        this.closeButton.addEventListener("click", () => {
           this.closeModal();
         });
       }
 
       // Handle overlay clicks
       if (this.overlay) {
-        this.overlay.addEventListener('click', () => {
+        this.overlay.addEventListener("click", () => {
           this.closeModal();
         });
       }
 
       // Handle escape key
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && this.isOpen) {
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && this.isOpen) {
           this.closeModal();
         }
       });
@@ -2705,25 +2679,25 @@
 
       // Set the image source
       this.modalImage.src = imageUrl;
-      this.modalImage.alt = 'Size Guide';
+      this.modalImage.alt = "Size Guide";
 
       // Show the modal
-      this.modal.style.display = 'flex';
-      
+      this.modal.style.display = "flex";
+
       // Trigger reflow to ensure display change is applied
       this.modal.offsetHeight;
-      
+
       // Add active class for animation
-      this.modal.classList.add('active');
-      
+      this.modal.classList.add("active");
+
       // Focus the close button for accessibility
       if (this.closeButton) {
         this.closeButton.focus();
       }
 
       // Prevent body scroll
-      document.body.style.overflow = 'hidden';
-      
+      document.body.style.overflow = "hidden";
+
       this.isOpen = true;
     }
 
@@ -2731,15 +2705,15 @@
       if (!this.modal) return;
 
       // Remove active class for animation
-      this.modal.classList.remove('active');
-      
+      this.modal.classList.remove("active");
+
       // Wait for animation to complete before hiding
       setTimeout(() => {
-        this.modal.style.display = 'none';
-        
+        this.modal.style.display = "none";
+
         // Restore body scroll
-        document.body.style.overflow = '';
-        
+        document.body.style.overflow = "";
+
         this.isOpen = false;
       }, 300);
     }
@@ -2748,15 +2722,14 @@
   /**
    * Initialize all functionality when DOM is ready
    */
-  $(document).ready(function() {
+  $(document).ready(function () {
     // Initialize product gallery
     new ProductGallery();
-    
+
     // Initialize product variations
     new ProductVariations();
-    
+
     // Initialize size guide modal
     new SizeGuideModal();
   });
-
 })(jQuery);

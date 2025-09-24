@@ -20,12 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_action( 'wp_enqueue_scripts', 'primefit_enqueue_assets' );
 function primefit_enqueue_assets() {
-	// Google Fonts - Figtree
-	wp_enqueue_style( 
-		'primefit-fonts', 
-		'https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800;900&display=swap', 
-		[], 
-		null 
+	// Google Fonts - Figtree with optimized loading
+	wp_enqueue_style(
+		'primefit-fonts',
+		'https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap',
+		[],
+		null,
+		'all'
 	);
 	
 	// Theme styles with critical CSS loading optimization
@@ -45,7 +46,7 @@ function primefit_enqueue_assets() {
 		'all'
 	);
 
-	// Header-specific styles
+	// Header-specific styles - Load early for above-the-fold content
 	wp_enqueue_style(
 		'primefit-header',
 		PRIMEFIT_THEME_URI . '/assets/css/header.css',
@@ -53,41 +54,52 @@ function primefit_enqueue_assets() {
 		primefit_get_file_version( '/assets/css/header.css' )
 	);
 
-	// Cart-specific styles
+	// Cart-specific styles - defer loading
 	wp_enqueue_style(
 		'primefit-cart',
 		PRIMEFIT_THEME_URI . '/assets/css/cart.css',
 		[ 'primefit-app' ],
-		primefit_get_file_version( '/assets/css/cart.css' )
+		primefit_get_file_version( '/assets/css/cart.css' ),
+		'screen and (min-width: 769px)'
 	);
-	
-	// Footer-specific styles
+
+	// Footer-specific styles - defer loading
 	wp_enqueue_style(
 		'primefit-footer',
 		PRIMEFIT_THEME_URI . '/assets/css/footer.css',
 		[ 'primefit-app' ],
-		primefit_get_file_version( '/assets/css/footer.css' )
+		primefit_get_file_version( '/assets/css/footer.css' ),
+		'screen and (min-width: 769px)'
 	);
-	// WooCommerce styles
+	// WooCommerce styles - defer non-critical styles
 	if ( class_exists( 'WooCommerce' ) ) {
-		wp_enqueue_style( 
-			'primefit-woocommerce', 
-			PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css', 
-			[ 'primefit-app' ], 
-			primefit_get_file_version( '/assets/css/woocommerce.css' )
+		wp_enqueue_style(
+			'primefit-woocommerce',
+			PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css',
+			[ 'primefit-app' ],
+			primefit_get_file_version( '/assets/css/woocommerce.css' ),
+			'screen and (min-width: 769px)'
 		);
 		
 		// Cache page type for optimized CSS loading
 		$page_type = primefit_get_page_type();
 		
-		// Single product page styles
+		// Single product page styles with critical CSS optimization
 		if ( $page_type === 'product' ) {
-			wp_enqueue_style( 
-				'primefit-single-product', 
-				PRIMEFIT_THEME_URI . '/assets/css/single-product.css', 
-				[ 'primefit-woocommerce' ], 
+			$single_product_css_url = PRIMEFIT_THEME_URI . '/assets/css/single-product.css';
+
+			wp_enqueue_style(
+				'primefit-single-product',
+				$single_product_css_url,
+				[ 'primefit-woocommerce' ],
 				primefit_get_file_version( '/assets/css/single-product.css' )
 			);
+
+			// Preload critical single product CSS for faster rendering
+			add_action( 'wp_head', function() use ( $single_product_css_url ) {
+				echo '<link rel="preload" href="' . esc_url( $single_product_css_url ) . '" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
+				echo '<noscript><link rel="stylesheet" href="' . esc_url( $single_product_css_url ) . '"></noscript>';
+			}, 1 );
 		}
 		
 		// Checkout page styles
@@ -180,16 +192,21 @@ function primefit_enqueue_assets() {
 		]
 	] );
 	
-	// WooCommerce scripts and cart nonces
+	// WooCommerce scripts and cart nonces - conditionally load based on page type
 	if ( class_exists( 'WooCommerce' ) ) {
-		// Ensure WooCommerce cart fragments script is loaded
-		wp_enqueue_script( 'wc-cart-fragments' );
-		
-		// Ensure WooCommerce add to cart script is loaded for AJAX functionality
-		wp_enqueue_script( 'wc-add-to-cart' );
-		
-		// Ensure WooCommerce add to cart variation script is loaded for variable products
-		wp_enqueue_script( 'wc-add-to-cart-variation' );
+		// Cache page type for performance
+		$page_type = primefit_get_page_type();
+
+		// Only load cart fragments on pages that need it
+		if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'account', 'front_page' ] ) ) {
+			wp_enqueue_script( 'wc-cart-fragments' );
+		}
+
+		// Only load add to cart scripts on product-related pages
+		if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag' ] ) ) {
+			wp_enqueue_script( 'wc-add-to-cart' );
+			wp_enqueue_script( 'wc-add-to-cart-variation' );
+		}
 		
 		// Localize WooCommerce add to cart parameters
 		wp_localize_script( 'wc-add-to-cart', 'wc_add_to_cart_params', [
@@ -256,15 +273,21 @@ function primefit_enqueue_product_scripts() {
 			true 
 		);
 		
-		// Single product page specific scripts
+		// Single product page specific scripts with optimization
 		if ( $page_type === 'product' ) {
-			wp_enqueue_script( 
-				'primefit-single-product', 
-				PRIMEFIT_THEME_URI . '/assets/js/single-product.js', 
-				[ 'jquery', 'primefit-product' ], 
-				primefit_get_file_version( '/assets/js/single-product.js' ), 
-				true 
+			// Preload critical product scripts for better performance
+			wp_enqueue_script(
+				'primefit-single-product',
+				PRIMEFIT_THEME_URI . '/assets/js/single-product.js',
+				[ 'jquery', 'primefit-product' ],
+				primefit_get_file_version( '/assets/js/single-product.js' ),
+				false // Load in footer for better performance
 			);
+
+			// Add preload for critical above-the-fold content
+			add_action( 'wp_head', function() {
+				echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js' . '" as="script">';
+			}, 1 );
 		}
 		
 		// Checkout page specific scripts
@@ -303,25 +326,56 @@ function primefit_enqueue_product_scripts() {
  */
 add_action( 'wp_head', 'primefit_preload_assets', 1 );
 function primefit_preload_assets() {
+	// Inline critical CSS for immediate rendering
+	if ( is_front_page() ) {
+		primefit_inline_critical_css();
+	}
+
 	// Preload hero image on homepage with modern formats
 	if ( is_front_page() ) {
 		$hero_config = primefit_get_hero_config();
 		if ( ! empty( $hero_config['image_desktop'] ) ) {
 			$desktop_url = $hero_config['image_desktop'];
 			$mobile_url = $hero_config['image_mobile'] ?? $desktop_url;
-			
+
 			// Fallback preload for WebP
 			$webp_desktop = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $desktop_url);
 			$webp_mobile = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $mobile_url);
-			
+
 			echo '<link rel="preload" href="' . esc_url( $webp_desktop ) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
 			echo '<link rel="preload" href="' . esc_url( $webp_mobile ) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
 		}
 	}
 
-	// Preload critical fonts with display=swap
-	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap"></noscript>';
+	// Preload critical fonts with optimized display=swap
+	$font_url = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap';
+	echo '<link rel="preload" href="' . esc_url($font_url) . '" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
+	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v5/wf.woff2" as="font" type="font/woff2" crossorigin>';
+	echo '<noscript><link rel="stylesheet" href="' . esc_url($font_url) . '"></noscript>';
+}
+
+/**
+ * Inline critical CSS for faster first paint
+ */
+function primefit_inline_critical_css() {
+	$critical_css = "
+	<style>
+	/* Critical CSS for immediate rendering */
+	body { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; }
+	.hero { position: relative; min-height: 70vh; display: flex; align-items: center; }
+	.hero-image { width: 100%; height: auto; object-fit: cover; }
+	.hero-content { position: absolute; z-index: 2; width: 100%; }
+	.hero-heading { font-size: 3rem; font-weight: 700; margin: 0 0 1rem; color: white; }
+	.hero-subheading { font-size: 1.2rem; margin: 0 0 2rem; color: white; opacity: 0.9; }
+	.product-loop { margin: 4rem 0; }
+	.section-header { text-align: center; margin-bottom: 3rem; }
+	.container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+	.button { display: inline-block; padding: 0.75rem 1.5rem; border: none; text-decoration: none; cursor: pointer; font-weight: 600; }
+	.button--primary { background: #000; color: white; }
+	</style>
+	";
+
+	echo $critical_css;
 }
 
 /**

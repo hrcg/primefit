@@ -17,8 +17,8 @@
 
 // Set defaults
 $defaults = array(
-	'image_desktop' => primefit_get_asset_uri(array('/assets/images/DSC03813.webp')),
-	'image_mobile' => primefit_get_asset_uri(array('/assets/images/DSC03756.webp')),
+	'image_desktop' => primefit_get_asset_uri(array('/assets/images/DSC03813.webp', '/assets/images/DSC03813.jpg', '/assets/images/DSC03813.jpeg', '/assets/images/DSC03813.png')),
+	'image_mobile' => primefit_get_asset_uri(array('/assets/images/DSC03756.webp', '/assets/images/DSC03756.jpg', '/assets/images/DSC03756.jpeg', '/assets/images/DSC03756.png')),
 	'heading' => 'END OF SEASON SALE',
 	'subheading' => 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.',
 	'cta_text' => 'SHOP NOW',
@@ -35,8 +35,8 @@ $hero_id = 'hero-' . uniqid();
 
 <?php 
 // Get desktop and mobile image URLs
-$hero_image_desktop_url = !empty($hero['image_desktop']) ? $hero['image_desktop'] : primefit_get_asset_uri(array('/assets/images/DSC03813.webp'));
-$hero_image_mobile_url = !empty($hero['image_mobile']) ? $hero['image_mobile'] : primefit_get_asset_uri(array('/assets/images/DSC03756.webp'));
+$hero_image_desktop_url = !empty($hero['image_desktop']) ? $hero['image_desktop'] : primefit_get_asset_uri(array('/assets/images/DSC03813.webp', '/assets/images/DSC03813.jpg', '/assets/images/DSC03813.jpeg', '/assets/images/DSC03813.png'));
+$hero_image_mobile_url = !empty($hero['image_mobile']) ? $hero['image_mobile'] : primefit_get_asset_uri(array('/assets/images/DSC03756.webp', '/assets/images/DSC03756.jpg', '/assets/images/DSC03756.jpeg', '/assets/images/DSC03756.png'));
 
 // Get video URLs
 $hero_video_desktop_url = !empty($hero['video_desktop']) ? $hero['video_desktop'] : '';
@@ -51,12 +51,12 @@ $video_autoplay = !empty($hero['video_autoplay']) ? 'autoplay' : '';
 $video_loop = !empty($hero['video_loop']) ? 'loop' : '';
 $video_muted = !empty($hero['video_muted']) ? 'muted' : '';
 
-// Fallback to direct theme directory URI if no image found
+// Fallback to direct theme directory URI if no image found (with format fallbacks)
 if (empty($hero_image_desktop_url)) {
-	$hero_image_desktop_url = get_template_directory_uri() . '/assets/images/DSC03813.webp';
+	$hero_image_desktop_url = primefit_get_asset_uri(array('/assets/images/DSC03813.webp', '/assets/images/DSC03813.jpg', '/assets/images/DSC03813.jpeg', '/assets/images/DSC03813.png'));
 }
 if (empty($hero_image_mobile_url)) {
-	$hero_image_mobile_url = get_template_directory_uri() . '/assets/images/DSC03756.webp';
+	$hero_image_mobile_url = primefit_get_asset_uri(array('/assets/images/DSC03756.webp', '/assets/images/DSC03756.jpg', '/assets/images/DSC03756.jpeg', '/assets/images/DSC03756.png'));
 }
 ?>
 <section class="hero" id="<?php echo esc_attr($hero_id); ?>">
@@ -100,15 +100,24 @@ if (empty($hero_image_mobile_url)) {
 		
 		<!-- Optimized Hero Image with Modern Formats -->
 		<picture class="hero-fallback-image">
-			<!-- WebP sources for good compression -->
-			<source media="(max-width: 768px)" type="image/webp" srcset="<?php echo esc_url($hero_image_mobile_url); ?>">
-			<source media="(min-width: 769px)" type="image/webp" srcset="<?php echo esc_url($hero_image_desktop_url); ?>">
-			
-			<!-- Fallback JPEG/PNG -->
-			<source media="(max-width: 768px)" srcset="<?php echo esc_url(str_replace('.webp', '.jpg', $hero_image_mobile_url)); ?>">
-			<img 
-				src="<?php echo esc_url(str_replace('.webp', '.jpg', $hero_image_desktop_url)); ?>" 
-				alt="<?php echo esc_attr($hero['heading']); ?>" 
+			<?php
+			// Get optimized WebP versions with fallback to original format
+			$desktop_webp = primefit_get_optimized_image_url($hero_image_desktop_url, 'webp');
+			$mobile_webp = primefit_get_optimized_image_url($hero_image_mobile_url, 'webp');
+
+			// Only add WebP sources if they're different from the original
+			if ($desktop_webp !== $hero_image_desktop_url) {
+				echo '<source media="(min-width: 769px)" type="image/webp" srcset="' . esc_url($desktop_webp) . '">';
+			}
+			if ($mobile_webp !== $hero_image_mobile_url) {
+				echo '<source media="(max-width: 768px)" type="image/webp" srcset="' . esc_url($mobile_webp) . '">';
+			}
+			?>
+
+			<!-- Fallback img -->
+			<img
+				src="<?php echo esc_url($hero_image_desktop_url); ?>"
+				alt="<?php echo esc_attr($hero['heading']); ?>"
 				loading="eager"
 				fetchpriority="high"
 				decoding="sync"
