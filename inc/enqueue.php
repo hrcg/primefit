@@ -77,8 +77,11 @@ function primefit_enqueue_assets() {
 			primefit_get_file_version( '/assets/css/woocommerce.css' )
 		);
 		
+		// Cache page type for optimized CSS loading
+		$page_type = primefit_get_page_type();
+		
 		// Single product page styles
-		if ( is_product() ) {
+		if ( $page_type === 'product' ) {
 			wp_enqueue_style( 
 				'primefit-single-product', 
 				PRIMEFIT_THEME_URI . '/assets/css/single-product.css', 
@@ -88,7 +91,7 @@ function primefit_enqueue_assets() {
 		}
 		
 		// Checkout page styles
-		if ( is_checkout() ) {
+		if ( $page_type === 'checkout' ) {
 			wp_enqueue_style( 
 				'primefit-checkout', 
 				PRIMEFIT_THEME_URI . '/assets/css/checkout.css', 
@@ -98,7 +101,7 @@ function primefit_enqueue_assets() {
 		}
 		
 		// Account page styles
-		if ( is_account_page() ) {
+		if ( $page_type === 'account' || is_account_page() ) {
 			wp_enqueue_style( 
 				'primefit-account', 
 				PRIMEFIT_THEME_URI . '/assets/css/account.css', 
@@ -215,10 +218,36 @@ function primefit_enqueue_assets() {
 /**
  * Enqueue product-specific scripts
  */
+/**
+ * Get cached page type for optimized conditional loading
+ */
+function primefit_get_page_type() {
+	static $page_type = null;
+	if ( $page_type === null ) {
+		if ( is_product() ) $page_type = 'product';
+		elseif ( is_shop() ) $page_type = 'shop';
+		elseif ( is_product_category() ) $page_type = 'category';
+		elseif ( is_product_tag() ) $page_type = 'tag';
+		elseif ( is_checkout() ) $page_type = 'checkout';
+		elseif ( is_cart() ) $page_type = 'cart';
+		elseif ( is_account_page() ) $page_type = 'account';
+		elseif ( is_front_page() ) $page_type = 'front_page';
+		elseif ( function_exists('wc_get_page_id') && is_page(wc_get_page_id('shop')) ) $page_type = 'shop';
+		elseif ( function_exists('wc_get_page_id') && is_page(wc_get_page_id('cart')) ) $page_type = 'cart';
+		elseif ( function_exists('wc_get_page_id') && is_page(wc_get_page_id('checkout')) ) $page_type = 'checkout';
+		elseif ( function_exists('wc_get_page_id') && is_page(wc_get_page_id('myaccount')) ) $page_type = 'account';
+		else $page_type = 'other';
+	}
+	return $page_type;
+}
+
 add_action( 'wp_enqueue_scripts', 'primefit_enqueue_product_scripts' );
 function primefit_enqueue_product_scripts() {
-	// Load on single product pages, shop pages, and pages with WooCommerce content
-	if ( is_product() || is_shop() || is_product_category() || is_product_tag() || is_front_page() || (function_exists('wc_get_page_id') && (is_page(wc_get_page_id('shop')) || is_page(wc_get_page_id('cart')) || is_page(wc_get_page_id('checkout')))) ) {
+	// Cache page type detection for better performance
+	$page_type = primefit_get_page_type();
+	
+	// Simplified conditional loading based on cached page type
+	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'front_page', 'cart', 'checkout' ] ) ) {
 		wp_enqueue_script( 
 			'primefit-product', 
 			PRIMEFIT_THEME_URI . '/assets/js/product.js', 
@@ -228,7 +257,7 @@ function primefit_enqueue_product_scripts() {
 		);
 		
 		// Single product page specific scripts
-		if ( is_product() ) {
+		if ( $page_type === 'product' ) {
 			wp_enqueue_script( 
 				'primefit-single-product', 
 				PRIMEFIT_THEME_URI . '/assets/js/single-product.js', 
@@ -239,7 +268,7 @@ function primefit_enqueue_product_scripts() {
 		}
 		
 		// Checkout page specific scripts
-		if ( is_checkout() ) {
+		if ( $page_type === 'checkout' ) {
 			// Ensure WooCommerce scripts are loaded
 			wp_enqueue_script( 'woocommerce' );
 			wp_enqueue_script( 'wc-checkout' );
@@ -274,15 +303,30 @@ function primefit_enqueue_product_scripts() {
  */
 add_action( 'wp_head', 'primefit_preload_assets', 1 );
 function primefit_preload_assets() {
-	// Preload hero image on homepage
+	// Preload hero image on homepage with modern formats
 	if ( is_front_page() ) {
 		$hero_config = primefit_get_hero_config();
 		if ( ! empty( $hero_config['image_desktop'] ) ) {
-			echo '<link rel="preload" href="' . esc_url( $hero_config['image_desktop'] ) . '" as="image" fetchpriority="high">';
+			$desktop_url = $hero_config['image_desktop'];
+			$mobile_url = $hero_config['image_mobile'] ?? $desktop_url;
+			
+			// Preload AVIF version (best compression)
+			$avif_desktop = str_replace(['.jpg', '.jpeg', '.png', '.webp'], '.avif', $desktop_url);
+			$avif_mobile = str_replace(['.jpg', '.jpeg', '.png', '.webp'], '.avif', $mobile_url);
+			
+			echo '<link rel="preload" href="' . esc_url( $avif_desktop ) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
+			echo '<link rel="preload" href="' . esc_url( $avif_mobile ) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
+			
+			// Fallback preload for WebP
+			$webp_desktop = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $desktop_url);
+			$webp_mobile = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $mobile_url);
+			
+			echo '<link rel="preload" href="' . esc_url( $webp_desktop ) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
+			echo '<link rel="preload" href="' . esc_url( $webp_mobile ) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
 		}
 	}
 
-	// Preload critical fonts
+	// Preload critical fonts with display=swap
 	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
 	echo '<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap"></noscript>';
 }
@@ -352,8 +396,9 @@ function primefit_optimize_script_loading() {
 		// Load cart fragments early for better UX
 		wp_enqueue_script( 'wc-cart-fragments' );
 
-		// Load add to cart scripts only when needed
-		if ( is_product() || is_shop() || is_product_category() || is_product_tag() ) {
+		// Load add to cart scripts only when needed using cached page type
+		$page_type = primefit_get_page_type();
+		if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag' ] ) ) {
 			wp_enqueue_script( 'wc-add-to-cart' );
 			wp_enqueue_script( 'wc-add-to-cart-variation' );
 		}

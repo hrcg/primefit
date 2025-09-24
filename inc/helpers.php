@@ -47,6 +47,68 @@ function primefit_get_file_version( $file_path ) {
 }
 
 /**
+ * Get optimized image URL with modern format support
+ *
+ * @param string $image_url Original image URL
+ * @param string $format Desired format (webp, avif)
+ * @return string Optimized image URL or original if not available
+ */
+function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
+	if ( empty( $image_url ) ) {
+		return $image_url;
+	}
+	
+	// Check if the image is already in the desired format
+	$current_format = strtolower( pathinfo( $image_url, PATHINFO_EXTENSION ) );
+	if ( $current_format === $format ) {
+		return $image_url;
+	}
+	
+	// Generate optimized URL
+	$optimized_url = str_replace( ['.jpg', '.jpeg', '.png'], '.' . $format, $image_url );
+	
+	// Check if optimized version exists (for local images)
+	if ( strpos( $optimized_url, home_url() ) === 0 ) {
+		$local_path = str_replace( home_url(), ABSPATH, $optimized_url );
+		if ( file_exists( $local_path ) ) {
+			return $optimized_url;
+		}
+	}
+	
+	// Return original URL if optimized version doesn't exist
+	return $image_url;
+}
+
+/**
+ * Generate responsive image sources for modern formats (helper function)
+ *
+ * @param string $image_url Original image URL
+ * @param array $sizes Array of sizes (e.g., ['400w', '800w'])
+ * @return array Array of responsive sources
+ */
+function primefit_generate_responsive_sources_helper( $image_url, $sizes = [] ) {
+	if ( empty( $image_url ) ) {
+		return [];
+	}
+	
+	$sources = [];
+	$formats = ['avif', 'webp'];
+	
+	foreach ( $formats as $format ) {
+		$optimized_url = primefit_get_optimized_image_url( $image_url, $format );
+		if ( $optimized_url !== $image_url ) {
+			$srcset_parts = [];
+			foreach ( $sizes as $size ) {
+				$srcset_parts[] = $optimized_url . ' ' . $size;
+			}
+			$sources[$format] = implode( ', ', $srcset_parts );
+		}
+	}
+	
+	return $sources;
+}
+
+/**
  * Get hero image for WooCommerce category
  *
  * @param object $category WooCommerce category object
@@ -737,7 +799,7 @@ function primefit_render_hero( $args = array() ) {
 							<?php echo $video_muted; ?>
 							<?php if (!empty($hero_video_poster_desktop_url)) : ?>poster="<?php echo esc_url($hero_video_poster_desktop_url); ?>"<?php endif; ?>
 							playsinline
-							preload="metadata"
+							preload="none"
 						>
 							<source src="<?php echo esc_url($hero_video_desktop_url); ?>" type="video/mp4">
 							Your browser does not support the video tag.
@@ -753,7 +815,7 @@ function primefit_render_hero( $args = array() ) {
 							<?php echo $video_muted; ?>
 							<?php if (!empty($hero_video_poster_mobile_url)) : ?>poster="<?php echo esc_url($hero_video_poster_mobile_url); ?>"<?php endif; ?>
 							playsinline
-							preload="metadata"
+							preload="none"
 						>
 							<source src="<?php echo esc_url($hero_video_mobile_url); ?>" type="video/mp4">
 							Your browser does not support the video tag.
@@ -1290,4 +1352,82 @@ function primefit_render_product_loop_color_swatches( $product ) {
 	endforeach;
 	
 	echo '</div>';
+}
+
+/**
+ * Get cached categories with transient caching for expensive operations
+ * 
+ * @param array $args Arguments for get_terms()
+ * @return array|WP_Error Array of term objects or WP_Error
+ */
+function primefit_get_cached_categories( $args = [] ) {
+	// Create cache key based on arguments
+	$cache_key = 'primefit_categories_' . md5( serialize( $args ) );
+	$cached = get_transient( $cache_key );
+	
+	if ( false === $cached ) {
+		$cached = get_terms( $args );
+		// Cache for 24 hours for better performance
+		set_transient( $cache_key, $cached, 24 * HOUR_IN_SECONDS );
+	}
+	
+	return $cached;
+}
+
+/**
+ * Get cached products with transient caching for expensive operations
+ * 
+ * @param array $args Arguments for get_posts()
+ * @return array Array of post objects
+ */
+function primefit_get_cached_products( $args = [] ) {
+	// Create cache key based on arguments
+	$cache_key = 'primefit_products_' . md5( serialize( $args ) );
+	$cached = get_transient( $cache_key );
+	
+	if ( false === $cached ) {
+		$cached = get_posts( $args );
+		// Cache for 6 hours for better performance
+		set_transient( $cache_key, $cached, 6 * HOUR_IN_SECONDS );
+	}
+	
+	return $cached;
+}
+
+/**
+ * Clear cached data when products or categories are updated
+ */
+add_action( 'save_post', 'primefit_clear_product_cache' );
+add_action( 'delete_post', 'primefit_clear_product_cache' );
+add_action( 'created_term', 'primefit_clear_category_cache' );
+add_action( 'edited_term', 'primefit_clear_category_cache' );
+add_action( 'delete_term', 'primefit_clear_category_cache' );
+
+function primefit_clear_product_cache( $post_id ) {
+	if ( get_post_type( $post_id ) === 'product' ) {
+		// Clear all product-related transients
+		global $wpdb;
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_products_%'" );
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_products_%'" );
+		
+		// Clear recommended products cache
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_recommended_products_%'" );
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_recommended_products_%'" );
+		
+		// Update cache timestamp for better cache invalidation
+		update_option( 'primefit_last_cache_update', time() );
+	}
+}
+
+function primefit_clear_category_cache( $term_id ) {
+	$term = get_term( $term_id );
+	if ( $term && in_array( $term->taxonomy, [ 'product_cat', 'product_tag' ] ) ) {
+		// Clear all category-related transients
+		global $wpdb;
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_categories_%'" );
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_categories_%'" );
+		
+		// Update cache timestamp for better cache invalidation
+		update_option( 'primefit_last_cache_update', time() );
+	}
 }

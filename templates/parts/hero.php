@@ -73,7 +73,7 @@ if (empty($hero_image_mobile_url)) {
 						<?php echo $video_muted; ?>
 						<?php if (!empty($hero_video_poster_desktop_url)) : ?>poster="<?php echo esc_url($hero_video_poster_desktop_url); ?>"<?php endif; ?>
 						playsinline
-						preload="metadata"
+						preload="none"
 					>
 						<source src="<?php echo esc_url($hero_video_desktop_url); ?>" type="video/mp4">
 						Your browser does not support the video tag.
@@ -89,7 +89,7 @@ if (empty($hero_image_mobile_url)) {
 						<?php echo $video_muted; ?>
 						<?php if (!empty($hero_video_poster_mobile_url)) : ?>poster="<?php echo esc_url($hero_video_poster_mobile_url); ?>"<?php endif; ?>
 						playsinline
-						preload="metadata"
+						preload="none"
 					>
 						<source src="<?php echo esc_url($hero_video_mobile_url); ?>" type="video/mp4">
 						Your browser does not support the video tag.
@@ -98,14 +98,27 @@ if (empty($hero_image_mobile_url)) {
 			</div>
 		<?php endif; ?>
 		
-		<!-- Fallback Image (always present for loading state and fallback) -->
+		<!-- Optimized Hero Image with Modern Formats -->
 		<picture class="hero-fallback-image">
-			<source media="(max-width: 768px)" srcset="<?php echo esc_url($hero_image_mobile_url); ?>">
+			<!-- AVIF sources for best compression -->
+			<source media="(max-width: 768px)" type="image/avif" srcset="<?php echo esc_url(str_replace('.webp', '.avif', $hero_image_mobile_url)); ?>">
+			<source media="(min-width: 769px)" type="image/avif" srcset="<?php echo esc_url(str_replace('.webp', '.avif', $hero_image_desktop_url)); ?>">
+			
+			<!-- WebP sources for good compression -->
+			<source media="(max-width: 768px)" type="image/webp" srcset="<?php echo esc_url($hero_image_mobile_url); ?>">
+			<source media="(min-width: 769px)" type="image/webp" srcset="<?php echo esc_url($hero_image_desktop_url); ?>">
+			
+			<!-- Fallback JPEG/PNG -->
+			<source media="(max-width: 768px)" srcset="<?php echo esc_url(str_replace('.webp', '.jpg', $hero_image_mobile_url)); ?>">
 			<img 
-				src="<?php echo esc_url($hero_image_desktop_url); ?>" 
+				src="<?php echo esc_url(str_replace('.webp', '.jpg', $hero_image_desktop_url)); ?>" 
 				alt="<?php echo esc_attr($hero['heading']); ?>" 
 				loading="eager"
+				fetchpriority="high"
+				decoding="sync"
 				class="hero-image"
+				width="1920"
+				height="1080"
 			/>
 		</picture>
 		<div class="hero-overlay"></div>

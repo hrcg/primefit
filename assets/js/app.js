@@ -1916,7 +1916,14 @@
     }
 
     init() {
-      this.handleHeroVideos();
+      // Wait for page to be fully loaded before starting video loading
+      if (document.readyState === 'complete') {
+        this.handleHeroVideos();
+      } else {
+        window.addEventListener('load', () => {
+          this.handleHeroVideos();
+        });
+      }
     }
 
     handleHeroVideos() {
@@ -1931,8 +1938,10 @@
         // Set up video event listeners
         this.setupVideoEvents($video, videoElement);
 
-        // Start loading the video
-        this.loadVideo($video, videoElement);
+        // Start loading the video after a small delay to ensure page is fully rendered
+        setTimeout(() => {
+          this.loadVideo($video, videoElement);
+        }, 100);
       });
     }
 

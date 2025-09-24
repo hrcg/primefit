@@ -36,11 +36,21 @@ $section_id = 'training-division-' . uniqid();
 <section class="training-division" id="<?php echo esc_attr($section_id); ?>">
 	<div class="training-division-media">
 		<picture>
+			<!-- AVIF source for best compression -->
+			<source type="image/avif" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.avif', $section['image']) ); ?>">
+			
+			<!-- WebP source for good compression -->
+			<source type="image/webp" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.webp', $section['image']) ); ?>">
+			
+			<!-- Fallback image -->
 			<img 
 				src="<?php echo esc_url($section['image']); ?>" 
 				alt="<?php echo esc_attr($section['heading']); ?>" 
 				loading="lazy"
+				decoding="async"
 				class="training-division-image"
+				width="1200"
+				height="600"
 			/>
 		</picture>
 		<div class="training-division-overlay"></div>

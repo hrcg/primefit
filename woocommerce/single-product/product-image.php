@@ -104,12 +104,20 @@ if (!empty($variation_galleries)) {
 			$main_image_url = wp_get_attachment_image_url( $attachment_ids[0], 'full' );
 			$main_image_alt = get_post_meta( $attachment_ids[0], '_wp_attachment_image_alt', true );
 			?>
-			<img
-				src="<?php echo esc_url( $main_image_url ); ?>"
-				alt="<?php echo esc_attr( $main_image_alt ); ?>"
-				class="main-product-image"
-				data-image-index="0"
-			/>
+			<?php
+			// Use responsive image with modern formats
+			echo primefit_get_responsive_image( $attachment_ids[0], 'full', [
+				'class' => 'main-product-image',
+				'alt' => $main_image_alt,
+				'loading' => 'eager',
+				'fetchpriority' => 'high',
+				'webp' => true,
+				'avif' => true,
+				'sizes' => '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw',
+				'width' => '800',
+				'height' => '800'
+			] );
+			?>
 		</div>
 
 		<!-- Image Navigation Dots -->
@@ -151,11 +159,19 @@ if (!empty($variation_galleries)) {
 					data-image-index="<?php echo esc_attr( $index ); ?>"
 					aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
 				>
-					<img
-						src="<?php echo esc_url( $thumbnail_url ); ?>"
-						alt="<?php echo esc_attr( $thumbnail_alt ); ?>"
-						class="thumbnail-image"
-					/>
+					<?php
+					// Use responsive image for thumbnails
+					echo primefit_get_responsive_image( $attachment_id, 'thumbnail', [
+						'class' => 'thumbnail-image',
+						'alt' => $thumbnail_alt,
+						'loading' => 'lazy',
+						'webp' => true,
+						'avif' => true,
+						'sizes' => '150px',
+						'width' => '150',
+						'height' => '150'
+					] );
+					?>
 				</button>
 			<?php endforeach; ?>
 		</div>
@@ -225,10 +241,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		const imageAlt = `Product image ${index + 1}`;
 
-
+		// Update image source and attributes
 		mainImage.src = imageUrl;
 		mainImage.alt = imageAlt;
 		mainImage.dataset.imageIndex = index;
+		
+		// Update srcset for responsive images if they exist
+		const webpUrl = imageUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+		const avifUrl = imageUrl.replace(/\.(jpg|jpeg|png)$/i, '.avif');
+		
+		// Check if we're using a picture element
+		const picture = mainImage.closest('picture');
+		if (picture) {
+			// Update WebP source
+			const webpSource = picture.querySelector('source[type="image/webp"]');
+			if (webpSource) {
+				webpSource.srcset = webpUrl;
+			}
+			
+			// Update AVIF source
+			const avifSource = picture.querySelector('source[type="image/avif"]');
+			if (avifSource) {
+				avifSource.srcset = avifUrl;
+			}
+		}
 
 		// Update active states for thumbnails (after ensuring they exist)
 		const thumbnails = galleryContainer.querySelectorAll('.thumbnail-item');
@@ -304,13 +340,24 @@ document.addEventListener('DOMContentLoaded', function() {
 				return;
 			}
 
+			const webpThumbnailUrl = thumbnailUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+			const avifThumbnailUrl = thumbnailUrl.replace(/\.(jpg|jpeg|png)$/i, '.avif');
+			
 			const thumbnailHtml = `
 				<button class="thumbnail-item ${index === 0 ? 'active' : ''}"
 						data-image-index="${index}"
 						aria-label="View image ${index + 1}">
-					<img src="${thumbnailUrl}"
-						 alt="${thumbnailAlt}"
-						 class="thumbnail-image" />
+					<picture>
+						<source type="image/avif" srcset="${avifThumbnailUrl}">
+						<source type="image/webp" srcset="${webpThumbnailUrl}">
+						<img src="${thumbnailUrl}"
+							 alt="${thumbnailAlt}"
+							 class="thumbnail-image"
+							 loading="lazy"
+							 decoding="async"
+							 width="150"
+							 height="150" />
+					</picture>
 				</button>
 			`;
 

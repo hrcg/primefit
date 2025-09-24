@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Generate responsive image markup with lazy loading
+ * Generate responsive image markup with lazy loading and modern formats
  *
  * @param int $attachment_id Image attachment ID
  * @param string $size Image size
@@ -30,6 +30,10 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 		'sizes' => '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 		'webp' => true,
 		'avif' => true,
+		'quality' => 85, // Higher quality for better compression
+		'width' => '',
+		'height' => '',
+		'decoding' => 'async',
 	];
 	
 	$args = wp_parse_args( $args, $defaults );
@@ -47,14 +51,14 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 	// Get alt text
 	$alt_text = $args['alt'] ?: get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 	
-	// Generate responsive sources
+	// Generate responsive sources with optimized quality
 	$sources = primefit_generate_responsive_sources( $attachment_id, $size, $args );
 	
 	// Build picture element
 	$picture_html = '<picture>';
 	
-	// Add AVIF sources if supported
-	if ( $args['avif'] ) {
+	// Add AVIF sources if supported (best compression)
+	if ( $args['avif'] && primefit_avif_supported() ) {
 		foreach ( $sources['avif'] as $source ) {
 			$picture_html .= sprintf(
 				'<source type="image/avif" srcset="%s" sizes="%s">',
@@ -64,8 +68,8 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 		}
 	}
 	
-	// Add WebP sources if supported
-	if ( $args['webp'] ) {
+	// Add WebP sources if supported (good compression)
+	if ( $args['webp'] && primefit_webp_supported() ) {
 		foreach ( $sources['webp'] as $source ) {
 			$picture_html .= sprintf(
 				'<source type="image/webp" srcset="%s" sizes="%s">',
@@ -75,15 +79,25 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 		}
 	}
 	
-	// Add fallback img element
+	// Add fallback img element with optimized attributes
 	$img_attributes = [
 		'src' => wp_get_attachment_image_url( $attachment_id, $size ),
 		'alt' => $alt_text,
 		'class' => $args['class'],
 		'loading' => $args['loading'],
+		'decoding' => $args['decoding'],
 		'sizes' => $args['sizes'],
 	];
 	
+	// Add width and height for CLS prevention
+	if ( $args['width'] ) {
+		$img_attributes['width'] = $args['width'];
+	}
+	if ( $args['height'] ) {
+		$img_attributes['height'] = $args['height'];
+	}
+	
+	// Add fetchpriority for above-the-fold images
 	if ( $args['fetchpriority'] !== 'auto' ) {
 		$img_attributes['fetchpriority'] = $args['fetchpriority'];
 	}
@@ -153,6 +167,153 @@ function primefit_generate_responsive_sources( $attachment_id, $size, $args ) {
 }
 
 /**
+ * Generate WebP version of an image with optimized quality
+ *
+ * @param int $attachment_id Image attachment ID
+ * @param string $size Image size
+ * @param int $quality Quality setting (1-100)
+ * @return string|false WebP file path or false
+ */
+function primefit_generate_webp_image( $attachment_id, $size = 'full', $quality = 85 ) {
+	// Get the original image file
+	$original_file = get_attached_file( $attachment_id );
+	if ( ! $original_file || ! file_exists( $original_file ) ) {
+		return false;
+	}
+	
+	// Get image size info
+	$image_sizes = wp_get_attachment_metadata( $attachment_id );
+	if ( ! $image_sizes ) {
+		return false;
+	}
+	
+	// Determine the source file for the requested size
+	$source_file = $original_file;
+	if ( $size !== 'full' && isset( $image_sizes['sizes'][ $size ] ) ) {
+		$upload_dir = wp_upload_dir();
+		$source_file = $upload_dir['basedir'] . '/' . dirname( $image_sizes['file'] ) . '/' . $image_sizes['sizes'][ $size ]['file'];
+	}
+	
+	if ( ! file_exists( $source_file ) ) {
+		return false;
+	}
+	
+	// Create WebP filename
+	$file_info = pathinfo( $source_file );
+	$webp_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.webp';
+	
+	// Check if WebP already exists
+	if ( file_exists( $webp_file ) ) {
+		return $webp_file;
+	}
+	
+	// Generate WebP using WordPress image editor (better quality)
+	$editor = wp_get_image_editor( $source_file );
+	if ( ! is_wp_error( $editor ) ) {
+		$result = $editor->save( $webp_file, 'image/webp' );
+		if ( ! is_wp_error( $result ) ) {
+			return $webp_file;
+		}
+	}
+	
+	// Fallback to GD library
+	if ( function_exists( 'imagewebp' ) ) {
+		$image = primefit_load_image_for_webp( $source_file );
+		if ( $image ) {
+			$success = imagewebp( $image, $webp_file, $quality );
+			imagedestroy( $image );
+			
+			if ( $success ) {
+				return $webp_file;
+			}
+		}
+	}
+	
+	return false;
+}
+
+/**
+ * Generate AVIF version of an image
+ *
+ * @param int $attachment_id Image attachment ID
+ * @param string $size Image size
+ * @param int $quality Quality setting (1-100)
+ * @return string|false AVIF file path or false
+ */
+function primefit_generate_avif_image( $attachment_id, $size = 'full', $quality = 80 ) {
+	// Get the original image file
+	$original_file = get_attached_file( $attachment_id );
+	if ( ! $original_file || ! file_exists( $original_file ) ) {
+		return false;
+	}
+	
+	// Get image size info
+	$image_sizes = wp_get_attachment_metadata( $attachment_id );
+	if ( ! $image_sizes ) {
+		return false;
+	}
+	
+	// Determine the source file for the requested size
+	$source_file = $original_file;
+	if ( $size !== 'full' && isset( $image_sizes['sizes'][ $size ] ) ) {
+		$upload_dir = wp_upload_dir();
+		$source_file = $upload_dir['basedir'] . '/' . dirname( $image_sizes['file'] ) . '/' . $image_sizes['sizes'][ $size ]['file'];
+	}
+	
+	if ( ! file_exists( $source_file ) ) {
+		return false;
+	}
+	
+	// Create AVIF filename
+	$file_info = pathinfo( $source_file );
+	$avif_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.avif';
+	
+	// Check if AVIF already exists
+	if ( file_exists( $avif_file ) ) {
+		return $avif_file;
+	}
+	
+	// Generate AVIF using WordPress image editor
+	$editor = wp_get_image_editor( $source_file );
+	if ( ! is_wp_error( $editor ) ) {
+		$result = $editor->save( $avif_file, 'image/avif' );
+		if ( ! is_wp_error( $result ) ) {
+			return $avif_file;
+		}
+	}
+	
+	return false;
+}
+
+/**
+ * Load image resource for WebP conversion
+ *
+ * @param string $file_path Path to image file
+ * @return resource|false Image resource or false
+ */
+function primefit_load_image_for_webp( $file_path ) {
+	$image_info = getimagesize( $file_path );
+	if ( ! $image_info ) {
+		return false;
+	}
+	
+	$mime_type = $image_info['mime'];
+	
+	switch ( $mime_type ) {
+		case 'image/jpeg':
+			return imagecreatefromjpeg( $file_path );
+		case 'image/png':
+			return imagecreatefrompng( $file_path );
+		case 'image/gif':
+			return imagecreatefromgif( $file_path );
+		case 'image/webp':
+			return imagecreatefromwebp( $file_path );
+		default:
+			return false;
+	}
+}
+
+/**
  * Get image URL with specific format (WebP/AVIF)
  *
  * @param int $attachment_id Image attachment ID
@@ -164,6 +325,26 @@ function primefit_get_image_url_with_format( $attachment_id, $size, $format ) {
 	$original_url = wp_get_attachment_image_url( $attachment_id, $size );
 	if ( ! $original_url ) {
 		return false;
+	}
+	
+	// For WebP, try to generate if it doesn't exist
+	if ( $format === 'webp' ) {
+		$webp_file = primefit_generate_webp_image( $attachment_id, $size );
+		if ( $webp_file ) {
+			$upload_dir = wp_upload_dir();
+			$webp_url = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $webp_file );
+			return $webp_url;
+		}
+	}
+	
+	// For AVIF, try to generate if it doesn't exist
+	if ( $format === 'avif' ) {
+		$avif_file = primefit_generate_avif_image( $attachment_id, $size );
+		if ( $avif_file ) {
+			$upload_dir = wp_upload_dir();
+			$avif_url = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $avif_file );
+			return $avif_url;
+		}
 	}
 	
 	// Check if format-specific version exists
@@ -185,6 +366,83 @@ function primefit_get_image_url_with_format( $attachment_id, $size, $format ) {
 	
 	// Fallback to original URL
 	return $original_url;
+}
+
+/**
+ * Automatically generate WebP and AVIF versions when images are uploaded
+ */
+add_action( 'wp_generate_attachment_metadata', 'primefit_auto_generate_modern_formats', 10, 2 );
+function primefit_auto_generate_modern_formats( $metadata, $attachment_id ) {
+	// Only process images
+	$mime_type = get_post_mime_type( $attachment_id );
+	if ( ! in_array( $mime_type, [ 'image/jpeg', 'image/png', 'image/gif' ] ) ) {
+		return $metadata;
+	}
+	
+	// Generate WebP for original size
+	if ( primefit_webp_supported() ) {
+		primefit_generate_webp_image( $attachment_id, 'full' );
+	}
+	
+	// Generate AVIF for original size
+	if ( primefit_avif_supported() ) {
+		primefit_generate_avif_image( $attachment_id, 'full' );
+	}
+	
+	// Generate WebP and AVIF for all registered sizes
+	if ( isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
+		foreach ( $metadata['sizes'] as $size_name => $size_data ) {
+			if ( primefit_webp_supported() ) {
+				primefit_generate_webp_image( $attachment_id, $size_name );
+			}
+			if ( primefit_avif_supported() ) {
+				primefit_generate_avif_image( $attachment_id, $size_name );
+			}
+		}
+	}
+	
+	return $metadata;
+}
+
+/**
+ * Clean up WebP and AVIF files when images are deleted
+ */
+add_action( 'delete_attachment', 'primefit_cleanup_modern_format_files' );
+function primefit_cleanup_modern_format_files( $attachment_id ) {
+	$file_path = get_attached_file( $attachment_id );
+	if ( ! $file_path ) {
+		return;
+	}
+	
+	$file_info = pathinfo( $file_path );
+	$upload_dir = wp_upload_dir();
+	
+	// Remove WebP and AVIF versions of original file
+	$webp_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.webp';
+	$avif_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.avif';
+	
+	if ( file_exists( $webp_file ) ) {
+		unlink( $webp_file );
+	}
+	if ( file_exists( $avif_file ) ) {
+		unlink( $avif_file );
+	}
+	
+	// Remove WebP and AVIF versions of all sizes
+	$metadata = wp_get_attachment_metadata( $attachment_id );
+	if ( $metadata && isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
+		foreach ( $metadata['sizes'] as $size_name => $size_data ) {
+			$size_webp_file = $file_info['dirname'] . '/' . $file_info['filename'] . '-' . $size_name . '.webp';
+			$size_avif_file = $file_info['dirname'] . '/' . $file_info['filename'] . '-' . $size_name . '.avif';
+			
+			if ( file_exists( $size_webp_file ) ) {
+				unlink( $size_webp_file );
+			}
+			if ( file_exists( $size_avif_file ) ) {
+				unlink( $size_avif_file );
+			}
+		}
+	}
 }
 
 /**
@@ -253,11 +511,46 @@ function primefit_optimize_product_loop_images( $image, $product ) {
 }
 
 /**
+ * Check if WebP generation is supported
+ */
+function primefit_webp_supported() {
+	return function_exists( 'imagewebp' ) && function_exists( 'imagecreatefromjpeg' );
+}
+
+/**
+ * Check if AVIF generation is supported
+ */
+function primefit_avif_supported() {
+	// Check if WordPress image editor supports AVIF
+	$editor = wp_get_image_editor( __FILE__ );
+	if ( is_wp_error( $editor ) ) {
+		return false;
+	}
+	
+	// Check if the editor supports AVIF format
+	$supports = $editor->supports_mime_type( 'image/avif' );
+	return $supports;
+}
+
+/**
  * Add image optimization admin notice
  */
 add_action( 'admin_notices', 'primefit_image_optimization_notice' );
 function primefit_image_optimization_notice() {
 	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	
+	// Check WebP support
+	if ( ! primefit_webp_supported() ) {
+		?>
+		<div class="notice notice-warning is-dismissible">
+			<p>
+				<strong><?php _e( 'PrimeFit Theme:', 'primefit' ); ?></strong>
+				<?php _e( 'WebP generation is not supported on this server. Please contact your hosting provider to enable GD library with WebP support.', 'primefit' ); ?>
+			</p>
+		</div>
+		<?php
 		return;
 	}
 	
@@ -270,11 +563,11 @@ function primefit_image_optimization_notice() {
 			<p>
 				<strong><?php _e( 'PrimeFit Theme:', 'primefit' ); ?></strong>
 				<?php printf( 
-					__( 'Optimize %d images for better performance. ', 'primefit' ), 
+					__( 'Generate WebP versions for %d images to improve performance. ', 'primefit' ), 
 					$total_images - $optimized_count 
 				); ?>
 				<a href="<?php echo admin_url( 'admin.php?page=primefit-optimize-images' ); ?>" class="button button-primary">
-					<?php _e( 'Optimize Images', 'primefit' ); ?>
+					<?php _e( 'Generate WebP Images', 'primefit' ); ?>
 				</a>
 			</p>
 		</div>
@@ -303,19 +596,51 @@ function primefit_image_optimization_page() {
 	if ( isset( $_POST['optimize_images'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'primefit_optimize_images' ) ) {
 		$processed_count = primefit_optimize_all_images();
 		update_option( 'primefit_images_optimized', $processed_count );
-		echo '<div class="notice notice-success"><p>' . sprintf( __( 'Successfully optimized %d images.', 'primefit' ), $processed_count ) . '</p></div>';
+		echo '<div class="notice notice-success"><p>' . sprintf( __( 'Successfully generated WebP versions for %d images.', 'primefit' ), $processed_count ) . '</p></div>';
 	}
+	
+	$webp_supported = primefit_webp_supported();
+	$total_images = wp_count_posts( 'attachment' )->inherit;
+	$optimized_count = get_option( 'primefit_images_optimized', 0 );
 	?>
 	<div class="wrap">
-		<h1><?php _e( 'Optimize Images', 'primefit' ); ?></h1>
-		<p><?php _e( 'This will generate WebP and AVIF versions of all images for better performance.', 'primefit' ); ?></p>
+		<h1><?php _e( 'WebP Image Generation', 'primefit' ); ?></h1>
 		
-		<form method="post">
-			<?php wp_nonce_field( 'primefit_optimize_images' ); ?>
-			<p>
-				<input type="submit" name="optimize_images" class="button button-primary" value="<?php _e( 'Optimize All Images', 'primefit' ); ?>" />
-			</p>
-		</form>
+		<?php if ( ! $webp_supported ) : ?>
+			<div class="notice notice-error">
+				<p><strong><?php _e( 'WebP Support Not Available', 'primefit' ); ?></strong></p>
+				<p><?php _e( 'Your server does not support WebP generation. Please contact your hosting provider to enable GD library with WebP support.', 'primefit' ); ?></p>
+			</div>
+		<?php else : ?>
+			<div class="notice notice-info">
+				<p><strong><?php _e( 'WebP Support Available', 'primefit' ); ?></strong></p>
+				<p><?php _e( 'Your server supports WebP generation. This will create smaller, faster-loading images.', 'primefit' ); ?></p>
+			</div>
+			
+			<div class="card">
+				<h2><?php _e( 'Image Statistics', 'primefit' ); ?></h2>
+				<p><strong><?php _e( 'Total Images:', 'primefit' ); ?></strong> <?php echo $total_images; ?></p>
+				<p><strong><?php _e( 'WebP Versions Generated:', 'primefit' ); ?></strong> <?php echo $optimized_count; ?></p>
+				<p><strong><?php _e( 'Remaining:', 'primefit' ); ?></strong> <?php echo max( 0, $total_images - $optimized_count ); ?></p>
+			</div>
+			
+			<form method="post">
+				<?php wp_nonce_field( 'primefit_optimize_images' ); ?>
+				<p>
+					<input type="submit" name="optimize_images" class="button button-primary" value="<?php _e( 'Generate WebP Versions for All Images', 'primefit' ); ?>" />
+				</p>
+			</form>
+			
+			<div class="card">
+				<h3><?php _e( 'Benefits of WebP', 'primefit' ); ?></h3>
+				<ul>
+					<li><?php _e( '25-35% smaller file sizes compared to JPEG', 'primefit' ); ?></li>
+					<li><?php _e( 'Faster page load times', 'primefit' ); ?></li>
+					<li><?php _e( 'Better user experience', 'primefit' ); ?></li>
+					<li><?php _e( 'Automatic generation for new uploads', 'primefit' ); ?></li>
+				</ul>
+			</div>
+		<?php endif; ?>
 	</div>
 	<?php
 }
@@ -345,6 +670,30 @@ function primefit_optimize_all_images() {
 			primefit_generate_avif_version( $file_path );
 			
 			$processed_count++;
+		}
+	}
+	
+	return $processed_count;
+}
+
+/**
+ * Optimize a single image by generating WebP versions
+ */
+function primefit_optimize_single_image( $attachment_id ) {
+	$processed_count = 0;
+	
+	// Generate WebP for original size
+	if ( primefit_generate_webp_image( $attachment_id, 'full' ) ) {
+		$processed_count++;
+	}
+	
+	// Generate WebP for all registered sizes
+	$metadata = wp_get_attachment_metadata( $attachment_id );
+	if ( $metadata && isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
+		foreach ( $metadata['sizes'] as $size_name => $size_data ) {
+			if ( primefit_generate_webp_image( $attachment_id, $size_name ) ) {
+				$processed_count++;
+			}
 		}
 	}
 	

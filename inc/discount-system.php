@@ -155,11 +155,27 @@ function primefit_track_discount_usage( $order_id ) {
 
 		// Commit transaction if all inserts succeeded
 		$wpdb->query( 'COMMIT' );
+		
+		// Clear discount statistics cache after successful tracking
+		primefit_clear_discount_stats_cache();
 
 	} catch ( Exception $e ) {
 		// Rollback transaction on error
 		$wpdb->query( 'ROLLBACK' );
 	}
+}
+
+/**
+ * Clear discount statistics cache when new usage is tracked
+ */
+function primefit_clear_discount_stats_cache() {
+	global $wpdb;
+	
+	// Clear all discount statistics related transients
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_usage_by_date_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_usage_by_date_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_top_users_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_top_users_%'" );
 }
 
 /**
@@ -245,6 +261,68 @@ function primefit_get_client_ip() {
 }
 
 /**
+ * Get cached usage by date statistics
+ */
+function primefit_get_cached_usage_by_date( $where_clause, $params ) {
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'discount_code_tracking';
+	
+	// Create cache key based on query parameters
+	$cache_key = 'primefit_usage_by_date_' . md5( $where_clause . serialize( $params ) );
+	$cached = get_transient( $cache_key );
+	
+	if ( false === $cached ) {
+		$usage_by_date_query = "
+			SELECT
+				DATE(usage_date) as usage_date,
+				COUNT(*) as uses_count,
+				SUM(savings_amount) as daily_savings
+			FROM $table_name $where_clause
+			GROUP BY DATE(usage_date)
+			ORDER BY usage_date DESC
+			LIMIT 30
+		";
+		$cached = $wpdb->get_results( $wpdb->prepare( $usage_by_date_query, $params ) );
+		
+		// Cache for 1 hour
+		set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
+	}
+	
+	return $cached;
+}
+
+/**
+ * Get cached top users statistics
+ */
+function primefit_get_cached_top_users( $where_clause, $params ) {
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'discount_code_tracking';
+	
+	// Create cache key based on query parameters
+	$cache_key = 'primefit_top_users_' . md5( $where_clause . serialize( $params ) );
+	$cached = get_transient( $cache_key );
+	
+	if ( false === $cached ) {
+		$top_users_query = "
+			SELECT
+				email,
+				COUNT(*) as uses_count,
+				SUM(savings_amount) as total_savings
+			FROM $table_name $where_clause
+			GROUP BY email
+			ORDER BY uses_count DESC, total_savings DESC
+			LIMIT 10
+		";
+		$cached = $wpdb->get_results( $wpdb->prepare( $top_users_query, $params ) );
+		
+		// Cache for 1 hour
+		set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
+	}
+	
+	return $cached;
+}
+
+/**
  * Get discount usage statistics
  */
 function primefit_get_discount_stats( $coupon_code = null, $email = null, $start_date = null, $end_date = null ) {
@@ -276,46 +354,27 @@ function primefit_get_discount_stats( $coupon_code = null, $email = null, $start
 
 	$where_clause = $where_conditions ? 'WHERE ' . implode( ' AND ', $where_conditions ) : '';
 
-	// Get total usage count
-	$count_query = "SELECT COUNT(*) as total_uses FROM $table_name $where_clause";
-	$total_uses = $wpdb->get_var( $wpdb->prepare( $count_query, $params ) );
-
-	// Get total savings
-	$savings_query = "SELECT SUM(savings_amount) as total_savings FROM $table_name $where_clause";
-	$total_savings = $wpdb->get_var( $wpdb->prepare( $savings_query, $params ) );
-
-	// Get unique emails
-	$unique_emails_query = "SELECT COUNT(DISTINCT email) as unique_emails FROM $table_name $where_clause";
-	$unique_emails = $wpdb->get_var( $wpdb->prepare( $unique_emails_query, $params ) );
-
-	// Get average savings per user
-	$avg_savings_per_user = $unique_emails > 0 ? $total_savings / $unique_emails : 0;
-
-	// Get usage by date (last 30 days by default)
-	$usage_by_date_query = "
-		SELECT
-			DATE(usage_date) as usage_date,
-			COUNT(*) as uses_count,
-			SUM(savings_amount) as daily_savings
+	// Single optimized query with all aggregations
+	$stats_query = "
+		SELECT 
+			COUNT(*) as total_uses,
+			SUM(savings_amount) as total_savings,
+			COUNT(DISTINCT email) as unique_emails,
+			AVG(savings_amount) as avg_savings_per_user
 		FROM $table_name $where_clause
-		GROUP BY DATE(usage_date)
-		ORDER BY usage_date DESC
-		LIMIT 30
 	";
-	$usage_by_date = $wpdb->get_results( $wpdb->prepare( $usage_by_date_query, $params ) );
+	
+	$stats = $wpdb->get_row( $wpdb->prepare( $stats_query, $params ) );
+	
+	// Extract values with proper fallbacks
+	$total_uses = (int) $stats->total_uses;
+	$total_savings = (float) $stats->total_savings;
+	$unique_emails = (int) $stats->unique_emails;
+	$avg_savings_per_user = (float) $stats->avg_savings_per_user;
 
-	// Get top users by usage
-	$top_users_query = "
-		SELECT
-			email,
-			COUNT(*) as uses_count,
-			SUM(savings_amount) as total_savings
-		FROM $table_name $where_clause
-		GROUP BY email
-		ORDER BY uses_count DESC, total_savings DESC
-		LIMIT 10
-	";
-	$top_users = $wpdb->get_results( $wpdb->prepare( $top_users_query, $params ) );
+	// Get usage by date and top users with caching
+	$usage_by_date = primefit_get_cached_usage_by_date( $where_clause, $params );
+	$top_users = primefit_get_cached_top_users( $where_clause, $params );
 
 	return array(
 		'total_uses' => (int) $total_uses,

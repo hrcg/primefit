@@ -237,6 +237,8 @@ function primefit_optimize_database_queries() {
 	if ( ! is_admin() && ! wp_doing_ajax() ) {
 		// Cache term queries for 1 hour
 		add_filter( 'get_terms_args', 'primefit_add_terms_cache', 10, 2 );
+		// Add post meta caching for product queries
+		add_filter( 'posts_results', 'primefit_cache_post_meta', 10, 2 );
 	}
 }
 
@@ -252,6 +254,19 @@ function primefit_add_terms_cache( $args, $taxonomies ) {
 		}
 	}
 	return $args;
+}
+
+/**
+ * Cache post meta for product queries to avoid N+1 queries
+ */
+function primefit_cache_post_meta( $posts, $query ) {
+	if ( ! empty( $posts ) && $query->is_main_query() ) {
+		// Cache meta for product queries
+		if ( $query->get( 'post_type' ) === 'product' ) {
+			update_meta_cache( 'post', wp_list_pluck( $posts, 'ID' ) );
+		}
+	}
+	return $posts;
 }
 
 /**
@@ -1218,6 +1233,61 @@ function primefit_mini_cart_recommended_items() {
  */
 
 /**
+ * Get cached recommended products with optimized query
+ * Uses weighted randomization instead of expensive pure random ordering
+ */
+function primefit_get_cached_recommended_products( $category_ids ) {
+	// Create cache key based on category IDs
+	$cache_key = 'primefit_recommended_products_' . md5( implode( ',', $category_ids ) );
+	$cached = get_transient( $cache_key );
+	
+	if ( false === $cached ) {
+		// Get more products to randomize from (weighted by popularity)
+		$args = array(
+			'post_type'      => 'product',
+			'posts_per_page' => 20, // Get more to randomize from
+			'post_status'    => 'publish',
+			'tax_query'      => array(
+				array(
+					'taxonomy' => 'product_cat',
+					'field'    => 'term_id',
+					'terms'    => $category_ids,
+					'operator' => 'IN'
+				)
+			),
+			'meta_query'     => array(
+				array(
+					'key'     => '_stock_status',
+					'value'   => 'instock',
+					'compare' => '='
+				)
+			),
+			'orderby'        => 'meta_value_num',
+			'meta_key'       => 'total_sales', // Weight by popularity
+			'order'          => 'DESC'
+		);
+		
+		$all_products = get_posts( $args );
+		
+		// Randomly select 5 products from the weighted list
+		if ( count( $all_products ) > 5 ) {
+			$random_keys = array_rand( $all_products, 5 );
+			$cached = array();
+			foreach ( $random_keys as $key ) {
+				$cached[] = $all_products[ $key ];
+			}
+		} else {
+			$cached = $all_products;
+		}
+		
+		// Cache for 6 hours
+		set_transient( $cache_key, $cached, 6 * HOUR_IN_SECONDS );
+	}
+	
+	return $cached;
+}
+
+/**
  * Get recommended products for mini cart - only from basics and accessories categories
  */
 function primefit_get_mini_cart_recommended_products() {
@@ -1254,31 +1324,8 @@ function primefit_get_mini_cart_recommended_products() {
 		return $recommended_products;
 	}
 	
-	// Query products from these categories
-	$args = array(
-		'post_type'      => 'product',
-		'posts_per_page' => 5,
-		'post_status'    => 'publish',
-		'tax_query'      => array(
-			array(
-				'taxonomy' => 'product_cat',
-				'field'    => 'term_id',
-				'terms'    => $category_ids,
-				'operator' => 'IN'
-			)
-		),
-		'meta_query'     => array(
-			array(
-				'key'     => '_stock_status',
-				'value'   => 'instock',
-				'compare' => '='
-			)
-		),
-		'orderby'        => 'rand', // Random order for variety
-		'order'          => 'ASC'
-	);
-	
-	$products = get_posts( $args );
+	// Use optimized cached approach instead of expensive random query
+	$products = primefit_get_cached_recommended_products( $category_ids );
 
 	// Bulk load all product objects to avoid N+1 queries
 	$product_ids = wp_list_pluck( $products, 'ID' );

@@ -21,10 +21,23 @@ $section = $category_tiles_config;
 <section class="container tiles-3">
 	<?php foreach ($section['tiles'] as $tile) : ?>
 		<div class="tile">
-			<img 
-				src="<?php echo esc_url( $tile['image'] ); ?>" 
-				alt="<?php echo esc_attr( $tile['alt'] ); ?>" 
-			/>
+			<picture>
+				<!-- AVIF source for best compression -->
+				<source type="image/avif" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.avif', $tile['image']) ); ?>">
+				
+				<!-- WebP source for good compression -->
+				<source type="image/webp" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.webp', $tile['image']) ); ?>">
+				
+				<!-- Fallback image -->
+				<img 
+					src="<?php echo esc_url( $tile['image'] ); ?>" 
+					alt="<?php echo esc_attr( $tile['alt'] ); ?>"
+					loading="lazy"
+					decoding="async"
+					width="400"
+					height="300"
+				/>
+			</picture>
 			<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-label">
 				<?php echo esc_html( $tile['label'] ); ?>
 			</a>
