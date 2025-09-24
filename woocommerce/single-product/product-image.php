@@ -112,7 +112,6 @@ if (!empty($variation_galleries)) {
 				'loading' => 'eager',
 				'fetchpriority' => 'high',
 				'webp' => true,
-				'avif' => true,
 				'sizes' => '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw',
 				'width' => '800',
 				'height' => '800'
@@ -166,7 +165,6 @@ if (!empty($variation_galleries)) {
 						'alt' => $thumbnail_alt,
 						'loading' => 'lazy',
 						'webp' => true,
-						'avif' => true,
 						'sizes' => '150px',
 						'width' => '150',
 						'height' => '150'
@@ -248,8 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		
 		// Update srcset for responsive images if they exist
 		const webpUrl = imageUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
-		const avifUrl = imageUrl.replace(/\.(jpg|jpeg|png)$/i, '.avif');
-		
+
 		// Check if we're using a picture element
 		const picture = mainImage.closest('picture');
 		if (picture) {
@@ -257,12 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			const webpSource = picture.querySelector('source[type="image/webp"]');
 			if (webpSource) {
 				webpSource.srcset = webpUrl;
-			}
-			
-			// Update AVIF source
-			const avifSource = picture.querySelector('source[type="image/avif"]');
-			if (avifSource) {
-				avifSource.srcset = avifUrl;
 			}
 		}
 
@@ -341,14 +332,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 
 			const webpThumbnailUrl = thumbnailUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
-			const avifThumbnailUrl = thumbnailUrl.replace(/\.(jpg|jpeg|png)$/i, '.avif');
-			
 			const thumbnailHtml = `
 				<button class="thumbnail-item ${index === 0 ? 'active' : ''}"
 						data-image-index="${index}"
 						aria-label="View image ${index + 1}">
 					<picture>
-						<source type="image/avif" srcset="${avifThumbnailUrl}">
 						<source type="image/webp" srcset="${webpThumbnailUrl}">
 						<img src="${thumbnailUrl}"
 							 alt="${thumbnailAlt}"

@@ -10,7 +10,7 @@
     refreshQueue: [],
     isRefreshing: false,
     refreshTimeout: null,
-    debounceDelay: 150, // Increased debounce to 150ms for better stability
+    debounceDelay: 50, // Optimized to 50ms for faster cart operations
     maxRetries: 3,
     retryDelay: 200,
     operationPriorities: {
@@ -875,34 +875,33 @@
 
     // Check if cart is already open to avoid unnecessary refreshes
     const isAlreadyOpen = $wrap.hasClass("open");
-    
-    // If cart is not already open, refresh fragments first to prevent empty state
-    if (!isAlreadyOpen && window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
-      $.ajax({
-        type: "POST",
-        url: window.primefit_cart_params.ajax_url,
-        data: {
-          action: "woocommerce_get_refreshed_fragments",
-        },
-        success: function (response) {
-          if (response && response.fragments) {
-            // Update fragments with fresh data BEFORE opening cart
-            $.each(response.fragments, function (key, value) {
-              $(key).replaceWith(value);
-            });
+
+    // Open cart immediately for better user experience
+    openCartPanel($wrap, $panel, $toggle);
+
+    // Only refresh fragments if cart was already open (to update content without user action)
+    if (isAlreadyOpen && window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
+      // Refresh fragments in background after cart is already open
+      requestAnimationFrame(() => {
+        $.ajax({
+          type: "POST",
+          url: window.primefit_cart_params.ajax_url,
+          data: {
+            action: "woocommerce_get_refreshed_fragments",
+          },
+          success: function (response) {
+            if (response && response.fragments) {
+              // Update fragments with fresh data
+              $.each(response.fragments, function (key, value) {
+                $(key).replaceWith(value);
+              });
+            }
+          },
+          error: function () {
+            // Silently fail - cart is already open and functional
           }
-          
-          // Now open the cart with fresh data
-          openCartPanel($wrap, $panel, $toggle);
-        },
-        error: function () {
-          // Fallback: open cart even if refresh fails
-          openCartPanel($wrap, $panel, $toggle);
-        }
+        });
       });
-    } else {
-      // Cart is already open or no AJAX params, just open normally
-      openCartPanel($wrap, $panel, $toggle);
     }
   }
 
@@ -915,15 +914,15 @@
       document.body.classList.add("cart-open");
 
       // Add iOS Safari specific prevention
-      this.addIOSPrevention();
+      addIOSPrevention();
     }
 
     // Prevent page scrolling when cart is open
     preventPageScroll();
 
     // Ensure all quantity inputs are properly synced when cart opens
-    // Sync quantity inputs with current values
-    setTimeout(function () {
+    // Sync quantity inputs with current values (immediate execution)
+    requestAnimationFrame(function () {
       $(
         ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
       ).each(function () {
@@ -936,7 +935,7 @@
           $input.attr("data-original-value", currentVal);
         }
       });
-    }, 50);
+    });
 
   }
 
@@ -1953,6 +1952,11 @@
         // Let the browser choose the best source
         videoElement.load();
       }
+    }
+
+    onVideoLoadStart($video, videoElement) {
+      // Video is starting to load
+      $video.addClass("loading");
     }
 
     onVideoReady($video, videoElement) {

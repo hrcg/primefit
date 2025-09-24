@@ -310,13 +310,6 @@ function primefit_preload_assets() {
 			$desktop_url = $hero_config['image_desktop'];
 			$mobile_url = $hero_config['image_mobile'] ?? $desktop_url;
 			
-			// Preload AVIF version (best compression)
-			$avif_desktop = str_replace(['.jpg', '.jpeg', '.png', '.webp'], '.avif', $desktop_url);
-			$avif_mobile = str_replace(['.jpg', '.jpeg', '.png', '.webp'], '.avif', $mobile_url);
-			
-			echo '<link rel="preload" href="' . esc_url( $avif_desktop ) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
-			echo '<link rel="preload" href="' . esc_url( $avif_mobile ) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
-			
 			// Fallback preload for WebP
 			$webp_desktop = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $desktop_url);
 			$webp_mobile = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $mobile_url);

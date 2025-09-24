@@ -92,7 +92,7 @@ function primefit_generate_responsive_sources_helper( $image_url, $sizes = [] ) 
 	}
 	
 	$sources = [];
-	$formats = ['avif', 'webp'];
+	$formats = ['webp'];
 	
 	foreach ( $formats as $format ) {
 		$optimized_url = primefit_get_optimized_image_url( $image_url, $format );

@@ -22,9 +22,6 @@ $section = $category_tiles_config;
 	<?php foreach ($section['tiles'] as $tile) : ?>
 		<div class="tile">
 			<picture>
-				<!-- AVIF source for best compression -->
-				<source type="image/avif" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.avif', $tile['image']) ); ?>">
-				
 				<!-- WebP source for good compression -->
 				<source type="image/webp" srcset="<?php echo esc_url( str_replace(['.jpg', '.jpeg', '.png'], '.webp', $tile['image']) ); ?>">
 				

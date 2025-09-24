@@ -100,10 +100,6 @@ if (empty($hero_image_mobile_url)) {
 		
 		<!-- Optimized Hero Image with Modern Formats -->
 		<picture class="hero-fallback-image">
-			<!-- AVIF sources for best compression -->
-			<source media="(max-width: 768px)" type="image/avif" srcset="<?php echo esc_url(str_replace('.webp', '.avif', $hero_image_mobile_url)); ?>">
-			<source media="(min-width: 769px)" type="image/avif" srcset="<?php echo esc_url(str_replace('.webp', '.avif', $hero_image_desktop_url)); ?>">
-			
 			<!-- WebP sources for good compression -->
 			<source media="(max-width: 768px)" type="image/webp" srcset="<?php echo esc_url($hero_image_mobile_url); ?>">
 			<source media="(min-width: 769px)" type="image/webp" srcset="<?php echo esc_url($hero_image_desktop_url); ?>">

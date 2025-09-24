@@ -2,7 +2,7 @@
 /**
  * PrimeFit Theme Image Optimization
  *
- * Advanced image loading, lazy loading, and WebP/AVIF support
+ * Advanced image loading, lazy loading, and WebP support
  *
  * @package PrimeFit
  * @since 1.0.0
@@ -29,7 +29,6 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 		'fetchpriority' => 'auto',
 		'sizes' => '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 		'webp' => true,
-		'avif' => true,
 		'quality' => 85, // Higher quality for better compression
 		'width' => '',
 		'height' => '',
@@ -57,16 +56,6 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 	// Build picture element
 	$picture_html = '<picture>';
 	
-	// Add AVIF sources if supported (best compression)
-	if ( $args['avif'] && primefit_avif_supported() ) {
-		foreach ( $sources['avif'] as $source ) {
-			$picture_html .= sprintf(
-				'<source type="image/avif" srcset="%s" sizes="%s">',
-				esc_attr( $source['srcset'] ),
-				esc_attr( $args['sizes'] )
-			);
-		}
-	}
 	
 	// Add WebP sources if supported (good compression)
 	if ( $args['webp'] && primefit_webp_supported() ) {
@@ -125,7 +114,6 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
  */
 function primefit_generate_responsive_sources( $attachment_id, $size, $args ) {
 	$sources = [
-		'avif' => [],
 		'webp' => [],
 		'fallback' => []
 	];
@@ -140,16 +128,6 @@ function primefit_generate_responsive_sources( $attachment_id, $size, $args ) {
 	];
 	
 	foreach ( $breakpoints as $breakpoint_size => $width ) {
-		// Generate AVIF source
-		if ( $args['avif'] ) {
-			$avif_url = primefit_get_image_url_with_format( $attachment_id, $breakpoint_size, 'avif' );
-			if ( $avif_url ) {
-				$sources['avif'][] = [
-					'srcset' => $avif_url . ' ' . $width,
-					'media' => ''
-				];
-			}
-		}
 		
 		// Generate WebP source
 		if ( $args['webp'] ) {
@@ -232,58 +210,6 @@ function primefit_generate_webp_image( $attachment_id, $size = 'full', $quality 
 	return false;
 }
 
-/**
- * Generate AVIF version of an image
- *
- * @param int $attachment_id Image attachment ID
- * @param string $size Image size
- * @param int $quality Quality setting (1-100)
- * @return string|false AVIF file path or false
- */
-function primefit_generate_avif_image( $attachment_id, $size = 'full', $quality = 80 ) {
-	// Get the original image file
-	$original_file = get_attached_file( $attachment_id );
-	if ( ! $original_file || ! file_exists( $original_file ) ) {
-		return false;
-	}
-	
-	// Get image size info
-	$image_sizes = wp_get_attachment_metadata( $attachment_id );
-	if ( ! $image_sizes ) {
-		return false;
-	}
-	
-	// Determine the source file for the requested size
-	$source_file = $original_file;
-	if ( $size !== 'full' && isset( $image_sizes['sizes'][ $size ] ) ) {
-		$upload_dir = wp_upload_dir();
-		$source_file = $upload_dir['basedir'] . '/' . dirname( $image_sizes['file'] ) . '/' . $image_sizes['sizes'][ $size ]['file'];
-	}
-	
-	if ( ! file_exists( $source_file ) ) {
-		return false;
-	}
-	
-	// Create AVIF filename
-	$file_info = pathinfo( $source_file );
-	$avif_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.avif';
-	
-	// Check if AVIF already exists
-	if ( file_exists( $avif_file ) ) {
-		return $avif_file;
-	}
-	
-	// Generate AVIF using WordPress image editor
-	$editor = wp_get_image_editor( $source_file );
-	if ( ! is_wp_error( $editor ) ) {
-		$result = $editor->save( $avif_file, 'image/avif' );
-		if ( ! is_wp_error( $result ) ) {
-			return $avif_file;
-		}
-	}
-	
-	return false;
-}
 
 /**
  * Load image resource for WebP conversion
@@ -314,11 +240,11 @@ function primefit_load_image_for_webp( $file_path ) {
 }
 
 /**
- * Get image URL with specific format (WebP/AVIF)
+ * Get image URL with specific format (WebP)
  *
  * @param int $attachment_id Image attachment ID
  * @param string $size Image size
- * @param string $format Image format (webp, avif)
+ * @param string $format Image format (webp)
  * @return string|false Image URL or false
  */
 function primefit_get_image_url_with_format( $attachment_id, $size, $format ) {
@@ -337,15 +263,6 @@ function primefit_get_image_url_with_format( $attachment_id, $size, $format ) {
 		}
 	}
 	
-	// For AVIF, try to generate if it doesn't exist
-	if ( $format === 'avif' ) {
-		$avif_file = primefit_generate_avif_image( $attachment_id, $size );
-		if ( $avif_file ) {
-			$upload_dir = wp_upload_dir();
-			$avif_url = str_replace( $upload_dir['basedir'], $upload_dir['baseurl'], $avif_file );
-			return $avif_url;
-		}
-	}
 	
 	// Check if format-specific version exists
 	$upload_dir = wp_upload_dir();
@@ -369,7 +286,7 @@ function primefit_get_image_url_with_format( $attachment_id, $size, $format ) {
 }
 
 /**
- * Automatically generate WebP and AVIF versions when images are uploaded
+ * Automatically generate WebP versions when images are uploaded
  */
 add_action( 'wp_generate_attachment_metadata', 'primefit_auto_generate_modern_formats', 10, 2 );
 function primefit_auto_generate_modern_formats( $metadata, $attachment_id ) {
@@ -384,19 +301,11 @@ function primefit_auto_generate_modern_formats( $metadata, $attachment_id ) {
 		primefit_generate_webp_image( $attachment_id, 'full' );
 	}
 	
-	// Generate AVIF for original size
-	if ( primefit_avif_supported() ) {
-		primefit_generate_avif_image( $attachment_id, 'full' );
-	}
-	
-	// Generate WebP and AVIF for all registered sizes
+	// Generate WebP for all registered sizes
 	if ( isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
 		foreach ( $metadata['sizes'] as $size_name => $size_data ) {
 			if ( primefit_webp_supported() ) {
 				primefit_generate_webp_image( $attachment_id, $size_name );
-			}
-			if ( primefit_avif_supported() ) {
-				primefit_generate_avif_image( $attachment_id, $size_name );
 			}
 		}
 	}
@@ -405,7 +314,7 @@ function primefit_auto_generate_modern_formats( $metadata, $attachment_id ) {
 }
 
 /**
- * Clean up WebP and AVIF files when images are deleted
+ * Clean up WebP files when images are deleted
  */
 add_action( 'delete_attachment', 'primefit_cleanup_modern_format_files' );
 function primefit_cleanup_modern_format_files( $attachment_id ) {
@@ -417,29 +326,21 @@ function primefit_cleanup_modern_format_files( $attachment_id ) {
 	$file_info = pathinfo( $file_path );
 	$upload_dir = wp_upload_dir();
 	
-	// Remove WebP and AVIF versions of original file
+	// Remove WebP version of original file
 	$webp_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.webp';
-	$avif_file = $file_info['dirname'] . '/' . $file_info['filename'] . '.avif';
-	
+
 	if ( file_exists( $webp_file ) ) {
 		unlink( $webp_file );
 	}
-	if ( file_exists( $avif_file ) ) {
-		unlink( $avif_file );
-	}
 	
-	// Remove WebP and AVIF versions of all sizes
+	// Remove WebP versions of all sizes
 	$metadata = wp_get_attachment_metadata( $attachment_id );
 	if ( $metadata && isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
 		foreach ( $metadata['sizes'] as $size_name => $size_data ) {
 			$size_webp_file = $file_info['dirname'] . '/' . $file_info['filename'] . '-' . $size_name . '.webp';
-			$size_avif_file = $file_info['dirname'] . '/' . $file_info['filename'] . '-' . $size_name . '.avif';
-			
+
 			if ( file_exists( $size_webp_file ) ) {
 				unlink( $size_webp_file );
-			}
-			if ( file_exists( $size_avif_file ) ) {
-				unlink( $size_avif_file );
 			}
 		}
 	}
@@ -482,8 +383,7 @@ function primefit_optimize_product_images( $html, $attachment_id ) {
 	$responsive_html = primefit_get_responsive_image( $attachment_id, 'woocommerce_single', [
 		'class' => 'wp-post-image',
 		'loading' => 'lazy',
-		'webp' => true,
-		'avif' => true
+		'webp' => true
 	] );
 	
 	return $responsive_html ?: $html;
@@ -497,12 +397,11 @@ function primefit_optimize_product_loop_images( $image, $product ) {
 	$image_id = $product->get_image_id();
 	
 	if ( $image_id ) {
-		$responsive_html = primefit_get_responsive_image( $image_id, 'primefit-product-loop', [
-			'class' => 'attachment-woocommerce_thumbnail',
-			'loading' => 'lazy',
-			'webp' => true,
-			'avif' => true
-		] );
+	$responsive_html = primefit_get_responsive_image( $image_id, 'primefit-product-loop', [
+		'class' => 'attachment-woocommerce_thumbnail',
+		'loading' => 'lazy',
+		'webp' => true
+	] );
 		
 		return $responsive_html ?: $image;
 	}
@@ -517,20 +416,6 @@ function primefit_webp_supported() {
 	return function_exists( 'imagewebp' ) && function_exists( 'imagecreatefromjpeg' );
 }
 
-/**
- * Check if AVIF generation is supported
- */
-function primefit_avif_supported() {
-	// Check if WordPress image editor supports AVIF
-	$editor = wp_get_image_editor( __FILE__ );
-	if ( is_wp_error( $editor ) ) {
-		return false;
-	}
-	
-	// Check if the editor supports AVIF format
-	$supports = $editor->supports_mime_type( 'image/avif' );
-	return $supports;
-}
 
 /**
  * Add image optimization admin notice
@@ -646,7 +531,7 @@ function primefit_image_optimization_page() {
 }
 
 /**
- * Optimize all images by generating WebP and AVIF versions
+ * Optimize all images by generating WebP versions
  */
 function primefit_optimize_all_images() {
 	$args = [
@@ -665,10 +550,7 @@ function primefit_optimize_all_images() {
 		if ( $file_path && file_exists( $file_path ) ) {
 			// Generate WebP version
 			primefit_generate_webp_version( $file_path );
-			
-			// Generate AVIF version
-			primefit_generate_avif_version( $file_path );
-			
+
 			$processed_count++;
 		}
 	}
@@ -723,28 +605,6 @@ function primefit_generate_webp_version( $file_path ) {
 	return ! is_wp_error( $result );
 }
 
-/**
- * Generate AVIF version of image
- */
-function primefit_generate_avif_version( $file_path ) {
-	$file_info = pathinfo( $file_path );
-	$avif_path = $file_info['dirname'] . '/' . $file_info['filename'] . '.avif';
-	
-	// Skip if AVIF version already exists
-	if ( file_exists( $avif_path ) ) {
-		return true;
-	}
-	
-	// Use WordPress image editor
-	$editor = wp_get_image_editor( $file_path );
-	if ( is_wp_error( $editor ) ) {
-		return false;
-	}
-	
-	// Save as AVIF
-	$result = $editor->save( $avif_path, 'image/avif' );
-	return ! is_wp_error( $result );
-}
 
 /**
  * Add image optimization to media library
@@ -755,7 +615,7 @@ function primefit_add_image_optimization_fields( $fields, $post ) {
 		$fields['primefit_optimize'] = [
 			'label' => __( 'Optimize Image', 'primefit' ),
 			'input' => 'html',
-			'html' => '<button type="button" class="button primefit-optimize-single" data-id="' . $post->ID . '">' . __( 'Generate WebP/AVIF', 'primefit' ) . '</button>'
+			'html' => '<button type="button" class="button primefit-optimize-single" data-id="' . $post->ID . '">' . __( 'Generate WebP', 'primefit' ) . '</button>'
 		];
 	}
 	
@@ -778,11 +638,9 @@ function primefit_ajax_optimize_single_image() {
 	
 	if ( $file_path && file_exists( $file_path ) ) {
 		$webp_result = primefit_generate_webp_version( $file_path );
-		$avif_result = primefit_generate_avif_version( $file_path );
-		
+
 		wp_send_json_success( [
-			'webp' => $webp_result,
-			'avif' => $avif_result
+			'webp' => $webp_result
 		] );
 	}
 	

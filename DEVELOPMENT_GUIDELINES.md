@@ -99,7 +99,7 @@ primefit/
 
 - **Organized structure**: CSS, JS, images in separate directories
 - **Optimized loading**: Proper enqueuing with dependencies
-- **Performance focus**: WebP/AVIF support, lazy loading
+- **Performance focus**: WebP support, lazy loading
 
 ## 🚀 **Abstracted Functions**
 

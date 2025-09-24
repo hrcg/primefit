@@ -124,24 +124,21 @@ function primefit_performance_optimizations() {
 }
 
 /**
- * Enable WebP and AVIF image upload support
+ * Enable WebP image upload support
  */
-add_filter( 'upload_mimes', 'primefit_add_webp_avif_mime_types' );
-function primefit_add_webp_avif_mime_types( $mime_types ) {
+add_filter( 'upload_mimes', 'primefit_add_webp_mime_types' );
+function primefit_add_webp_mime_types( $mime_types ) {
 	// Add WebP support
 	$mime_types['webp'] = 'image/webp';
-	
-	// Add AVIF support
-	$mime_types['avif'] = 'image/avif';
-	
+
 	return $mime_types;
 }
 
 /**
- * Add WebP and AVIF to allowed file extensions
+ * Add WebP to allowed file extensions
  */
-add_filter( 'wp_check_filetype_and_ext', 'primefit_check_webp_avif_filetype', 10, 4 );
-function primefit_check_webp_avif_filetype( $data, $file, $filename, $mimes ) {
+add_filter( 'wp_check_filetype_and_ext', 'primefit_check_webp_filetype', 10, 4 );
+function primefit_check_webp_filetype( $data, $file, $filename, $mimes ) {
 	$filetype = wp_check_filetype( $filename, $mimes );
 	
 	if ( $filetype['ext'] ) {
@@ -154,24 +151,19 @@ function primefit_check_webp_avif_filetype( $data, $file, $filename, $mimes ) {
 		$data['type'] = 'image/webp';
 	}
 	
-	// Check for AVIF
-	if ( preg_match( '/\.avif$/i', $filename ) ) {
-		$data['ext'] = 'avif';
-		$data['type'] = 'image/avif';
-	}
 	
 	return $data;
 }
 
 /**
- * Enable WebP and AVIF preview in media library
+ * Enable WebP preview in media library
  */
-add_filter( 'wp_generate_attachment_metadata', 'primefit_handle_webp_avif_metadata', 10, 2 );
-function primefit_handle_webp_avif_metadata( $metadata, $attachment_id ) {
+add_filter( 'wp_generate_attachment_metadata', 'primefit_handle_webp_metadata', 10, 2 );
+function primefit_handle_webp_metadata( $metadata, $attachment_id ) {
 	$mime_type = get_post_mime_type( $attachment_id );
-	
-	// Handle WebP and AVIF files
-	if ( in_array( $mime_type, [ 'image/webp', 'image/avif' ], true ) ) {
+
+	// Handle WebP files
+	if ( in_array( $mime_type, [ 'image/webp' ], true ) ) {
 		$file = get_attached_file( $attachment_id );
 		
 		if ( $file && file_exists( $file ) ) {

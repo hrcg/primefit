@@ -86,7 +86,7 @@ primefit/
 
 - **Modular Architecture**: Clean separation of concerns with dedicated files for different functionalities
 - **Asset Optimization**: Organized CSS/JS with proper enqueuing and minification support
-- **Image Optimization**: WebP/AVIF support with lazy loading
+- **Image Optimization**: WebP support with lazy loading
 - **Critical CSS**: Inline critical styles for above-the-fold content
 
 ### WooCommerce Integration
@@ -210,7 +210,7 @@ $product_config = primefit_get_product_loop_config('sale', $custom_args);
 
 - Keep functions.php minimal (only includes)
 - Use proper asset enqueuing
-- Optimize images (WebP/AVIF preferred)
+- Optimize images (WebP preferred)
 - Minimize HTTP requests
 - Use WordPress caching plugins
 

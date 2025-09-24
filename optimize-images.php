@@ -2,7 +2,7 @@
 /**
  * PrimeFit Image Optimization Script
  * 
- * Run this script to optimize all existing images with WebP and AVIF formats
+ * Run this script to optimize all existing images with WebP format
  * Usage: php optimize-images.php
  */
 
@@ -19,21 +19,13 @@ echo "==================================\n\n";
 
 // Check format support
 $webp_supported = function_exists( 'imagewebp' ) && function_exists( 'imagecreatefromjpeg' );
-$avif_supported = false;
-
-// Check AVIF support
-$editor = wp_get_image_editor( __FILE__ );
-if ( ! is_wp_error( $editor ) ) {
-	$avif_supported = $editor->supports_mime_type( 'image/avif' );
-}
 
 echo "Format Support:\n";
-echo "- WebP: " . ( $webp_supported ? "✓ Supported" : "✗ Not supported" ) . "\n";
-echo "- AVIF: " . ( $avif_supported ? "✓ Supported" : "✗ Not supported" ) . "\n\n";
+echo "- WebP: " . ( $webp_supported ? "✓ Supported" : "✗ Not supported" ) . "\n\n";
 
-if ( ! $webp_supported && ! $avif_supported ) {
-	echo "Error: No modern image formats are supported on this server.\n";
-	echo "Please contact your hosting provider to enable GD library with WebP/AVIF support.\n";
+if ( ! $webp_supported ) {
+	echo "Error: WebP format is not supported on this server.\n";
+	echo "Please contact your hosting provider to enable GD library with WebP support.\n";
 	exit( 1 );
 }
 
@@ -49,7 +41,6 @@ $attachments = get_posts( $args );
 $total_images = count( $attachments );
 $processed_count = 0;
 $webp_count = 0;
-$avif_count = 0;
 $errors = [];
 
 echo "Found {$total_images} images to process.\n\n";
@@ -84,22 +75,6 @@ foreach ( $attachments as $attachment ) {
 		}
 	}
 	
-	// Generate AVIF version if supported
-	if ( $avif_supported ) {
-		$avif_result = primefit_generate_avif_image( $attachment_id, 'full' );
-		if ( $avif_result ) {
-			$avif_count++;
-			$attachment_processed++;
-		}
-		
-		// Generate AVIF for all registered sizes
-		$metadata = wp_get_attachment_metadata( $attachment_id );
-		if ( $metadata && isset( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
-			foreach ( $metadata['sizes'] as $size_name => $size_data ) {
-				primefit_generate_avif_image( $attachment_id, $size_name );
-			}
-		}
-	}
 	
 	if ( $attachment_processed > 0 ) {
 		echo "✓ ({$attachment_processed} formats)\n";
@@ -119,7 +94,6 @@ echo "Optimization Complete!\n";
 echo "======================\n";
 echo "Total images processed: {$processed_count}/{$total_images}\n";
 echo "WebP versions generated: {$webp_count}\n";
-echo "AVIF versions generated: {$avif_count}\n";
 
 if ( ! empty( $errors ) ) {
 	echo "\nErrors encountered:\n";
