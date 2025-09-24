@@ -25,7 +25,7 @@ function primefit_enqueue_discount_system_styles( $hook ) {
 
 	// Check if we're on a coupon-related page
 	$screen = get_current_screen();
-	if ( ! $screen || ( $screen->post_type !== 'shop_coupon' && $hook !== 'woocommerce_page_primefit-coupon-analytics' ) ) {
+	if ( ! $screen || $screen->post_type !== 'shop_coupon' ) {
 		return;
 	}
 

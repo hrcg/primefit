@@ -2,7 +2,7 @@
 /**
  * PrimeFit Theme Discount Code System
  *
- * Advanced discount code tracking with email association and analytics
+ * Advanced discount code tracking with email association
  *
  * @package PrimeFit
  * @since 1.0.0
@@ -892,7 +892,7 @@ function primefit_generate_weekly_report_html( $weekly_stats, $coupon_stats, $to
 			<div class="footer">
 				<p><strong>Report Generated:</strong> <?php echo current_time( 'Y-m-d H:i:s' ); ?></p>
 				<p>This is an automated report from <?php echo esc_html( get_bloginfo( 'name' ) ); ?>.</p>
-				<p><a href="<?php echo admin_url( 'edit.php?post_type=shop_coupon' ); ?>">Manage Coupons</a> | <a href="<?php echo admin_url( 'admin.php?page=primefit-coupon-analytics' ); ?>">View Analytics</a></p>
+				<p><a href="<?php echo admin_url( 'edit.php?post_type=shop_coupon' ); ?>">Manage Coupons</a></p>
 			</div>
 		</div>
 	</body>
@@ -901,325 +901,8 @@ function primefit_generate_weekly_report_html( $weekly_stats, $coupon_stats, $to
 	return ob_get_clean();
 }
 
-/**
- * Add settings page for weekly report configuration
- */
-// Use a later hook to ensure WooCommerce is fully loaded
-add_action( 'admin_menu', 'primefit_add_coupon_analytics_menu', 25 );
-function primefit_add_coupon_analytics_menu() {
-	// Only add menu if WooCommerce is available and fully initialized
-	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_coupons' ) ) {
-		// Debug: Log why menu is not being added
-		error_log( 'PrimeFit: Coupon Analytics menu not added - WooCommerce not available' );
-		return;
-	}
-	
-	// Add as standalone top-level admin menu page
-	$result = add_menu_page(
-		__( 'Coupon Analytics', 'primefit' ),
-		__( 'Coupon Analytics', 'primefit' ),
-		'manage_woocommerce',
-		'primefit-coupon-analytics',
-		'primefit_coupon_analytics_page',
-		'dashicons-chart-bar', // Use chart icon
-		30 // Position after WooCommerce
-	);
-	
-	// Debug: Log if menu was added successfully
-	if ( $result ) {
-		error_log( 'PrimeFit: Coupon Analytics menu added successfully' );
-		// Add admin notice to confirm menu was added
-		add_action( 'admin_notices', function() {
-			if ( current_user_can( 'manage_woocommerce' ) ) {
-				echo '<div class="notice notice-success is-dismissible"><p><strong>PrimeFit:</strong> Coupon Analytics menu has been added successfully!</p></div>';
-			}
-		});
-	} else {
-		error_log( 'PrimeFit: Failed to add Coupon Analytics menu' );
-	}
-}
 
-/**
- * Display coupon analytics page
- */
-function primefit_coupon_analytics_page() {
-	// Debug: Log that the analytics page function is being called
-	error_log( 'PrimeFit: Coupon Analytics page function called' );
-	
-	// Ensure WooCommerce is loaded and fully initialized
-	if ( ! class_exists( 'WooCommerce' ) ) {
-		wp_die( __( 'WooCommerce plugin is not installed or activated.', 'primefit' ) );
-	}
-	
-	// Check if WooCommerce is properly initialized
-	if ( ! function_exists( 'wc_get_coupons' ) ) {
-		// Try to initialize WooCommerce if it's not fully loaded
-		if ( function_exists( 'WC' ) && WC() ) {
-			WC()->init();
-		}
-		
-		// Check again after initialization attempt
-		if ( ! function_exists( 'wc_get_coupons' ) ) {
-			wp_die( __( 'WooCommerce is not properly initialized. Please refresh the page or contact support.', 'primefit' ) );
-		}
-	}
-	
-	// Additional check for WooCommerce instance
-	if ( ! WC() || ! WC()->cart ) {
-		wp_die( __( 'WooCommerce instance is not available. Please refresh the page.', 'primefit' ) );
-	}
 
-	// Get date range (default to last 30 days)
-	$start_date = isset( $_GET['start_date'] ) ? sanitize_text_field( $_GET['start_date'] ) : date( 'Y-m-d', strtotime( '-30 days' ) );
-	$end_date = isset( $_GET['end_date'] ) ? sanitize_text_field( $_GET['end_date'] ) : current_time( 'Y-m-d' );
-
-	// Get analytics data with error handling
-	try {
-		$overall_stats = primefit_get_discount_stats( null, null, $start_date, $end_date );
-		$coupons = wc_get_coupons( array( 'posts_per_page' => -1 ) );
-		$coupon_stats = array();
-	} catch ( Exception $e ) {
-		wp_die( __( 'Error loading coupon data: ', 'primefit' ) . $e->getMessage() );
-	}
-
-	foreach ( $coupons as $coupon ) {
-		$stats = primefit_get_discount_stats( $coupon->get_code(), null, $start_date, $end_date );
-		if ( $stats['total_uses'] > 0 ) {
-			$coupon_stats[] = array(
-				'code' => $coupon->get_code(),
-				'stats' => $stats
-			);
-		}
-	}
-
-	// Sort by total savings
-	usort( $coupon_stats, function( $a, $b ) {
-		return $b['stats']['total_savings'] <=> $a['stats']['total_savings'];
-	} );
-
-	?>
-	<div class="wrap">
-		<h1><?php _e( 'Coupon Analytics', 'primefit' ); ?></h1>
-
-		<form method="get" style="margin-bottom: 20px;">
-			<input type="hidden" name="page" value="primefit-coupon-analytics">
-			<label for="start_date"><?php _e( 'Start Date:', 'primefit' ); ?></label>
-			<input type="date" id="start_date" name="start_date" value="<?php echo esc_attr( $start_date ); ?>">
-			<label for="end_date"><?php _e( 'End Date:', 'primefit' ); ?></label>
-			<input type="date" id="end_date" name="end_date" value="<?php echo esc_attr( $end_date ); ?>">
-			<input type="submit" class="button" value="<?php _e( 'Filter', 'primefit' ); ?>">
-		</form>
-
-		<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
-			<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
-				<h3><?php _e( 'Total Uses', 'primefit' ); ?></h3>
-				<div style="font-size: 2em; font-weight: bold; color: #3498db;"><?php echo number_format( $overall_stats['total_uses'] ); ?></div>
-			</div>
-			<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
-				<h3><?php _e( 'Total Savings', 'primefit' ); ?></h3>
-				<div style="font-size: 2em; font-weight: bold; color: #27ae60;"><?php echo '€' . number_format( $overall_stats['total_savings'], 2 ); ?></div>
-			</div>
-			<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
-				<h3><?php _e( 'Unique Customers', 'primefit' ); ?></h3>
-				<div style="font-size: 2em; font-weight: bold; color: #e74c3c;"><?php echo number_format( $overall_stats['unique_emails'] ); ?></div>
-			</div>
-			<div style="background: #f8f9fa; padding: 20px; border-radius: 5px;">
-				<h3><?php _e( 'Avg. per User', 'primefit' ); ?></h3>
-				<div style="font-size: 2em; font-weight: bold; color: #9b59b6;"><?php echo '€' . number_format( $overall_stats['avg_savings_per_user'], 2 ); ?></div>
-			</div>
-		</div>
-
-		<h2><?php _e( 'Top Performing Coupons', 'primefit' ); ?></h2>
-		<table class="wp-list-table widefat fixed striped">
-			<thead>
-				<tr>
-					<th><?php _e( 'Coupon Code', 'primefit' ); ?></th>
-					<th><?php _e( 'Uses', 'primefit' ); ?></th>
-					<th><?php _e( 'Total Savings', 'primefit' ); ?></th>
-					<th><?php _e( 'Unique Users', 'primefit' ); ?></th>
-					<th><?php _e( 'Avg. per User', 'primefit' ); ?></th>
-					<th><?php _e( 'Actions', 'primefit' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ( $coupon_stats as $coupon ) : ?>
-					<tr>
-						<td><strong><?php echo esc_html( $coupon['code'] ); ?></strong></td>
-						<td><?php echo number_format( $coupon['stats']['total_uses'] ); ?></td>
-						<td>€<?php echo number_format( $coupon['stats']['total_savings'], 2 ); ?></td>
-						<td><?php echo number_format( $coupon['stats']['unique_emails'] ); ?></td>
-						<td>€<?php echo number_format( $coupon['stats']['avg_savings_per_user'], 2 ); ?></td>
-						<td>
-							<a href="<?php echo admin_url( 'post.php?post=' . primefit_get_coupon_id_by_code( $coupon['code'] ) . '&action=edit' ); ?>" class="button button-small">
-								<?php _e( 'Edit', 'primefit' ); ?>
-							</a>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
-
-		<h2><?php _e( 'Usage Trend', 'primefit' ); ?></h2>
-		<p><?php _e( 'Daily usage over the selected period:', 'primefit' ); ?></p>
-		<ul>
-			<?php foreach ( array_reverse( $overall_stats['usage_by_date'] ) as $day ) : ?>
-				<li>
-					<strong><?php echo esc_html( $day->usage_date ); ?>:</strong>
-					<?php echo number_format( $day->uses_count ); ?> uses, €<?php echo number_format( $day->daily_savings, 2 ); ?> saved
-				</li>
-			<?php endforeach; ?>
-		</ul>
-	</div>
-	<?php
-}
-
-/**
- * Helper function to get coupon ID by code
- */
-function primefit_get_coupon_id_by_code( $code ) {
-	// Ensure WooCommerce is loaded
-	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_coupons' ) ) {
-		return false;
-	}
-
-	$coupons = wc_get_coupons( array( 'posts_per_page' => -1 ) );
-
-	foreach ( $coupons as $coupon ) {
-		if ( $coupon->get_code() === $code ) {
-			return $coupon->get_id();
-		}
-	}
-
-	return false;
-}
-
-/**
- * Add custom columns to coupons admin page
- */
-add_filter( 'manage_shop_coupon_posts_columns', 'primefit_add_coupon_columns' );
-function primefit_add_coupon_columns( $columns ) {
-	// Insert new columns after the 'amount' column
-	$new_columns = array();
-	foreach ( $columns as $key => $value ) {
-		$new_columns[ $key ] = $value;
-		if ( $key === 'amount' ) {
-			$new_columns['usage_count'] = __( 'Uses', 'primefit' );
-			$new_columns['total_savings'] = __( 'Total Savings', 'primefit' );
-			$new_columns['unique_users'] = __( 'Unique Users', 'primefit' );
-			$new_columns['avg_savings'] = __( 'Avg. per User', 'primefit' );
-			$new_columns['has_restrictions'] = __( 'Restrictions', 'primefit' );
-		}
-	}
-	return $new_columns;
-}
-
-/**
- * Populate custom coupon columns
- */
-add_action( 'manage_shop_coupon_posts_custom_column', 'primefit_populate_coupon_columns', 10, 2 );
-function primefit_populate_coupon_columns( $column, $post_id ) {
-	$coupon = new WC_Coupon( $post_id );
-
-	switch ( $column ) {
-		case 'usage_count':
-			$stats = primefit_get_discount_stats( $coupon->get_code() );
-			echo number_format( $stats['total_uses'] );
-			break;
-
-		case 'total_savings':
-			$stats = primefit_get_discount_stats( $coupon->get_code() );
-			echo '€' . number_format( $stats['total_savings'], 2 );
-			break;
-
-		case 'unique_users':
-			$stats = primefit_get_discount_stats( $coupon->get_code() );
-			echo number_format( $stats['unique_emails'] );
-			break;
-
-		case 'avg_savings':
-			$stats = primefit_get_discount_stats( $coupon->get_code() );
-			echo '€' . number_format( $stats['avg_savings_per_user'], 2 );
-			break;
-
-		case 'has_restrictions':
-			if ( primefit_coupon_has_email_restrictions( $coupon->get_code() ) ) {
-				echo '<span style="color: #e74c3c; font-weight: bold;">' . __( 'Yes', 'primefit' ) . '</span>';
-			} else {
-				echo '<span style="color: #27ae60;">' . __( 'No', 'primefit' ) . '</span>';
-			}
-			break;
-	}
-}
-
-/**
- * Make coupon columns sortable
- */
-add_filter( 'manage_edit-shop_coupon_sortable_columns', 'primefit_make_coupon_columns_sortable' );
-function primefit_make_coupon_columns_sortable( $columns ) {
-	$columns['usage_count'] = 'usage_count';
-	$columns['total_savings'] = 'total_savings';
-	$columns['unique_users'] = 'unique_users';
-	$columns['avg_savings'] = 'avg_savings';
-	return $columns;
-}
-
-/**
- * Handle sorting for custom coupon columns
- */
-add_filter( 'request', 'primefit_handle_coupon_column_sorting' );
-function primefit_handle_coupon_column_sorting( $vars ) {
-	if ( isset( $vars['post_type'] ) && $vars['post_type'] === 'shop_coupon' ) {
-		if ( isset( $vars['orderby'] ) ) {
-			switch ( $vars['orderby'] ) {
-				case 'usage_count':
-				case 'total_savings':
-				case 'unique_users':
-				case 'avg_savings':
-					// Add meta query to sort by our custom data
-					$vars = add_filter( 'posts_orderby_request', function( $orderby, $query ) use ( $vars ) {
-						global $wpdb;
-
-						if ( $query->get( 'post_type' ) !== 'shop_coupon' ) {
-							return $orderby;
-						}
-
-						$order = isset( $vars['order'] ) ? $vars['order'] : 'ASC';
-
-						switch ( $vars['orderby'] ) {
-							case 'usage_count':
-								$table_name = $wpdb->prefix . 'discount_code_tracking';
-								return "(
-									SELECT COUNT(*) FROM $table_name
-									WHERE coupon_code = $wpdb->posts.post_title
-								) $order";
-							case 'total_savings':
-								$table_name = $wpdb->prefix . 'discount_code_tracking';
-								return "(
-									SELECT SUM(savings_amount) FROM $table_name
-									WHERE coupon_code = $wpdb->posts.post_title
-								) $order";
-							case 'unique_users':
-								$table_name = $wpdb->prefix . 'discount_code_tracking';
-								return "(
-									SELECT COUNT(DISTINCT email) FROM $table_name
-									WHERE coupon_code = $wpdb->posts.post_title
-								) $order";
-							case 'avg_savings':
-								$table_name = $wpdb->prefix . 'discount_code_tracking';
-								return "(
-									SELECT AVG(savings_amount) FROM $table_name
-									WHERE coupon_code = $wpdb->posts.post_title
-								) $order";
-						}
-
-						return $orderby;
-					}, 10, 2 );
-					break;
-			}
-		}
-	}
-	return $vars;
-}
 
 /**
  * Add quick actions to coupon list
@@ -1231,7 +914,6 @@ function primefit_add_coupon_quick_actions( $actions, $post ) {
 		$stats = primefit_get_discount_stats( $coupon->get_code() );
 
 		if ( $stats['total_uses'] > 0 ) {
-			$actions['view_analytics'] = '<a href="' . admin_url( 'admin.php?page=primefit-coupon-analytics' ) . '">' . __( 'View Analytics', 'primefit' ) . '</a>';
 		}
 	}
 	return $actions;
@@ -1363,7 +1045,7 @@ function primefit_send_individual_coupon_report( $coupon_code, $stats ) {
 		$stats['total_savings'],
 		$stats['unique_emails'],
 		$stats['avg_savings_per_user'],
-		admin_url( 'admin.php?page=primefit-coupon-analytics' )
+		admin_url( 'edit.php?post_type=shop_coupon' )
 	) );
 
 	$headers = array( 'Content-Type: text/plain; charset=UTF-8' );

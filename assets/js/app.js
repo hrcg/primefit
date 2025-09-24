@@ -873,7 +873,40 @@
   function openCart(clickedEl) {
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
 
+    // Check if cart is already open to avoid unnecessary refreshes
+    const isAlreadyOpen = $wrap.hasClass("open");
+    
+    // If cart is not already open, refresh fragments first to prevent empty state
+    if (!isAlreadyOpen && window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
+      $.ajax({
+        type: "POST",
+        url: window.primefit_cart_params.ajax_url,
+        data: {
+          action: "woocommerce_get_refreshed_fragments",
+        },
+        success: function (response) {
+          if (response && response.fragments) {
+            // Update fragments with fresh data BEFORE opening cart
+            $.each(response.fragments, function (key, value) {
+              $(key).replaceWith(value);
+            });
+          }
+          
+          // Now open the cart with fresh data
+          openCartPanel($wrap, $panel, $toggle);
+        },
+        error: function () {
+          // Fallback: open cart even if refresh fails
+          openCartPanel($wrap, $panel, $toggle);
+        }
+      });
+    } else {
+      // Cart is already open or no AJAX params, just open normally
+      openCartPanel($wrap, $panel, $toggle);
+    }
+  }
 
+  function openCartPanel($wrap, $panel, $toggle) {
     $wrap.addClass("open").attr("data-open", "true");
     $panel.removeAttr("hidden");
     $toggle.attr("aria-expanded", "true");
@@ -888,76 +921,22 @@
     // Prevent page scrolling when cart is open
     preventPageScroll();
 
-
     // Ensure all quantity inputs are properly synced when cart opens
-    // First try to get fresh cart fragments to ensure we have the latest data
-    if (window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
-      $.ajax({
-        type: "POST",
-        url: window.primefit_cart_params.ajax_url,
-        data: {
-          action: "woocommerce_get_refreshed_fragments",
-        },
-        success: function (response) {
-          if (response && response.fragments) {
-            // Update fragments with fresh data
-            $.each(response.fragments, function (key, value) {
-              $(key).replaceWith(value);
-            });
+    // Sync quantity inputs with current values
+    setTimeout(function () {
+      $(
+        ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+      ).each(function () {
+        const $input = $(this);
+        const cartItemKey = $input.data("cart-item-key");
+        const currentVal = parseInt($input.val()) || 1;
 
-            // Now sync all quantity inputs with the fresh data
-            setTimeout(function () {
-              $(
-                ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-              ).each(function () {
-                const $input = $(this);
-                const cartItemKey = $input.data("cart-item-key");
-                const currentVal = parseInt($input.val()) || 1;
-
-                // Update both the input value and the data attribute
-                if (currentVal && cartItemKey) {
-                  $input.val(currentVal);
-                  $input.attr("data-original-value", currentVal);
-                }
-              });
-            }, 50);
-          }
-        },
-        error: function () {
-          // Fallback: sync with current values if AJAX fails
-          setTimeout(function () {
-            $(
-              ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-            ).each(function () {
-              const $input = $(this);
-              const cartItemKey = $input.data("cart-item-key");
-              const currentVal = parseInt($input.val()) || 1;
-
-              if (currentVal && cartItemKey) {
-                $input.val(currentVal);
-                $input.attr("data-original-value", currentVal);
-              }
-            });
-          }, 50);
-        },
+        if (currentVal && cartItemKey) {
+          $input.val(currentVal);
+          $input.attr("data-original-value", currentVal);
+        }
       });
-    } else {
-      // Fallback if no AJAX params available
-      setTimeout(function () {
-        $(
-          ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-        ).each(function () {
-          const $input = $(this);
-          const cartItemKey = $input.data("cart-item-key");
-          const currentVal = parseInt($input.val()) || 1;
-
-          if (currentVal && cartItemKey) {
-            $input.val(currentVal);
-            $input.attr("data-original-value", currentVal);
-          }
-        });
-      }, 50);
-    }
+    }, 50);
 
   }
 
@@ -2384,12 +2363,18 @@
             $.each(response.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
+            
+            // Open mini cart immediately after fragments are updated
+            // Use requestAnimationFrame to ensure DOM updates are complete
+            requestAnimationFrame(function() {
+              openMiniCart();
+            });
+          } else {
+            // Fallback: open cart with small delay if no fragments
+            setTimeout(function () {
+              openMiniCart();
+            }, 100);
           }
-
-          // Open mini cart automatically after successful add (with small delay to ensure fragments are updated)
-          setTimeout(function () {
-            openMiniCart();
-          }, 100);
         }
       },
       error: function (xhr, status, error) {
@@ -2414,10 +2399,11 @@
     // Trigger cart fragment refresh using unified CartManager
     CartManager.queueRefresh("wc_fragment_refresh");
 
-    // Open mini cart automatically after a short delay
+    // Open mini cart after fragments are refreshed
+    // Use a shorter delay since CartManager handles the refresh timing
     setTimeout(function () {
       openMiniCart();
-    }, 500);
+    }, 200);
   }
 
   /**
