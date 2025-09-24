@@ -10,6 +10,9 @@
 (function ($) {
   "use strict";
 
+  // CartManager and CouponManager are now defined in app.js
+  // They are available globally via window.CartManager and window.CouponManager
+
   /**
    * Elegant Checkout Enhancement
    * Enhances UX without interfering with WooCommerce core functionality
@@ -69,7 +72,10 @@
 
         // Apply the coupon with a slight delay to ensure DOM is ready
         setTimeout(() => {
-          this.applyCouponFromUrl(couponCode.trim());
+          CouponManager.applyCoupon(couponCode.trim(), {
+            isCheckout: true,
+            onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode.trim())
+          });
         }, 500);
       } else {
         // Check for pending coupon from session (base URL case)
@@ -79,7 +85,7 @@
 
     /**
      * Check for pending coupon from session
-     * FIXED: Added state management to prevent race conditions
+     * Now uses unified CouponManager for race condition prevention
      */
     checkForPendingCouponFromSession: function () {
       // Check for pending coupon data from cart fragments (hidden element)
@@ -88,28 +94,17 @@
         const pendingCoupon = $couponData.data("pending-coupon");
         if (pendingCoupon && pendingCoupon.trim()) {
 
-          // Check if coupon is already applied
-          const appliedCoupons = this.getAppliedCoupons();
-          if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
-            return;
-          }
-
-          // CRITICAL: Check if coupon is already being processed to prevent race conditions
-          if (window.primefitCouponProcessing && window.primefitCouponProcessing === pendingCoupon.toUpperCase()) {
-            return;
-          }
-
-          // Mark as processing to prevent race conditions
-          window.primefitCouponProcessing = pendingCoupon.toUpperCase();
-
-          // Apply the pending coupon with additional safety check
+          // Use unified CouponManager to apply pending coupon
           setTimeout(() => {
             // Double-check that WooCommerce is loaded before applying
             if (
               typeof wc_add_to_cart_params !== "undefined" ||
               jQuery(".woocommerce-checkout").length
             ) {
-              this.applyCouponFromUrl(pendingCoupon.trim());
+              CouponManager.applyCoupon(pendingCoupon.trim(), {
+                isCheckout: true,
+                onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+              });
             } else {
               // Try again after another delay
               setTimeout(() => {
@@ -117,10 +112,10 @@
                   typeof wc_add_to_cart_params !== "undefined" ||
                   jQuery(".woocommerce-checkout").length
                 ) {
-                  this.applyCouponFromUrl(pendingCoupon.trim());
-                } else {
-                  // Clear processing flag on failure
-                  delete window.primefitCouponProcessing;
+                  CouponManager.applyCoupon(pendingCoupon.trim(), {
+                    isCheckout: true,
+                    onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+                  });
                 }
               }, 2000);
             }
@@ -163,85 +158,31 @@
     },
 
     /**
-     * Apply coupon from URL parameter
-     * FIXED: Added proper state management to prevent race conditions
+     * Apply coupon from URL parameter (DEPRECATED - use CouponManager.applyCoupon instead)
+     * @deprecated Use CouponManager.applyCoupon() instead
      */
     applyCouponFromUrl: function (couponCode) {
-
-      // Check if coupon is already applied
-      const appliedCoupons = this.getAppliedCoupons();
-      if (appliedCoupons.includes(couponCode.toUpperCase())) {
-        // Clear processing flag since we're done
-        delete window.primefitCouponProcessing;
-        return;
-      }
-
-      // Show loading state
-      this.showCouponLoadingState();
-
-      // Apply the coupon using existing method
-      this.applyCouponElegantly(couponCode);
-
-      // Clean URL after application attempt
-      this.cleanUrlAfterCouponApplication(couponCode);
+      CouponManager.applyCoupon(couponCode, {
+        isCheckout: true,
+        onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode)
+      });
     },
 
     /**
-     * Show loading state for coupon application
+     * Show loading state for coupon application (DEPRECATED - now handled by CouponManager)
+     * @deprecated Loading states are now handled by CouponManager
      */
     showCouponLoadingState: function () {
-      const $couponToggle = $(".coupon-toggle");
-      const $couponSection = $(".coupon-section");
-
-      // If coupon form is visible, show loading
-      if ($couponSection.find(".coupon-form").is(":visible")) {
-        const $input = $couponSection.find(".coupon-input");
-        const $applyBtn = $couponSection.find(".coupon-apply-btn");
-
-        if ($input.length && $applyBtn.length) {
-          $input.val("Loading...");
-          $applyBtn.text("Applying...").prop("disabled", true);
-        }
-      } else {
-        // Show the coupon form first
-        $couponToggle.trigger("click");
-
-        // Wait for form to appear, then show loading state
-        setTimeout(() => {
-          const $input = $couponSection.find(".coupon-input");
-          const $applyBtn = $couponSection.find(".coupon-apply-btn");
-
-          if ($input.length && $applyBtn.length) {
-            $input.val("Loading...");
-            $applyBtn.text("Applying...").prop("disabled", true);
-          }
-        }, 350);
-      }
+      // This is now handled by CouponManager.applyCouponElegantly
+      console.warn('showCouponLoadingState is deprecated. Loading states are now handled by CouponManager.');
     },
 
     /**
-     * Clean URL after coupon application attempt
+     * Clean URL after coupon application attempt (DEPRECATED - now handled by CouponManager)
+     * @deprecated URL cleaning is now handled by CouponManager
      */
     cleanUrlAfterCouponApplication: function (couponCode) {
-      // Remove coupon parameter from URL after 3 seconds
-      setTimeout(() => {
-        if (window.history && window.history.replaceState) {
-          const url = new URL(window.location);
-          url.searchParams.delete("coupon");
-
-          // Only update if there are other parameters or if this is the only parameter
-          if (
-            url.searchParams.toString() ||
-            url.search === "?coupon=" + encodeURIComponent(couponCode)
-          ) {
-            window.history.replaceState(
-              {},
-              document.title,
-              url.pathname + url.search + url.hash
-            );
-          }
-        }
-      }, 3000);
+      CouponManager.cleanUrlAfterCouponApplication(couponCode);
     },
 
     /**
@@ -312,13 +253,13 @@
           }
         });
 
-        // Handle coupon application - delegate to WooCommerce
+        // Handle coupon application - delegate to unified CouponManager
         $couponSection.on("click", ".coupon-apply-btn", function (e) {
           e.preventDefault();
           const couponCode = $couponSection.find(".coupon-input").val().trim();
 
           if (couponCode) {
-            CheckoutManager.applyCouponElegantly(couponCode);
+            CouponManager.applyCoupon(couponCode, { isCheckout: true });
           }
         });
 
@@ -330,7 +271,7 @@
             const couponCode = $(this).val().trim();
 
             if (couponCode) {
-              CheckoutManager.applyCouponElegantly(couponCode);
+              CouponManager.applyCoupon(couponCode, { isCheckout: true });
             }
           }
         });
@@ -338,75 +279,15 @@
     },
 
     /**
-     * Apply coupon elegantly - work with WooCommerce's native system
-     * Optimized to prevent duplicate submissions and improve performance
-     * FIXED: Added better error handling and state management
+     * Apply coupon elegantly - work with WooCommerce's native system (DEPRECATED)
+     * @deprecated Use CouponManager.applyCouponElegantly() instead
      */
-    applyCouponElegantly: function (couponCode) {
-      const $couponSection = $(".coupon-section");
-      const $applyBtn = $couponSection.find(".coupon-apply-btn");
-      const $input = $couponSection.find(".coupon-input");
-
-      // Prevent duplicate submissions
-      if ($applyBtn.prop("disabled")) {
-        return;
-      }
-
-      // Show loading state
-      $applyBtn.text("Applying...").prop("disabled", true);
-
-      // Use requestAnimationFrame for smoother UI updates
-      requestAnimationFrame(() => {
-        try {
-          // Look for WooCommerce's native coupon form
-          let $wcCouponInput = $(
-            '.woocommerce-form-coupon input[name="coupon_code"]'
-          );
-          let $wcCouponBtn = $(
-            '.woocommerce-form-coupon button[name="apply_coupon"]'
-          );
-
-          // If WooCommerce coupon form exists, use it
-          if ($wcCouponInput.length && $wcCouponBtn.length) {
-            $wcCouponInput.val(couponCode);
-            $wcCouponBtn.trigger("click");
-          } else {
-            // Create a hidden WooCommerce-compatible form and submit it
-            // SECURITY: Sanitize coupon code to prevent XSS
-            const sanitizedCouponCode = couponCode.replace(/[<>\"'&]/g, '');
-            const $hiddenForm = $(`
-              <form class="woocommerce-form-coupon" method="post" style="display: none;">
-                <input type="text" name="coupon_code" value="${sanitizedCouponCode}" />
-                <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
-              </form>
-            `);
-
-            $("body").append($hiddenForm);
-            $hiddenForm.submit();
-            $hiddenForm.remove();
-          }
-
-          // Reset UI state with reduced timeout
-          setTimeout(() => {
-            $applyBtn.text("Apply").prop("disabled", false);
-            $input.val("");
-
-            // Clear processing flag since coupon application attempt is complete
-            if (window.primefitCouponProcessing) {
-              delete window.primefitCouponProcessing;
-            }
-          }, 1500);
-        } catch (error) {
-
-          // Reset UI state on error
-          $applyBtn.text("Apply").prop("disabled", false);
-          $input.val("");
-
-          // Clear processing flag on error
-          if (window.primefitCouponProcessing) {
-            delete window.primefitCouponProcessing;
-          }
-        }
+    applyCouponElegantly: function (couponCode, options = {}) {
+      // Delegate to CouponManager for unified processing
+      CouponManager.applyCoupon(couponCode, {
+        isCheckout: true,
+        $section: $(".coupon-section"),
+        ...options
       });
     },
 
@@ -492,7 +373,7 @@
 
     /**
      * Setup mutation observer to watch for changes to payment methods
-     * Optimized to reduce unnecessary reprocessing
+     * Optimized to reduce unnecessary reprocessing with enhanced debouncing and batching
      */
     setupPaymentMethodObserver: function () {
       const $paymentMethods = $(".woocommerce-checkout .payment_methods");
@@ -502,69 +383,148 @@
         window.MutationObserver &&
         !this.paymentMethodObserver
       ) {
-        // Debounce mutations to avoid excessive processing
+        // Enhanced debouncing with cooldown and batch processing
         let timeoutId = null;
+        let cooldownUntil = 0;
+        let pendingMutations = [];
+        let lastProcessTime = 0;
+        const minProcessInterval = 300; // Minimum 300ms between processing
+        const maxBatchSize = 10; // Limit batch size to prevent memory issues
 
         this.paymentMethodObserver = new MutationObserver((mutations) => {
+          // Add mutations to pending batch (limit batch size)
+          pendingMutations.push(...mutations.slice(0, maxBatchSize - pendingMutations.length));
+
           if (timeoutId) {
             clearTimeout(timeoutId);
           }
 
+          // Only process if cooldown period has passed and minimum interval elapsed
+          const now = Date.now();
+          if (now < cooldownUntil || (now - lastProcessTime) < minProcessInterval) {
+            return;
+          }
+
           timeoutId = setTimeout(() => {
-            let shouldReapply = false;
+            // Filter significant mutations only
+            const significantMutations = this.filterSignificantMutations(pendingMutations);
 
-            mutations.forEach((mutation) => {
-              if (
-                mutation.type === "childList" ||
-                mutation.type === "attributes"
-              ) {
-                // Check if payment method structure has changed
-                const $currentPaymentMethods = $(
-                  ".woocommerce-checkout .payment_methods"
-                );
-                if (
-                  $currentPaymentMethods.length &&
-                  !$currentPaymentMethods.find(".payment_method").length
-                ) {
-                  shouldReapply = true;
-                }
-              }
-            });
-
-            if (shouldReapply && this.isPaymentMethodsEnhanced) {
-              // Reset the enhancement flag and reapply
-              this.isPaymentMethodsEnhanced = false;
-              const $currentPaymentMethods = $(
-                ".woocommerce-checkout .payment_methods"
-              );
-              $currentPaymentMethods.removeClass("enhanced");
-
-              // Use requestAnimationFrame for smoother UI updates
+            if (significantMutations.length > 0) {
+              // Batch DOM operations using requestAnimationFrame
               requestAnimationFrame(() => {
-                this.enhancePaymentMethodCards();
-                this.addPaymentMethodIcons();
-                this.addPaymentMethodBadges();
-                $currentPaymentMethods.addClass("enhanced");
-                this.isPaymentMethodsEnhanced = true;
+                this.processPaymentMethodChanges();
+                lastProcessTime = Date.now();
               });
             }
-          }, 50); // 50ms debounce
+
+            // Clear pending mutations
+            pendingMutations = [];
+
+            // Set cooldown period to prevent rapid successive triggers
+            cooldownUntil = Date.now() + 800; // Increased to 800ms cooldown
+          }, 250); // Increased debounce to 250ms
         });
 
         this.paymentMethodObserver.observe($paymentMethods[0], {
           childList: true,
           subtree: true,
           attributes: true,
-          attributeFilter: ["class"],
+          attributeFilter: ["class", "id", "data-*"], // More specific attribute filtering
+          characterData: false, // Disable character data observation
+          attributeOldValue: false, // Don't store old attribute values
         });
       }
     },
 
     /**
-     * Enhance payment method cards with better structure
+     * Filter mutations to only process significant changes
+     */
+    filterSignificantMutations: function (mutations) {
+      return mutations.filter((mutation) => {
+        // Only process childList changes that add/remove elements
+        if (mutation.type === "childList") {
+          return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
+        }
+
+        // Only process attribute changes on specific elements
+        if (mutation.type === "attributes") {
+          const target = mutation.target;
+          return target.classList?.contains("payment_method") ||
+                 target.classList?.contains("payment_methods");
+        }
+
+        return false;
+      });
+    },
+
+    /**
+     * Process payment method changes with batched operations to prevent layout thrashing
+     */
+    processPaymentMethodChanges: function () {
+      const $currentPaymentMethods = $(".woocommerce-checkout .payment_methods");
+
+      // Only reapply if payment methods were actually reset
+      if (
+        $currentPaymentMethods.length &&
+        !$currentPaymentMethods.hasClass("enhanced") &&
+        !$currentPaymentMethods.find(".payment_method").length
+      ) {
+        // Batch DOM operations using requestAnimationFrame to prevent layout thrashing
+        requestAnimationFrame(() => {
+          // Start batch DOM operations
+          this.startBatchDOMOperations();
+          
+          // Remove enhanced class temporarily
+          $currentPaymentMethods.removeClass("enhanced");
+          this.isPaymentMethodsEnhanced = false;
+
+          // Batch all enhancement operations
+          this.enhancePaymentMethodCards();
+          this.addPaymentMethodIcons();
+          this.addPaymentMethodBadges();
+
+          // End batch DOM operations
+          this.endBatchDOMOperations();
+          
+          // Re-add enhanced class in a single operation
+          $currentPaymentMethods.addClass("enhanced");
+          this.isPaymentMethodsEnhanced = true;
+        });
+      }
+    },
+
+    /**
+     * Start batch DOM operations to minimize layout thrashing
+     */
+    startBatchDOMOperations: function() {
+      // Temporarily disable layout calculations
+      if (document.body.style) {
+        document.body.style.display = 'none';
+        // Force a reflow
+        document.body.offsetHeight;
+        document.body.style.display = '';
+      }
+    },
+
+    /**
+     * End batch DOM operations and restore normal layout
+     */
+    endBatchDOMOperations: function() {
+      // Force a final reflow to ensure all changes are applied
+      requestAnimationFrame(() => {
+        document.body.offsetHeight;
+      });
+    },
+
+    /**
+     * Enhance payment method cards with better structure - batched operations
      */
     enhancePaymentMethodCards: function () {
-      $(".woocommerce-checkout .payment_methods li").each(function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
+      const enhancements = [];
+
+      // Collect all enhancement operations first
+      $paymentMethods.each(function () {
         const $li = $(this);
         const $label = $li.find("label");
         const $radio = $li.find('input[type="radio"]');
@@ -572,100 +532,116 @@
 
         // Only enhance if not already enhanced
         if (!$li.find(".payment_method").length && $label.length) {
-          $li.wrapInner('<div class="payment_method"></div>');
+          enhancements.push(() => $li.wrapInner('<div class="payment_method"></div>'));
         }
 
         // Only restructure if payment-method-content doesn't exist
         if ($label.length && !$label.find(".payment-method-content").length) {
           const labelText = $label.text().trim();
-          const $paymentContent = $(
-            '<div class="payment-method-content"></div>'
-          );
-
           const parts = labelText.split(" - ");
           const title = parts[0] || labelText;
           const description = parts[1] || "";
 
-          $paymentContent.html(`
+          const paymentContentHTML = `
             <div class="payment-method-title">${title}</div>
-            ${
-              description
-                ? `<div class="payment-method-description">${description}</div>`
-                : ""
+            ${description ? `<div class="payment-method-description">${description}</div>` : ""}
+          `;
+
+          enhancements.push(() => {
+            const $paymentContent = $(`<div class="payment-method-content">${paymentContentHTML}</div>`);
+            $paymentContent.css("position", "relative");
+            
+            $label.empty();
+            $label.append($radio);
+            $label.append($paymentContent);
+
+            if ($paymentBox.length) {
+              $paymentBox.appendTo($li.find(".payment_method"));
             }
-          `);
-
-          $paymentContent.css("position", "relative");
-
-          $label.empty();
-          $label.append($radio);
-          $label.append($paymentContent);
-
-          if ($paymentBox.length) {
-            $paymentBox.appendTo($li.find(".payment_method"));
-          }
+          });
         }
       });
+
+      // Execute all enhancements in a single batch
+      enhancements.forEach(enhancement => enhancement());
     },
 
     /**
-     * Add payment method icons
+     * Add payment method icons - batched operations
      */
     addPaymentMethodIcons: function () {
-      $(".woocommerce-checkout .payment_methods li").each(function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
+      const iconOperations = [];
+
+      // Collect all icon operations first
+      $paymentMethods.each(function () {
         const $li = $(this);
         const $label = $li.find("label");
         const title = $li.find(".payment-method-title").text().toLowerCase();
 
-        let iconClass = "payment-method-icon";
-        if (title.includes("cash") || title.includes("delivery")) {
-          iconClass += " cash";
-        } else if (
-          title.includes("card") ||
-          title.includes("credit") ||
-          title.includes("debit")
-        ) {
-          iconClass += " card";
-        } else if (title.includes("paypal")) {
-          iconClass += " paypal";
-        } else if (title.includes("apple")) {
-          iconClass += " apple-pay";
-        }
-
         if (!$label.find(".payment-method-icon").length) {
-          const $icon = $(`<div class="${iconClass}">💳</div>`);
-          $label.prepend($icon);
+          let iconClass = "payment-method-icon";
+          if (title.includes("cash") || title.includes("delivery")) {
+            iconClass += " cash";
+          } else if (
+            title.includes("card") ||
+            title.includes("credit") ||
+            title.includes("debit")
+          ) {
+            iconClass += " card";
+          } else if (title.includes("paypal")) {
+            iconClass += " paypal";
+          } else if (title.includes("apple")) {
+            iconClass += " apple-pay";
+          }
+
+          iconOperations.push(() => {
+            const $icon = $(`<div class="${iconClass}">💳</div>`);
+            $label.prepend($icon);
+          });
         }
       });
+
+      // Execute all icon operations in a single batch
+      iconOperations.forEach(operation => operation());
     },
 
     /**
-     * Add payment method badges
+     * Add payment method badges - batched operations
      */
     addPaymentMethodBadges: function () {
-      $(".woocommerce-checkout .payment_methods li").each(function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
+      const badgeOperations = [];
+
+      // Collect all badge operations first
+      $paymentMethods.each(function () {
         const $li = $(this);
         const $paymentMethod = $li.find(".payment_method");
         const title = $li.find(".payment-method-title").text().toLowerCase();
 
-        if (title.includes("cash") || title.includes("delivery")) {
-          if (!$paymentMethod.find(".payment-method-badge").length) {
-            $paymentMethod.append(
-              '<div class="payment-method-badge recommended">Recommended</div>'
-            );
-          }
-        } else if (
-          title.includes("card") ||
-          title.includes("credit") ||
-          title.includes("debit")
-        ) {
-          if (!$paymentMethod.find(".payment-method-badge").length) {
-            $paymentMethod.append(
-              '<div class="payment-method-badge secure">Secure</div>'
-            );
+        if (!$paymentMethod.find(".payment-method-badge").length) {
+          if (title.includes("cash") || title.includes("delivery")) {
+            badgeOperations.push(() => {
+              $paymentMethod.append(
+                '<div class="payment-method-badge recommended">Recommended</div>'
+              );
+            });
+          } else if (
+            title.includes("card") ||
+            title.includes("credit") ||
+            title.includes("debit")
+          ) {
+            badgeOperations.push(() => {
+              $paymentMethod.append(
+                '<div class="payment-method-badge secure">Secure</div>'
+              );
+            });
           }
         }
       });
+
+      // Execute all badge operations in a single batch
+      badgeOperations.forEach(operation => operation());
     },
 
     /**
@@ -767,258 +743,91 @@
         return;
       }
       
-      // Country to phone prefix mapping
-      const countryPrefixes = {
-        'AD': '+376', // Andorra
-        'AE': '+971', // United Arab Emirates
-        'AF': '+93',  // Afghanistan
-        'AG': '+1268', // Antigua and Barbuda
-        'AI': '+1264', // Anguilla
-        'AL': '+355', // Albania
-        'AM': '+374', // Armenia
-        'AO': '+244', // Angola
-        'AQ': '+672', // Antarctica
-        'AR': '+54',  // Argentina
-        'AS': '+1684', // American Samoa
-        'AT': '+43',  // Austria
-        'AU': '+61',  // Australia
-        'AW': '+297', // Aruba
-        'AX': '+358', // Åland Islands
-        'AZ': '+994', // Azerbaijan
-        'BA': '+387', // Bosnia and Herzegovina
-        'BB': '+1246', // Barbados
-        'BD': '+880', // Bangladesh
-        'BE': '+32',  // Belgium
-        'BF': '+226', // Burkina Faso
-        'BG': '+359', // Bulgaria
-        'BH': '+973', // Bahrain
-        'BI': '+257', // Burundi
-        'BJ': '+229', // Benin
-        'BL': '+590', // Saint Barthélemy
-        'BM': '+1441', // Bermuda
-        'BN': '+673', // Brunei
-        'BO': '+591', // Bolivia
-        'BQ': '+599', // Caribbean Netherlands
-        'BR': '+55',  // Brazil
-        'BS': '+1242', // Bahamas
-        'BT': '+975', // Bhutan
-        'BV': '+47',  // Bouvet Island
-        'BW': '+267', // Botswana
-        'BY': '+375', // Belarus
-        'BZ': '+501', // Belize
-        'CA': '+1',   // Canada
-        'CC': '+61',  // Cocos Islands
-        'CD': '+243', // Democratic Republic of the Congo
-        'CF': '+236', // Central African Republic
-        'CG': '+242', // Republic of the Congo
-        'CH': '+41',  // Switzerland
-        'CI': '+225', // Côte d'Ivoire
-        'CK': '+682', // Cook Islands
-        'CL': '+56',  // Chile
-        'CM': '+237', // Cameroon
-        'CN': '+86',  // China
-        'CO': '+57',  // Colombia
-        'CR': '+506', // Costa Rica
-        'CU': '+53',  // Cuba
-        'CV': '+238', // Cape Verde
-        'CW': '+599', // Curaçao
-        'CX': '+61',  // Christmas Island
-        'CY': '+357', // Cyprus
-        'CZ': '+420', // Czech Republic
-        'DE': '+49',  // Germany
-        'DJ': '+253', // Djibouti
-        'DK': '+45',  // Denmark
-        'DM': '+1767', // Dominica
-        'DO': '+1809', // Dominican Republic
-        'DZ': '+213', // Algeria
-        'EC': '+593', // Ecuador
-        'EE': '+372', // Estonia
-        'EG': '+20',  // Egypt
-        'EH': '+212', // Western Sahara
-        'ER': '+291', // Eritrea
-        'ES': '+34',  // Spain
-        'ET': '+251', // Ethiopia
-        'FI': '+358', // Finland
-        'FJ': '+679', // Fiji
-        'FK': '+500', // Falkland Islands
-        'FM': '+691', // Micronesia
-        'FO': '+298', // Faroe Islands
-        'FR': '+33',  // France
-        'GA': '+241', // Gabon
-        'GB': '+44',  // United Kingdom
-        'GD': '+1473', // Grenada
-        'GE': '+995', // Georgia
-        'GF': '+594', // French Guiana
-        'GG': '+44',  // Guernsey
-        'GH': '+233', // Ghana
-        'GI': '+350', // Gibraltar
-        'GL': '+299', // Greenland
-        'GM': '+220', // Gambia
-        'GN': '+224', // Guinea
-        'GP': '+590', // Guadeloupe
-        'GQ': '+240', // Equatorial Guinea
-        'GR': '+30',  // Greece
-        'GS': '+500', // South Georgia and the South Sandwich Islands
-        'GT': '+502', // Guatemala
-        'GU': '+1671', // Guam
-        'GW': '+245', // Guinea-Bissau
-        'GY': '+592', // Guyana
-        'HK': '+852', // Hong Kong
-        'HM': '+672', // Heard Island and McDonald Islands
-        'HN': '+504', // Honduras
-        'HR': '+385', // Croatia
-        'HT': '+509', // Haiti
-        'HU': '+36',  // Hungary
-        'ID': '+62',  // Indonesia
-        'IE': '+353', // Ireland
-        'IL': '+972', // Israel
-        'IM': '+44',  // Isle of Man
-        'IN': '+91',  // India
-        'IO': '+246', // British Indian Ocean Territory
-        'IQ': '+964', // Iraq
-        'IR': '+98',  // Iran
-        'IS': '+354', // Iceland
-        'IT': '+39',  // Italy
-        'JE': '+44',  // Jersey
-        'JM': '+1876', // Jamaica
-        'JO': '+962', // Jordan
-        'JP': '+81',  // Japan
-        'KE': '+254', // Kenya
-        'KG': '+996', // Kyrgyzstan
-        'KH': '+855', // Cambodia
-        'KI': '+686', // Kiribati
-        'KM': '+269', // Comoros
-        'KN': '+1869', // Saint Kitts and Nevis
-        'KP': '+850', // North Korea
-        'KR': '+82',  // South Korea
-        'KW': '+965', // Kuwait
-        'KY': '+1345', // Cayman Islands
-        'KZ': '+7',   // Kazakhstan
-        'LA': '+856', // Laos
-        'LB': '+961', // Lebanon
-        'LC': '+1758', // Saint Lucia
-        'LI': '+423', // Liechtenstein
-        'LK': '+94',  // Sri Lanka
-        'LR': '+231', // Liberia
-        'LS': '+266', // Lesotho
-        'LT': '+370', // Lithuania
-        'LU': '+352', // Luxembourg
-        'LV': '+371', // Latvia
-        'LY': '+218', // Libya
-        'MA': '+212', // Morocco
-        'MC': '+377', // Monaco
-        'MD': '+373', // Moldova
-        'ME': '+382', // Montenegro
-        'MF': '+590', // Saint Martin
-        'MG': '+261', // Madagascar
-        'MH': '+692', // Marshall Islands
-        'MK': '+389', // North Macedonia
-        'ML': '+223', // Mali
-        'MM': '+95',  // Myanmar
-        'MN': '+976', // Mongolia
-        'MO': '+853', // Macau
-        'MP': '+1670', // Northern Mariana Islands
-        'MQ': '+596', // Martinique
-        'MR': '+222', // Mauritania
-        'MS': '+1664', // Montserrat
-        'MT': '+356', // Malta
-        'MU': '+230', // Mauritius
-        'MV': '+960', // Maldives
-        'MW': '+265', // Malawi
-        'MX': '+52',  // Mexico
-        'MY': '+60',  // Malaysia
-        'MZ': '+258', // Mozambique
-        'NA': '+264', // Namibia
-        'NC': '+687', // New Caledonia
-        'NE': '+227', // Niger
-        'NF': '+672', // Norfolk Island
-        'NG': '+234', // Nigeria
-        'NI': '+505', // Nicaragua
-        'NL': '+31',  // Netherlands
-        'NO': '+47',  // Norway
-        'NP': '+977', // Nepal
-        'NR': '+674', // Nauru
-        'NU': '+683', // Niue
-        'NZ': '+64',  // New Zealand
-        'OM': '+968', // Oman
-        'PA': '+507', // Panama
-        'PE': '+51',  // Peru
-        'PF': '+689', // French Polynesia
-        'PG': '+675', // Papua New Guinea
-        'PH': '+63',  // Philippines
-        'PK': '+92',  // Pakistan
-        'PL': '+48',  // Poland
-        'PM': '+508', // Saint Pierre and Miquelon
-        'PN': '+64',  // Pitcairn Islands
-        'PR': '+1787', // Puerto Rico
-        'PS': '+970', // Palestine
-        'PT': '+351', // Portugal
-        'PW': '+680', // Palau
-        'PY': '+595', // Paraguay
-        'QA': '+974', // Qatar
-        'RE': '+262', // Réunion
-        'RO': '+40',  // Romania
-        'RS': '+381', // Serbia
-        'RU': '+7',   // Russia
-        'RW': '+250', // Rwanda
-        'SA': '+966', // Saudi Arabia
-        'SB': '+677', // Solomon Islands
-        'SC': '+248', // Seychelles
-        'SD': '+249', // Sudan
-        'SE': '+46',  // Sweden
-        'SG': '+65',  // Singapore
-        'SH': '+290', // Saint Helena
-        'SI': '+386', // Slovenia
-        'SJ': '+47',  // Svalbard and Jan Mayen
-        'SK': '+421', // Slovakia
-        'SL': '+232', // Sierra Leone
-        'SM': '+378', // San Marino
-        'SN': '+221', // Senegal
-        'SO': '+252', // Somalia
-        'SR': '+597', // Suriname
-        'SS': '+211', // South Sudan
-        'ST': '+239', // São Tomé and Príncipe
-        'SV': '+503', // El Salvador
-        'SX': '+1721', // Sint Maarten
-        'SY': '+963', // Syria
-        'SZ': '+268', // Eswatini
-        'TC': '+1649', // Turks and Caicos Islands
-        'TD': '+235', // Chad
-        'TF': '+262', // French Southern Territories
-        'TG': '+228', // Togo
-        'TH': '+66',  // Thailand
-        'TJ': '+992', // Tajikistan
-        'TK': '+690', // Tokelau
-        'TL': '+670', // East Timor
-        'TM': '+993', // Turkmenistan
-        'TN': '+216', // Tunisia
-        'TO': '+676', // Tonga
-        'TR': '+90',  // Turkey
-        'TT': '+1868', // Trinidad and Tobago
-        'TV': '+688', // Tuvalu
-        'TW': '+886', // Taiwan
-        'TZ': '+255', // Tanzania
-        'UA': '+380', // Ukraine
-        'UG': '+256', // Uganda
-        'UM': '+1',   // United States Minor Outlying Islands
-        'US': '+1',   // United States
-        'UY': '+598', // Uruguay
-        'UZ': '+998', // Uzbekistan
-        'VA': '+379', // Vatican City
-        'VC': '+1784', // Saint Vincent and the Grenadines
-        'VE': '+58',  // Venezuela
-        'VG': '+1284', // British Virgin Islands
-        'VI': '+1340', // U.S. Virgin Islands
-        'VN': '+84',  // Vietnam
-        'VU': '+678', // Vanuatu
-        'WF': '+681', // Wallis and Futuna
-        'WS': '+685', // Samoa
-        'XK': '+383', // Kosovo
-        'YE': '+967', // Yemen
-        'YT': '+262', // Mayotte
-        'ZA': '+27',  // South Africa
-        'ZM': '+260', // Zambia
-        'ZW': '+263'  // Zimbabwe
+      // Lazy-loaded country prefix manager with reduced memory footprint
+      const CountryPrefixManager = {
+        cache: new Map(),
+        loadedRegions: new Set(),
+        
+        // Core regions with most common countries
+        corePrefixes: {
+          'US': '+1', 'CA': '+1', 'GB': '+44', 'DE': '+49', 'FR': '+33',
+          'IT': '+39', 'ES': '+34', 'NL': '+31', 'BE': '+32', 'CH': '+41',
+          'AT': '+43', 'SE': '+46', 'NO': '+47', 'DK': '+45', 'FI': '+358',
+          'PL': '+48', 'CZ': '+420', 'HU': '+36', 'RO': '+40', 'BG': '+359',
+          'HR': '+385', 'SI': '+386', 'SK': '+421', 'LT': '+370', 'LV': '+371',
+          'EE': '+372', 'IE': '+353', 'PT': '+351', 'GR': '+30', 'CY': '+357',
+          'MT': '+356', 'LU': '+352', 'IS': '+354', 'LI': '+423', 'MC': '+377',
+          'SM': '+378', 'VA': '+379', 'AD': '+376', 'AL': '+355', 'BA': '+387',
+          'ME': '+382', 'MK': '+389', 'RS': '+381', 'XK': '+383', 'TR': '+90',
+          'RU': '+7', 'UA': '+380', 'BY': '+375', 'MD': '+373', 'GE': '+995',
+          'AM': '+374', 'AZ': '+994', 'KZ': '+7', 'KG': '+996', 'TJ': '+992',
+          'TM': '+993', 'UZ': '+998', 'MN': '+976', 'CN': '+86', 'JP': '+81',
+          'KR': '+82', 'TW': '+886', 'HK': '+852', 'MO': '+853', 'SG': '+65',
+          'MY': '+60', 'TH': '+66', 'VN': '+84', 'LA': '+856', 'KH': '+855',
+          'MM': '+95', 'PH': '+63', 'ID': '+62', 'BN': '+673', 'TL': '+670',
+          'AU': '+61', 'NZ': '+64', 'FJ': '+679', 'PG': '+675', 'SB': '+677',
+          'VU': '+678', 'NC': '+687', 'PF': '+689', 'WF': '+681', 'WS': '+685',
+          'TO': '+676', 'KI': '+686', 'TV': '+688', 'NR': '+674', 'PW': '+680',
+          'FM': '+691', 'MH': '+692', 'CK': '+682', 'NU': '+683', 'TK': '+690',
+          'IN': '+91', 'PK': '+92', 'BD': '+880', 'LK': '+94', 'MV': '+960',
+          'BT': '+975', 'NP': '+977', 'AF': '+93', 'IR': '+98', 'IQ': '+964',
+          'SA': '+966', 'AE': '+971', 'IL': '+972', 'JO': '+962', 'LB': '+961',
+          'SY': '+963', 'PS': '+970', 'KW': '+965', 'QA': '+974', 'BH': '+973',
+          'OM': '+968', 'YE': '+967', 'EG': '+20', 'LY': '+218', 'TN': '+216',
+          'DZ': '+213', 'MA': '+212', 'SD': '+249', 'SS': '+211', 'ET': '+251',
+          'ER': '+291', 'DJ': '+253', 'SO': '+252', 'KE': '+254', 'UG': '+256',
+          'TZ': '+255', 'RW': '+250', 'BI': '+257', 'MW': '+265', 'ZM': '+260',
+          'ZW': '+263', 'BW': '+267', 'NA': '+264', 'SZ': '+268', 'LS': '+266',
+          'ZA': '+27', 'MG': '+261', 'MU': '+230', 'SC': '+248', 'KM': '+269',
+          'YT': '+262', 'RE': '+262', 'MZ': '+258', 'MW': '+265', 'AO': '+244',
+          'CD': '+243', 'CG': '+242', 'CF': '+236', 'TD': '+235', 'CM': '+237',
+          'GQ': '+240', 'GA': '+241', 'ST': '+239', 'CV': '+238', 'GM': '+220',
+          'GN': '+224', 'GW': '+245', 'SL': '+232', 'LR': '+231', 'CI': '+225',
+          'GH': '+233', 'TG': '+228', 'BJ': '+229', 'NE': '+227', 'BF': '+226',
+          'ML': '+223', 'SN': '+221', 'MR': '+222', 'NG': '+234', 'TD': '+235',
+          'BF': '+226', 'ML': '+223', 'SN': '+221', 'MR': '+222', 'NG': '+234',
+          'BR': '+55', 'AR': '+54', 'CL': '+56', 'UY': '+598', 'PY': '+595',
+          'BO': '+591', 'PE': '+51', 'EC': '+593', 'CO': '+57', 'VE': '+58',
+          'GY': '+592', 'SR': '+597', 'GF': '+594', 'FK': '+500', 'GS': '+500',
+          'MX': '+52', 'GT': '+502', 'BZ': '+501', 'SV': '+503', 'HN': '+504',
+          'NI': '+505', 'CR': '+506', 'PA': '+507', 'CU': '+53', 'JM': '+1876',
+          'HT': '+509', 'DO': '+1809', 'PR': '+1787', 'VI': '+1340', 'AG': '+1268',
+          'AI': '+1264', 'VG': '+1284', 'BQ': '+599', 'CW': '+599', 'SX': '+1721',
+          'KN': '+1869', 'LC': '+1758', 'VC': '+1784', 'GD': '+1473', 'TT': '+1868',
+          'BB': '+1246', 'BS': '+1242', 'TC': '+1649', 'KY': '+1345', 'BM': '+1441',
+          'AW': '+297', 'AN': '+599', 'DM': '+1767', 'MS': '+1664', 'GU': '+1671',
+          'MP': '+1670', 'AS': '+1684', 'UM': '+1'
+        },
+        
+        // Get prefix for country with lazy loading
+        getPrefix: function(countryCode) {
+          if (!countryCode) return null;
+          
+          // Check cache first
+          if (this.cache.has(countryCode)) {
+            return this.cache.get(countryCode);
+          }
+          
+          // Check core prefixes
+          if (this.corePrefixes[countryCode]) {
+            const prefix = this.corePrefixes[countryCode];
+            this.cache.set(countryCode, prefix);
+            return prefix;
+          }
+          
+          // For countries not in core set, return null (can be extended later)
+          return null;
+        },
+        
+        // Check if country has any prefix
+        hasPrefix: function(countryCode) {
+          return this.getPrefix(countryCode) !== null;
+        },
+        
+        // Get all prefixes for validation
+        getAllPrefixes: function() {
+          return Object.values(this.corePrefixes);
+        }
       };
       
       // Phone number regex: allows + at start, numbers, spaces, hyphens, parentheses
@@ -1102,7 +911,7 @@
       
       // Initialize country prefix functionality with delay to ensure DOM is ready
       setTimeout(() => {
-        this.initCountryPrefixLogic(countryPrefixes);
+        this.initCountryPrefixLogic(CountryPrefixManager);
       }, 100);
       
       // Re-bind events on checkout updates
@@ -1116,7 +925,7 @@
         
         // Re-initialize country prefix logic with delay
         setTimeout(() => {
-          this.initCountryPrefixLogic(countryPrefixes);
+          this.initCountryPrefixLogic(CountryPrefixManager);
         }, 100);
       }.bind(this));
     },
@@ -1138,22 +947,16 @@
     },
 
     /**
-     * Initialize country prefix logic for phone field
+     * Initialize country prefix logic for phone field - optimized version
      */
-    initCountryPrefixLogic: function(countryPrefixes) {
+    initCountryPrefixLogic: function(countryPrefixManager) {
       const $countrySelect = $("#billing_country");
       const $phoneField = $("#billing_phone");
       
-      // Debug logging
-      console.log('Initializing country prefix logic...');
-      console.log('Country select found:', $countrySelect.length);
-      console.log('Phone field found:', $phoneField.length);
-      
       if (!$countrySelect.length || !$phoneField.length) {
-        console.log('Required elements not found, retrying...');
         // Retry after a short delay
         setTimeout(() => {
-          this.initCountryPrefixLogic(countryPrefixes);
+          this.initCountryPrefixLogic(countryPrefixManager);
         }, 200);
         return;
       }
@@ -1162,97 +965,50 @@
       $countrySelect.off('change.countryPrefix');
       $phoneField.off('focus.countryPrefix input.countryPrefix');
       
-      // Function to apply country prefix
-      const applyCountryPrefix = function() {
-        const selectedCountry = $countrySelect.val();
-        const currentPhoneValue = $phoneField.val().trim();
-        
-        console.log('Applying country prefix for:', selectedCountry);
-        console.log('Current phone value:', currentPhoneValue);
-        
-        if (!selectedCountry || !countryPrefixes[selectedCountry]) {
-          console.log('No prefix found for country:', selectedCountry);
-          return;
+      // Debounced prefix application to prevent excessive DOM manipulation
+      let prefixTimeout = null;
+      const debouncedApplyPrefix = () => {
+        if (prefixTimeout) {
+          clearTimeout(prefixTimeout);
         }
-        
-        const countryPrefix = countryPrefixes[selectedCountry];
-        console.log('Country prefix:', countryPrefix);
-        
-        // If phone field is empty, add the prefix
-        if (!currentPhoneValue) {
-          console.log('Phone field empty, adding prefix');
-          $phoneField.val(countryPrefix + ' ');
-          $phoneField.focus();
-          // Position cursor after the prefix
-          setTimeout(() => {
-            const prefixLength = countryPrefix.length + 1; // +1 for space
-            $phoneField[0].setSelectionRange(prefixLength, prefixLength);
-          }, 10);
-          return;
-        }
-        
-        // If phone field has content but doesn't start with any prefix, add the country prefix
-        const hasAnyPrefix = Object.values(countryPrefixes).some(prefix => 
-          currentPhoneValue.startsWith(prefix)
-        );
-        
-        if (!hasAnyPrefix && !currentPhoneValue.startsWith('+')) {
-          console.log('Adding prefix to existing number');
-          // Remove any existing numbers at the start and add the country prefix
-          const cleanNumber = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, '');
-          $phoneField.val(countryPrefix + ' ' + cleanNumber);
-          
-          // Position cursor after the prefix
-          setTimeout(() => {
-            const prefixLength = countryPrefix.length + 1; // +1 for space
-            $phoneField[0].setSelectionRange(prefixLength, prefixLength);
-          }, 10);
-        }
+        prefixTimeout = setTimeout(() => {
+          this.applyCountryPrefix($countrySelect, $phoneField, countryPrefixManager);
+        }, 100);
       };
       
-      // Function to remove prefix when country changes
-      const removePreviousPrefix = function() {
-        const currentPhoneValue = $phoneField.val().trim();
-        
-        if (!currentPhoneValue) {
-          return;
+      // Debounced prefix removal
+      let removeTimeout = null;
+      const debouncedRemovePrefix = () => {
+        if (removeTimeout) {
+          clearTimeout(removeTimeout);
         }
-        
-        // Find and remove any existing country prefix
-        Object.values(countryPrefixes).forEach(prefix => {
-          if (currentPhoneValue.startsWith(prefix)) {
-            const numberWithoutPrefix = currentPhoneValue.substring(prefix.length).trim();
-            $phoneField.val(numberWithoutPrefix);
-            return;
-          }
-        });
+        removeTimeout = setTimeout(() => {
+          this.removePreviousPrefix($phoneField, countryPrefixManager);
+        }, 50);
       };
       
-      // Listen for country changes
+      // Single event handler for country changes
       $countrySelect.on('change.countryPrefix', function() {
-        console.log('Country changed to:', $countrySelect.val());
-        // Remove any existing prefix first
-        removePreviousPrefix();
+        debouncedRemovePrefix();
         
-        // Apply new prefix if phone field is not empty
+        // Apply new prefix if phone field has content
         const currentPhoneValue = $phoneField.val().trim();
         if (currentPhoneValue) {
-          applyCountryPrefix();
+          debouncedApplyPrefix();
         }
       });
       
-      // Auto-apply prefix when phone field gets focus and is empty
+      // Single event handler for phone field focus
       $phoneField.on('focus.countryPrefix', function() {
-        console.log('Phone field focused');
         const currentPhoneValue = $phoneField.val().trim();
         const selectedCountry = $countrySelect.val();
         
-        if (!currentPhoneValue && selectedCountry && countryPrefixes[selectedCountry]) {
-          applyCountryPrefix();
+        if (!currentPhoneValue && selectedCountry && countryPrefixManager.hasPrefix(selectedCountry)) {
+          debouncedApplyPrefix();
         }
       });
       
-      // Handle when user starts typing in an empty phone field
+      // Single event handler for phone field input
       $phoneField.on('input.countryPrefix', function() {
         const currentPhoneValue = $phoneField.val().trim();
         const selectedCountry = $countrySelect.val();
@@ -1261,24 +1017,76 @@
         if (currentPhoneValue && 
             /^[0-9]/.test(currentPhoneValue) && 
             selectedCountry && 
-            countryPrefixes[selectedCountry] &&
+            countryPrefixManager.hasPrefix(selectedCountry) &&
             !currentPhoneValue.startsWith('+')) {
           
-          const countryPrefix = countryPrefixes[selectedCountry];
-          const numberWithoutPrefix = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, '');
-          
-          if (numberWithoutPrefix !== currentPhoneValue) {
-            $phoneField.val(countryPrefix + ' ' + numberWithoutPrefix);
-            
-            // Position cursor at the end
-            setTimeout(() => {
-              $phoneField[0].setSelectionRange($phoneField.val().length, $phoneField.val().length);
-            }, 10);
-          }
+          debouncedApplyPrefix();
         }
       });
+    },
+
+    /**
+     * Apply country prefix with optimized DOM manipulation
+     */
+    applyCountryPrefix: function($countrySelect, $phoneField, countryPrefixManager) {
+      const selectedCountry = $countrySelect.val();
+      const currentPhoneValue = $phoneField.val().trim();
       
-      console.log('Country prefix logic initialized successfully');
+      if (!selectedCountry || !countryPrefixManager.hasPrefix(selectedCountry)) {
+        return;
+      }
+      
+      const countryPrefix = countryPrefixManager.getPrefix(selectedCountry);
+      
+      // If phone field is empty, add the prefix
+      if (!currentPhoneValue) {
+        $phoneField.val(countryPrefix + ' ');
+        $phoneField.focus();
+        // Position cursor after the prefix
+        setTimeout(() => {
+          const prefixLength = countryPrefix.length + 1; // +1 for space
+          $phoneField[0].setSelectionRange(prefixLength, prefixLength);
+        }, 10);
+        return;
+      }
+      
+      // If phone field has content but doesn't start with any prefix, add the country prefix
+      const hasAnyPrefix = countryPrefixManager.getAllPrefixes().some(prefix => 
+        currentPhoneValue.startsWith(prefix)
+      );
+      
+      if (!hasAnyPrefix && !currentPhoneValue.startsWith('+')) {
+        // Remove any existing numbers at the start and add the country prefix
+        const cleanNumber = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, '');
+        $phoneField.val(countryPrefix + ' ' + cleanNumber);
+        
+        // Position cursor after the prefix
+        setTimeout(() => {
+          const prefixLength = countryPrefix.length + 1; // +1 for space
+          $phoneField[0].setSelectionRange(prefixLength, prefixLength);
+        }, 10);
+      }
+    },
+
+    /**
+     * Remove previous prefix with optimized DOM manipulation
+     */
+    removePreviousPrefix: function($phoneField, countryPrefixManager) {
+      const currentPhoneValue = $phoneField.val().trim();
+      
+      if (!currentPhoneValue) {
+        return;
+      }
+      
+      // Find and remove any existing country prefix
+      const prefixes = countryPrefixManager.getAllPrefixes();
+      for (const prefix of prefixes) {
+        if (currentPhoneValue.startsWith(prefix)) {
+          const numberWithoutPrefix = currentPhoneValue.substring(prefix.length).trim();
+          $phoneField.val(numberWithoutPrefix);
+          break; // Only remove the first matching prefix
+        }
+      }
     },
 
     /**
@@ -1607,6 +1415,7 @@
 
   /**
    * Expose CheckoutManager globally for debugging
+   * CartManager and CouponManager are already exposed from app.js
    */
   window.CheckoutManager = CheckoutManager;
 })(jQuery);

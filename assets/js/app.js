@@ -1,6 +1,515 @@
 (function ($) {
   "use strict";
 
+  /**
+   * Unified Cart Manager - Prevents cart fragment refresh conflicts
+   * Enhanced with proper queuing, priority system, and conflict resolution
+   */
+  const CartManager = {
+    // Centralized state management
+    refreshQueue: [],
+    isRefreshing: false,
+    refreshTimeout: null,
+    debounceDelay: 150, // Increased debounce to 150ms for better stability
+    maxRetries: 3,
+    retryDelay: 200,
+    operationPriorities: {
+      'wc_fragment_refresh': 1, // Highest priority
+      'update_checkout': 2,
+      'added_to_cart': 3,
+      'removed_from_cart': 3
+    },
+
+    /**
+     * Queue a cart refresh operation with priority
+     * @param {string} operation - Type of operation
+     * @param {Object} options - Additional options including priority
+     */
+    queueRefresh: function (operation, options = {}) {
+      const priority = options.priority || this.operationPriorities[operation] || 5;
+      const operationData = { operation, priority, timestamp: Date.now(), retries: 0 };
+
+      // Remove existing operation of same type to prevent duplicates
+      this.refreshQueue = this.refreshQueue.filter(item => item.operation !== operation);
+      
+      // Add new operation
+      this.refreshQueue.push(operationData);
+
+      // Sort by priority (lower number = higher priority)
+      this.refreshQueue.sort((a, b) => a.priority - b.priority);
+
+      // Clear existing timeout
+      if (this.refreshTimeout) {
+        clearTimeout(this.refreshTimeout);
+      }
+
+      // Debounce the refresh
+      this.refreshTimeout = setTimeout(() => {
+        this.executeRefreshQueue();
+      }, this.debounceDelay);
+    },
+
+    /**
+     * Execute all queued refresh operations with enhanced conflict resolution
+     */
+    executeRefreshQueue: function () {
+      if (this.isRefreshing) {
+        // If already refreshing, queue another refresh after completion
+        setTimeout(() => this.executeRefreshQueue(), this.retryDelay);
+        return;
+      }
+
+      if (this.refreshQueue.length === 0) {
+        return;
+      }
+
+      this.isRefreshing = true;
+      const operations = [...this.refreshQueue];
+      this.refreshQueue = [];
+
+      // Execute operations with proper timing and error handling
+      this.executeOperations(operations);
+    },
+
+    /**
+     * Execute operations in the correct order with retry logic
+     */
+    executeOperations: function (operations) {
+      if (operations.length === 0) {
+        this.isRefreshing = false;
+        return;
+      }
+
+      const operationData = operations.shift();
+      const { operation, retries } = operationData;
+
+      // Execute operation with error handling
+      this.executeOperation(operation)
+        .then(() => {
+          // Success - continue with next operation
+          setTimeout(() => {
+            this.executeOperations(operations);
+          }, 50);
+        })
+        .catch((error) => {
+          console.error('Error executing cart operation:', operation, error);
+          
+          // Retry logic
+          if (retries < this.maxRetries) {
+            operationData.retries++;
+            operations.unshift(operationData); // Put back at front of queue
+          }
+          
+          // Continue with next operation after delay
+          setTimeout(() => {
+            this.executeOperations(operations);
+          }, this.retryDelay);
+        });
+    },
+
+    /**
+     * Execute a single operation with Promise-based error handling
+     */
+    executeOperation: function (operation) {
+      return new Promise((resolve, reject) => {
+        try {
+          // Use requestAnimationFrame for smoother execution
+          requestAnimationFrame(() => {
+            try {
+              switch (operation) {
+                case 'update_checkout':
+                  $(document.body).trigger('update_checkout');
+                  break;
+                case 'wc_fragment_refresh':
+                  $(document.body).trigger('wc_fragment_refresh');
+                  break;
+                case 'added_to_cart':
+                  // Only trigger if not already triggered
+                  if (!$(document.body).data('added-to-cart-triggered')) {
+                    $(document.body).trigger('added_to_cart');
+                    $(document.body).data('added-to-cart-triggered', Date.now());
+                    // Clear flag after 1 second
+                    setTimeout(() => {
+                      $(document.body).removeData('added-to-cart-triggered');
+                    }, 1000);
+                  }
+                  break;
+                case 'removed_from_cart':
+                  // Only trigger if not already triggered
+                  if (!$(document.body).data('removed-from-cart-triggered')) {
+                    $(document.body).trigger('removed_from_cart');
+                    $(document.body).data('removed-from-cart-triggered', Date.now());
+                    // Clear flag after 1 second
+                    setTimeout(() => {
+                      $(document.body).removeData('removed-from-cart-triggered');
+                    }, 1000);
+                  }
+                  break;
+                default:
+                  console.warn('Unknown cart operation:', operation);
+              }
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    },
+
+    /**
+     * Force immediate refresh (bypasses queue for urgent operations)
+     */
+    forceRefresh: function (operations = ['update_checkout', 'wc_fragment_refresh']) {
+      // Clear any pending queue
+      this.refreshQueue = [];
+      if (this.refreshTimeout) {
+        clearTimeout(this.refreshTimeout);
+      }
+
+      // Execute immediately with priority
+      const operationData = operations.map(op => ({
+        operation: op,
+        priority: this.operationPriorities[op] || 1,
+        timestamp: Date.now(),
+        retries: 0
+      }));
+      
+      this.executeOperations(operationData);
+    },
+
+    /**
+     * Check if cart is currently refreshing
+     */
+    isCurrentlyRefreshing: function () {
+      return this.isRefreshing;
+    },
+
+    /**
+     * Get queue status for debugging
+     */
+    getQueueStatus: function () {
+      return {
+        isRefreshing: this.isRefreshing,
+        queueLength: this.refreshQueue.length,
+        queue: this.refreshQueue.map(item => ({
+          operation: item.operation,
+          priority: item.priority,
+          retries: item.retries
+        }))
+      };
+    }
+  };
+
+  /**
+   * Unified Coupon Manager - Shared between checkout and cart
+   * Prevents race conditions and duplicate coupon applications
+   */
+  const CouponManager = {
+    // Centralized state management
+    processingQueue: new Map(), // Track coupons being processed
+    retryTimeouts: new Map(), // Track retry attempts
+    maxRetries: 2,
+    retryDelay: 1000,
+    clearDelay: 3000, // Clear processing flag after 3 seconds
+
+    /**
+     * Apply coupon with race condition prevention
+     * @param {string} couponCode - The coupon code to apply
+     * @param {Object} options - Configuration options
+     */
+    applyCoupon: function (couponCode, options = {}) {
+      const normalizedCode = couponCode.toUpperCase().trim();
+
+      // Check if already applied
+      const appliedCoupons = this.getAppliedCoupons();
+      if (appliedCoupons.includes(normalizedCode)) {
+        this.clearProcessingFlag(normalizedCode);
+        if (options.onSuccess) options.onSuccess();
+        return;
+      }
+
+      // Check if already being processed
+      if (this.isProcessing(normalizedCode)) {
+        return; // Already being processed, let it complete
+      }
+
+      // Mark as processing
+      this.setProcessing(normalizedCode);
+
+      // Apply coupon based on context
+      if (options.isCheckout) {
+        this.applyCouponElegantly(couponCode, options);
+      } else {
+        this.applyCouponViaAjax(couponCode, options);
+      }
+    },
+
+    /**
+     * Check if coupon is currently being processed
+     */
+    isProcessing: function (couponCode) {
+      const normalizedCode = couponCode.toUpperCase();
+      const processingItem = this.processingQueue.get(normalizedCode);
+
+      if (!processingItem) return false;
+
+      // Check if processing has timed out (3 seconds)
+      if (Date.now() - processingItem.timestamp > this.clearDelay) {
+        this.processingQueue.delete(normalizedCode);
+        return false;
+      }
+
+      return true;
+    },
+
+    /**
+     * Mark coupon as being processed
+     */
+    setProcessing: function (couponCode) {
+      const normalizedCode = couponCode.toUpperCase();
+      this.processingQueue.set(normalizedCode, {
+        timestamp: Date.now(),
+        retries: 0
+      });
+    },
+
+    /**
+     * Clear processing flag
+     */
+    clearProcessingFlag: function (couponCode) {
+      const normalizedCode = couponCode.toUpperCase();
+      this.processingQueue.delete(normalizedCode);
+    },
+
+    /**
+     * Get currently applied coupons
+     */
+    getAppliedCoupons: function () {
+      const appliedCoupons = [];
+
+      // Check WooCommerce's applied coupons
+      if (
+        typeof wc_add_to_cart_params !== "undefined" &&
+        wc_add_to_cart_params.applied_coupons
+      ) {
+        appliedCoupons.push(...wc_add_to_cart_params.applied_coupons);
+      }
+
+      // Also check from cart data if available
+      if (
+        window.wc_cart_fragments_params &&
+        window.wc_cart_fragments_params.cart_hash
+      ) {
+        // Try to get from any visible coupon displays
+        $(
+          ".applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code"
+        ).each(function () {
+          const code = $(this).text().trim();
+          if (code && !appliedCoupons.includes(code)) {
+            appliedCoupons.push(code);
+          }
+        });
+      }
+
+      return appliedCoupons.map((code) => code.toUpperCase());
+    },
+
+    /**
+     * Apply coupon via AJAX (for cart/mini-cart)
+     */
+    applyCouponViaAjax: function (couponCode, options = {}) {
+      const $couponForm = options.$form || jQuery(".mini-cart-coupon-form");
+      const normalizedCode = couponCode.toUpperCase();
+
+      // Show loading state
+      if ($couponForm.length) {
+        const $input = $couponForm.find(".coupon-code-input");
+        const $button = $couponForm.find(".apply-coupon-btn");
+
+        if ($input.length && $button.length) {
+          $input.val("Loading...");
+          $button.addClass("loading").prop("disabled", true).text("Applying...");
+        }
+      }
+
+      // Apply coupon via AJAX
+      const ajaxRequest = jQuery.ajax({
+        type: "POST",
+        url: window.primefit_cart_params
+          ? window.primefit_cart_params.ajax_url
+          : "/wp-admin/admin-ajax.php",
+        data: {
+          action: "apply_coupon",
+          security: window.primefit_cart_params
+            ? window.primefit_cart_params.apply_coupon_nonce
+            : "",
+          coupon_code: couponCode,
+        },
+        timeout: 8000,
+        success: (response) => {
+          if (response.success) {
+            this.clearProcessingFlag(normalizedCode);
+
+            // Clear loading state
+            if ($couponForm.length) {
+              $couponForm.find(".coupon-code-input").val("");
+              $couponForm.find(".apply-coupon-btn")
+                .removeClass("loading")
+                .prop("disabled", false)
+                .text("APPLY");
+            }
+
+            // Refresh cart fragments using unified CartManager
+            CartManager.queueRefresh("update_checkout");
+            CartManager.queueRefresh("wc_fragment_refresh");
+
+            // Show success message
+            if ($couponForm.length && options.showSuccessMessage !== false) {
+              $couponForm.after(
+                '<div class="coupon-message success">Coupon applied successfully!</div>'
+              );
+              setTimeout(() => jQuery(".coupon-message").fadeOut(), 3000);
+            }
+
+            if (options.onSuccess) options.onSuccess();
+          } else {
+            this.handleCouponError(normalizedCode, response, $couponForm, options);
+          }
+        },
+        error: (jqXHR, textStatus, errorThrown) => {
+          this.handleCouponError(normalizedCode, { data: this.getErrorMessage(textStatus) }, $couponForm, options);
+        },
+        complete: () => {
+          // Clean up after delay
+          setTimeout(() => this.clearProcessingFlag(normalizedCode), this.clearDelay);
+        }
+      });
+    },
+
+    /**
+     * Apply coupon elegantly (for checkout page)
+     */
+    applyCouponElegantly: function (couponCode, options = {}) {
+      const $couponSection = options.$section || $(".coupon-section");
+      const $applyBtn = $couponSection.find(".coupon-apply-btn");
+      const $input = $couponSection.find(".coupon-input");
+      const normalizedCode = couponCode.toUpperCase();
+
+      // Prevent duplicate submissions
+      if ($applyBtn.prop("disabled")) {
+        return;
+      }
+
+      // Show loading state
+      $applyBtn.text("Applying...").prop("disabled", true);
+
+      // Use requestAnimationFrame for smoother UI updates
+      requestAnimationFrame(() => {
+        try {
+          // Look for WooCommerce's native coupon form
+          let $wcCouponInput = $(
+            '.woocommerce-form-coupon input[name="coupon_code"]'
+          );
+          let $wcCouponBtn = $(
+            '.woocommerce-form-coupon button[name="apply_coupon"]'
+          );
+
+          // If WooCommerce coupon form exists, use it
+          if ($wcCouponInput.length && $wcCouponBtn.length) {
+            $wcCouponInput.val(couponCode);
+            $wcCouponBtn.trigger("click");
+          } else {
+            // Create a hidden WooCommerce-compatible form and submit it
+            const sanitizedCouponCode = couponCode.replace(/[<>\"'&]/g, '');
+            const $hiddenForm = $(`
+              <form class="woocommerce-form-coupon" method="post" style="display: none;">
+                <input type="text" name="coupon_code" value="${sanitizedCouponCode}" />
+                <button type="submit" name="apply_coupon" value="Apply coupon">Apply</button>
+              </form>
+            `);
+
+            $("body").append($hiddenForm);
+            $hiddenForm.submit();
+            $hiddenForm.remove();
+          }
+
+          // Reset UI state with reduced timeout
+          setTimeout(() => {
+            $applyBtn.text("Apply").prop("disabled", false);
+            $input.val("");
+            this.clearProcessingFlag(normalizedCode);
+            if (options.onSuccess) options.onSuccess();
+          }, 1500);
+        } catch (error) {
+          this.handleCouponError(normalizedCode, { data: error.message }, $couponSection, options);
+        }
+      });
+    },
+
+    /**
+     * Handle coupon application errors
+     */
+    handleCouponError: function (normalizedCode, response, $form, options) {
+      this.clearProcessingFlag(normalizedCode);
+
+      // Clear loading state
+      if ($form.length) {
+        $form.find("input").val("");
+        $form.find("button").removeClass("loading").prop("disabled", false).text("APPLY");
+      }
+
+      // Show error message
+      const errorMsg = response.data || "Failed to apply coupon";
+      if ($form.length && options.showErrorMessage !== false) {
+        $form.after(
+          '<div class="coupon-message error">' + errorMsg.replace(/[<>\"'&]/g, '') + "</div>"
+        );
+        setTimeout(() => jQuery(".coupon-message").fadeOut(), 5000);
+      }
+
+      if (options.onError) options.onError(errorMsg);
+    },
+
+    /**
+     * Get user-friendly error message
+     */
+    getErrorMessage: function (textStatus) {
+      const messages = {
+        timeout: "Request timed out. Please check your connection.",
+        abort: "Request was cancelled.",
+        default: "Network error. Please try again."
+      };
+      return messages[textStatus] || messages.default;
+    },
+
+    /**
+     * Clean URL after coupon application
+     */
+    cleanUrlAfterCouponApplication: function (couponCode) {
+      setTimeout(() => {
+        try {
+          if (window.history && window.history.replaceState) {
+            const url = new URL(window.location);
+            url.searchParams.delete("coupon");
+
+            if (url.searchParams.toString() || url.search === "?coupon=" + encodeURIComponent(couponCode)) {
+              window.history.replaceState(
+                {},
+                document.title,
+                url.pathname + url.search + url.hash
+              );
+            }
+          }
+        } catch (e) {
+          // Ignore URL manipulation errors
+        }
+      }, this.clearDelay);
+    }
+  };
+
   // Prevent accidental re-adding product on refresh when URL has add-to-cart params
   // and handle URL coupon detection
   $(function () {
@@ -49,7 +558,10 @@
 
           // Apply the coupon with a slight delay to ensure DOM is ready
           setTimeout(function () {
-            applyCouponFromUrl(couponCode.trim());
+            CouponManager.applyCoupon(couponCode.trim(), {
+              $form: jQuery(".mini-cart-coupon-form"),
+              onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode.trim())
+            });
           }, 500);
         }
       } else {
@@ -68,40 +580,9 @@
     });
   });
 
-  // Function to get currently applied coupons
+  // Function to get currently applied coupons (DEPRECATED - use CouponManager.getAppliedCoupons instead)
   function getAppliedCoupons() {
-    var appliedCoupons = [];
-
-    // Check WooCommerce's applied coupons
-    if (
-      typeof wc_add_to_cart_params !== "undefined" &&
-      wc_add_to_cart_params.applied_coupons
-    ) {
-      appliedCoupons.push.apply(
-        appliedCoupons,
-        wc_add_to_cart_params.applied_coupons
-      );
-    }
-
-    // Also check from cart data if available
-    if (
-      window.wc_cart_fragments_params &&
-      window.wc_cart_fragments_params.cart_hash
-    ) {
-      // Try to get from any visible coupon displays
-      jQuery(
-        ".applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code"
-      ).each(function () {
-        var code = jQuery(this).text().trim();
-        if (code && appliedCoupons.indexOf(code) === -1) {
-          appliedCoupons.push(code);
-        }
-      });
-    }
-
-    return appliedCoupons.map(function (code) {
-      return code.toUpperCase();
-    });
+    return CouponManager.getAppliedCoupons();
   }
 
   // Smart lazy loading with intersection observer
@@ -238,159 +719,16 @@
   }
 
   // Function to apply coupon from URL parameter - optimized with better error handling
-  // FIXED: Added state management to prevent race conditions
+  // Now uses unified CouponManager for race condition prevention
   function applyCouponFromUrl(couponCode) {
-
-    // Check if coupon is already applied
-    var appliedCoupons = getAppliedCoupons();
-    if (appliedCoupons.includes(couponCode.toUpperCase())) {
-      // Clear processing flag since we're done
-      delete window.primefitCouponProcessing;
-      return;
-    }
-
-    // Show loading state if mini cart coupon form exists
-    var $couponForm = jQuery(".mini-cart-coupon-form");
-    if ($couponForm.length) {
-      var $input = $couponForm.find(".coupon-code-input");
-      var $button = $couponForm.find(".apply-coupon-btn");
-
-      if ($input.length && $button.length) {
-        $input.val("Loading...");
-        $button.addClass("loading").prop("disabled", true).text("Applying...");
-      }
-    }
-
-    // Apply coupon via AJAX using existing handler with improved error handling
-    // FIXED: Added request abortion and better error recovery
-    var ajaxRequest = jQuery.ajax({
-      type: "POST",
-      url: window.primefit_cart_params
-        ? window.primefit_cart_params.ajax_url
-        : "/wp-admin/admin-ajax.php",
-      data: {
-        action: "apply_coupon",
-        security: window.primefit_cart_params
-          ? window.primefit_cart_params.apply_coupon_nonce
-          : "",
-        coupon_code: couponCode,
-      },
-      timeout: 8000, // Reduced timeout to 8 seconds for better UX
-      xhr: function() {
-        // Enable request abortion
-        var xhr = jQuery.ajaxSettings.xhr();
-        if (xhr) {
-          // Store reference for potential abortion
-          ajaxRequest.abortController = { xhr: xhr };
-        }
-        return xhr;
-      },
-      beforeSend: function(jqXHR, settings) {
-        // Store request reference for cleanup
-        ajaxRequest.jqXHR = jqXHR;
-      },
-      success: function (response) {
-        if (response.success) {
-
-          // Clear loading state
-          if ($couponForm.length) {
-            $input.val("");
-            $button
-              .removeClass("loading")
-              .prop("disabled", false)
-              .text("APPLY");
-          }
-
-          // Refresh cart fragments efficiently
-          jQuery(document.body).trigger("update_checkout");
-          jQuery(document.body).trigger("wc_fragment_refresh");
-
-          // Show success message
-          if ($couponForm.length) {
-            $couponForm.after(
-              '<div class="coupon-message success">Coupon applied successfully!</div>'
-            );
-
-            setTimeout(function () {
-              jQuery(".coupon-message").fadeOut();
-            }, 3000);
-          }
-        } else {
-
-          // Clear loading state
-          if ($couponForm.length) {
-            $input.val("");
-            $button
-              .removeClass("loading")
-              .prop("disabled", false)
-              .text("APPLY");
-
-            // Show error message with sanitized content
-            var errorMsg = response.data || "Failed to apply coupon";
-            if (typeof errorMsg === 'string') {
-              $couponForm.after(
-                '<div class="coupon-message error">' + errorMsg.replace(/[<>\"'&]/g, '') + "</div>"
-              );
-            }
-
-            setTimeout(function () {
-              jQuery(".coupon-message").fadeOut();
-            }, 5000);
-          }
-        }
-      },
-      error: function (jqXHR, textStatus, errorThrown) {
-
-        // Handle different error types
-        var errorMessage = "Network error. Please try again.";
-        if (textStatus === "timeout") {
-          errorMessage = "Request timed out. Please check your connection.";
-        } else if (textStatus === "abort") {
-          errorMessage = "Request was cancelled.";
-        }
-
-        if ($couponForm.length) {
-          $input.val("");
-          $button.removeClass("loading").prop("disabled", false).text("APPLY");
-
-          $couponForm.after(
-            '<div class="coupon-message error">' + errorMessage + "</div>"
-          );
-
-          setTimeout(function () {
-            jQuery(".coupon-message").fadeOut();
-          }, 5000);
-        }
-      },
-      complete: function () {
-        // Clear processing flag since coupon application attempt is complete
-        if (window.primefitCouponProcessing) {
-          delete window.primefitCouponProcessing;
-        }
-
-        // Clean up request references to prevent memory leaks
-        if (ajaxRequest.jqXHR) {
-          ajaxRequest.jqXHR = null;
-        }
-        if (ajaxRequest.abortController) {
-          ajaxRequest.abortController = null;
-        }
-
-        // Clean URL after application attempt
-        cleanUrlAfterCouponApplication(couponCode);
-      },
+    CouponManager.applyCoupon(couponCode, {
+      $form: jQuery(".mini-cart-coupon-form"),
+      onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode)
     });
-
-    // Add request abortion capability for cleanup
-    applyCouponFromUrl.abort = function() {
-      if (ajaxRequest.jqXHR && ajaxRequest.jqXHR.readyState !== 4) {
-        ajaxRequest.jqXHR.abort();
-      }
-    };
   }
 
   // Function to check for pending coupon from session
-  // FIXED: Added state management to prevent race conditions
+  // Now uses unified CouponManager for race condition prevention
   function checkForPendingCouponFromSession() {
     // Check for pending coupon data from cart fragments (hidden element)
     var $couponData = jQuery(".primefit-coupon-data");
@@ -398,28 +736,17 @@
       var pendingCoupon = $couponData.data("pending-coupon");
       if (pendingCoupon && pendingCoupon.trim()) {
 
-        // Check if coupon is already applied
-        var appliedCoupons = getAppliedCoupons();
-        if (appliedCoupons.includes(pendingCoupon.toUpperCase())) {
-          return;
-        }
-
-        // CRITICAL: Check if coupon is already being processed to prevent race conditions
-        if (window.primefitCouponProcessing && window.primefitCouponProcessing === pendingCoupon.toUpperCase()) {
-          return;
-        }
-
-        // Mark as processing to prevent race conditions
-        window.primefitCouponProcessing = pendingCoupon.toUpperCase();
-
-        // Apply the pending coupon with additional safety check
+        // Use unified CouponManager to apply pending coupon
         setTimeout(function () {
           // Double-check that WooCommerce is loaded before applying
           if (
             typeof wc_add_to_cart_params !== "undefined" ||
             jQuery(".woocommerce-mini-cart").length
           ) {
-            applyCouponFromUrl(pendingCoupon.trim());
+            CouponManager.applyCoupon(pendingCoupon.trim(), {
+              $form: jQuery(".mini-cart-coupon-form"),
+              onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+            });
           } else {
             // Try again after another delay
             setTimeout(function () {
@@ -427,10 +754,10 @@
                 typeof wc_add_to_cart_params !== "undefined" ||
                 jQuery(".woocommerce-mini-cart").length
               ) {
-                applyCouponFromUrl(pendingCoupon.trim());
-              } else {
-                // Clear processing flag on failure
-                delete window.primefitCouponProcessing;
+                CouponManager.applyCoupon(pendingCoupon.trim(), {
+                  $form: jQuery(".mini-cart-coupon-form"),
+                  onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+                });
               }
             }, 2000);
           }
@@ -912,9 +1239,9 @@
             }, 100);
           }
 
-          // Trigger WooCommerce cart update events
-          $(document.body).trigger("update_checkout");
-          $(document.body).trigger("wc_fragment_refresh");
+          // Trigger WooCommerce cart update events using unified CartManager
+          CartManager.queueRefresh("update_checkout");
+          CartManager.queueRefresh("wc_fragment_refresh");
           // Note: Avoid triggering added_to_cart without required params
 
           // Check if cart is empty after quantity update
@@ -1033,9 +1360,9 @@
           } else {
           }
 
-          // Trigger WooCommerce cart update events
-          $(document.body).trigger("update_checkout");
-          $(document.body).trigger("wc_fragment_refresh");
+          // Trigger WooCommerce cart update events using unified CartManager
+          CartManager.queueRefresh("update_checkout");
+          CartManager.queueRefresh("wc_fragment_refresh");
           // Note: Avoid triggering removed_from_cart without required params
         } else {
           // Remove loading state and fade class on error
@@ -1836,76 +2163,23 @@
 
   // Mini Cart Enhancements
 
-  // Handle coupon form submission in mini cart
+  // Handle coupon form submission in mini cart - now uses unified CouponManager
   $(document).on("submit", ".mini-cart-coupon-form", function (e) {
     e.preventDefault();
 
     const $form = $(this);
     const $input = $form.find(".coupon-code-input");
-    const $button = $form.find(".apply-coupon-btn");
     const couponCode = $input.val().trim();
 
     if (!couponCode) {
       return;
     }
 
-    // Show loading state
-    $button.addClass("loading").prop("disabled", true).text("Applying...");
-
-    // Apply coupon via AJAX
-    $.ajax({
-      type: "POST",
-      url: primefit_cart_params.ajax_url,
-      data: {
-        action: "apply_coupon",
-        security: primefit_cart_params.apply_coupon_nonce,
-        coupon_code: couponCode,
-      },
-      success: function (response) {
-        if (response.success) {
-          // Clear the input
-          $input.val("");
-
-          // Refresh cart fragments
-          $(document.body).trigger("update_checkout");
-          $(document.body).trigger("wc_fragment_refresh");
-
-          // Show success message
-          $form.after(
-            '<div class="coupon-message success">Coupon applied successfully!</div>'
-          );
-
-          setTimeout(function () {
-            $(".coupon-message").fadeOut();
-          }, 3000);
-        } else {
-          // Show error message
-          let errorMsg = response.data || "Failed to apply coupon";
-          $form.after(
-            '<div class="coupon-message error">' + errorMsg + "</div>"
-          );
-
-          setTimeout(function () {
-            $(".coupon-message").fadeOut();
-          }, 5000);
-        }
-      },
-      error: function () {
-        $form.after(
-          '<div class="coupon-message error">Network error. Please try again.</div>'
-        );
-        setTimeout(function () {
-          $(".coupon-message").fadeOut();
-        }, 5000);
-      },
-      complete: function () {
-        // Remove loading state
-        $button.removeClass("loading").prop("disabled", false).text("APPLY");
-      },
-    });
+    // Use unified CouponManager
+    CouponManager.applyCoupon(couponCode, { $form });
   });
 
-  // Handle coupon removal
+  // Handle coupon removal - now uses unified CouponManager
   $(document).on("click", ".remove-coupon", function (e) {
     e.preventDefault();
 
@@ -1930,12 +2204,14 @@
       },
       success: function (response) {
         if (response.success) {
-          // Refresh cart fragments
-          $(document.body).trigger("update_checkout");
-          $(document.body).trigger("wc_fragment_refresh");
+          // Refresh cart fragments using unified CartManager
+          CartManager.queueRefresh("update_checkout");
+          CartManager.queueRefresh("wc_fragment_refresh");
         }
       },
       error: function () {
+        // Remove loading state on error
+        $button.removeClass("loading").prop("disabled", false);
       },
       complete: function () {
         // Remove loading state
@@ -2126,8 +2402,8 @@
     $sizeOption.removeClass("loading").prop("disabled", false);
     $colorSwatch.removeClass("loading");
 
-    // Trigger cart fragment refresh
-    $(document.body).trigger("wc_fragment_refresh");
+    // Trigger cart fragment refresh using unified CartManager
+    CartManager.queueRefresh("wc_fragment_refresh");
 
     // Open mini cart automatically after a short delay
     setTimeout(function () {
@@ -2463,4 +2739,9 @@
       }
     );
   });
+  /**
+   * Expose CartManager and CouponManager globally for debugging
+   */
+  window.CartManager = CartManager;
+  window.CouponManager = CouponManager;
 })(jQuery);

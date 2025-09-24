@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Note: WooCommerce availability will be checked in individual functions
+// to allow the discount system to load even if WooCommerce isn't ready yet
+
 /**
  * Create custom database table for discount code tracking
  * Note: Using theme activation instead of plugin activation
@@ -842,35 +845,83 @@ function primefit_generate_weekly_report_html( $weekly_stats, $coupon_stats, $to
 /**
  * Add settings page for weekly report configuration
  */
-add_action( 'admin_menu', 'primefit_add_coupon_analytics_menu' );
+// Use a later hook to ensure WooCommerce is fully loaded
+add_action( 'admin_menu', 'primefit_add_coupon_analytics_menu', 25 );
 function primefit_add_coupon_analytics_menu() {
-	add_submenu_page(
-		'woocommerce',
+	// Only add menu if WooCommerce is available and fully initialized
+	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_coupons' ) ) {
+		// Debug: Log why menu is not being added
+		error_log( 'PrimeFit: Coupon Analytics menu not added - WooCommerce not available' );
+		return;
+	}
+	
+	// Add as standalone top-level admin menu page
+	$result = add_menu_page(
 		__( 'Coupon Analytics', 'primefit' ),
 		__( 'Coupon Analytics', 'primefit' ),
 		'manage_woocommerce',
 		'primefit-coupon-analytics',
-		'primefit_coupon_analytics_page'
+		'primefit_coupon_analytics_page',
+		'dashicons-chart-bar', // Use chart icon
+		30 // Position after WooCommerce
 	);
+	
+	// Debug: Log if menu was added successfully
+	if ( $result ) {
+		error_log( 'PrimeFit: Coupon Analytics menu added successfully' );
+		// Add admin notice to confirm menu was added
+		add_action( 'admin_notices', function() {
+			if ( current_user_can( 'manage_woocommerce' ) ) {
+				echo '<div class="notice notice-success is-dismissible"><p><strong>PrimeFit:</strong> Coupon Analytics menu has been added successfully!</p></div>';
+			}
+		});
+	} else {
+		error_log( 'PrimeFit: Failed to add Coupon Analytics menu' );
+	}
 }
 
 /**
  * Display coupon analytics page
  */
 function primefit_coupon_analytics_page() {
-	// Ensure WooCommerce is loaded
-	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_coupons' ) ) {
-		wp_die( __( 'WooCommerce is required for coupon analytics.', 'primefit' ) );
+	// Debug: Log that the analytics page function is being called
+	error_log( 'PrimeFit: Coupon Analytics page function called' );
+	
+	// Ensure WooCommerce is loaded and fully initialized
+	if ( ! class_exists( 'WooCommerce' ) ) {
+		wp_die( __( 'WooCommerce plugin is not installed or activated.', 'primefit' ) );
+	}
+	
+	// Check if WooCommerce is properly initialized
+	if ( ! function_exists( 'wc_get_coupons' ) ) {
+		// Try to initialize WooCommerce if it's not fully loaded
+		if ( function_exists( 'WC' ) && WC() ) {
+			WC()->init();
+		}
+		
+		// Check again after initialization attempt
+		if ( ! function_exists( 'wc_get_coupons' ) ) {
+			wp_die( __( 'WooCommerce is not properly initialized. Please refresh the page or contact support.', 'primefit' ) );
+		}
+	}
+	
+	// Additional check for WooCommerce instance
+	if ( ! WC() || ! WC()->cart ) {
+		wp_die( __( 'WooCommerce instance is not available. Please refresh the page.', 'primefit' ) );
 	}
 
 	// Get date range (default to last 30 days)
 	$start_date = isset( $_GET['start_date'] ) ? sanitize_text_field( $_GET['start_date'] ) : date( 'Y-m-d', strtotime( '-30 days' ) );
 	$end_date = isset( $_GET['end_date'] ) ? sanitize_text_field( $_GET['end_date'] ) : current_time( 'Y-m-d' );
 
-	// Get analytics data
-	$overall_stats = primefit_get_discount_stats( null, null, $start_date, $end_date );
-	$coupons = wc_get_coupons( array( 'posts_per_page' => -1 ) );
-	$coupon_stats = array();
+	// Get analytics data with error handling
+	try {
+		$overall_stats = primefit_get_discount_stats( null, null, $start_date, $end_date );
+		$coupons = wc_get_coupons( array( 'posts_per_page' => -1 ) );
+		$coupon_stats = array();
+	} catch ( Exception $e ) {
+		wp_die( __( 'Error loading coupon data: ', 'primefit' ) . $e->getMessage() );
+	}
 
 	foreach ( $coupons as $coupon ) {
 		$stats = primefit_get_discount_stats( $coupon->get_code(), null, $start_date, $end_date );

@@ -2647,4 +2647,116 @@
       window.ajaxAddToCartInstance = new AjaxAddToCart(); // Initialize AJAX cart functionality
     }
   });
+  /**
+   * Size Guide Modal Functionality
+   */
+  class SizeGuideModal {
+    constructor() {
+      this.modal = document.getElementById('size-guide-modal');
+      this.modalImage = document.getElementById('size-guide-modal-image');
+      this.closeButton = document.querySelector('.size-guide-modal-close');
+      this.overlay = document.querySelector('.size-guide-modal-overlay');
+      this.isOpen = false;
+      
+      this.init();
+    }
+
+    init() {
+      this.bindEvents();
+    }
+
+    bindEvents() {
+      // Handle size guide link clicks
+      document.addEventListener('click', (e) => {
+        const sizeGuideLink = e.target.closest('.size-guide-link');
+        if (sizeGuideLink) {
+          e.preventDefault();
+          const imageUrl = sizeGuideLink.getAttribute('data-size-guide-image');
+          if (imageUrl) {
+            this.openModal(imageUrl);
+          }
+        }
+      });
+
+      // Handle close button clicks
+      if (this.closeButton) {
+        this.closeButton.addEventListener('click', () => {
+          this.closeModal();
+        });
+      }
+
+      // Handle overlay clicks
+      if (this.overlay) {
+        this.overlay.addEventListener('click', () => {
+          this.closeModal();
+        });
+      }
+
+      // Handle escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen) {
+          this.closeModal();
+        }
+      });
+    }
+
+    openModal(imageUrl) {
+      if (!this.modal || !this.modalImage) return;
+
+      // Set the image source
+      this.modalImage.src = imageUrl;
+      this.modalImage.alt = 'Size Guide';
+
+      // Show the modal
+      this.modal.style.display = 'flex';
+      
+      // Trigger reflow to ensure display change is applied
+      this.modal.offsetHeight;
+      
+      // Add active class for animation
+      this.modal.classList.add('active');
+      
+      // Focus the close button for accessibility
+      if (this.closeButton) {
+        this.closeButton.focus();
+      }
+
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+      
+      this.isOpen = true;
+    }
+
+    closeModal() {
+      if (!this.modal) return;
+
+      // Remove active class for animation
+      this.modal.classList.remove('active');
+      
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        this.modal.style.display = 'none';
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        
+        this.isOpen = false;
+      }, 300);
+    }
+  }
+
+  /**
+   * Initialize all functionality when DOM is ready
+   */
+  $(document).ready(function() {
+    // Initialize product gallery
+    new ProductGallery();
+    
+    // Initialize product variations
+    new ProductVariations();
+    
+    // Initialize size guide modal
+    new SizeGuideModal();
+  });
+
 })(jQuery);

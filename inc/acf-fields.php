@@ -313,6 +313,57 @@ function primefit_register_acf_product_fields() {
 	
 
 	/**
+	 * Size Guide Field Group
+	 */
+	acf_add_local_field_group( array(
+		'key' => 'group_size_guide',
+		'title' => 'Size Guide',
+		'fields' => array(
+			array(
+				'key' => 'field_size_guide_image',
+				'label' => 'Size Guide Image',
+				'name' => 'size_guide_image',
+				'type' => 'image',
+				'instructions' => 'Upload a size guide image that will be displayed in a popup modal when customers click the "SIZE GUIDE" button',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'return_format' => 'id',
+				'preview_size' => 'medium',
+				'library' => 'all',
+				'min_width' => '',
+				'min_height' => '',
+				'min_size' => '',
+				'max_width' => '',
+				'max_height' => '',
+				'max_size' => '',
+				'mime_types' => 'jpg,jpeg,png,webp',
+			),
+		),
+		'location' => array(
+			array(
+				array(
+					'param' => 'post_type',
+					'operator' => '==',
+					'value' => 'product',
+				),
+			),
+		),
+		'menu_order' => 2,
+		'position' => 'normal',
+		'style' => 'default',
+		'label_placement' => 'top',
+		'instruction_placement' => 'label',
+		'hide_on_screen' => '',
+		'active' => true,
+		'description' => 'Size guide image for product sizing information',
+	));
+
+	/**
 	 * Variation Gallery Field Group
 	 */
 	acf_add_local_field_group( array(
@@ -392,7 +443,7 @@ function primefit_register_acf_product_fields() {
 				),
 			),
 		),
-		'menu_order' => 3,
+		'menu_order' => 4,
 		'position' => 'normal',
 		'style' => 'default',
 		'label_placement' => 'top',
@@ -588,6 +639,24 @@ function primefit_has_variation_galleries( $product_id = null ) {
 
 	$variation_galleries = get_field( 'variation_gallery', $product_id );
 	return ! empty( $variation_galleries );
+}
+
+/**
+ * Helper function to get size guide image
+ */
+function primefit_get_size_guide_image( $product_id = null ) {
+	if ( ! $product_id ) {
+		global $product;
+		$product_id = $product ? $product->get_id() : get_the_ID();
+	}
+	
+	$size_guide_image_id = get_field( 'size_guide_image', $product_id );
+	
+	if ( $size_guide_image_id ) {
+		return wp_get_attachment_image_url( $size_guide_image_id, 'full' );
+	}
+	
+	return false;
 }
 
 /**
