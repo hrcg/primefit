@@ -609,8 +609,8 @@ body.nav-open {
   display: none;
 }
 
-/* Hide fallback image when video is loaded */
-.hero-video-container:has(.hero-video.loaded) + .hero-fallback-image {
+/* Hide fallback image when video is playing */
+.hero-media.video-playing .hero-fallback-image {
   opacity: 0;
 }
 

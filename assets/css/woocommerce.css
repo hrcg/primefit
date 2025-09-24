@@ -910,9 +910,9 @@
 }
 
 .woocommerce ul.products li.product .color-swatch {
-  width: 30px;
-  height: 30px;
-  border: 2px solid #fcfcfc;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #fcfcfc;
   background: transparent;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -936,7 +936,6 @@
 
 .woocommerce ul.products li.product .color-swatch-inner.color-white {
   background-color: #ffffff;
-  border: 1px solid #ddd;
 }
 
 .woocommerce ul.products li.product .color-swatch-inner.color-red {

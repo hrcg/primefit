@@ -1666,6 +1666,9 @@
         .closest(".hero-media")
         .find(".hero-fallback-image");
       $fallbackImage.css("opacity", "0");
+      
+      // Also hide the fallback image using CSS class
+      $video.closest(".hero-media").addClass("video-playing");
     }
 
     onVideoError($video, videoElement) {
@@ -1679,6 +1682,9 @@
 
       // Hide the video
       $video.css("opacity", "0");
+      
+      // Remove video-playing class
+      $video.closest(".hero-media").removeClass("video-playing");
     }
   }
 

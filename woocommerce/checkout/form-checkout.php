@@ -160,7 +160,7 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 								<input type="text" name="billing_address_1" id="billing_address_1" placeholder="House number and street name" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_1' ) ); ?>" required />
 							</div>
 							
-							<div class="form-row form-row-wide">
+							<div class="form-row form-row-wide" id="billing_address_2_field">
 								<input type="text" name="billing_address_2" id="billing_address_2" placeholder="Apartment, suite, unit, etc. (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_2' ) ); ?>" />
 							</div>
 							
@@ -186,13 +186,13 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 								</select>
 							</div>
 							
-							<div class="form-row form-row-first">
-								<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" required />
+							<div class="form-row form-row-first" id="billing_postcode_field">
+								<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" />
 							</div>
 							
 							<div class="form-row form-row-last">
 								<div class="phone-field-with-help">
-									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" />
+									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" pattern="^\+?[0-9\s\-\(\)]+$" title="Please enter a valid phone number (numbers, spaces, hyphens, parentheses, and optional + sign)" required />
 									<span class="help-icon-inside" data-tooltip="In case we need to contact you about your order">?</span>
 								</div>
 							</div>

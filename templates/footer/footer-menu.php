@@ -32,6 +32,18 @@
 	</div>
 	
 	<div class="footer-column">
+		<h3 class="footer-heading">Collections</h3>
+		<?php
+		wp_nav_menu([
+			'theme_location' => 'footer-tertiary',
+			'container'      => false,
+			'menu_class'     => 'footer-links',
+			'fallback_cb'    => false,
+		]);
+		?>
+	</div>
+	
+	<div class="footer-column">
 		<div class="connect-header">
 			<h3 class="footer-heading">CONNECT</h3>
 			<div class="social-icons">

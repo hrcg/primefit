@@ -38,6 +38,7 @@
         this.initSummaryToggle();
         this.initHelpTooltips();
         this.initFieldSpecificErrors();
+        this.initCountryBasedFieldHiding();
 
         // Initialize payment methods with proper timing
         this.initPaymentMethodEnhancements();
@@ -270,6 +271,9 @@
           }
         }
       );
+
+      // Add phone field validation
+      this.initPhoneFieldValidation();
     },
 
     /**
@@ -753,6 +757,575 @@
     },
 
     /**
+     * Initialize phone field validation
+     * Only allow numbers, spaces, hyphens, parentheses, and plus sign
+     */
+    initPhoneFieldValidation: function () {
+      const $phoneField = $("#billing_phone");
+      
+      if (!$phoneField.length) {
+        return;
+      }
+      
+      // Country to phone prefix mapping
+      const countryPrefixes = {
+        'AD': '+376', // Andorra
+        'AE': '+971', // United Arab Emirates
+        'AF': '+93',  // Afghanistan
+        'AG': '+1268', // Antigua and Barbuda
+        'AI': '+1264', // Anguilla
+        'AL': '+355', // Albania
+        'AM': '+374', // Armenia
+        'AO': '+244', // Angola
+        'AQ': '+672', // Antarctica
+        'AR': '+54',  // Argentina
+        'AS': '+1684', // American Samoa
+        'AT': '+43',  // Austria
+        'AU': '+61',  // Australia
+        'AW': '+297', // Aruba
+        'AX': '+358', // Åland Islands
+        'AZ': '+994', // Azerbaijan
+        'BA': '+387', // Bosnia and Herzegovina
+        'BB': '+1246', // Barbados
+        'BD': '+880', // Bangladesh
+        'BE': '+32',  // Belgium
+        'BF': '+226', // Burkina Faso
+        'BG': '+359', // Bulgaria
+        'BH': '+973', // Bahrain
+        'BI': '+257', // Burundi
+        'BJ': '+229', // Benin
+        'BL': '+590', // Saint Barthélemy
+        'BM': '+1441', // Bermuda
+        'BN': '+673', // Brunei
+        'BO': '+591', // Bolivia
+        'BQ': '+599', // Caribbean Netherlands
+        'BR': '+55',  // Brazil
+        'BS': '+1242', // Bahamas
+        'BT': '+975', // Bhutan
+        'BV': '+47',  // Bouvet Island
+        'BW': '+267', // Botswana
+        'BY': '+375', // Belarus
+        'BZ': '+501', // Belize
+        'CA': '+1',   // Canada
+        'CC': '+61',  // Cocos Islands
+        'CD': '+243', // Democratic Republic of the Congo
+        'CF': '+236', // Central African Republic
+        'CG': '+242', // Republic of the Congo
+        'CH': '+41',  // Switzerland
+        'CI': '+225', // Côte d'Ivoire
+        'CK': '+682', // Cook Islands
+        'CL': '+56',  // Chile
+        'CM': '+237', // Cameroon
+        'CN': '+86',  // China
+        'CO': '+57',  // Colombia
+        'CR': '+506', // Costa Rica
+        'CU': '+53',  // Cuba
+        'CV': '+238', // Cape Verde
+        'CW': '+599', // Curaçao
+        'CX': '+61',  // Christmas Island
+        'CY': '+357', // Cyprus
+        'CZ': '+420', // Czech Republic
+        'DE': '+49',  // Germany
+        'DJ': '+253', // Djibouti
+        'DK': '+45',  // Denmark
+        'DM': '+1767', // Dominica
+        'DO': '+1809', // Dominican Republic
+        'DZ': '+213', // Algeria
+        'EC': '+593', // Ecuador
+        'EE': '+372', // Estonia
+        'EG': '+20',  // Egypt
+        'EH': '+212', // Western Sahara
+        'ER': '+291', // Eritrea
+        'ES': '+34',  // Spain
+        'ET': '+251', // Ethiopia
+        'FI': '+358', // Finland
+        'FJ': '+679', // Fiji
+        'FK': '+500', // Falkland Islands
+        'FM': '+691', // Micronesia
+        'FO': '+298', // Faroe Islands
+        'FR': '+33',  // France
+        'GA': '+241', // Gabon
+        'GB': '+44',  // United Kingdom
+        'GD': '+1473', // Grenada
+        'GE': '+995', // Georgia
+        'GF': '+594', // French Guiana
+        'GG': '+44',  // Guernsey
+        'GH': '+233', // Ghana
+        'GI': '+350', // Gibraltar
+        'GL': '+299', // Greenland
+        'GM': '+220', // Gambia
+        'GN': '+224', // Guinea
+        'GP': '+590', // Guadeloupe
+        'GQ': '+240', // Equatorial Guinea
+        'GR': '+30',  // Greece
+        'GS': '+500', // South Georgia and the South Sandwich Islands
+        'GT': '+502', // Guatemala
+        'GU': '+1671', // Guam
+        'GW': '+245', // Guinea-Bissau
+        'GY': '+592', // Guyana
+        'HK': '+852', // Hong Kong
+        'HM': '+672', // Heard Island and McDonald Islands
+        'HN': '+504', // Honduras
+        'HR': '+385', // Croatia
+        'HT': '+509', // Haiti
+        'HU': '+36',  // Hungary
+        'ID': '+62',  // Indonesia
+        'IE': '+353', // Ireland
+        'IL': '+972', // Israel
+        'IM': '+44',  // Isle of Man
+        'IN': '+91',  // India
+        'IO': '+246', // British Indian Ocean Territory
+        'IQ': '+964', // Iraq
+        'IR': '+98',  // Iran
+        'IS': '+354', // Iceland
+        'IT': '+39',  // Italy
+        'JE': '+44',  // Jersey
+        'JM': '+1876', // Jamaica
+        'JO': '+962', // Jordan
+        'JP': '+81',  // Japan
+        'KE': '+254', // Kenya
+        'KG': '+996', // Kyrgyzstan
+        'KH': '+855', // Cambodia
+        'KI': '+686', // Kiribati
+        'KM': '+269', // Comoros
+        'KN': '+1869', // Saint Kitts and Nevis
+        'KP': '+850', // North Korea
+        'KR': '+82',  // South Korea
+        'KW': '+965', // Kuwait
+        'KY': '+1345', // Cayman Islands
+        'KZ': '+7',   // Kazakhstan
+        'LA': '+856', // Laos
+        'LB': '+961', // Lebanon
+        'LC': '+1758', // Saint Lucia
+        'LI': '+423', // Liechtenstein
+        'LK': '+94',  // Sri Lanka
+        'LR': '+231', // Liberia
+        'LS': '+266', // Lesotho
+        'LT': '+370', // Lithuania
+        'LU': '+352', // Luxembourg
+        'LV': '+371', // Latvia
+        'LY': '+218', // Libya
+        'MA': '+212', // Morocco
+        'MC': '+377', // Monaco
+        'MD': '+373', // Moldova
+        'ME': '+382', // Montenegro
+        'MF': '+590', // Saint Martin
+        'MG': '+261', // Madagascar
+        'MH': '+692', // Marshall Islands
+        'MK': '+389', // North Macedonia
+        'ML': '+223', // Mali
+        'MM': '+95',  // Myanmar
+        'MN': '+976', // Mongolia
+        'MO': '+853', // Macau
+        'MP': '+1670', // Northern Mariana Islands
+        'MQ': '+596', // Martinique
+        'MR': '+222', // Mauritania
+        'MS': '+1664', // Montserrat
+        'MT': '+356', // Malta
+        'MU': '+230', // Mauritius
+        'MV': '+960', // Maldives
+        'MW': '+265', // Malawi
+        'MX': '+52',  // Mexico
+        'MY': '+60',  // Malaysia
+        'MZ': '+258', // Mozambique
+        'NA': '+264', // Namibia
+        'NC': '+687', // New Caledonia
+        'NE': '+227', // Niger
+        'NF': '+672', // Norfolk Island
+        'NG': '+234', // Nigeria
+        'NI': '+505', // Nicaragua
+        'NL': '+31',  // Netherlands
+        'NO': '+47',  // Norway
+        'NP': '+977', // Nepal
+        'NR': '+674', // Nauru
+        'NU': '+683', // Niue
+        'NZ': '+64',  // New Zealand
+        'OM': '+968', // Oman
+        'PA': '+507', // Panama
+        'PE': '+51',  // Peru
+        'PF': '+689', // French Polynesia
+        'PG': '+675', // Papua New Guinea
+        'PH': '+63',  // Philippines
+        'PK': '+92',  // Pakistan
+        'PL': '+48',  // Poland
+        'PM': '+508', // Saint Pierre and Miquelon
+        'PN': '+64',  // Pitcairn Islands
+        'PR': '+1787', // Puerto Rico
+        'PS': '+970', // Palestine
+        'PT': '+351', // Portugal
+        'PW': '+680', // Palau
+        'PY': '+595', // Paraguay
+        'QA': '+974', // Qatar
+        'RE': '+262', // Réunion
+        'RO': '+40',  // Romania
+        'RS': '+381', // Serbia
+        'RU': '+7',   // Russia
+        'RW': '+250', // Rwanda
+        'SA': '+966', // Saudi Arabia
+        'SB': '+677', // Solomon Islands
+        'SC': '+248', // Seychelles
+        'SD': '+249', // Sudan
+        'SE': '+46',  // Sweden
+        'SG': '+65',  // Singapore
+        'SH': '+290', // Saint Helena
+        'SI': '+386', // Slovenia
+        'SJ': '+47',  // Svalbard and Jan Mayen
+        'SK': '+421', // Slovakia
+        'SL': '+232', // Sierra Leone
+        'SM': '+378', // San Marino
+        'SN': '+221', // Senegal
+        'SO': '+252', // Somalia
+        'SR': '+597', // Suriname
+        'SS': '+211', // South Sudan
+        'ST': '+239', // São Tomé and Príncipe
+        'SV': '+503', // El Salvador
+        'SX': '+1721', // Sint Maarten
+        'SY': '+963', // Syria
+        'SZ': '+268', // Eswatini
+        'TC': '+1649', // Turks and Caicos Islands
+        'TD': '+235', // Chad
+        'TF': '+262', // French Southern Territories
+        'TG': '+228', // Togo
+        'TH': '+66',  // Thailand
+        'TJ': '+992', // Tajikistan
+        'TK': '+690', // Tokelau
+        'TL': '+670', // East Timor
+        'TM': '+993', // Turkmenistan
+        'TN': '+216', // Tunisia
+        'TO': '+676', // Tonga
+        'TR': '+90',  // Turkey
+        'TT': '+1868', // Trinidad and Tobago
+        'TV': '+688', // Tuvalu
+        'TW': '+886', // Taiwan
+        'TZ': '+255', // Tanzania
+        'UA': '+380', // Ukraine
+        'UG': '+256', // Uganda
+        'UM': '+1',   // United States Minor Outlying Islands
+        'US': '+1',   // United States
+        'UY': '+598', // Uruguay
+        'UZ': '+998', // Uzbekistan
+        'VA': '+379', // Vatican City
+        'VC': '+1784', // Saint Vincent and the Grenadines
+        'VE': '+58',  // Venezuela
+        'VG': '+1284', // British Virgin Islands
+        'VI': '+1340', // U.S. Virgin Islands
+        'VN': '+84',  // Vietnam
+        'VU': '+678', // Vanuatu
+        'WF': '+681', // Wallis and Futuna
+        'WS': '+685', // Samoa
+        'XK': '+383', // Kosovo
+        'YE': '+967', // Yemen
+        'YT': '+262', // Mayotte
+        'ZA': '+27',  // South Africa
+        'ZM': '+260', // Zambia
+        'ZW': '+263'  // Zimbabwe
+      };
+      
+      // Phone number regex: allows + at start, numbers, spaces, hyphens, parentheses
+      const phoneRegex = /^\+?[0-9\s\-\(\)]*$/;
+      
+      // Prevent invalid characters from being typed
+      $phoneField.on("keypress", function(e) {
+        const char = String.fromCharCode(e.which);
+        const currentValue = $(this).val();
+        const newValue = currentValue + char;
+        
+        // Allow backspace, delete, tab, escape, enter
+        if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+            // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+            (e.keyCode === 65 && e.ctrlKey === true) ||
+            (e.keyCode === 67 && e.ctrlKey === true) ||
+            (e.keyCode === 86 && e.ctrlKey === true) ||
+            (e.keyCode === 88 && e.ctrlKey === true)) {
+          return;
+        }
+        
+        // Check if the new value would be valid
+        if (!phoneRegex.test(newValue)) {
+          e.preventDefault();
+          return false;
+        }
+      });
+      
+      // Validate on paste
+      $phoneField.on("paste", function(e) {
+        const $this = $(this);
+        setTimeout(function() {
+          const pastedValue = $this.val();
+          if (!phoneRegex.test(pastedValue)) {
+            // Remove invalid characters
+            const cleanedValue = pastedValue.replace(/[^\+0-9\s\-\(\)]/g, '');
+            $this.val(cleanedValue);
+          }
+        }, 10);
+      });
+      
+      // Validate on input change
+      $phoneField.on("input", function() {
+        const $this = $(this);
+        const value = $this.val();
+        
+        if (value && !phoneRegex.test(value)) {
+          // Remove invalid characters
+          const cleanedValue = value.replace(/[^\+0-9\s\-\(\)]/g, '');
+          $this.val(cleanedValue);
+        }
+        
+        // Visual feedback
+        if (value && phoneRegex.test(value)) {
+          $this.removeClass("phone-invalid").addClass("phone-valid");
+        } else if (value) {
+          $this.removeClass("phone-valid").addClass("phone-invalid");
+        } else {
+          $this.removeClass("phone-valid phone-invalid");
+        }
+      });
+      
+      // Validate on blur
+      $phoneField.on("blur", function() {
+        const $this = $(this);
+        const value = $this.val().trim();
+        
+        if (!value) {
+          // Phone field is now required
+          $this.addClass("woocommerce-invalid");
+          this.showPhoneError($this, "Phone number is required");
+        } else if (!phoneRegex.test(value)) {
+          $this.addClass("woocommerce-invalid");
+          // Show error message
+          this.showPhoneError($this, "Please enter a valid phone number");
+        } else {
+          $this.removeClass("woocommerce-invalid");
+          this.hidePhoneError($this);
+        }
+      }.bind(this));
+      
+      // Initialize country prefix functionality with delay to ensure DOM is ready
+      setTimeout(() => {
+        this.initCountryPrefixLogic(countryPrefixes);
+      }, 100);
+      
+      // Re-bind events on checkout updates
+      $(document.body).on("updated_checkout", function() {
+        $("#billing_phone").off("keypress paste input blur").on({
+          keypress: $phoneField.data("events")?.keypress[0].handler,
+          paste: $phoneField.data("events")?.paste[0].handler,
+          input: $phoneField.data("events")?.input[0].handler,
+          blur: $phoneField.data("events")?.blur[0].handler
+        });
+        
+        // Re-initialize country prefix logic with delay
+        setTimeout(() => {
+          this.initCountryPrefixLogic(countryPrefixes);
+        }, 100);
+      }.bind(this));
+    },
+
+    /**
+     * Show phone field error message
+     */
+    showPhoneError: function($field, message) {
+      this.hidePhoneError($field);
+      const $errorDiv = $('<div class="phone-error-message">' + message + '</div>');
+      $field.after($errorDiv);
+    },
+
+    /**
+     * Hide phone field error message
+     */
+    hidePhoneError: function($field) {
+      $field.siblings('.phone-error-message').remove();
+    },
+
+    /**
+     * Initialize country prefix logic for phone field
+     */
+    initCountryPrefixLogic: function(countryPrefixes) {
+      const $countrySelect = $("#billing_country");
+      const $phoneField = $("#billing_phone");
+      
+      // Debug logging
+      console.log('Initializing country prefix logic...');
+      console.log('Country select found:', $countrySelect.length);
+      console.log('Phone field found:', $phoneField.length);
+      
+      if (!$countrySelect.length || !$phoneField.length) {
+        console.log('Required elements not found, retrying...');
+        // Retry after a short delay
+        setTimeout(() => {
+          this.initCountryPrefixLogic(countryPrefixes);
+        }, 200);
+        return;
+      }
+      
+      // Remove any existing event handlers to prevent duplicates
+      $countrySelect.off('change.countryPrefix');
+      $phoneField.off('focus.countryPrefix input.countryPrefix');
+      
+      // Function to apply country prefix
+      const applyCountryPrefix = function() {
+        const selectedCountry = $countrySelect.val();
+        const currentPhoneValue = $phoneField.val().trim();
+        
+        console.log('Applying country prefix for:', selectedCountry);
+        console.log('Current phone value:', currentPhoneValue);
+        
+        if (!selectedCountry || !countryPrefixes[selectedCountry]) {
+          console.log('No prefix found for country:', selectedCountry);
+          return;
+        }
+        
+        const countryPrefix = countryPrefixes[selectedCountry];
+        console.log('Country prefix:', countryPrefix);
+        
+        // If phone field is empty, add the prefix
+        if (!currentPhoneValue) {
+          console.log('Phone field empty, adding prefix');
+          $phoneField.val(countryPrefix + ' ');
+          $phoneField.focus();
+          // Position cursor after the prefix
+          setTimeout(() => {
+            const prefixLength = countryPrefix.length + 1; // +1 for space
+            $phoneField[0].setSelectionRange(prefixLength, prefixLength);
+          }, 10);
+          return;
+        }
+        
+        // If phone field has content but doesn't start with any prefix, add the country prefix
+        const hasAnyPrefix = Object.values(countryPrefixes).some(prefix => 
+          currentPhoneValue.startsWith(prefix)
+        );
+        
+        if (!hasAnyPrefix && !currentPhoneValue.startsWith('+')) {
+          console.log('Adding prefix to existing number');
+          // Remove any existing numbers at the start and add the country prefix
+          const cleanNumber = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, '');
+          $phoneField.val(countryPrefix + ' ' + cleanNumber);
+          
+          // Position cursor after the prefix
+          setTimeout(() => {
+            const prefixLength = countryPrefix.length + 1; // +1 for space
+            $phoneField[0].setSelectionRange(prefixLength, prefixLength);
+          }, 10);
+        }
+      };
+      
+      // Function to remove prefix when country changes
+      const removePreviousPrefix = function() {
+        const currentPhoneValue = $phoneField.val().trim();
+        
+        if (!currentPhoneValue) {
+          return;
+        }
+        
+        // Find and remove any existing country prefix
+        Object.values(countryPrefixes).forEach(prefix => {
+          if (currentPhoneValue.startsWith(prefix)) {
+            const numberWithoutPrefix = currentPhoneValue.substring(prefix.length).trim();
+            $phoneField.val(numberWithoutPrefix);
+            return;
+          }
+        });
+      };
+      
+      // Listen for country changes
+      $countrySelect.on('change.countryPrefix', function() {
+        console.log('Country changed to:', $countrySelect.val());
+        // Remove any existing prefix first
+        removePreviousPrefix();
+        
+        // Apply new prefix if phone field is not empty
+        const currentPhoneValue = $phoneField.val().trim();
+        if (currentPhoneValue) {
+          applyCountryPrefix();
+        }
+      });
+      
+      // Auto-apply prefix when phone field gets focus and is empty
+      $phoneField.on('focus.countryPrefix', function() {
+        console.log('Phone field focused');
+        const currentPhoneValue = $phoneField.val().trim();
+        const selectedCountry = $countrySelect.val();
+        
+        if (!currentPhoneValue && selectedCountry && countryPrefixes[selectedCountry]) {
+          applyCountryPrefix();
+        }
+      });
+      
+      // Handle when user starts typing in an empty phone field
+      $phoneField.on('input.countryPrefix', function() {
+        const currentPhoneValue = $phoneField.val().trim();
+        const selectedCountry = $countrySelect.val();
+        
+        // If user starts typing a number and we have a country selected, add prefix
+        if (currentPhoneValue && 
+            /^[0-9]/.test(currentPhoneValue) && 
+            selectedCountry && 
+            countryPrefixes[selectedCountry] &&
+            !currentPhoneValue.startsWith('+')) {
+          
+          const countryPrefix = countryPrefixes[selectedCountry];
+          const numberWithoutPrefix = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, '');
+          
+          if (numberWithoutPrefix !== currentPhoneValue) {
+            $phoneField.val(countryPrefix + ' ' + numberWithoutPrefix);
+            
+            // Position cursor at the end
+            setTimeout(() => {
+              $phoneField[0].setSelectionRange($phoneField.val().length, $phoneField.val().length);
+            }, 10);
+          }
+        }
+      });
+      
+      console.log('Country prefix logic initialized successfully');
+    },
+
+    /**
+     * Initialize country-based field hiding
+     * Hide billing_address_2 and billing_postcode for specific countries
+     */
+    initCountryBasedFieldHiding: function () {
+      const $countrySelect = $("#billing_country");
+      const $address2Field = $("#billing_address_2_field");
+      const $postcodeField = $("#billing_postcode_field");
+      
+      // Countries where address_2 and postcode should be hidden
+      const hiddenCountries = ['AL', 'XK', 'MK']; // Albania, Kosovo, North Macedonia
+      
+      // Function to toggle field visibility
+      const toggleFields = function() {
+        const selectedCountry = $countrySelect.val();
+        const shouldHide = hiddenCountries.includes(selectedCountry);
+        
+        if (shouldHide) {
+          $address2Field.slideUp(300);
+          $postcodeField.slideUp(300);
+          // Clear the field values when hiding
+          $("#billing_address_2").val('');
+          $("#billing_postcode").val('');
+        } else {
+          $address2Field.slideDown(300);
+          $postcodeField.slideDown(300);
+        }
+      };
+      
+      // Initial check on page load
+      toggleFields();
+      
+      // Listen for country changes
+      $countrySelect.on('change', toggleFields);
+      
+      // Also listen for WooCommerce checkout updates
+      $(document.body).on('updated_checkout', function() {
+        // Re-bind the change event in case the select was recreated
+        $("#billing_country").off('change').on('change', toggleFields);
+        // Re-check visibility
+        toggleFields();
+      });
+    },
+
+    /**
      * Initialize field-specific error messages
      * Moves error messages from the banner to individual fields
      */
@@ -960,6 +1533,36 @@
           // Use original blockUI for other pages
           return originalBlockUI.apply(this, arguments);
         };
+      }
+    },
+
+    /**
+     * Test function for country prefix functionality
+     * Can be called from browser console: CheckoutManager.testCountryPrefix()
+     */
+    testCountryPrefix: function() {
+      console.log('Testing country prefix functionality...');
+      
+      const $countrySelect = $("#billing_country");
+      const $phoneField = $("#billing_phone");
+      
+      console.log('Country select element:', $countrySelect.length);
+      console.log('Phone field element:', $phoneField.length);
+      
+      if ($countrySelect.length && $phoneField.length) {
+        // Test with US
+        $countrySelect.val('US');
+        $countrySelect.trigger('change');
+        console.log('Phone field value after US selection:', $phoneField.val());
+        
+        // Test with UK
+        setTimeout(() => {
+          $countrySelect.val('GB');
+          $countrySelect.trigger('change');
+          console.log('Phone field value after UK selection:', $phoneField.val());
+        }, 1000);
+      } else {
+        console.log('Required elements not found');
       }
     }
   };

@@ -12,7 +12,7 @@
 
 .footer-content {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 60px;
   margin: 0 auto;
 }
@@ -155,7 +155,7 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .footer-content {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 40px;
   }
 
@@ -171,23 +171,32 @@
   }
 
   .footer-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 30px;
   }
 
+  .footer-column:nth-child(3),
   .footer-column:last-child {
-    grid-column: 1;
+    grid-column: 1 / -1;
     margin-top: 0;
   }
-
 
   .download-app-btn {
     align-self: center;
   }
-
 }
 
 @media (max-width: 480px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .footer-column:nth-child(3),
+  .footer-column:last-child {
+    grid-column: 1;
+  }
+
   .footer-heading {
     font-size: 13px;
   }

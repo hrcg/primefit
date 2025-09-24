@@ -2,49 +2,27 @@
 /**
  * Category Tiles Section
  * 
- * Usage: get_template_part('parts/sections/category-tiles', null, $args);
+ * Usage: get_template_part('templates/parts/category-tiles');
  * 
- * Expected $args:
- * - 'tiles' => array of tile data
+ * Gets configuration from WordPress Customizer
  */
 
-$defaults = array(
-	'tiles' => array(
-		array(
-			'image' => array('/assets/images/run.webp', '/assets/images/run.jpg'),
-			'alt' => 'RUN',
-			'label' => 'RUN',
-			'url' => '/designed-for/run',
-			'description' => 'Performance gear designed for runners who demand excellence in every stride.',
-			'button_text' => 'Shop Run'
-		),
-		array(
-			'image' => array('/assets/images/train.webp', '/assets/images/train.jpg'),
-			'alt' => 'TRAIN',
-			'label' => 'TRAIN',
-			'url' => '/designed-for/train',
-			'description' => 'Training equipment built to push your limits and maximize your potential.',
-			'button_text' => 'Shop Train'
-		),
-		array(
-			'image' => array('/assets/images/rec.webp', '/assets/images/rec.jpg'),
-			'alt' => 'REC',
-			'label' => 'REC',
-			'url' => '/designed-for/rec',
-			'description' => 'Technical, versatile gear for everyday use and recreational activities.',
-			'button_text' => 'Shop Rec'
-		)
-	)
-);
+// Get category tiles configuration from customizer
+$category_tiles_config = primefit_get_category_tiles_config();
 
-$section = wp_parse_args($args ?? array(), $defaults);
+// Don't render if disabled
+if ( ! $category_tiles_config['enabled'] ) {
+	return;
+}
+
+$section = $category_tiles_config;
 ?>
 
 <section class="container tiles-3">
 	<?php foreach ($section['tiles'] as $tile) : ?>
 		<div class="tile">
 			<img 
-				src="<?php echo esc_url( primefit_get_asset_uri( $tile['image'] ) ); ?>" 
+				src="<?php echo esc_url( $tile['image'] ); ?>" 
 				alt="<?php echo esc_attr( $tile['alt'] ); ?>" 
 			/>
 			<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-label">

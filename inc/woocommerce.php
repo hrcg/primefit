@@ -42,6 +42,64 @@ function primefit_add_kosovo_to_continents( $continents ) {
 }
 
 /**
+ * Make billing postcode optional for specific countries and phone field required
+ * Hide billing_address_2 and billing_postcode for Albania, Kosovo, North Macedonia
+ */
+add_filter( 'woocommerce_billing_fields', 'primefit_customize_billing_fields' );
+function primefit_customize_billing_fields( $fields ) {
+    // Countries where postcode should be optional and address_2 should be hidden
+    $special_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
+    
+    // Get the selected country from the checkout
+    $selected_country = '';
+    if ( isset( $_POST['billing_country'] ) ) {
+        $selected_country = sanitize_text_field( $_POST['billing_country'] );
+    } elseif ( is_user_logged_in() ) {
+        $user_id = get_current_user_id();
+        $selected_country = get_user_meta( $user_id, 'billing_country', true );
+    }
+    
+    // Make postcode optional for all countries (since it's handled by JavaScript)
+    if ( isset( $fields['billing_postcode'] ) ) {
+        $fields['billing_postcode']['required'] = false;
+    }
+    
+    // Make phone field required
+    if ( isset( $fields['billing_phone'] ) ) {
+        $fields['billing_phone']['required'] = true;
+    }
+    
+    return $fields;
+}
+
+/**
+ * Add custom checkout field validation
+ */
+add_action( 'woocommerce_checkout_process', 'primefit_checkout_field_validation' );
+function primefit_checkout_field_validation() {
+    $selected_country = sanitize_text_field( $_POST['billing_country'] ?? '' );
+    $special_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
+    
+    // For special countries, ensure address_2 and postcode are empty
+    if ( in_array( $selected_country, $special_countries ) ) {
+        // Clear address_2 and postcode for these countries
+        $_POST['billing_address_2'] = '';
+        $_POST['billing_postcode'] = '';
+    }
+    
+    // Validate phone number - now required
+    $phone = sanitize_text_field( $_POST['billing_phone'] ?? '' );
+    if ( empty( $phone ) ) {
+        wc_add_notice( __( 'Phone number is required.', 'primefit' ), 'error' );
+    } else {
+        // Phone regex: allows + at start, numbers, spaces, hyphens, parentheses
+        if ( ! preg_match( '/^\+?[0-9\s\-\(\)]+$/', $phone ) ) {
+            wc_add_notice( __( 'Please enter a valid phone number. Only numbers, spaces, hyphens, parentheses, and optional + sign are allowed.', 'primefit' ), 'error' );
+        }
+    }
+}
+
+/**
  * Disable default WooCommerce stylesheets
  * We use our own custom styles instead
  */

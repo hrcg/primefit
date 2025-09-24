@@ -42,6 +42,10 @@ $hero_image_mobile_url = !empty($hero['image_mobile']) ? $hero['image_mobile'] :
 $hero_video_desktop_url = !empty($hero['video_desktop']) ? $hero['video_desktop'] : '';
 $hero_video_mobile_url = !empty($hero['video_mobile']) ? $hero['video_mobile'] : '';
 
+// Get video poster URLs
+$hero_video_poster_desktop_url = !empty($hero['video_poster_desktop']) ? $hero['video_poster_desktop'] : '';
+$hero_video_poster_mobile_url = !empty($hero['video_poster_mobile']) ? $hero['video_poster_mobile'] : '';
+
 // Video settings
 $video_autoplay = !empty($hero['video_autoplay']) ? 'autoplay' : '';
 $video_loop = !empty($hero['video_loop']) ? 'loop' : '';
@@ -67,6 +71,7 @@ if (empty($hero_image_mobile_url)) {
 						<?php echo $video_autoplay; ?> 
 						<?php echo $video_loop; ?> 
 						<?php echo $video_muted; ?>
+						<?php if (!empty($hero_video_poster_desktop_url)) : ?>poster="<?php echo esc_url($hero_video_poster_desktop_url); ?>"<?php endif; ?>
 						playsinline
 						preload="metadata"
 					>
@@ -82,6 +87,7 @@ if (empty($hero_image_mobile_url)) {
 						<?php echo $video_autoplay; ?> 
 						<?php echo $video_loop; ?> 
 						<?php echo $video_muted; ?>
+						<?php if (!empty($hero_video_poster_mobile_url)) : ?>poster="<?php echo esc_url($hero_video_poster_mobile_url); ?>"<?php endif; ?>
 						playsinline
 						preload="metadata"
 					>

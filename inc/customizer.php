@@ -253,6 +253,30 @@ function primefit_customize_register( $wp_customize ) {
 		'type'    => 'checkbox',
 	) );
 
+	// Hero Video Poster (Desktop)
+	$wp_customize->add_setting( 'primefit_hero_video_poster_desktop', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_hero_video_poster_desktop', array(
+		'label'    => __( 'Video Poster Image (Desktop)', 'primefit' ),
+		'section'  => 'primefit_hero',
+		'mime_type' => 'image',
+		'description' => __( 'Image shown while video is loading on desktop devices', 'primefit' ),
+	) ) );
+
+	// Hero Video Poster (Mobile)
+	$wp_customize->add_setting( 'primefit_hero_video_poster_mobile', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_hero_video_poster_mobile', array(
+		'label'    => __( 'Video Poster Image (Mobile)', 'primefit' ),
+		'section'  => 'primefit_hero',
+		'mime_type' => 'image',
+		'description' => __( 'Image shown while video is loading on mobile devices', 'primefit' ),
+	) ) );
+
 	// Training Division Section Panel
 	$wp_customize->add_section( 'primefit_training_division', array(
 		'title'    => __( 'Training Division Section', 'primefit' ),
@@ -375,6 +399,188 @@ function primefit_customize_register( $wp_customize ) {
 		'type'    => 'url',
 	) );
 
+
+	// Category Tiles Section Panel
+	$wp_customize->add_section( 'primefit_category_tiles', array(
+		'title'    => __( 'Category Tiles Section', 'primefit' ),
+		'priority' => 37,
+	) );
+
+	// Category Tiles Enable/Disable
+	$wp_customize->add_setting( 'primefit_category_tiles_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_category_tiles_enabled', array(
+		'label'   => __( 'Enable Category Tiles Section', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'checkbox',
+	) );
+
+	// Tile 1 Image
+	$wp_customize->add_setting( 'primefit_category_tile_1_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_category_tile_1_image', array(
+		'label'    => __( 'Tile 1 Image', 'primefit' ),
+		'section'  => 'primefit_category_tiles',
+		'mime_type' => 'image',
+	) ) );
+
+	// Tile 1 Label
+	$wp_customize->add_setting( 'primefit_category_tile_1_label', array(
+		'default'           => 'RUN',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_1_label', array(
+		'label'   => __( 'Tile 1 Label', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'text',
+	) );
+
+	// Tile 1 Description
+	$wp_customize->add_setting( 'primefit_category_tile_1_description', array(
+		'default'           => 'Performance gear designed for runners who demand excellence in every stride.',
+		'sanitize_callback' => 'sanitize_textarea_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_1_description', array(
+		'label'   => __( 'Tile 1 Description', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'textarea',
+	) );
+
+	// Tile 1 Button Text
+	$wp_customize->add_setting( 'primefit_category_tile_1_button_text', array(
+		'default'           => 'Shop Run',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_1_button_text', array(
+		'label'   => __( 'Tile 1 Button Text', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'text',
+	) );
+
+	// Tile 1 Link
+	$wp_customize->add_setting( 'primefit_category_tile_1_link', array(
+		'default'           => '/designed-for/run',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_1_link', array(
+		'label'   => __( 'Tile 1 Link', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'url',
+	) );
+
+	// Tile 2 Image
+	$wp_customize->add_setting( 'primefit_category_tile_2_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_category_tile_2_image', array(
+		'label'    => __( 'Tile 2 Image', 'primefit' ),
+		'section'  => 'primefit_category_tiles',
+		'mime_type' => 'image',
+	) ) );
+
+	// Tile 2 Label
+	$wp_customize->add_setting( 'primefit_category_tile_2_label', array(
+		'default'           => 'TRAIN',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_2_label', array(
+		'label'   => __( 'Tile 2 Label', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'text',
+	) );
+
+	// Tile 2 Description
+	$wp_customize->add_setting( 'primefit_category_tile_2_description', array(
+		'default'           => 'Training equipment built to push your limits and maximize your potential.',
+		'sanitize_callback' => 'sanitize_textarea_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_2_description', array(
+		'label'   => __( 'Tile 2 Description', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'textarea',
+	) );
+
+	// Tile 2 Button Text
+	$wp_customize->add_setting( 'primefit_category_tile_2_button_text', array(
+		'default'           => 'Shop Train',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_2_button_text', array(
+		'label'   => __( 'Tile 2 Button Text', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'text',
+	) );
+
+	// Tile 2 Link
+	$wp_customize->add_setting( 'primefit_category_tile_2_link', array(
+		'default'           => '/designed-for/train',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_2_link', array(
+		'label'   => __( 'Tile 2 Link', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'url',
+	) );
+
+	// Tile 3 Image
+	$wp_customize->add_setting( 'primefit_category_tile_3_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_category_tile_3_image', array(
+		'label'    => __( 'Tile 3 Image', 'primefit' ),
+		'section'  => 'primefit_category_tiles',
+		'mime_type' => 'image',
+	) ) );
+
+	// Tile 3 Label
+	$wp_customize->add_setting( 'primefit_category_tile_3_label', array(
+		'default'           => 'REC',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_3_label', array(
+		'label'   => __( 'Tile 3 Label', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'text',
+	) );
+
+	// Tile 3 Description
+	$wp_customize->add_setting( 'primefit_category_tile_3_description', array(
+		'default'           => 'Technical, versatile gear for everyday use and recreational activities.',
+		'sanitize_callback' => 'sanitize_textarea_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_3_description', array(
+		'label'   => __( 'Tile 3 Description', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'textarea',
+	) );
+
+	// Tile 3 Button Text
+	$wp_customize->add_setting( 'primefit_category_tile_3_button_text', array(
+		'default'           => 'Shop Rec',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_3_button_text', array(
+		'label'   => __( 'Tile 3 Button Text', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'text',
+	) );
+
+	// Tile 3 Link
+	$wp_customize->add_setting( 'primefit_category_tile_3_link', array(
+		'default'           => '/designed-for/rec',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_category_tile_3_link', array(
+		'label'   => __( 'Tile 3 Link', 'primefit' ),
+		'section' => 'primefit_category_tiles',
+		'type'    => 'url',
+	) );
 
 	// Mega Menu Section Panel
 	$wp_customize->add_section( 'primefit_mega_menu', array(
@@ -531,6 +737,13 @@ function primefit_get_hero_config() {
 	$hero_video_desktop_url = $hero_video_desktop_id ? wp_get_attachment_url( $hero_video_desktop_id ) : '';
 	$hero_video_mobile_url = $hero_video_mobile_id ? wp_get_attachment_url( $hero_video_mobile_id ) : '';
 	
+	// Get video poster IDs and URLs
+	$hero_video_poster_desktop_id = get_theme_mod( 'primefit_hero_video_poster_desktop' );
+	$hero_video_poster_mobile_id = get_theme_mod( 'primefit_hero_video_poster_mobile' );
+	
+	$hero_video_poster_desktop_url = $hero_video_poster_desktop_id ? wp_get_attachment_image_url( $hero_video_poster_desktop_id, 'full' ) : '';
+	$hero_video_poster_mobile_url = $hero_video_poster_mobile_id ? wp_get_attachment_image_url( $hero_video_poster_mobile_id, 'full' ) : '';
+	
 	// Fallback to default image if no custom images are set
 	$default_image_url = primefit_get_asset_uri( array( '/assets/images/DSC03756.webp', '/assets/images/hero-image.jpg' ) );
 	
@@ -551,6 +764,8 @@ function primefit_get_hero_config() {
 		'image_mobile' => $hero_image_mobile_url,
 		'video_desktop' => $hero_video_desktop_url,
 		'video_mobile' => $hero_video_mobile_url,
+		'video_poster_desktop' => $hero_video_poster_desktop_url,
+		'video_poster_mobile' => $hero_video_poster_mobile_url,
 		'heading' => get_theme_mod( 'primefit_hero_heading', 'END OF SEASON SALE' ),
 		'subheading' => get_theme_mod( 'primefit_hero_subheading', 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.' ),
 		'cta_text' => get_theme_mod( 'primefit_hero_cta_text', 'SHOP NOW' ),
@@ -642,6 +857,67 @@ function primefit_get_mega_menu_config() {
 		'column_3_links' => get_theme_mod( 'primefit_mega_menu_column_3_links', 'Hats & Headwear,Bags,Socks,Jewelry & Hardware' ),
 		'column_4_heading' => get_theme_mod( 'primefit_mega_menu_column_4_heading', 'DESIGNED FOR' ),
 		'column_4_links' => get_theme_mod( 'primefit_mega_menu_column_4_links', 'Run,Train,Rec' ),
+	);
+}
+
+/**
+ * Helper function to get category tiles configuration from customizer
+ */
+function primefit_get_category_tiles_config() {
+	// Get image IDs and URLs for each tile
+	$tile_1_image_id = get_theme_mod( 'primefit_category_tile_1_image' );
+	$tile_2_image_id = get_theme_mod( 'primefit_category_tile_2_image' );
+	$tile_3_image_id = get_theme_mod( 'primefit_category_tile_3_image' );
+	
+	$tile_1_image_url = $tile_1_image_id ? wp_get_attachment_image_url( $tile_1_image_id, 'full' ) : '';
+	$tile_2_image_url = $tile_2_image_id ? wp_get_attachment_image_url( $tile_2_image_id, 'full' ) : '';
+	$tile_3_image_url = $tile_3_image_id ? wp_get_attachment_image_url( $tile_3_image_id, 'full' ) : '';
+	
+	// Fallback to default images if no custom images are set
+	$default_images = array(
+		'/assets/images/run.webp',
+		'/assets/images/train.webp',
+		'/assets/images/rec.webp'
+	);
+	
+	if ( empty( $tile_1_image_url ) ) {
+		$tile_1_image_url = primefit_get_asset_uri( array( '/assets/images/run.webp', '/assets/images/run.jpg' ) );
+	}
+	if ( empty( $tile_2_image_url ) ) {
+		$tile_2_image_url = primefit_get_asset_uri( array( '/assets/images/train.webp', '/assets/images/train.jpg' ) );
+	}
+	if ( empty( $tile_3_image_url ) ) {
+		$tile_3_image_url = primefit_get_asset_uri( array( '/assets/images/rec.webp', '/assets/images/rec.jpg' ) );
+	}
+
+	return array(
+		'enabled' => get_theme_mod( 'primefit_category_tiles_enabled', true ),
+		'tiles' => array(
+			array(
+				'image' => $tile_1_image_url,
+				'alt' => get_theme_mod( 'primefit_category_tile_1_label', 'RUN' ),
+				'label' => get_theme_mod( 'primefit_category_tile_1_label', 'RUN' ),
+				'url' => get_theme_mod( 'primefit_category_tile_1_link', '/designed-for/run' ),
+				'description' => get_theme_mod( 'primefit_category_tile_1_description', 'Performance gear designed for runners who demand excellence in every stride.' ),
+				'button_text' => get_theme_mod( 'primefit_category_tile_1_button_text', 'Shop Run' )
+			),
+			array(
+				'image' => $tile_2_image_url,
+				'alt' => get_theme_mod( 'primefit_category_tile_2_label', 'TRAIN' ),
+				'label' => get_theme_mod( 'primefit_category_tile_2_label', 'TRAIN' ),
+				'url' => get_theme_mod( 'primefit_category_tile_2_link', '/designed-for/train' ),
+				'description' => get_theme_mod( 'primefit_category_tile_2_description', 'Training equipment built to push your limits and maximize your potential.' ),
+				'button_text' => get_theme_mod( 'primefit_category_tile_2_button_text', 'Shop Train' )
+			),
+			array(
+				'image' => $tile_3_image_url,
+				'alt' => get_theme_mod( 'primefit_category_tile_3_label', 'REC' ),
+				'label' => get_theme_mod( 'primefit_category_tile_3_label', 'REC' ),
+				'url' => get_theme_mod( 'primefit_category_tile_3_link', '/designed-for/rec' ),
+				'description' => get_theme_mod( 'primefit_category_tile_3_description', 'Technical, versatile gear for everyday use and recreational activities.' ),
+				'button_text' => get_theme_mod( 'primefit_category_tile_3_button_text', 'Shop Rec' )
+			)
+		)
 	);
 }
 

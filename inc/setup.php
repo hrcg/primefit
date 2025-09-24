@@ -66,6 +66,7 @@ function primefit_setup_theme() {
 		'footer'         => esc_html__( 'Footer Menu', 'primefit' ),
 		'footer-primary' => esc_html__( 'Footer Primary Menu', 'primefit' ),
 		'footer-secondary' => esc_html__( 'Footer Secondary Menu', 'primefit' ),
+		'footer-tertiary' => esc_html__( 'Footer Tertiary Menu', 'primefit' ),
 	] );
 	
 	// Set content width
