@@ -802,7 +802,10 @@
 }
 
 /* Position LIMITED STOCK on the right when there's already a SALE label */
-.woocommerce ul.products li.product .product-status-tag.limited-stock.has-sale-label {
+.woocommerce
+  ul.products
+  li.product
+  .product-status-tag.limited-stock.has-sale-label {
   left: auto;
   right: 12px;
 }

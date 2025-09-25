@@ -41,7 +41,6 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 		<div class="filter-bar-inner">
 			<!-- Grid Controls (Left) -->
 			<div class="grid-controls">
-				<div class="grid-options">
 					<!-- Mobile Grid Options (1, 2 columns) -->
 					<div class="grid-options-mobile">
 						<button class="grid-option<?php echo $current_grid === '2' ? ' active' : ''; ?>" data-grid="2" title="<?php esc_attr_e( '2 columns', 'primefit' ); ?>">
@@ -98,7 +97,6 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 							</svg>
 						</button>
 					</div>
-				</div>
 			</div>
 
 			<!-- Product Count / Category Title -->
@@ -130,10 +128,6 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 
 			<!-- Filter Controls Row -->
 			<div class="filter-controls">
-
-
-				<!-- Sort Section (Middle) -->
-				<div class="sort-section">
 					<div class="filter-dropdown">
 						<button class="filter-dropdown-toggle" type="button" aria-expanded="false">
 							<span class="filter-dropdown-text"><?php esc_html_e( 'Sort', 'primefit' ); ?></span>
@@ -168,7 +162,6 @@ $current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_gri
 							</div>
 						</div>
 					</div>
-				</div>
 
 
 				<!-- Sort Dropdown (Hidden - keeping for WooCommerce compatibility) -->

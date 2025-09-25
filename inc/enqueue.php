@@ -363,7 +363,6 @@ function primefit_preload_assets() {
 	// Preload critical fonts with optimized display=swap
 	$font_url = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap';
 	echo '<link rel="preload" href="' . esc_url($font_url) . '" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v5/wf.woff2" as="font" type="font/woff2" crossorigin>';
 	echo '<noscript><link rel="stylesheet" href="' . esc_url($font_url) . '"></noscript>';
 }
 
@@ -374,7 +373,9 @@ function primefit_inline_critical_css() {
 	$critical_css = "
 	<style>
 	/* Critical CSS for immediate rendering */
+	* { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 	body { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; }
+	h1, h2, h3, h4, h5, h6 { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 	.hero { position: relative; min-height: 70vh; display: flex; align-items: center; }
 	.hero-image { width: 100%; height: auto; object-fit: cover; }
 	.hero-content { position: absolute; z-index: 2; width: 100%; }

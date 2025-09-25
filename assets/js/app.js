@@ -14,10 +14,10 @@
     maxRetries: 3,
     retryDelay: 200,
     operationPriorities: {
-      'wc_fragment_refresh': 1, // Highest priority
-      'update_checkout': 2,
-      'added_to_cart': 3,
-      'removed_from_cart': 3
+      wc_fragment_refresh: 1, // Highest priority
+      update_checkout: 2,
+      added_to_cart: 3,
+      removed_from_cart: 3,
     },
 
     /**
@@ -26,12 +26,20 @@
      * @param {Object} options - Additional options including priority
      */
     queueRefresh: function (operation, options = {}) {
-      const priority = options.priority || this.operationPriorities[operation] || 5;
-      const operationData = { operation, priority, timestamp: Date.now(), retries: 0 };
+      const priority =
+        options.priority || this.operationPriorities[operation] || 5;
+      const operationData = {
+        operation,
+        priority,
+        timestamp: Date.now(),
+        retries: 0,
+      };
 
       // Remove existing operation of same type to prevent duplicates
-      this.refreshQueue = this.refreshQueue.filter(item => item.operation !== operation);
-      
+      this.refreshQueue = this.refreshQueue.filter(
+        (item) => item.operation !== operation
+      );
+
       // Add new operation
       this.refreshQueue.push(operationData);
 
@@ -92,14 +100,14 @@
           }, 50);
         })
         .catch((error) => {
-          console.error('Error executing cart operation:', operation, error);
-          
+          console.error("Error executing cart operation:", operation, error);
+
           // Retry logic
           if (retries < this.maxRetries) {
             operationData.retries++;
             operations.unshift(operationData); // Put back at front of queue
           }
-          
+
           // Continue with next operation after delay
           setTimeout(() => {
             this.executeOperations(operations);
@@ -117,36 +125,44 @@
           requestAnimationFrame(() => {
             try {
               switch (operation) {
-                case 'update_checkout':
-                  $(document.body).trigger('update_checkout');
+                case "update_checkout":
+                  $(document.body).trigger("update_checkout");
                   break;
-                case 'wc_fragment_refresh':
-                  $(document.body).trigger('wc_fragment_refresh');
+                case "wc_fragment_refresh":
+                  $(document.body).trigger("wc_fragment_refresh");
                   break;
-                case 'added_to_cart':
+                case "added_to_cart":
                   // Only trigger if not already triggered
-                  if (!$(document.body).data('added-to-cart-triggered')) {
-                    $(document.body).trigger('added_to_cart');
-                    $(document.body).data('added-to-cart-triggered', Date.now());
+                  if (!$(document.body).data("added-to-cart-triggered")) {
+                    $(document.body).trigger("added_to_cart");
+                    $(document.body).data(
+                      "added-to-cart-triggered",
+                      Date.now()
+                    );
                     // Clear flag after 1 second
                     setTimeout(() => {
-                      $(document.body).removeData('added-to-cart-triggered');
+                      $(document.body).removeData("added-to-cart-triggered");
                     }, 1000);
                   }
                   break;
-                case 'removed_from_cart':
+                case "removed_from_cart":
                   // Only trigger if not already triggered
-                  if (!$(document.body).data('removed-from-cart-triggered')) {
-                    $(document.body).trigger('removed_from_cart');
-                    $(document.body).data('removed-from-cart-triggered', Date.now());
+                  if (!$(document.body).data("removed-from-cart-triggered")) {
+                    $(document.body).trigger("removed_from_cart");
+                    $(document.body).data(
+                      "removed-from-cart-triggered",
+                      Date.now()
+                    );
                     // Clear flag after 1 second
                     setTimeout(() => {
-                      $(document.body).removeData('removed-from-cart-triggered');
+                      $(document.body).removeData(
+                        "removed-from-cart-triggered"
+                      );
                     }, 1000);
                   }
                   break;
                 default:
-                  console.warn('Unknown cart operation:', operation);
+                  console.warn("Unknown cart operation:", operation);
               }
               resolve();
             } catch (error) {
@@ -162,7 +178,9 @@
     /**
      * Force immediate refresh (bypasses queue for urgent operations)
      */
-    forceRefresh: function (operations = ['update_checkout', 'wc_fragment_refresh']) {
+    forceRefresh: function (
+      operations = ["update_checkout", "wc_fragment_refresh"]
+    ) {
       // Clear any pending queue
       this.refreshQueue = [];
       if (this.refreshTimeout) {
@@ -170,13 +188,13 @@
       }
 
       // Execute immediately with priority
-      const operationData = operations.map(op => ({
+      const operationData = operations.map((op) => ({
         operation: op,
         priority: this.operationPriorities[op] || 1,
         timestamp: Date.now(),
-        retries: 0
+        retries: 0,
       }));
-      
+
       this.executeOperations(operationData);
     },
 
@@ -194,13 +212,13 @@
       return {
         isRefreshing: this.isRefreshing,
         queueLength: this.refreshQueue.length,
-        queue: this.refreshQueue.map(item => ({
+        queue: this.refreshQueue.map((item) => ({
           operation: item.operation,
           priority: item.priority,
-          retries: item.retries
-        }))
+          retries: item.retries,
+        })),
       };
-    }
+    },
   };
 
   /**
@@ -272,7 +290,7 @@
       const normalizedCode = couponCode.toUpperCase();
       this.processingQueue.set(normalizedCode, {
         timestamp: Date.now(),
-        retries: 0
+        retries: 0,
       });
     },
 
@@ -331,7 +349,10 @@
 
         if ($input.length && $button.length) {
           $input.val("Loading...");
-          $button.addClass("loading").prop("disabled", true).text("Applying...");
+          $button
+            .addClass("loading")
+            .prop("disabled", true)
+            .text("Applying...");
         }
       }
 
@@ -356,7 +377,8 @@
             // Clear loading state
             if ($couponForm.length) {
               $couponForm.find(".coupon-code-input").val("");
-              $couponForm.find(".apply-coupon-btn")
+              $couponForm
+                .find(".apply-coupon-btn")
                 .removeClass("loading")
                 .prop("disabled", false)
                 .text("APPLY");
@@ -376,16 +398,29 @@
 
             if (options.onSuccess) options.onSuccess();
           } else {
-            this.handleCouponError(normalizedCode, response, $couponForm, options);
+            this.handleCouponError(
+              normalizedCode,
+              response,
+              $couponForm,
+              options
+            );
           }
         },
         error: (jqXHR, textStatus, errorThrown) => {
-          this.handleCouponError(normalizedCode, { data: this.getErrorMessage(textStatus) }, $couponForm, options);
+          this.handleCouponError(
+            normalizedCode,
+            { data: this.getErrorMessage(textStatus) },
+            $couponForm,
+            options
+          );
         },
         complete: () => {
           // Clean up after delay
-          setTimeout(() => this.clearProcessingFlag(normalizedCode), this.clearDelay);
-        }
+          setTimeout(
+            () => this.clearProcessingFlag(normalizedCode),
+            this.clearDelay
+          );
+        },
       });
     },
 
@@ -423,7 +458,7 @@
             $wcCouponBtn.trigger("click");
           } else {
             // Create a hidden WooCommerce-compatible form and submit it
-            const sanitizedCouponCode = couponCode.replace(/[<>\"'&]/g, '');
+            const sanitizedCouponCode = couponCode.replace(/[<>\"'&]/g, "");
             const $hiddenForm = $(`
               <form class="woocommerce-form-coupon" method="post" style="display: none;">
                 <input type="text" name="coupon_code" value="${sanitizedCouponCode}" />
@@ -444,7 +479,12 @@
             if (options.onSuccess) options.onSuccess();
           }, 1500);
         } catch (error) {
-          this.handleCouponError(normalizedCode, { data: error.message }, $couponSection, options);
+          this.handleCouponError(
+            normalizedCode,
+            { data: error.message },
+            $couponSection,
+            options
+          );
         }
       });
     },
@@ -458,14 +498,20 @@
       // Clear loading state
       if ($form.length) {
         $form.find("input").val("");
-        $form.find("button").removeClass("loading").prop("disabled", false).text("APPLY");
+        $form
+          .find("button")
+          .removeClass("loading")
+          .prop("disabled", false)
+          .text("APPLY");
       }
 
       // Show error message
       const errorMsg = response.data || "Failed to apply coupon";
       if ($form.length && options.showErrorMessage !== false) {
         $form.after(
-          '<div class="coupon-message error">' + errorMsg.replace(/[<>\"'&]/g, '') + "</div>"
+          '<div class="coupon-message error">' +
+            errorMsg.replace(/[<>\"'&]/g, "") +
+            "</div>"
         );
         setTimeout(() => jQuery(".coupon-message").fadeOut(), 5000);
       }
@@ -480,7 +526,7 @@
       const messages = {
         timeout: "Request timed out. Please check your connection.",
         abort: "Request was cancelled.",
-        default: "Network error. Please try again."
+        default: "Network error. Please try again.",
       };
       return messages[textStatus] || messages.default;
     },
@@ -495,7 +541,10 @@
             const url = new URL(window.location);
             url.searchParams.delete("coupon");
 
-            if (url.searchParams.toString() || url.search === "?coupon=" + encodeURIComponent(couponCode)) {
+            if (
+              url.searchParams.toString() ||
+              url.search === "?coupon=" + encodeURIComponent(couponCode)
+            ) {
               window.history.replaceState(
                 {},
                 document.title,
@@ -507,7 +556,7 @@
           // Ignore URL manipulation errors
         }
       }, this.clearDelay);
-    }
+    },
   };
 
   // Prevent accidental re-adding product on refresh when URL has add-to-cart params
@@ -544,7 +593,6 @@
         var couponCode = url.searchParams.get("coupon");
 
         if (couponCode && couponCode.trim()) {
-
           // Check if we're on checkout page - let checkout.js handle it
           if (isCheckoutPage) {
             return;
@@ -560,7 +608,8 @@
           setTimeout(function () {
             CouponManager.applyCoupon(couponCode.trim(), {
               $form: jQuery(".mini-cart-coupon-form"),
-              onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode.trim())
+              onSuccess: () =>
+                CouponManager.cleanUrlAfterCouponApplication(couponCode.trim()),
             });
           }, 500);
         }
@@ -723,7 +772,7 @@
   function applyCouponFromUrl(couponCode) {
     CouponManager.applyCoupon(couponCode, {
       $form: jQuery(".mini-cart-coupon-form"),
-      onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode)
+      onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode),
     });
   }
 
@@ -735,7 +784,6 @@
     if ($couponData.length) {
       var pendingCoupon = $couponData.data("pending-coupon");
       if (pendingCoupon && pendingCoupon.trim()) {
-
         // Use unified CouponManager to apply pending coupon
         setTimeout(function () {
           // Double-check that WooCommerce is loaded before applying
@@ -745,7 +793,10 @@
           ) {
             CouponManager.applyCoupon(pendingCoupon.trim(), {
               $form: jQuery(".mini-cart-coupon-form"),
-              onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+              onSuccess: () =>
+                CouponManager.cleanUrlAfterCouponApplication(
+                  pendingCoupon.trim()
+                ),
             });
           } else {
             // Try again after another delay
@@ -756,7 +807,10 @@
               ) {
                 CouponManager.applyCoupon(pendingCoupon.trim(), {
                   $form: jQuery(".mini-cart-coupon-form"),
-                  onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+                  onSuccess: () =>
+                    CouponManager.cleanUrlAfterCouponApplication(
+                      pendingCoupon.trim()
+                    ),
                 });
               }
             }, 2000);
@@ -869,7 +923,6 @@
     };
   }
 
-
   function openCart(clickedEl) {
     const { $wrap, $panel, $toggle } = getCartContext(clickedEl);
 
@@ -880,7 +933,11 @@
     openCartPanel($wrap, $panel, $toggle);
 
     // Only refresh fragments if cart was already open (to update content without user action)
-    if (isAlreadyOpen && window.primefit_cart_params && window.primefit_cart_params.ajax_url) {
+    if (
+      isAlreadyOpen &&
+      window.primefit_cart_params &&
+      window.primefit_cart_params.ajax_url
+    ) {
       // Refresh fragments in background after cart is already open
       requestAnimationFrame(() => {
         $.ajax({
@@ -899,7 +956,7 @@
           },
           error: function () {
             // Silently fail - cart is already open and functional
-          }
+          },
         });
       });
     }
@@ -923,20 +980,19 @@
     // Ensure all quantity inputs are properly synced when cart opens
     // Sync quantity inputs with current values (immediate execution)
     requestAnimationFrame(function () {
-      $(
-        ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-      ).each(function () {
-        const $input = $(this);
-        const cartItemKey = $input.data("cart-item-key");
-        const currentVal = parseInt($input.val()) || 1;
+      $(".woocommerce-mini-cart__item-quantity input[data-cart-item-key]").each(
+        function () {
+          const $input = $(this);
+          const cartItemKey = $input.data("cart-item-key");
+          const currentVal = parseInt($input.val()) || 1;
 
-        if (currentVal && cartItemKey) {
-          $input.val(currentVal);
-          $input.attr("data-original-value", currentVal);
+          if (currentVal && cartItemKey) {
+            $input.val(currentVal);
+            $input.attr("data-original-value", currentVal);
+          }
         }
-      });
+      );
     });
-
   }
 
   function addIOSPrevention() {
@@ -1268,7 +1324,6 @@
     // Add loading state to the remove button
     $element.addClass("loading").prop("disabled", true);
 
-
     // Validate we have the required parameters
     if (!primefit_cart_params.ajax_url) {
       alert("Configuration error: No AJAX URL");
@@ -1286,13 +1341,11 @@
       security: primefit_cart_params.remove_cart_nonce,
     };
 
-
     $.ajax({
       type: "POST",
       url: primefit_cart_params.ajax_url,
       data: ajaxData,
       success: function (response) {
-
         if (response.success) {
           // Start fade-out animation immediately
           if ($cartItem.length) {
@@ -1369,7 +1422,6 @@
         }
       },
       error: function (xhr, status, error) {
-
         // Remove loading state and fade class on error
         $element.removeClass("loading").prop("disabled", false);
         if ($cartItem.length) {
@@ -1398,7 +1450,6 @@
     const $cartItems = $(".woocommerce-mini-cart__items");
     const $cartContent = $(".cart-panel-content");
 
-
     // Check multiple indicators to ensure cart is truly empty
     const hasCartItemsContainer = $cartItems.length > 0;
     const cartItemsCount = hasCartItemsContainer
@@ -1406,7 +1457,6 @@
       : 0;
     const hasEmptyMessage =
       $(".woocommerce-mini-cart__empty-message").length > 0;
-
 
     // If no cart items container exists OR cart items container is empty
     if (!hasCartItemsContainer || cartItemsCount === 0) {
@@ -1440,7 +1490,6 @@
   $(document).on(
     "added_to_cart",
     function (event, fragments, cart_hash, $button) {
-
       // Update fragments if provided
       if (fragments) {
         $.each(fragments, function (key, value) {
@@ -1536,7 +1585,6 @@
 
   // Function to show empty cart state
   function showEmptyCartState() {
-
     const $cartItems = $(".woocommerce-mini-cart__items");
     const $cartTotal = $(".woocommerce-mini-cart__total");
     const $cartButtons = $(".woocommerce-mini-cart__buttons");
@@ -1558,12 +1606,10 @@
     } else if ($customEmptyCart.length) {
       $customEmptyCart.show();
     }
-
   }
 
   // Function to hide empty cart state
   function hideEmptyCartState() {
-
     const $cartItems = $(".woocommerce-mini-cart__items");
     const $cartTotal = $(".woocommerce-mini-cart__total");
     const $cartButtons = $(".woocommerce-mini-cart__buttons");
@@ -1582,7 +1628,6 @@
     // Hide empty message (both default and custom)
     if ($emptyMessage.length) $emptyMessage.hide();
     if ($customEmptyCart.length) $customEmptyCart.hide();
-
   }
 
   // Shop Filter Bar Controller (preserved)
@@ -1895,10 +1940,10 @@
 
     init() {
       // Wait for page to be fully loaded before starting video loading
-      if (document.readyState === 'complete') {
+      if (document.readyState === "complete") {
         this.handleHeroVideos();
       } else {
-        window.addEventListener('load', () => {
+        window.addEventListener("load", () => {
           this.handleHeroVideos();
         });
       }
@@ -1985,7 +2030,7 @@
         .closest(".hero-media")
         .find(".hero-fallback-image");
       $fallbackImage.css("opacity", "0");
-      
+
       // Also hide the fallback image using CSS class
       $video.closest(".hero-media").addClass("video-playing");
     }
@@ -2001,7 +2046,7 @@
 
       // Hide the video
       $video.css("opacity", "0");
-      
+
       // Remove video-playing class
       $video.closest(".hero-media").removeClass("video-playing");
     }
@@ -2221,7 +2266,6 @@
     const colorValue = $colorSwatch.data("color");
     const sizeValue = $sizeOption.data("size");
 
-
     if (!variationId || !productId || variationId === 0) {
       showCartFeedback(
         $productContainer,
@@ -2330,7 +2374,6 @@
       (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
       "/wp-admin/admin-ajax.php";
 
-
     // Make AJAX request using WooCommerce's standard approach
     $.ajax({
       url: ajaxUrl,
@@ -2340,7 +2383,6 @@
       timeout: 8000,
       cache: false,
       success: function (response) {
-
         // Handle the response exactly like WooCommerce does
         if (response.error && response.product_url) {
           // This might be a redirect response, check if product was actually added
@@ -2367,10 +2409,10 @@
             $.each(response.fragments, function (key, value) {
               $(key).replaceWith(value);
             });
-            
+
             // Open mini cart immediately after fragments are updated
             // Use requestAnimationFrame to ensure DOM updates are complete
-            requestAnimationFrame(function() {
+            requestAnimationFrame(function () {
               openMiniCart();
             });
           } else {
@@ -2522,9 +2564,9 @@
         const $imageContainer = $productContainer.find(
           ".product-image-container"
         );
-        const $mainImage = $imageContainer.find(
-          ".attachment-woocommerce_thumbnail, img"
-        ).first();
+        const $mainImage = $imageContainer
+          .find(".attachment-woocommerce_thumbnail, img")
+          .first();
         const $secondImage = $imageContainer.find(".product-second-image");
         const variationImage = $swatch.data("variation-image");
         const selectedColor = $swatch.data("color");
@@ -2533,7 +2575,7 @@
 
         // If no main image found, try to find any img element in the product container
         if ($mainImage.length === 0) {
-          const $fallbackImage = $productContainer.find('img').first();
+          const $fallbackImage = $productContainer.find("img").first();
           if ($fallbackImage.length > 0) {
             $mainImage = $fallbackImage;
           }
@@ -2551,10 +2593,12 @@
           // Update the main image directly
           const oldSrc = $mainImage.attr("src");
           const oldSrcset = $mainImage.attr("srcset");
-          
+
           // Add cache busting parameter to prevent browser caching
-          const cacheBustedImage = variationImage.includes('?') ? variationImage + '&t=' + Date.now() : variationImage + '?t=' + Date.now();
-          
+          const cacheBustedImage = variationImage.includes("?")
+            ? variationImage + "&t=" + Date.now()
+            : variationImage + "?t=" + Date.now();
+
           // Update both src and srcset attributes
           $mainImage.attr("src", cacheBustedImage);
           $mainImage.removeAttr("srcset"); // Remove srcset to force browser to use src
@@ -2563,15 +2607,16 @@
           if ($secondImage.length > 0) {
             $secondImage.css("opacity", "0");
           }
-
         } else if (variationImage && variationImage !== "") {
           // Fallback: try to find and update any image in the product container
-          const $anyImage = $productContainer.find('img').first();
+          const $anyImage = $productContainer.find("img").first();
           if ($anyImage.length > 0) {
             const oldSrc = $anyImage.attr("src");
             const oldSrcset = $anyImage.attr("srcset");
             // Add cache busting parameter to prevent browser caching
-            const cacheBustedImage = variationImage.includes('?') ? variationImage + '&t=' + Date.now() : variationImage + '?t=' + Date.now();
+            const cacheBustedImage = variationImage.includes("?")
+              ? variationImage + "&t=" + Date.now()
+              : variationImage + "?t=" + Date.now();
             $anyImage.attr("src", cacheBustedImage);
             $anyImage.removeAttr("srcset"); // Remove srcset to force browser to use src
             $productContainer.addClass("color-swatch-active");
@@ -2635,10 +2680,12 @@
           addVariationToCart($productContainer, $firstColor, $sizeOption);
         } else {
           // No color swatches available (single color product), create a dummy color swatch
-          const variationsData = $sizeOption.closest(".product-size-options").data("variations");
+          const variationsData = $sizeOption
+            .closest(".product-size-options")
+            .data("variations");
           if (variationsData) {
             // Get the first available color from variations data
-            let defaultColor = '';
+            let defaultColor = "";
             for (const variationId in variationsData) {
               const variation = variationsData[variationId];
               if (variation.color) {
@@ -2646,11 +2693,19 @@
                 break;
               }
             }
-            
+
             if (defaultColor) {
               // Create a temporary color swatch element for single color products
-              const $tempColorSwatch = $('<div class="temp-color-swatch" data-color="' + defaultColor + '"></div>');
-              addVariationToCart($productContainer, $tempColorSwatch, $sizeOption);
+              const $tempColorSwatch = $(
+                '<div class="temp-color-swatch" data-color="' +
+                  defaultColor +
+                  '"></div>'
+              );
+              addVariationToCart(
+                $productContainer,
+                $tempColorSwatch,
+                $sizeOption
+              );
             }
           }
         }
@@ -2686,14 +2741,19 @@
     $(".product-size-options").each(function () {
       const $sizeOptions = $(this);
       const $productContainer = $sizeOptions.closest(".product");
-      const $colorSwatches = $productContainer.find(".product-loop-color-swatches");
-      
+      const $colorSwatches = $productContainer.find(
+        ".product-loop-color-swatches"
+      );
+
       // If there are no color swatches but there are size options, initialize with default color
-      if ($colorSwatches.length === 0 || $colorSwatches.find(".color-swatch").length === 0) {
+      if (
+        $colorSwatches.length === 0 ||
+        $colorSwatches.find(".color-swatch").length === 0
+      ) {
         const variationsData = $sizeOptions.data("variations");
         if (variationsData) {
           // Get the first available color from variations data
-          let defaultColor = '';
+          let defaultColor = "";
           for (const variationId in variationsData) {
             const variation = variationsData[variationId];
             if (variation.color) {
@@ -2701,7 +2761,7 @@
               break;
             }
           }
-          
+
           if (defaultColor) {
             updateSizeOptionsForColor($productContainer, defaultColor);
           }
