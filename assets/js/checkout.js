@@ -10,6 +10,14 @@
 (function ($) {
   "use strict";
 
+  // Ensure this script only runs on checkout pages
+  if (!document.body.classList.contains('woocommerce-checkout') &&
+      !document.querySelector('.woocommerce-checkout') &&
+      !document.querySelector('form.checkout')) {
+    console.log('PrimeFit: checkout.js skipped - not on checkout page');
+    return;
+  }
+
   // CartManager and CouponManager are now defined in app.js
   // They are available globally via window.CartManager and window.CouponManager
 

@@ -16,12 +16,25 @@ if ( ! $product ) {
 	return;
 }
 
-$sku = $product->get_sku();
-$product_name = $product->get_name();
-$price_html = $product->get_price_html();
-$is_variable = $product->is_type( 'variable' );
-$is_in_stock = $product->is_in_stock();
-$stock_status = $product->get_stock_status();
+$product_id = $product->get_id();
+
+// Try to get cached product data first
+$cached_data = primefit_get_cached_product_data( $product_id );
+if ( false !== $cached_data ) {
+	extract( $cached_data );
+} else {
+	// Cache miss - get data and cache it
+	$sku = $product->get_sku();
+	$product_name = $product->get_name();
+	$price_html = $product->get_price_html();
+	$is_variable = $product->is_type( 'variable' );
+	$is_in_stock = $product->is_in_stock();
+	$stock_status = $product->get_stock_status();
+
+	// Cache the data
+	$product_data = compact( 'sku', 'product_name', 'price_html', 'is_variable', 'is_in_stock', 'stock_status' );
+	primefit_cache_product_data( $product_id, $product_data );
+}
 
 // Cache variations data to avoid duplicate expensive calls
 $variations = null;
@@ -43,15 +56,15 @@ if ( $is_variable ) {
 	$variations_attr = function_exists( 'wc_esc_json' ) ? wc_esc_json( $variations_json ) : _wp_specialchars( $variations_json, ENT_QUOTES, 'UTF-8', true );
 }
 
-// Get product attributes for color/size selection
+// Get product attributes for color/size selection with caching
 $attributes = $product->get_attributes();
 $color_attribute = null;
 $size_attribute = null;
 
-// Get variation attributes for better detection
+// Get variation attributes for better detection with caching
 $variation_attributes = $product->get_variation_attributes();
 
-// Get WooCommerce default attributes
+// Get WooCommerce default attributes with caching
 $default_attributes = $product->get_default_attributes();
 $default_color = '';
 $default_size = '';

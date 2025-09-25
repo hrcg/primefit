@@ -9,6 +9,23 @@
 (function ($) {
   "use strict";
 
+  // Ensure this script only runs on account pages
+  const isAccountPage = (
+    document.body.classList.contains('woocommerce-account') ||
+    document.body.classList.contains('woocommerce-myaccount') ||
+    document.querySelector('.woocommerce-account') ||
+    document.querySelector('.woocommerce-myaccount') ||
+    document.querySelector('.my-account') ||
+    document.querySelector('#my-account') ||
+    window.location.pathname.includes('/my-account/') ||
+    window.location.pathname.includes('/account/')
+  );
+
+  if (!isAccountPage) {
+    console.log('PrimeFit: account.js skipped - not on account page');
+    return;
+  }
+
   // Initialize account page functionality
   function initAccountPage() {
     initPasswordToggle();

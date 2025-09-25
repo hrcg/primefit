@@ -21,16 +21,52 @@ define( 'PRIMEFIT_THEME_DIR', get_template_directory() );
 define( 'PRIMEFIT_THEME_URI', get_template_directory_uri() );
 
 /**
- * Enable debug logging for AJAX troubleshooting
+ * Completely remove dashicons from WordPress
+ * This prevents dashicons from loading on any page
  */
-if ( ! defined( 'WP_DEBUG' ) ) {
-	define( 'WP_DEBUG', true );
+add_action( 'wp_enqueue_scripts', 'primefit_remove_dashicons', 1 );
+function primefit_remove_dashicons() {
+	wp_deregister_style( 'dashicons' );
 }
-if ( ! defined( 'WP_DEBUG_LOG' ) ) {
-	define( 'WP_DEBUG_LOG', true );
+
+/**
+ * Completely remove brands.css from WooCommerce
+ * This prevents WooCommerce brands stylesheet from loading
+ */
+add_action( 'wp_enqueue_scripts', 'primefit_remove_brands_css', 2 );
+function primefit_remove_brands_css() {
+	// Comprehensive list of potential WooCommerce brand-related style handles
+	$brand_styles = [
+		'brands-styles', // Specific handle from the URL
+		'wc-brands',
+		'woocommerce-brands',
+		'brands',
+		'wc_brands',
+		'brands-admin',
+		'brands-rtl',
+		'brands-admin-rtl',
+		'woocommerce-brands-admin',
+		'woocommerce-brands-rtl'
+	];
+
+	// Deregister all brand-related styles
+	foreach ( $brand_styles as $style ) {
+		if ( wp_style_is( $style, 'registered' ) ) {
+			wp_deregister_style( $style );
+		}
+	}
 }
-if ( ! defined( 'WP_DEBUG_DISPLAY' ) ) {
-	define( 'WP_DEBUG_DISPLAY', false );
+
+// Additional filter to prevent brands.css from being loaded by any plugin
+add_filter( 'style_loader_tag', 'primefit_remove_brands_css_tag', 10, 4 );
+function primefit_remove_brands_css_tag( $html, $handle, $href, $media ) {
+	// Check if this is a brands.css file from any location
+	if ( strpos( $href, 'brands.css' ) !== false ||
+		 strpos( $handle, 'brands' ) !== false ||
+		 strpos( $href, '/brands' ) !== false ) {
+		return ''; // Return empty string to remove the tag completely
+	}
+	return $html;
 }
 
 /**

@@ -974,7 +974,18 @@ function primefit_render_product_loop( $args = array() ) {
 	);
 
 	$section = wp_parse_args( $args, $defaults );
-	
+
+	// Generate cache key based on all relevant parameters
+	$cache_key = primefit_get_product_loop_cache_key( $section );
+
+	// Try to get cached content first
+	$cached_content = get_transient( $cache_key );
+
+	if ( $cached_content !== false ) {
+		echo $cached_content;
+		return;
+	}
+
 	// Build WooCommerce shortcode attributes
 	$shortcode_atts = array(
 		'limit' => absint( $section['limit'] ),
@@ -983,35 +994,35 @@ function primefit_render_product_loop( $args = array() ) {
 		'order' => sanitize_text_field( $section['order'] ),
 		'visibility' => sanitize_text_field( $section['visibility'] )
 	);
-	
+
 	// Add conditional attributes
 	if ( ! empty( $section['category'] ) ) {
 		$shortcode_atts['category'] = sanitize_text_field( $section['category'] );
 	}
-	
+
 	if ( ! empty( $section['tag'] ) ) {
 		$shortcode_atts['tag'] = sanitize_text_field( $section['tag'] );
 	}
-	
+
 	if ( $section['featured'] ) {
 		$shortcode_atts['featured'] = 'true';
 	}
-	
+
 	if ( $section['on_sale'] ) {
 		$shortcode_atts['on_sale'] = 'true';
 	}
-	
+
 	if ( $section['best_selling'] ) {
 		$shortcode_atts['best_selling'] = 'true';
 	}
-	
+
 	// Build shortcode string
 	$shortcode_string = '[products';
 	foreach ( $shortcode_atts as $key => $value ) {
 		$shortcode_string .= ' ' . $key . '="' . esc_attr( $value ) . '"';
 	}
 	$shortcode_string .= ']';
-	
+
 	// Build CSS classes
 	$section_classes = array(
 		$section['section_class'],
@@ -1019,24 +1030,26 @@ function primefit_render_product_loop( $args = array() ) {
 		'product-loop--' . $section['layout'],
 		'product-loop--' . $section['columns'] . '-columns'
 	);
-	
+
 	$section_classes = implode( ' ', array_filter( $section_classes ) );
+
+	ob_start();
 	?>
 	<section class="<?php echo esc_attr( $section_classes ); ?>">
 		<div class="container">
 			<?php if ( ! empty( $section['title'] ) ) : ?>
-				<?php 
+				<?php
 				get_template_part( 'templates/parts/section-header', null, array(
 					'title' => $section['title'],
 					'alignment' => $section['header_alignment']
-				) ); 
+				) );
 				?>
 			<?php endif; ?>
-			
+
 			<div class="product-loop-content">
 				<?php echo do_shortcode( $shortcode_string ); ?>
 			</div>
-			
+
 			<?php if ( $section['show_view_all'] && ! empty( $section['view_all_text'] ) ) : ?>
 				<div class="product-loop-actions">
 					<a href="<?php echo esc_url( $section['view_all_link'] ); ?>" class="button button--outline">
@@ -1044,7 +1057,7 @@ function primefit_render_product_loop( $args = array() ) {
 					</a>
 				</div>
 			<?php endif; ?>
-			
+
 			<?php if ( $section['show_pagination'] ) : ?>
 				<div class="product-loop-pagination">
 					<?php
@@ -1056,6 +1069,150 @@ function primefit_render_product_loop( $args = array() ) {
 		</div>
 	</section>
 	<?php
+	$content = ob_get_clean();
+
+	// Cache the content for 15 minutes (900 seconds)
+	set_transient( $cache_key, $content, 900 );
+
+	echo $content;
+}
+
+/**
+ * Generate cache key for product loop based on parameters
+ *
+ * @param array $section Product loop section parameters
+ * @return string Cache key
+ */
+function primefit_get_product_loop_cache_key( $section ) {
+	$key_parts = array(
+		'primefit_product_loop',
+		'limit_' . $section['limit'],
+		'columns_' . $section['columns'],
+		'orderby_' . $section['orderby'],
+		'order_' . $section['order'],
+		'visibility_' . $section['visibility']
+	);
+
+	// Add conditional parameters only if they exist
+	if ( ! empty( $section['category'] ) ) {
+		$key_parts[] = 'category_' . sanitize_title( $section['category'] );
+	}
+
+	if ( ! empty( $section['tag'] ) ) {
+		$key_parts[] = 'tag_' . sanitize_title( $section['tag'] );
+	}
+
+	if ( $section['featured'] ) {
+		$key_parts[] = 'featured';
+	}
+
+	if ( $section['on_sale'] ) {
+		$key_parts[] = 'on_sale';
+	}
+
+	if ( $section['best_selling'] ) {
+		$key_parts[] = 'best_selling';
+	}
+
+	// Add current language for multilingual support
+	if ( function_exists( 'wpml_get_current_language' ) ) {
+		$key_parts[] = 'lang_' . wpml_get_current_language();
+	}
+
+	return implode( '_', $key_parts );
+}
+
+/**
+ * Clear all product loop caches
+ *
+ * This function should be called whenever products are updated, added, or removed
+ */
+function primefit_clear_product_loop_caches() {
+	global $wpdb;
+
+	// Delete all transients that start with our product loop cache prefix
+	$cache_prefix = 'primefit_product_loop_';
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM $wpdb->options WHERE option_name LIKE %s OR option_name LIKE %s",
+			$wpdb->esc_like( '_transient_' . $cache_prefix ) . '%',
+			$wpdb->esc_like( '_transient_timeout_' . $cache_prefix ) . '%'
+		)
+	);
+}
+
+/**
+ * Clear category tiles configuration cache
+ */
+function primefit_clear_category_tiles_cache() {
+	delete_transient( 'primefit_category_tiles_config' );
+}
+
+/**
+ * Clear hero configuration cache
+ */
+function primefit_clear_hero_config_cache() {
+	delete_transient( 'primefit_hero_config' );
+}
+
+/**
+ * Clear all caches when products are modified
+ */
+add_action( 'save_post_product', 'primefit_invalidate_caches_on_product_change', 10, 3 );
+add_action( 'delete_post', 'primefit_invalidate_caches_on_product_deletion' );
+add_action( 'woocommerce_product_set_stock', 'primefit_invalidate_caches_on_stock_change' );
+add_action( 'woocommerce_update_product', 'primefit_invalidate_caches_on_product_update' );
+
+function primefit_invalidate_caches_on_product_change( $post_id, $post, $update ) {
+	// Only clear cache if this is a product post
+	if ( $post->post_type !== 'product' ) {
+		return;
+	}
+
+	// Clear all product loop caches
+	primefit_clear_product_loop_caches();
+}
+
+function primefit_invalidate_caches_on_product_deletion( $post_id ) {
+	$post = get_post( $post_id );
+
+	// Only clear cache if this is a product post
+	if ( $post && $post->post_type === 'product' ) {
+		primefit_clear_product_loop_caches();
+	}
+}
+
+function primefit_invalidate_caches_on_stock_change( $product ) {
+	primefit_clear_product_loop_caches();
+}
+
+function primefit_invalidate_caches_on_product_update( $product_id ) {
+	primefit_clear_product_loop_caches();
+}
+
+/**
+ * Clear caches when theme customizer settings are updated
+ */
+add_action( 'customize_save_after', 'primefit_invalidate_caches_on_customizer_save' );
+function primefit_invalidate_caches_on_customizer_save() {
+	// Clear category tiles cache when customizer is saved
+	primefit_clear_category_tiles_cache();
+
+	// Clear hero config cache
+	primefit_clear_hero_config_cache();
+
+	// Clear all product loop caches in case settings affect product display
+	primefit_clear_product_loop_caches();
+}
+
+/**
+ * Clear caches when theme is switched
+ */
+add_action( 'switch_theme', 'primefit_invalidate_all_caches_on_theme_switch' );
+function primefit_invalidate_all_caches_on_theme_switch() {
+	primefit_clear_product_loop_caches();
+	primefit_clear_category_tiles_cache();
+	primefit_clear_hero_config_cache();
 }
 
 /**
@@ -1447,8 +1604,8 @@ function primefit_get_cached_products( $args = [] ) {
 	
 	if ( false === $cached ) {
 		$cached = get_posts( $args );
-		// Cache for 6 hours for better performance
-		set_transient( $cache_key, $cached, 6 * HOUR_IN_SECONDS );
+		// Cache for 12 hours for better performance
+		set_transient( $cache_key, $cached, 12 * HOUR_IN_SECONDS );
 	}
 	
 	return $cached;
@@ -1516,6 +1673,274 @@ function primefit_get_cached_product_variations( $product_id ) {
 }
 
 /**
+ * Get cached product data to reduce database queries
+ *
+ * @param int $product_id Product ID
+ * @return array|false Cached product data or false if not cached
+ */
+function primefit_get_cached_product_data( $product_id ) {
+	$cache_key = "product_data_{$product_id}";
+	return wp_cache_get( $cache_key, 'primefit_product_data' );
+}
+
+/**
+ * Cache comprehensive product data
+ *
+ * @param int $product_id Product ID
+ * @param array $data Product data array
+ * @param int $expiration Cache expiration in seconds (default: 1 hour)
+ */
+function primefit_cache_product_data( $product_id, $data, $expiration = 3600 ) {
+	$cache_key = "product_data_{$product_id}";
+	wp_cache_set( $cache_key, $data, 'primefit_product_data', $expiration );
+}
+
+/**
+ * Get cached product meta data
+ *
+ * @param int $product_id Product ID
+ * @param string $meta_key Meta key
+ * @return mixed|false Cached meta value or false if not cached
+ */
+function primefit_get_cached_product_meta( $product_id, $meta_key ) {
+	$cache_key = "product_meta_{$product_id}_{$meta_key}";
+	return wp_cache_get( $cache_key, 'primefit_product_meta' );
+}
+
+/**
+ * Cache product meta data
+ *
+ * @param int $product_id Product ID
+ * @param string $meta_key Meta key
+ * @param mixed $value Meta value
+ * @param int $expiration Cache expiration in seconds (default: 1 hour)
+ */
+function primefit_cache_product_meta( $product_id, $meta_key, $value, $expiration = 3600 ) {
+	$cache_key = "product_meta_{$product_id}_{$meta_key}";
+	wp_cache_set( $cache_key, $value, 'primefit_product_meta', $expiration );
+}
+
+/**
+ * Get cached attachment meta data
+ *
+ * @param int $attachment_id Attachment ID
+ * @param string $meta_key Meta key
+ * @return mixed|false Cached meta value or false if not cached
+ */
+function primefit_get_cached_attachment_meta( $attachment_id, $meta_key ) {
+	$cache_key = "attachment_meta_{$attachment_id}_{$meta_key}";
+	return wp_cache_get( $cache_key, 'primefit_attachment_meta' );
+}
+
+/**
+ * Cache attachment meta data
+ *
+ * @param int $attachment_id Attachment ID
+ * @param string $meta_key Meta key
+ * @param mixed $value Meta value
+ * @param int $expiration Cache expiration in seconds (default: 1 hour)
+ */
+function primefit_cache_attachment_meta( $attachment_id, $meta_key, $value, $expiration = 3600 ) {
+	$cache_key = "attachment_meta_{$attachment_id}_{$meta_key}";
+	wp_cache_set( $cache_key, $value, 'primefit_attachment_meta', $expiration );
+}
+
+/**
+ * Get cached attachment image URL
+ *
+ * @param int $attachment_id Attachment ID
+ * @param string $size Image size
+ * @return string|false Cached image URL or false if not cached
+ */
+function primefit_get_cached_attachment_image_url( $attachment_id, $size = 'full' ) {
+	$cache_key = "attachment_url_{$attachment_id}_{$size}";
+	return wp_cache_get( $cache_key, 'primefit_attachment_urls' );
+}
+
+/**
+ * Cache attachment image URL
+ *
+ * @param int $attachment_id Attachment ID
+ * @param string $size Image size
+ * @param string $url Image URL
+ * @param int $expiration Cache expiration in seconds (default: 1 hour)
+ */
+function primefit_cache_attachment_image_url( $attachment_id, $size, $url, $expiration = 3600 ) {
+	$cache_key = "attachment_url_{$attachment_id}_{$size}";
+	wp_cache_set( $cache_key, $url, 'primefit_attachment_urls', $expiration );
+}
+
+/**
+ * Get comprehensive product data in a single optimized query
+ * This reduces multiple database calls to a single query
+ *
+ * @param int $product_id Product ID
+ * @return array Comprehensive product data
+ */
+function primefit_get_optimized_product_data( $product_id ) {
+	global $wpdb;
+
+	// Try cache first
+	$cache_key = "product_comprehensive_{$product_id}";
+	$cached_data = wp_cache_get( $cache_key, 'primefit_comprehensive' );
+	if ( false !== $cached_data ) {
+		return $cached_data;
+	}
+
+	// Single optimized query to get all product data
+	$query = $wpdb->prepare("
+		SELECT
+			p.ID,
+			p.post_title,
+			p.post_content,
+			p.post_excerpt,
+			pm1.meta_value as sku,
+			pm2.meta_value as price,
+			pm3.meta_value as sale_price,
+			pm4.meta_value as regular_price,
+			pm5.meta_value as stock_status,
+			pm6.meta_value as stock_quantity,
+			pm7.meta_value as manage_stock,
+			pm8.meta_value as product_type,
+			pm9.meta_value as attributes,
+			pm10.meta_value as default_attributes,
+			pm11.meta_value as gallery_images,
+			pm12.meta_value as main_image_id
+		FROM {$wpdb->posts} p
+		LEFT JOIN {$wpdb->postmeta} pm1 ON (p.ID = pm1.post_id AND pm1.meta_key = '_sku')
+		LEFT JOIN {$wpdb->postmeta} pm2 ON (p.ID = pm2.post_id AND pm2.meta_key = '_price')
+		LEFT JOIN {$wpdb->postmeta} pm3 ON (p.ID = pm3.post_id AND pm3.meta_key = '_sale_price')
+		LEFT JOIN {$wpdb->postmeta} pm4 ON (p.ID = pm4.post_id AND pm4.meta_key = '_regular_price')
+		LEFT JOIN {$wpdb->postmeta} pm5 ON (p.ID = pm5.post_id AND pm5.meta_key = '_stock_status')
+		LEFT JOIN {$wpdb->postmeta} pm6 ON (p.ID = pm6.post_id AND pm6.meta_key = '_stock')
+		LEFT JOIN {$wpdb->postmeta} pm7 ON (p.ID = pm7.post_id AND pm7.meta_key = '_manage_stock')
+		LEFT JOIN {$wpdb->postmeta} pm8 ON (p.ID = pm8.post_id AND pm8.meta_key = '_product_attributes')
+		LEFT JOIN {$wpdb->postmeta} pm9 ON (p.ID = pm9.post_id AND pm9.meta_key = '_default_attributes')
+		LEFT JOIN {$wpdb->postmeta} pm10 ON (p.ID = pm10.post_id AND pm10.meta_key = '_product_image_gallery')
+		LEFT JOIN {$wpdb->postmeta} pm11 ON (p.ID = pm11.post_id AND pm11.meta_key = '_thumbnail_id')
+		WHERE p.ID = %d AND p.post_type = 'product'
+	", $product_id);
+
+	$results = $wpdb->get_row( $query );
+
+	if ( ! $results ) {
+		return array();
+	}
+
+	// Process and structure the data
+	$product_data = array(
+		'id' => $results->ID,
+		'title' => $results->post_title,
+		'content' => $results->post_content,
+		'excerpt' => $results->post_excerpt,
+		'sku' => $results->sku ?: '',
+		'price' => $results->price ?: '',
+		'sale_price' => $results->sale_price ?: '',
+		'regular_price' => $results->regular_price ?: '',
+		'stock_status' => $results->stock_status ?: 'instock',
+		'stock_quantity' => $results->stock_quantity ?: '',
+		'manage_stock' => $results->manage_stock ?: 'no',
+		'product_type' => $results->product_type ?: 'simple',
+		'is_variable' => $results->product_type === 'variable',
+		'is_in_stock' => $results->stock_status === 'instock',
+		'attributes' => $results->attributes ? maybe_unserialize( $results->attributes ) : array(),
+		'default_attributes' => $results->default_attributes ? maybe_unserialize( $results->default_attributes ) : array(),
+		'gallery_images' => $results->gallery_images ? array_filter( explode( ',', $results->gallery_images ) ) : array(),
+		'main_image_id' => $results->main_image_id ?: 0,
+		'price_html' => '', // Will be calculated separately if needed
+	);
+
+	// Cache the data
+	wp_cache_set( $cache_key, $product_data, 'primefit_comprehensive', 3600 );
+
+	return $product_data;
+}
+
+/**
+ * Get optimized product variations data
+ * Combines variations, attributes, and meta data in optimized queries
+ *
+ * @param int $product_id Product ID
+ * @return array|false Variations data or false if not found
+ */
+function primefit_get_optimized_product_variations( $product_id ) {
+	$cache_key = "product_variations_optimized_{$product_id}";
+	$cached = wp_cache_get( $cache_key, 'primefit_variations' );
+
+	if ( false !== $cached ) {
+		return $cached;
+	}
+
+	global $wpdb;
+
+	// Get variations with all necessary data in one query
+	$query = $wpdb->prepare("
+		SELECT
+			v.ID as variation_id,
+			v.post_title as variation_title,
+			vm1.meta_value as attributes,
+			vm2.meta_value as price,
+			vm3.meta_value as regular_price,
+			vm4.meta_value as sale_price,
+			vm5.meta_value as stock_status,
+			vm6.meta_value as stock_quantity,
+			vm7.meta_value as manage_stock,
+			vm8.meta_value as image_id,
+			vm9.meta_value as description,
+			vm10.meta_value as sku
+		FROM {$wpdb->posts} v
+		LEFT JOIN {$wpdb->postmeta} vm1 ON (v.ID = vm1.post_id AND vm1.meta_key = 'attribute_pa_color')
+		LEFT JOIN {$wpdb->postmeta} vm2 ON (v.ID = vm2.post_id AND vm2.meta_key = '_price')
+		LEFT JOIN {$wpdb->postmeta} vm3 ON (v.ID = vm3.post_id AND vm3.meta_key = '_regular_price')
+		LEFT JOIN {$wpdb->postmeta} vm4 ON (v.ID = vm4.post_id AND vm4.meta_key = '_sale_price')
+		LEFT JOIN {$wpdb->postmeta} vm5 ON (v.ID = vm5.post_id AND vm5.meta_key = '_stock_status')
+		LEFT JOIN {$wpdb->postmeta} vm6 ON (v.ID = vm6.post_id AND vm6.meta_key = '_stock')
+		LEFT JOIN {$wpdb->postmeta} vm7 ON (v.ID = vm7.post_id AND vm7.meta_key = '_manage_stock')
+		LEFT JOIN {$wpdb->postmeta} vm8 ON (v.ID = vm8.post_id AND vm8.meta_key = '_thumbnail_id')
+		LEFT JOIN {$wpdb->postmeta} vm9 ON (v.ID = vm9.post_id AND vm9.meta_key = '_variation_description')
+		LEFT JOIN {$wpdb->postmeta} vm10 ON (v.ID = vm10.post_id AND vm10.meta_key = '_sku')
+		WHERE v.post_parent = %d AND v.post_type = 'product_variation' AND v.post_status = 'publish'
+		ORDER BY v.menu_order ASC
+	", $product_id);
+
+	$variations = $wpdb->get_results( $query );
+
+	if ( empty( $variations ) ) {
+		wp_cache_set( $cache_key, array(), 'primefit_variations', 3600 );
+		return array();
+	}
+
+	// Process variations data
+	$processed_variations = array();
+	foreach ( $variations as $variation ) {
+		$attributes = array();
+		if ( $variation->attributes ) {
+			$attributes = array( 'pa_color' => $variation->attributes );
+		}
+
+		$processed_variations[] = array(
+			'variation_id' => $variation->variation_id,
+			'variation_title' => $variation->variation_title,
+			'attributes' => $attributes,
+			'display_price' => $variation->price,
+			'display_regular_price' => $variation->regular_price,
+			'display_sale_price' => $variation->sale_price,
+			'is_in_stock' => $variation->stock_status === 'instock',
+			'stock_quantity' => intval( $variation->stock_quantity ),
+			'manage_stock' => $variation->manage_stock === 'yes',
+			'image_id' => $variation->image_id,
+			'variation_description' => $variation->description,
+			'sku' => $variation->sku,
+		);
+	}
+
+	// Cache the processed variations
+	wp_cache_set( $cache_key, $processed_variations, 'primefit_variations', 3600 );
+
+	return $processed_variations;
+}
+
+/**
  * Cache ACF field data
  *
  * @param string $field_name ACF field name
@@ -1549,14 +1974,52 @@ function primefit_clear_product_performance_cache( $product_id ) {
 	// Clear variations cache
 	$variations_cache_key = "product_variations_{$product_id}";
 	wp_cache_delete( $variations_cache_key, 'primefit_variations' );
-	
+
+	// Clear optimized variations cache
+	$optimized_variations_key = "product_variations_optimized_{$product_id}";
+	wp_cache_delete( $optimized_variations_key, 'primefit_variations' );
+
+	// Clear comprehensive product data cache
+	$comprehensive_key = "product_comprehensive_{$product_id}";
+	wp_cache_delete( $comprehensive_key, 'primefit_comprehensive' );
+
+	// Clear basic product data cache
+	$product_data_key = "product_data_{$product_id}";
+	wp_cache_delete( $product_data_key, 'primefit_product_data' );
+
+	// Clear gallery data cache
+	$gallery_key = "{$product_id}_gallery";
+	wp_cache_delete( $gallery_key, 'primefit_product_data' );
+
+	// Clear attachment caches for product images
+	global $wpdb;
+	$attachments = $wpdb->get_col( $wpdb->prepare(
+		"SELECT ID FROM {$wpdb->posts} WHERE post_parent = %d AND post_type = 'attachment'",
+		$product_id
+	) );
+
+	foreach ( $attachments as $attachment_id ) {
+		// Clear attachment URL caches
+		$url_cache_keys = array(
+			"attachment_url_{$attachment_id}_full",
+			"attachment_url_{$attachment_id}_thumbnail"
+		);
+		foreach ( $url_cache_keys as $key ) {
+			wp_cache_delete( $key, 'primefit_attachment_urls' );
+		}
+
+		// Clear attachment meta caches
+		$meta_cache_key = "attachment_meta_{$attachment_id}_wp_attachment_image_alt";
+		wp_cache_delete( $meta_cache_key, 'primefit_attachment_meta' );
+	}
+
 	// Clear ACF field caches
 	$acf_fields = array( 'variation_gallery', 'size_guide_image', 'primefit_description' );
 	foreach ( $acf_fields as $field_name ) {
 		$acf_cache_key = "acf_{$field_name}_{$product_id}";
 		wp_cache_delete( $acf_cache_key, 'primefit_acf' );
 	}
-	
+
 	// Clear WooCommerce product cache
 	wp_cache_delete( $product_id, 'posts' );
 	wp_cache_delete( $product_id, 'post_meta' );

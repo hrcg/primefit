@@ -54,31 +54,31 @@ function primefit_enqueue_assets() {
 		primefit_get_file_version( '/assets/css/header.css' )
 	);
 
-	// Cart-specific styles - defer loading
+	// Cart-specific styles - load for all devices
 	wp_enqueue_style(
 		'primefit-cart',
 		PRIMEFIT_THEME_URI . '/assets/css/cart.css',
 		[ 'primefit-app' ],
 		primefit_get_file_version( '/assets/css/cart.css' ),
-		'screen and (min-width: 769px)'
+		'all'
 	);
 
-	// Footer-specific styles - defer loading
+	// Footer-specific styles - load for all devices
 	wp_enqueue_style(
 		'primefit-footer',
 		PRIMEFIT_THEME_URI . '/assets/css/footer.css',
 		[ 'primefit-app' ],
 		primefit_get_file_version( '/assets/css/footer.css' ),
-		'screen and (min-width: 769px)'
+		'all'
 	);
-	// WooCommerce styles - defer non-critical styles
+	// WooCommerce styles - load for all devices
 	if ( class_exists( 'WooCommerce' ) ) {
 		wp_enqueue_style(
 			'primefit-woocommerce',
 			PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css',
 			[ 'primefit-app' ],
 			primefit_get_file_version( '/assets/css/woocommerce.css' ),
-			'screen and (min-width: 769px)'
+			'all'
 		);
 		
 		// Cache page type for optimized CSS loading
@@ -102,71 +102,81 @@ function primefit_enqueue_assets() {
 			}, 1 );
 		}
 		
-		// Checkout page styles
+		// Checkout page styles - Load ONLY on checkout pages
 		if ( $page_type === 'checkout' ) {
-			wp_enqueue_style( 
-				'primefit-checkout', 
-				PRIMEFIT_THEME_URI . '/assets/css/checkout.css', 
-				[ 'primefit-woocommerce' ], 
-				primefit_get_file_version( '/assets/css/checkout.css' )
-			);
+			// Additional verification to ensure we're really on a checkout page
+			$is_checkout_page = is_checkout();
+			$is_custom_checkout = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('checkout')));
+
+			if ( $is_checkout_page || $is_custom_checkout ) {
+				wp_enqueue_style(
+					'primefit-checkout',
+					PRIMEFIT_THEME_URI . '/assets/css/checkout.css',
+					[ 'primefit-woocommerce' ],
+					primefit_get_file_version( '/assets/css/checkout.css' )
+				);
+			}
 		}
 		
-		// Account page styles
-		if ( $page_type === 'account' || is_account_page() ) {
-			wp_enqueue_style( 
-				'primefit-account', 
-				PRIMEFIT_THEME_URI . '/assets/css/account.css', 
-				[ 'primefit-woocommerce' ], 
+		// Account page styles - Load ONLY on my-account pages
+		$is_account_page = is_account_page();
+		$is_custom_account = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('myaccount')));
+		$is_account_endpoint = function_exists('is_wc_endpoint_url') && (
+			is_wc_endpoint_url('orders') ||
+			is_wc_endpoint_url('downloads') ||
+			is_wc_endpoint_url('edit-account') ||
+			is_wc_endpoint_url('edit-address') ||
+			is_wc_endpoint_url('payment-methods') ||
+			is_wc_endpoint_url('customer-logout') ||
+			is_wc_endpoint_url('dashboard')
+		);
+
+		// Load account styles if we're on any type of account page
+		if ( $page_type === 'account' || $is_account_page || $is_custom_account || $is_account_endpoint ) {
+			wp_enqueue_style(
+				'primefit-account',
+				PRIMEFIT_THEME_URI . '/assets/css/account.css',
+				[ 'primefit-woocommerce' ],
 				primefit_get_file_version( '/assets/css/account.css' )
 			);
-			
-			wp_enqueue_script( 
-				'primefit-account', 
-				PRIMEFIT_THEME_URI . '/assets/js/account.js', 
-				[ 'jquery' ], 
-				primefit_get_file_version( '/assets/js/account.js' ), 
-				true 
+
+			wp_enqueue_script(
+				'primefit-account',
+				PRIMEFIT_THEME_URI . '/assets/js/account.js',
+				[ 'jquery' ],
+				primefit_get_file_version( '/assets/js/account.js' ),
+				true
 			);
 		}
 		
-		// Payment summary styles - Load on account pages, checkout pages, and order received pages
+		// Payment summary styles - Load ONLY on order received pages
 		$load_payment_summary = false;
-		
-		// Check for account pages
-		if ( is_account_page() ) {
+
+		// Only load on order received page - be very specific
+		// Check if we're on the order received endpoint with valid order parameters
+		if ( is_wc_endpoint_url( 'order-received' ) && isset( $_GET['key'] ) && isset( $_GET['order'] ) ) {
 			$load_payment_summary = true;
 		}
-		
-		// Check for checkout pages (including order received)
-		if ( is_checkout() ) {
+
+		// Alternative check: if we have order and key parameters and we're on checkout thank you page
+		if ( isset( $_GET['key'] ) && isset( $_GET['order'] ) && is_checkout() && ! is_account_page() ) {
 			$load_payment_summary = true;
 		}
-		
-		// Check for specific WooCommerce endpoints
-		if ( is_wc_endpoint_url( 'order-received' ) || is_wc_endpoint_url( 'payment-summary' ) ) {
-			$load_payment_summary = true;
-		}
-		
-		// Check if we're on the order received page by checking for order key parameter
-		if ( isset( $_GET['key'] ) && isset( $_GET['order'] ) ) {
-			$load_payment_summary = true;
-		}
-		
+
 		if ( $load_payment_summary ) {
-			wp_enqueue_style( 
-				'primefit-payment-summary', 
-				PRIMEFIT_THEME_URI . '/assets/css/payment-summary.css', 
-				[ 'primefit-woocommerce' ], 
+			wp_enqueue_style(
+				'primefit-payment-summary',
+				PRIMEFIT_THEME_URI . '/assets/css/payment-summary.css',
+				[ 'primefit-woocommerce' ],
 				primefit_get_file_version( '/assets/css/payment-summary.css' )
 			);
-			
-			wp_enqueue_script( 
-				'primefit-payment-summary', 
-				PRIMEFIT_THEME_URI . '/assets/js/payment-summary.js', 
-				[ 'jquery' ], 
-				primefit_get_file_version( '/assets/js/payment-summary.js' ), 
-				true 
+
+			wp_enqueue_script(
+				'primefit-payment-summary',
+				PRIMEFIT_THEME_URI . '/assets/js/payment-summary.js',
+				[ 'jquery' ],
+				primefit_get_file_version( '/assets/js/payment-summary.js' ),
+				true
 			);
 		}
 	}
@@ -227,9 +237,6 @@ function primefit_enqueue_assets() {
 			'remove_coupon_nonce' => wp_create_nonce( 'remove_coupon' ),
 		] );
 	}
-	
-	// Dashicons for admin functionality
-	wp_enqueue_style( 'dashicons' );
 }
 
 /**
@@ -290,33 +297,39 @@ function primefit_enqueue_product_scripts() {
 			}, 1 );
 		}
 		
-		// Checkout page specific scripts
+		// Checkout page specific scripts - Only load on actual checkout pages
 		if ( $page_type === 'checkout' ) {
-			// Ensure WooCommerce scripts are loaded
-			wp_enqueue_script( 'woocommerce' );
-			wp_enqueue_script( 'wc-checkout' );
+			// Additional verification to ensure we're really on a checkout page
+			$is_checkout_page = is_checkout();
+			$is_custom_checkout = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('checkout')));
+
+			if ( $is_checkout_page || $is_custom_checkout ) {
+				// Ensure WooCommerce scripts are loaded
+				wp_enqueue_script( 'woocommerce' );
+				wp_enqueue_script( 'wc-checkout' );
+
+				wp_enqueue_script(
+					'primefit-checkout',
+					PRIMEFIT_THEME_URI . '/assets/js/checkout.js',
+					[ 'jquery', 'woocommerce', 'wc-checkout' ],
+					primefit_get_file_version( '/assets/js/checkout.js' ),
+					true
+				);
 			
-			wp_enqueue_script( 
-				'primefit-checkout', 
-				PRIMEFIT_THEME_URI . '/assets/js/checkout.js', 
-				[ 'jquery', 'woocommerce', 'wc-checkout' ], 
-				primefit_get_file_version( '/assets/js/checkout.js' ), 
-				true 
-			);
 			
-			
-			// Localize checkout script with shop URL and redirect flag
-			$should_redirect = get_transient( 'primefit_checkout_redirect_to_shop' );
-			if ( $should_redirect ) {
-				delete_transient( 'primefit_checkout_redirect_to_shop' );
+				// Localize checkout script with shop URL and redirect flag
+				$should_redirect = get_transient( 'primefit_checkout_redirect_to_shop' );
+				if ( $should_redirect ) {
+					delete_transient( 'primefit_checkout_redirect_to_shop' );
+				}
+
+				// Don't override WooCommerce's checkout params - let WC handle it
+				// Only add our custom params that don't conflict
+				wp_localize_script( 'primefit-checkout', 'primefit_checkout_params', array(
+					'shop_url' => wc_get_page_permalink( 'shop' ),
+					'should_redirect' => $should_redirect,
+				) );
 			}
-			
-			// Don't override WooCommerce's checkout params - let WC handle it
-			// Only add our custom params that don't conflict
-			wp_localize_script( 'primefit-checkout', 'primefit_checkout_params', array(
-				'shop_url' => wc_get_page_permalink( 'shop' ),
-				'should_redirect' => $should_redirect,
-			) );
 		}
 	}
 }
@@ -398,6 +411,199 @@ function primefit_add_resource_hints() {
 }
 
 /**
+ * Add HTTP cache headers for static assets and HTML pages
+ */
+add_action( 'send_headers', 'primefit_add_cache_headers', 999 );
+function primefit_add_cache_headers() {
+	if ( is_admin() || is_user_logged_in() ) {
+		// Don't cache for admin or logged-in users
+		return;
+	}
+
+	// Get the request URI
+	$request_uri = $_SERVER['REQUEST_URI'];
+
+	// Define cache durations (in seconds)
+	$cache_durations = array(
+		'.css' => 31536000, // 1 year for CSS files
+		'.js' => 31536000,  // 1 year for JS files
+		'.woff2' => 31536000, // 1 year for fonts
+		'.woff' => 31536000,  // 1 year for fonts
+		'.jpg' => 86400,     // 1 day for images
+		'.jpeg' => 86400,    // 1 day for images
+		'.png' => 86400,     // 1 day for images
+		'.gif' => 86400,     // 1 day for images
+		'.webp' => 86400,    // 1 day for images
+		'.svg' => 86400,     // 1 day for images
+	);
+
+	// Check if the request is for a static asset
+	foreach ( $cache_durations as $extension => $duration ) {
+		if ( substr( $request_uri, -strlen( $extension ) ) === $extension ) {
+			// Set cache headers for static assets
+			header( 'Cache-Control: public, max-age=' . $duration . ', immutable' );
+			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $duration ) . ' GMT' );
+			header( 'Pragma: cache' );
+
+			// Set ETag for better caching
+			$etag = '"' . md5( $request_uri . filemtime( ABSPATH . $request_uri ) ) . '"';
+			header( 'ETag: ' . $etag );
+
+			// Set Last-Modified header
+			header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s', filemtime( ABSPATH . $request_uri ) ) . ' GMT' );
+
+			// Handle conditional requests
+			if ( isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ) {
+				$if_modified_since = strtotime( $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
+				$file_modified_time = filemtime( ABSPATH . $request_uri );
+				if ( $if_modified_since >= $file_modified_time ) {
+					header( 'HTTP/1.1 304 Not Modified' );
+					exit;
+				}
+			}
+
+			return;
+		}
+	}
+
+	// Handle HTML pages with shorter cache duration
+	if ( is_front_page() || is_home() || is_page() || is_single() ) {
+		// Cache HTML pages for 15 minutes (900 seconds) for better performance
+		// This works well with our product loop caching (15 minutes)
+		$cache_duration = 900;
+
+		header( 'Cache-Control: public, max-age=' . $cache_duration );
+		header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $cache_duration ) . ' GMT' );
+		header( 'Pragma: cache' );
+
+		// Add Vary header to ensure proper caching for different user agents
+		header( 'Vary: Accept-Encoding, User-Agent' );
+	}
+}
+
+/**
+ * Add cache headers for WooCommerce product images
+ */
+add_filter( 'wp_get_attachment_image_attributes', 'primefit_optimize_product_image_attributes', 10, 3 );
+function primefit_optimize_product_image_attributes( $attr, $attachment, $size ) {
+	// Add cache headers for product images
+	if ( ! is_admin() && ! is_user_logged_in() ) {
+		// Only for product pages to avoid affecting other images
+		if ( is_product() ) {
+			$attr['loading'] = 'lazy';
+			$attr['decoding'] = 'async';
+			$attr['fetchpriority'] = 'high'; // Prioritize product images
+
+			// Add cache control for images served through WordPress
+			add_filter( 'wp_headers', function( $headers, $wp_query ) use ( $attr ) {
+				if ( ! empty( $headers['Content-Type'] ) && strpos( $headers['Content-Type'], 'image/' ) === 0 ) {
+					$headers['Cache-Control'] = 'public, max-age=86400, immutable';
+					$headers['Expires'] = gmdate( 'D, d M Y H:i:s', time() + 86400 ) . ' GMT';
+				}
+				return $headers;
+			}, 10, 2 );
+		}
+	}
+
+	return $attr;
+}
+
+/**
+ * Preload critical resources for single product pages
+ */
+add_action( 'wp_head', 'primefit_preload_product_resources', 1 );
+function primefit_preload_product_resources() {
+	if ( ! is_product() || is_admin() ) {
+		return;
+	}
+
+	global $product;
+
+	// If global product is not set or invalid, try to get it properly
+	if ( ! $product || ! is_object( $product ) ) {
+		$product_id = get_the_ID();
+		if ( $product_id ) {
+			$product = wc_get_product( $product_id );
+		}
+	}
+
+	// Final check to ensure we have a valid product object
+	if ( ! $product || ! is_object( $product ) || ! method_exists( $product, 'get_id' ) ) {
+		return;
+	}
+
+	$product_id = $product->get_id();
+	$gallery_ids = $product->get_gallery_image_ids();
+
+	// Preload the main product image
+	if ( has_post_thumbnail( $product_id ) ) {
+		$main_image_id = get_post_thumbnail_id( $product_id );
+		$main_image_src = wp_get_attachment_image_url( $main_image_id, 'woocommerce_single' );
+
+		if ( $main_image_src ) {
+			echo '<link rel="preload" href="' . esc_url( $main_image_src ) . '" as="image" fetchpriority="high">';
+		}
+	}
+
+	// Preload first few gallery images
+	$preload_count = 0;
+	foreach ( $gallery_ids as $gallery_id ) {
+		if ( $preload_count >= 3 ) break; // Limit to 3 gallery images
+
+		$gallery_src = wp_get_attachment_image_url( $gallery_id, 'woocommerce_single' );
+		if ( $gallery_src ) {
+			echo '<link rel="preload" href="' . esc_url( $gallery_src ) . '" as="image">';
+			$preload_count++;
+		}
+	}
+
+	// Preload variation images if available
+	if ( $product->is_type( 'variable' ) ) {
+		$variations = $product->get_available_variations();
+
+		foreach ( $variations as $variation ) {
+			if ( isset( $variation['image_id'] ) && $variation['image_id'] ) {
+				$variation_src = wp_get_attachment_image_url( $variation['image_id'], 'woocommerce_single' );
+				if ( $variation_src ) {
+					echo '<link rel="preload" href="' . esc_url( $variation_src ) . '" as="image">';
+				}
+				break; // Only preload first variation image
+			}
+		}
+	}
+
+	// Preload critical CSS and JS files specifically for product pages
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js" as="script">';
+
+	// Add resource hints for external dependencies
+	echo '<link rel="dns-prefetch" href="//fonts.googleapis.com">';
+	echo '<link rel="dns-prefetch" href="//fonts.gstatic.com">';
+	echo '<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>';
+	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
+}
+
+/**
+ * Add preconnect hints for external resources used on product pages
+ */
+add_action( 'wp_head', 'primefit_add_product_preconnect_hints', 1 );
+function primefit_add_product_preconnect_hints() {
+	if ( ! is_product() ) {
+		return;
+	}
+
+	// Preconnect to critical external domains
+	$preconnect_domains = [
+		'https://fonts.googleapis.com',
+		'https://fonts.gstatic.com',
+	];
+
+	foreach ( $preconnect_domains as $domain ) {
+		echo '<link rel="preconnect" href="' . esc_url( $domain ) . '" crossorigin>';
+	}
+}
+
+/**
  * Defer non-critical JavaScript files for better performance
  */
 add_action( 'wp_enqueue_scripts', 'primefit_defer_non_critical_scripts', 999 );
@@ -450,4 +656,105 @@ function primefit_optimize_script_loading() {
 			wp_enqueue_script( 'wc-add-to-cart-variation' );
 		}
 	}
+}
+
+/**
+ * Cache product data in browser localStorage to reduce AJAX calls
+ */
+add_action( 'wp_footer', 'primefit_add_browser_cache_script', 999 );
+function primefit_add_browser_cache_script() {
+	if ( is_product() && class_exists( 'WooCommerce' ) ) {
+		global $product;
+
+		// If global product is not set or invalid, try to get it properly
+		if ( ! $product || ! is_object( $product ) ) {
+			$product_id = get_the_ID();
+			if ( $product_id ) {
+				$product = wc_get_product( $product_id );
+			}
+		}
+
+		// Final check to ensure we have a valid product object
+		if ( ! $product || ! is_object( $product ) || ! method_exists( $product, 'get_id' ) ) {
+			return;
+		}
+
+		if ( $product->is_type( 'variable' ) ) {
+			$product_id = $product->get_id();
+			$variations = $product->get_available_variations();
+
+			// Cache variations data in browser localStorage
+			$cache_data = wp_json_encode( array(
+				'product_id' => $product_id,
+				'variations' => $variations,
+				'timestamp' => time(),
+				'expires' => time() + 3600 // 1 hour
+			) );
+			?>
+			<script>
+			(function() {
+				'use strict';
+
+				// Browser-side caching for product variations
+				const cacheKey = 'primefit_product_<?php echo $product_id; ?>';
+				const cacheData = <?php echo $cache_data; ?>;
+
+				// Store in localStorage if supported
+				if (typeof(Storage) !== 'undefined') {
+					try {
+						localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+
+						// Set up cleanup for expired cache
+						window.addEventListener('beforeunload', function() {
+							const cached = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+							if (cached.expires && cached.expires < Date.now() / 1000) {
+								localStorage.removeItem(cacheKey);
+							}
+						});
+					} catch (e) {
+						// localStorage might be full or disabled
+						console.warn('Browser cache not available');
+					}
+				}
+
+				// Make cached data available to JavaScript
+				window.primefitBrowserCache = window.primefitBrowserCache || {};
+				window.primefitBrowserCache[cacheKey] = cacheData;
+			})();
+			</script>
+			<?php
+		}
+	}
+}
+
+/**
+ * Add cache-busting parameters to static assets
+ */
+add_filter( 'style_loader_src', 'primefit_cache_busting_styles', 10, 2 );
+add_filter( 'script_loader_src', 'primefit_cache_busting_scripts', 10, 2 );
+
+function primefit_cache_busting_styles( $src, $handle ) {
+	return primefit_add_cache_busting( $src, $handle, 'css' );
+}
+
+function primefit_cache_busting_scripts( $src, $handle ) {
+	return primefit_add_cache_busting( $src, $handle, 'js' );
+}
+
+function primefit_add_cache_busting( $src, $handle, $type ) {
+	// Only add cache busting for our theme assets
+	if ( strpos( $src, PRIMEFIT_THEME_URI ) === false ) {
+		return $src;
+	}
+
+	// Generate cache-busting parameter based on file modification time
+	$file_path = str_replace( PRIMEFIT_THEME_URI, PRIMEFIT_THEME_DIR, $src );
+	$file_path = str_replace( '?' . parse_url( $src, PHP_URL_QUERY ), '', $file_path );
+
+	if ( file_exists( $file_path ) ) {
+		$version = filemtime( $file_path );
+		$src = add_query_arg( 'ver', $version, $src );
+	}
+
+	return $src;
 }

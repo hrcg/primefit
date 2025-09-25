@@ -548,7 +548,7 @@ body:has(.promo-bar) .site-header {
 
 
 body:not(.has-hero-header):not(:has(.promo-bar)) .site-content {
-  padding-top: 52px; /* Reduced by 43px when promo bar is not active */
+  padding-top: 46px; /* Reduced by 43px when promo bar is not active */
 }
 
 body:not(.has-hero-header):has(.promo-bar) .site-content {

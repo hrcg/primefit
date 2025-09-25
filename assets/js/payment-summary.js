@@ -9,6 +9,25 @@
 (function ($) {
   "use strict";
 
+  // Ensure this script only runs on order received pages
+  const urlParams = new URLSearchParams(window.location.search);
+  const isOrderReceivedPage = (
+    // Check for order received page indicators
+    document.body.classList.contains('woocommerce-order-received') ||
+    document.querySelector('.woocommerce-order-received') ||
+    document.querySelector('.order-received') ||
+    document.querySelector('#order-received') ||
+    // Check for URL parameters that indicate order received page
+    (urlParams.get('key') && urlParams.get('order')) ||
+    // Check for order-received endpoint in URL path
+    window.location.pathname.includes('/order-received/')
+  );
+
+  if (!isOrderReceivedPage) {
+    console.log('PrimeFit: payment-summary.js skipped - not on order received page');
+    return;
+  }
+
   /**
    * Payment Summary functionality
    */

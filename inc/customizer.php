@@ -722,31 +722,39 @@ function primefit_get_promo_bar_config() {
  * Helper function to get hero configuration from customizer
  */
 function primefit_get_hero_config() {
+	// Use caching for better performance
+	$cache_key = 'primefit_hero_config';
+	$cached_config = get_transient( $cache_key );
+
+	if ( $cached_config !== false ) {
+		return $cached_config;
+	}
+
 	// Get desktop and mobile image IDs
 	$hero_image_desktop_id = get_theme_mod( 'primefit_hero_image_desktop' );
 	$hero_image_mobile_id = get_theme_mod( 'primefit_hero_image_mobile' );
-	
+
 	// Get image URLs
 	$hero_image_desktop_url = $hero_image_desktop_id ? wp_get_attachment_image_url( $hero_image_desktop_id, 'full' ) : '';
 	$hero_image_mobile_url = $hero_image_mobile_id ? wp_get_attachment_image_url( $hero_image_mobile_id, 'full' ) : '';
-	
+
 	// Get video IDs and URLs
 	$hero_video_desktop_id = get_theme_mod( 'primefit_hero_video_desktop' );
 	$hero_video_mobile_id = get_theme_mod( 'primefit_hero_video_mobile' );
-	
+
 	$hero_video_desktop_url = $hero_video_desktop_id ? wp_get_attachment_url( $hero_video_desktop_id ) : '';
 	$hero_video_mobile_url = $hero_video_mobile_id ? wp_get_attachment_url( $hero_video_mobile_id ) : '';
-	
+
 	// Get video poster IDs and URLs
 	$hero_video_poster_desktop_id = get_theme_mod( 'primefit_hero_video_poster_desktop' );
 	$hero_video_poster_mobile_id = get_theme_mod( 'primefit_hero_video_poster_mobile' );
-	
+
 	$hero_video_poster_desktop_url = $hero_video_poster_desktop_id ? wp_get_attachment_image_url( $hero_video_poster_desktop_id, 'full' ) : '';
 	$hero_video_poster_mobile_url = $hero_video_poster_mobile_id ? wp_get_attachment_image_url( $hero_video_poster_mobile_id, 'full' ) : '';
-	
+
 	// Fallback to default image if no custom images are set
 	$default_image_url = primefit_get_asset_uri( array( '/assets/images/DSC03756.webp', '/assets/images/hero-image.jpg' ) );
-	
+
 	if ( empty( $hero_image_desktop_url ) ) {
 		$hero_image_desktop_url = $default_image_url;
 	}
@@ -759,7 +767,7 @@ function primefit_get_hero_config() {
 		$cta_link = wc_get_page_permalink( 'shop' );
 	}
 
-	return array(
+	$config = array(
 		'image_desktop' => $hero_image_desktop_url,
 		'image_mobile' => $hero_image_mobile_url,
 		'video_desktop' => $hero_video_desktop_url,
@@ -776,6 +784,11 @@ function primefit_get_hero_config() {
 		'video_loop' => get_theme_mod( 'primefit_hero_video_loop', true ),
 		'video_muted' => get_theme_mod( 'primefit_hero_video_muted', true ),
 	);
+
+	// Cache for 1 hour (3600 seconds)
+	set_transient( $cache_key, $config, 3600 );
+
+	return $config;
 }
 
 /**
@@ -864,22 +877,30 @@ function primefit_get_mega_menu_config() {
  * Helper function to get category tiles configuration from customizer
  */
 function primefit_get_category_tiles_config() {
+	// Use caching for better performance
+	$cache_key = 'primefit_category_tiles_config';
+	$cached_config = get_transient( $cache_key );
+
+	if ( $cached_config !== false ) {
+		return $cached_config;
+	}
+
 	// Get image IDs and URLs for each tile
 	$tile_1_image_id = get_theme_mod( 'primefit_category_tile_1_image' );
 	$tile_2_image_id = get_theme_mod( 'primefit_category_tile_2_image' );
 	$tile_3_image_id = get_theme_mod( 'primefit_category_tile_3_image' );
-	
+
 	$tile_1_image_url = $tile_1_image_id ? wp_get_attachment_image_url( $tile_1_image_id, 'full' ) : '';
 	$tile_2_image_url = $tile_2_image_id ? wp_get_attachment_image_url( $tile_2_image_id, 'full' ) : '';
 	$tile_3_image_url = $tile_3_image_id ? wp_get_attachment_image_url( $tile_3_image_id, 'full' ) : '';
-	
+
 	// Fallback to default images if no custom images are set
 	$default_images = array(
 		'/assets/images/run.webp',
 		'/assets/images/train.webp',
 		'/assets/images/rec.webp'
 	);
-	
+
 	if ( empty( $tile_1_image_url ) ) {
 		$tile_1_image_url = primefit_get_asset_uri( array( '/assets/images/run.webp', '/assets/images/run.jpg' ) );
 	}
@@ -890,7 +911,7 @@ function primefit_get_category_tiles_config() {
 		$tile_3_image_url = primefit_get_asset_uri( array( '/assets/images/rec.webp', '/assets/images/rec.jpg' ) );
 	}
 
-	return array(
+	$config = array(
 		'enabled' => get_theme_mod( 'primefit_category_tiles_enabled', true ),
 		'tiles' => array(
 			array(
@@ -919,6 +940,11 @@ function primefit_get_category_tiles_config() {
 			)
 		)
 	);
+
+	// Cache for 1 hour (3600 seconds)
+	set_transient( $cache_key, $config, 3600 );
+
+	return $config;
 }
 
 /**

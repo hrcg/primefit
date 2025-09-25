@@ -16,6 +16,8 @@ if ( ! $product ) {
 	return;
 }
 
+$product_id = $product->get_id();
+
 // Get the current selected color from POST data or default
 $selected_color = '';
 if ( isset( $_POST['attribute_pa_color'] ) ) {
@@ -24,32 +26,42 @@ if ( isset( $_POST['attribute_pa_color'] ) ) {
 	$selected_color = sanitize_text_field( $_GET['color'] );
 }
 
-// Always start with the default product gallery
-$attachment_ids = $product->get_gallery_image_ids();
-$main_image_id = $product->get_image_id();
+// Try to get cached gallery data first
+$cached_gallery = primefit_get_cached_product_data( $product_id . '_gallery' );
+if ( false !== $cached_gallery ) {
+	extract( $cached_gallery );
+} else {
+	// Cache miss - get data and cache it
+	// Always start with the default product gallery
+	$attachment_ids = $product->get_gallery_image_ids();
+	$main_image_id = $product->get_image_id();
 
-// Add main image to the beginning of gallery
-if ( $main_image_id ) {
-	array_unshift( $attachment_ids, $main_image_id );
-}
-
-// Remove duplicates
-$attachment_ids = array_unique( $attachment_ids );
-
-
-if ( empty( $attachment_ids ) ) {
-	return;
-}
-
-// Gallery data for JavaScript (variation galleries removed)
-$variation_galleries = array();
-
-// Generate URLs for all images
-$image_urls = array();
-foreach ($attachment_ids as $attachment_id) {
-	if ($attachment_id) {
-		$image_urls[$attachment_id] = wp_get_attachment_image_url($attachment_id, 'full');
+	// Add main image to the beginning of gallery
+	if ( $main_image_id ) {
+		array_unshift( $attachment_ids, $main_image_id );
 	}
+
+	// Remove duplicates
+	$attachment_ids = array_unique( $attachment_ids );
+
+	if ( empty( $attachment_ids ) ) {
+		return;
+	}
+
+	// Gallery data for JavaScript (variation galleries removed)
+	$variation_galleries = array();
+
+	// Generate URLs for all images with caching
+	$image_urls = array();
+	foreach ($attachment_ids as $attachment_id) {
+		if ($attachment_id) {
+			$image_urls[$attachment_id] = wp_get_attachment_image_url($attachment_id, 'full');
+		}
+	}
+
+	// Cache the gallery data
+	$gallery_data = compact( 'attachment_ids', 'variation_galleries', 'image_urls' );
+	primefit_cache_product_data( $product_id . '_gallery', $gallery_data );
 }
 
 // Generate URLs for variation gallery images
@@ -82,12 +94,25 @@ if (!empty($variation_galleries)) {
 	<div class="product-main-image">
 		<div class="main-image-wrapper">
 			<?php
-			$main_image_url = wp_get_attachment_image_url( $attachment_ids[0], 'full' );
-			$main_image_alt = get_post_meta( $attachment_ids[0], '_wp_attachment_image_alt', true );
+			$main_attachment_id = $attachment_ids[0];
+
+			// Try to get cached image URL first
+			$main_image_url = primefit_get_cached_attachment_image_url( $main_attachment_id, 'full' );
+			if ( false === $main_image_url ) {
+				$main_image_url = wp_get_attachment_image_url( $main_attachment_id, 'full' );
+				primefit_cache_attachment_image_url( $main_attachment_id, 'full', $main_image_url );
+			}
+
+			// Try to get cached alt text first
+			$main_image_alt = primefit_get_cached_attachment_meta( $main_attachment_id, '_wp_attachment_image_alt' );
+			if ( false === $main_image_alt ) {
+				$main_image_alt = get_post_meta( $main_attachment_id, '_wp_attachment_image_alt', true );
+				primefit_cache_attachment_meta( $main_attachment_id, '_wp_attachment_image_alt', $main_image_alt );
+			}
 			?>
 			<?php
 			// Use responsive image with modern formats
-			echo primefit_get_responsive_image( $attachment_ids[0], 'full', [
+			echo primefit_get_responsive_image( $main_attachment_id, 'full', [
 				'class' => 'main-product-image',
 				'alt' => $main_image_alt,
 				'loading' => 'eager',
@@ -131,8 +156,19 @@ if (!empty($variation_galleries)) {
 		<div class="product-thumbnails">
 			<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
 				<?php
-				$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'full' );
-				$thumbnail_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+				// Try to get cached image URL first
+				$thumbnail_url = primefit_get_cached_attachment_image_url( $attachment_id, 'full' );
+				if ( false === $thumbnail_url ) {
+					$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'full' );
+					primefit_cache_attachment_image_url( $attachment_id, 'full', $thumbnail_url );
+				}
+
+				// Try to get cached alt text first
+				$thumbnail_alt = primefit_get_cached_attachment_meta( $attachment_id, '_wp_attachment_image_alt' );
+				if ( false === $thumbnail_alt ) {
+					$thumbnail_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
+					primefit_cache_attachment_meta( $attachment_id, '_wp_attachment_image_alt', $thumbnail_alt );
+				}
 				?>
 				<button
 					class="thumbnail-item <?php echo $index === 0 ? 'active' : ''; ?>"
