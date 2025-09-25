@@ -58,6 +58,7 @@
         <h2>Gallery Status Check</h2>
         <div id="gallery-status" class="status info">Checking gallery...</div>
         <button onclick="checkGallery()">Refresh Status</button>
+        <button onclick="resetGallery()" style="margin-left: 10px; background: #dc3545; color: white;">Reset Gallery</button>
     </div>
 
     <div class="debug-section">
@@ -104,6 +105,20 @@
             } else {
                 statusDiv.className = 'status error';
                 statusDiv.innerHTML = '❌ Gallery elements not found. Check if on product page.';
+            }
+        }
+
+        function resetGallery() {
+            // Try to find and reset the ProductGallery instance
+            if (window.productGallery && typeof window.productGallery.resetGalleryState === 'function') {
+                window.productGallery.resetGalleryState();
+                checkGallery();
+                alert('Gallery state has been reset!');
+            } else {
+                // Fallback: reload the page
+                if (confirm('Gallery instance not found. Reload page to reset?')) {
+                    window.location.reload();
+                }
             }
         }
 

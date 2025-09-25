@@ -410,6 +410,140 @@ document.addEventListener('DOMContentLoaded', function() {
 				updateMainImage(newIndex);
 			});
 		}
+
+		// Add swipe functionality
+		initSwipeEvents();
+	}
+
+	// Initialize swipe events for mobile gallery navigation
+	function initSwipeEvents() {
+		const productMainImage = galleryContainer.querySelector('.product-main-image');
+		const mainImageWrapper = galleryContainer.querySelector('.main-image-wrapper');
+		
+		if (!productMainImage) return;
+
+		let startX = 0;
+		let startY = 0;
+		let endX = 0;
+		let endY = 0;
+		let isScrolling = false;
+		let touchStartTime = 0;
+		let isSwipeGesture = false;
+
+		// Add touch events to the main image container
+		productMainImage.addEventListener('touchstart', (e) => {
+			startX = e.touches[0].clientX;
+			startY = e.touches[0].clientY;
+			touchStartTime = Date.now();
+			isScrolling = false;
+			isSwipeGesture = false;
+		}, { passive: true });
+
+		productMainImage.addEventListener('touchmove', (e) => {
+			const currentX = e.touches[0].clientX;
+			const currentY = e.touches[0].clientY;
+			const deltaX = Math.abs(currentX - startX);
+			const deltaY = Math.abs(currentY - startY);
+
+			// If vertical movement is greater than horizontal, allow scrolling
+			if (deltaY > deltaX && deltaY > 10) {
+				isScrolling = true;
+				isSwipeGesture = false;
+				return;
+			}
+
+			// If horizontal movement is greater, prevent scrolling for swipe
+			if (deltaX > deltaY && deltaX > 10) {
+				isSwipeGesture = true;
+				e.preventDefault();
+			}
+		});
+
+		productMainImage.addEventListener('touchend', (e) => {
+			endX = e.changedTouches[0].clientX;
+			endY = e.changedTouches[0].clientY;
+
+			// Only handle swipe if it wasn't a scroll gesture and was a valid swipe
+			if (!isScrolling && isSwipeGesture) {
+				handleSwipe(startX, startY, endX, endY, touchStartTime);
+			}
+		});
+
+		// Also add swipe support to the main image wrapper for better touch area
+		if (mainImageWrapper) {
+			mainImageWrapper.addEventListener('touchstart', (e) => {
+				startX = e.touches[0].clientX;
+				startY = e.touches[0].clientY;
+				touchStartTime = Date.now();
+				isScrolling = false;
+				isSwipeGesture = false;
+			}, { passive: true });
+
+			mainImageWrapper.addEventListener('touchmove', (e) => {
+				const currentX = e.touches[0].clientX;
+				const currentY = e.touches[0].clientY;
+				const deltaX = Math.abs(currentX - startX);
+				const deltaY = Math.abs(currentY - startY);
+
+				// If vertical movement is greater than horizontal, allow scrolling
+				if (deltaY > deltaX && deltaY > 10) {
+					isScrolling = true;
+					isSwipeGesture = false;
+					return;
+				}
+
+				// If horizontal movement is greater, prevent scrolling for swipe
+				if (deltaX > deltaY && deltaX > 10) {
+					isSwipeGesture = true;
+					e.preventDefault();
+				}
+			});
+
+			mainImageWrapper.addEventListener('touchend', (e) => {
+				endX = e.changedTouches[0].clientX;
+				endY = e.changedTouches[0].clientY;
+
+				// Only handle swipe if it wasn't a scroll gesture and was a valid swipe
+				if (!isScrolling && isSwipeGesture) {
+					handleSwipe(startX, startY, endX, endY, touchStartTime);
+				}
+			});
+		}
+	}
+
+	// Handle swipe gestures
+	function handleSwipe(startX, startY, endX, endY, touchStartTime = 0) {
+		const deltaX = endX - startX;
+		const deltaY = endY - startY;
+		const minSwipeDistance = 30; // Reduced for better responsiveness
+		const maxSwipeTime = 500; // Maximum time for a swipe gesture
+		const swipeTime = Date.now() - touchStartTime;
+
+		// Debug logging for mobile testing
+		console.log('Swipe detected:', {
+			deltaX: Math.round(deltaX),
+			deltaY: Math.round(deltaY),
+			minDistance: minSwipeDistance,
+			swipeTime,
+			isHorizontal: Math.abs(deltaX) > Math.abs(deltaY)
+		});
+
+		// Only handle horizontal swipes that are quick enough and meet distance requirements
+		if (
+			Math.abs(deltaX) > Math.abs(deltaY) &&
+			Math.abs(deltaX) > minSwipeDistance &&
+			swipeTime < maxSwipeTime
+		) {
+			if (deltaX > 0) {
+				console.log('Swipe left - previous image');
+				const newIndex = currentIndex > 0 ? currentIndex - 1 : currentImages.length - 1;
+				updateMainImage(newIndex);
+			} else {
+				console.log('Swipe right - next image');
+				const newIndex = currentIndex < currentImages.length - 1 ? currentIndex + 1 : 0;
+				updateMainImage(newIndex);
+			}
+		}
 	}
 
 	// Handle thumbnail clicks

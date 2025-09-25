@@ -145,6 +145,9 @@ body.single-product .single-product-page {
   transform: translateZ(0);
   /* Allow vertical scrolling while enabling horizontal swipe */
   touch-action: pan-y pinch-zoom;
+  /* Improve touch responsiveness */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 .main-product-image {
@@ -163,6 +166,9 @@ body.single-product .single-product-page {
   -webkit-backface-visibility: hidden;
   /* Allow vertical scrolling while enabling horizontal swipe */
   touch-action: pan-y pinch-zoom;
+  /* Improve touch responsiveness */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   /* Smooth transition for non-animated changes */
   transition: opacity 0.2s ease;
 }
@@ -1557,4 +1563,91 @@ body.single-product .single-product-page {
 
 [data-theme="dark"] .size-guide-image {
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+/* Virtual Scrolling Performance Optimizations */
+.size-options {
+  /* Enable hardware acceleration for smooth scrolling */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  /* Optimize for virtual scrolling */
+  contain: layout style;
+  -webkit-contain: layout style;
+}
+
+.size-option {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize rendering */
+  will-change: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.size-option:hover {
+  /* Optimize hover animations */
+  will-change: transform;
+}
+
+.size-option:focus {
+  /* Optimize focus states */
+  outline: 2px solid var(--product-accent);
+  outline-offset: 2px;
+}
+
+/* Virtual scroller container */
+.size-options.virtual-scroll {
+  position: relative;
+  overflow-y: auto;
+  /* Enable momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+}
+
+.size-options.virtual-scroll .size-option {
+  position: absolute;
+  width: 100%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Smooth transitions */
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Performance optimizations for large lists */
+.size-options.large-list {
+  /* Use content-visibility for better performance */
+  content-visibility: auto;
+  -webkit-content-visibility: auto;
+  contain-intrinsic-size: 50px;
+}
+
+/* Debounced input optimizations */
+input[type="number"], input[type="search"] {
+  /* Optimize input rendering */
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  /* Disable unnecessary features */
+  resize: none;
+  /* Optimize font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduce reflows during updates */
+.product-variations-updating * {
+  /* Disable transitions during updates */
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Memory leak prevention - clean up unused elements */
+.product-variation-cleanup {
+  /* Mark for cleanup */
+  display: none;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }

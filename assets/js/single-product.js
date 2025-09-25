@@ -13,6 +13,12 @@
    */
   class ProductGallery {
     constructor() {
+      // Prevent duplicate instances
+      if (window.productGallery && window.productGallery !== this) {
+        console.warn('ProductGallery already exists, returning existing instance');
+        return window.productGallery;
+      }
+
       // Cache DOM selectors for better performance
       this.$gallery = null;
       this.$mainImage = null;
@@ -20,6 +26,8 @@
       this.$dots = null;
       this.currentIndex = 0;
       this.isAnimating = false;
+
+      console.log('ProductGallery: Creating new instance');
       this.init();
     }
 
@@ -37,7 +45,24 @@
         this.$thumbnails = this.$gallery.find(".thumbnail-item");
         this.$dots = this.$gallery.find(".image-dot");
         this.currentIndex = parseInt(this.$mainImage.attr("data-image-index")) || 0;
+        console.log(`Gallery: Initialized - Found ${this.$thumbnails.length} thumbnails, current index: ${this.currentIndex}`);
       }
+    }
+
+    // Method to completely reset gallery state
+    resetGalleryState() {
+      console.log('Gallery: Resetting gallery state');
+      this.isAnimating = false;
+      this.cacheDOM();
+      this.$gallery.find('.main-image-wrapper').removeClass('loading');
+    }
+
+    // Method to clean up event listeners
+    destroy() {
+      if (this.$gallery) {
+        this.$gallery.off('.thumbnail .dot .nav .swipe');
+      }
+      $(document).off('.gallery');
     }
 
     bindEvents() {
@@ -88,6 +113,11 @@
       // Use cached DOM elements instead of re-querying
       if (!this.$gallery || !this.$gallery.length) return;
 
+      // Refresh cached elements to ensure they're up to date
+      this.$thumbnails = this.$gallery.find(".thumbnail-item");
+      this.$dots = this.$gallery.find(".image-dot");
+      this.$mainImage = this.$gallery.find(".main-product-image");
+
       const $thumbnails = this.$thumbnails;
       const $dots = this.$dots;
       const $mainImage = this.$mainImage;
@@ -109,37 +139,12 @@
       // Get the thumbnail image to extract the correct URL
       const $thumbnailImg = $thumbnails.eq(index).find(".thumbnail-image");
       if ($thumbnailImg.length) {
-        // Try multiple approaches to get high-quality image
-        let imageUrl = $thumbnailImg.attr("src");
-
-        // Try to get full-size image URL - remove size parameters
-        if (imageUrl.includes('-')) {
-          // Remove WordPress size suffix (e.g., -150x150, -300x300, etc.)
-          const lastDashIndex = imageUrl.lastIndexOf('-');
-          const extensionIndex = imageUrl.lastIndexOf('.');
-          if (lastDashIndex > 0 && extensionIndex > lastDashIndex) {
-            imageUrl = imageUrl.substring(0, lastDashIndex) + imageUrl.substring(extensionIndex);
-          }
-        }
-
-        // Fallback: remove common size suffixes
-        const sizePatterns = [
-          /-\d+x\d+$/,
-          /-woocommerce_gallery_thumbnail$/,
-          /-thumbnail$/,
-          /-medium$/,
-          /-large$/,
-          /-full$/
-        ];
-
-        for (const pattern of sizePatterns) {
-          if (pattern.test(imageUrl)) {
-            imageUrl = imageUrl.replace(pattern, '');
-            break;
-          }
-        }
-
+        // Use the thumbnail URL directly - the PHP template already uses 'full' size
+        // so these URLs should be pointing to the correct full-size images
+        const imageUrl = $thumbnailImg.attr("src");
         const imageAlt = $thumbnailImg.attr("alt");
+
+        console.log(`Gallery: Switching to image ${index} - URL: ${imageUrl.substring(0, 60)}..., Direction: ${slideDirection}`);
 
         // Start slide animation
         this.animateSlide(
@@ -159,7 +164,9 @@
       $dots.eq(index).addClass("active");
 
       // Update current index - do this before starting animation
+      const oldIndex = this.currentIndex;
       this.currentIndex = index;
+      console.log(`Gallery: Index updated from ${oldIndex} to ${index}`);
 
       // Update cached main image reference to prevent stale references
       this.$mainImage = this.$gallery.find(".main-product-image");
@@ -185,7 +192,10 @@
       $mainImageWrapper.addClass("loading");
 
       // Add cache busting parameter to prevent browser caching issues
-      const cacheBustUrl = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      const timestamp = Date.now();
+      const cacheBustUrl = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 't=' + timestamp;
+      
+      console.log(`Gallery: Attempting to load image - Original: ${imageUrl}, Cache-busted: ${cacheBustUrl}`);
 
       // Simplified image switch - DISABLED temp-image functionality
       const $newImage = $("<img>", {
@@ -197,18 +207,44 @@
 
       // Simple image replacement with optimized callbacks
       $newImage.on("load", () => {
+        console.log(`Gallery: Image loaded successfully - Index: ${index}, URL: ${cacheBustUrl.substring(0, 50)}...`);
+
         // Remove the old image after the new one has loaded successfully
         $mainImage.remove();
         $newImage.appendTo($mainImageWrapper);
         $mainImageWrapper.removeClass("loading");
+
+        // Update the cached main image reference
+        this.$mainImage = $newImage;
+
         this.isAnimating = false; // Reset animation flag
+        console.log(`Gallery: Animation complete for image ${index}`);
       });
 
       // Fallback if image doesn't load
       $newImage.on("error", () => {
-        console.warn('Failed to load gallery image:', cacheBustUrl);
-        $mainImageWrapper.removeClass("loading");
-        this.isAnimating = false; // Reset animation flag
+        console.error('Failed to load gallery image:', cacheBustUrl);
+        console.error('Original URL:', imageUrl);
+        
+        // Try loading the image without cache busting as fallback
+        console.log('Trying fallback without cache busting...');
+        const fallbackImage = new Image();
+        fallbackImage.onload = () => {
+          console.log('Fallback image loaded successfully');
+          $mainImage.remove();
+          $newImage.attr('src', imageUrl); // Use original URL
+          $newImage.appendTo($mainImageWrapper);
+          $mainImageWrapper.removeClass("loading");
+          this.$mainImage = $newImage;
+          this.isAnimating = false;
+        };
+        fallbackImage.onerror = () => {
+          console.error('Even fallback image failed to load');
+          console.error('This suggests the image file does not exist at:', imageUrl);
+          $mainImageWrapper.removeClass("loading");
+          this.isAnimating = false;
+        };
+        fallbackImage.src = imageUrl;
       });
     }
 
@@ -216,8 +252,22 @@
       // Use cached elements and current index
       if (!this.$gallery || !this.$thumbnails || this.isAnimating) return;
 
+      // Refresh cached elements to ensure they're current
+      this.$thumbnails = this.$gallery.find(".thumbnail-item");
+      this.$mainImage = this.$gallery.find(".main-product-image");
+
       const newIndex =
         this.currentIndex > 0 ? this.currentIndex - 1 : this.$thumbnails.length - 1;
+
+      console.log(`Gallery: Previous image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`);
+      
+      // Prevent rapid clicking by adding a small delay
+      if (this.lastClickTime && Date.now() - this.lastClickTime < 300) {
+        console.log('Gallery: Click too rapid, ignoring');
+        return;
+      }
+      this.lastClickTime = Date.now();
+      
       this.switchImage(newIndex);
     }
 
@@ -225,8 +275,22 @@
       // Use cached elements and current index
       if (!this.$gallery || !this.$thumbnails || this.isAnimating) return;
 
+      // Refresh cached elements to ensure they're current
+      this.$thumbnails = this.$gallery.find(".thumbnail-item");
+      this.$mainImage = this.$gallery.find(".main-product-image");
+
       const newIndex =
         this.currentIndex < this.$thumbnails.length - 1 ? this.currentIndex + 1 : 0;
+
+      console.log(`Gallery: Next image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`);
+      
+      // Prevent rapid clicking by adding a small delay
+      if (this.lastClickTime && Date.now() - this.lastClickTime < 300) {
+        console.log('Gallery: Click too rapid, ignoring');
+        return;
+      }
+      this.lastClickTime = Date.now();
+      
       this.switchImage(newIndex);
     }
 
@@ -243,16 +307,18 @@
       let endY = 0;
       let isScrolling = false;
       let touchStartTime = 0;
+      let isSwipeGesture = false;
 
       // Use passive event listeners for better performance
-      $productMainImage.on("touchstart.passive", (e) => {
+      $productMainImage.on("touchstart.swipe", (e) => {
         startX = e.originalEvent.touches[0].clientX;
         startY = e.originalEvent.touches[0].clientY;
         touchStartTime = Date.now();
         isScrolling = false;
+        isSwipeGesture = false;
       }, { passive: true });
 
-      $productMainImage.on("touchmove.passive", (e) => {
+      $productMainImage.on("touchmove.swipe", (e) => {
         const currentX = e.originalEvent.touches[0].clientX;
         const currentY = e.originalEvent.touches[0].clientY;
         const deltaX = Math.abs(currentX - startX);
@@ -261,39 +327,97 @@
         // If vertical movement is greater than horizontal, allow scrolling
         if (deltaY > deltaX && deltaY > 10) {
           isScrolling = true;
+          isSwipeGesture = false;
           return; // Allow default scroll behavior
         }
 
         // If horizontal movement is greater, prevent scrolling for swipe
         if (deltaX > deltaY && deltaX > 10) {
+          isSwipeGesture = true;
           e.preventDefault();
         }
       });
 
-      $productMainImage.on("touchend.passive", (e) => {
+      $productMainImage.on("touchend.swipe", (e) => {
         endX = e.originalEvent.changedTouches[0].clientX;
         endY = e.originalEvent.changedTouches[0].clientY;
 
-        // Only handle swipe if it wasn't a scroll gesture
-        if (!isScrolling) {
-          this.handleSwipe(startX, startY, endX, endY);
+        // Only handle swipe if it wasn't a scroll gesture and was a valid swipe
+        if (!isScrolling && isSwipeGesture) {
+          this.handleSwipe(startX, startY, endX, endY, touchStartTime);
         }
       });
+
+      // Also add swipe support to the main image wrapper for better touch area
+      const $mainImageWrapper = this.$gallery.find(".main-image-wrapper");
+      if ($mainImageWrapper.length) {
+        $mainImageWrapper.on("touchstart.swipe", (e) => {
+          startX = e.originalEvent.touches[0].clientX;
+          startY = e.originalEvent.touches[0].clientY;
+          touchStartTime = Date.now();
+          isScrolling = false;
+          isSwipeGesture = false;
+        }, { passive: true });
+
+        $mainImageWrapper.on("touchmove.swipe", (e) => {
+          const currentX = e.originalEvent.touches[0].clientX;
+          const currentY = e.originalEvent.touches[0].clientY;
+          const deltaX = Math.abs(currentX - startX);
+          const deltaY = Math.abs(currentY - startY);
+
+          // If vertical movement is greater than horizontal, allow scrolling
+          if (deltaY > deltaX && deltaY > 10) {
+            isScrolling = true;
+            isSwipeGesture = false;
+            return; // Allow default scroll behavior
+          }
+
+          // If horizontal movement is greater, prevent scrolling for swipe
+          if (deltaX > deltaY && deltaX > 10) {
+            isSwipeGesture = true;
+            e.preventDefault();
+          }
+        });
+
+        $mainImageWrapper.on("touchend.swipe", (e) => {
+          endX = e.originalEvent.changedTouches[0].clientX;
+          endY = e.originalEvent.changedTouches[0].clientY;
+
+          // Only handle swipe if it wasn't a scroll gesture and was a valid swipe
+          if (!isScrolling && isSwipeGesture) {
+            this.handleSwipe(startX, startY, endX, endY);
+          }
+        });
+      }
     }
 
-    handleSwipe(startX, startY, endX, endY) {
+    handleSwipe(startX, startY, endX, endY, touchStartTime = 0) {
       const deltaX = endX - startX;
       const deltaY = endY - startY;
-      const minSwipeDistance = 50;
+      const minSwipeDistance = 30; // Reduced for better responsiveness
+      const maxSwipeTime = 500; // Maximum time for a swipe gesture
+      const swipeTime = Date.now() - touchStartTime;
 
-      // Only handle horizontal swipes
+      // Debug logging for mobile testing
+      console.log('Swipe detected:', {
+        deltaX,
+        deltaY,
+        minDistance: minSwipeDistance,
+        swipeTime,
+        isHorizontal: Math.abs(deltaX) > Math.abs(deltaY)
+      });
+
+      // Only handle horizontal swipes that are quick enough and meet distance requirements
       if (
         Math.abs(deltaX) > Math.abs(deltaY) &&
-        Math.abs(deltaX) > minSwipeDistance
+        Math.abs(deltaX) > minSwipeDistance &&
+        swipeTime < maxSwipeTime
       ) {
         if (deltaX > 0) {
+          console.log('Swipe left - previous image');
           this.previousImage();
         } else {
+          console.log('Swipe right - next image');
           this.nextImage();
         }
       }
@@ -395,6 +519,10 @@
       this.$variationForm = null;
       this.isInitializing = true; // Flag to prevent auto-add during initialization
       this.hasUserInteracted = false; // Flag to track if user has interacted with the page
+      this.debouncedInputs = new Map(); // Store debounced input handlers
+      this.updateTimer = null; // Timer for batch DOM updates
+      this.pendingUpdates = new Set(); // Track pending updates
+
       this.init();
     }
 
@@ -402,9 +530,11 @@
       this.cacheDOM();
       this.bindEvents();
       this.initializeVariations();
+      this.initializeVirtualScrolling();
+      this.initializeDebouncedInputs();
 
       // Add a small delay to ensure page is fully loaded before allowing auto-add
-      setTimeout(() => {
+      this.updateTimer = window.memoryLeakManager.setTimeout(() => {
         this.isInitializing = false; // Set to false after initialization is complete
       }, 100);
     }
@@ -417,25 +547,109 @@
     }
 
     bindEvents() {
-      // Color selection
-      $(document).on("click", ".color-option", (e) => {
-        e.preventDefault();
-        this.hasUserInteracted = true; // Mark that user has interacted
-        const $option = $(e.currentTarget);
-        this.selectColor($option);
+      // Color selection with memory leak management
+      window.memoryLeakManager.addEventListener(document, 'click', (e) => {
+        if (e.target.matches('.color-option')) {
+          e.preventDefault();
+          this.hasUserInteracted = true; // Mark that user has interacted
+          const $option = $(e.target);
+          this.selectColor($option);
+        }
       });
 
-      // Size selection
-      $(document).on("click", ".size-option", (e) => {
-        e.preventDefault();
-        this.hasUserInteracted = true; // Mark that user has interacted
-        const $option = $(e.currentTarget);
-        this.selectSize($option);
+      // Size selection with memory leak management
+      window.memoryLeakManager.addEventListener(document, 'click', (e) => {
+        if (e.target.matches('.size-option')) {
+          e.preventDefault();
+          this.hasUserInteracted = true; // Mark that user has interacted
+          const $option = $(e.target);
+          this.selectSize($option);
+        }
       });
 
-      // Form submission
-      $(document).on("submit", ".primefit-variations-form", (e) => {
-        this.handleFormSubmission(e);
+      // Form submission with memory leak management
+      window.memoryLeakManager.addEventListener(document, 'submit', (e) => {
+        if (e.target.matches('.primefit-variations-form')) {
+          this.handleFormSubmission(e);
+        }
+      });
+
+      // Add cleanup function to memory manager
+      window.memoryLeakManager.addCleanupFunction(() => {
+        this.cleanup();
+      });
+    }
+
+    initializeVirtualScrolling() {
+      // Temporarily disable virtual scrolling to fix size option issues
+      // TODO: Re-enable after fixing integration with selection system
+      return;
+
+      if (this.$sizeContainer.length && this.$sizeOptions.length > 10) {
+        // Only enable virtual scrolling for products with many size options
+        this.virtualScroller = new VirtualSizeOptions(this.$sizeContainer[0], {
+          itemHeight: 50,
+          visibleCount: 8
+        });
+
+        // Add CSS classes for performance optimizations
+        this.$sizeContainer.addClass('virtual-scroll large-list');
+
+        // Update virtual scroller when size options change
+        this.virtualScroller.updateItems();
+      }
+    }
+
+    initializeDebouncedInputs() {
+      // Debounce quantity input changes
+      const $quantityInput = $('input[name="quantity"]');
+      if ($quantityInput.length) {
+        const debouncedQuantity = new DebouncedInput($quantityInput[0], (e) => {
+          this.updateQuantity(e.target.value);
+        }, 150);
+
+        this.debouncedInputs.set('quantity', debouncedQuantity);
+      }
+
+      // Debounce search inputs if they exist
+      const $searchInputs = $('input[type="search"], input[name*="search"]');
+      $searchInputs.each((index, input) => {
+        const debouncedSearch = new DebouncedInput(input, (e) => {
+          this.handleSearchInput(e.target.value);
+        }, 300);
+
+        this.debouncedInputs.set(`search-${index}`, debouncedSearch);
+      });
+    }
+
+    batchUpdateDOM(updates) {
+      // Batch DOM updates to reduce reflows
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+      }
+
+      this.pendingUpdates.add(updates);
+
+      this.updateTimer = window.memoryLeakManager.setTimeout(() => {
+        this.processPendingUpdates();
+      }, 16); // ~60fps
+    }
+
+    processPendingUpdates() {
+      const updates = Array.from(this.pendingUpdates);
+      this.pendingUpdates.clear();
+
+      // Add updating class to prevent transitions during batch updates
+      $('body').addClass('product-variations-updating');
+
+      // Process all updates in a single DOM manipulation batch
+      requestAnimationFrame(() => {
+        updates.forEach(update => update());
+
+        // Remove updating class after updates complete
+        setTimeout(() => {
+          $('body').removeClass('product-variations-updating');
+        }, 16); // Next frame
       });
     }
 
@@ -510,37 +724,43 @@
     }
 
     selectColor($option) {
-      // Use cached selectors for better performance
-      this.$colorOptions.removeClass("active");
-      $option.addClass("active");
+      // Use batch DOM updates for better performance
+      this.batchUpdateDOM(() => {
+        // Use cached selectors for better performance
+        this.$colorOptions.removeClass("active");
+        $option.addClass("active");
 
-      const color = $option.data("color");
-      const variationImage = $option.data("variation-image");
+        const color = $option.data("color");
+        const variationImage = $option.data("variation-image");
 
-      // Update product color display - use display name if available
-      const $colorOption = this.$colorOptions.filter(`[data-color="${color}"]`);
-      const displayColor = $colorOption.data("color-display") || color;
-      $(".color-value").text(displayColor);
+        // Update product color display - use display name if available
+        const $colorOption = this.$colorOptions.filter(`[data-color="${color}"]`);
+        const displayColor = $colorOption.data("color-display") || color;
+        $(".color-value").text(displayColor);
 
-      // Update gallery - switch to variation-specific gallery if available
-      this.updateGalleryForColor(color);
+        // Update gallery - switch to variation-specific gallery if available
+        this.updateGalleryForColor(color);
 
-      // Update sizes based on actual stock for selected color
-      const sizesForColor = this.getAvailableSizesForColor(color);
-      this.updateAvailableSizes(sizesForColor);
+        // Update sizes based on actual stock for selected color
+        const sizesForColor = this.getAvailableSizesForColor(color);
+        this.updateAvailableSizes(sizesForColor);
 
-      // Update add to cart button
-      this.updateAddToCartButton();
+        // Update add to cart button
+        this.updateAddToCartButton();
+      });
       // No auto add
     }
 
     selectSize($option) {
-      // Use cached selectors for better performance
-      this.$sizeOptions.removeClass("selected");
-      $option.addClass("selected");
+      // Use batch DOM updates for better performance
+      this.batchUpdateDOM(() => {
+        // Use cached selectors for better performance
+        this.$sizeOptions.removeClass("selected");
+        $option.addClass("selected");
 
-      // Update add to cart button
-      this.updateAddToCartButton();
+        // Update add to cart button
+        this.updateAddToCartButton();
+      });
       // No auto add
     }
 
@@ -563,15 +783,18 @@
         const currentIndex = this.currentIndex;
         const imageAlt = this.$mainImage.attr("alt") || "";
 
-        // Create a new ProductGallery instance to use its animation method
-        const gallery = new ProductGallery();
-        gallery.animateSlide(
-          this.$mainImage,
-          imageUrl,
-          imageAlt,
-          currentIndex,
-          "right"
-        );
+        // Use the global gallery instance to avoid creating duplicates
+        if (window.productGallery) {
+          window.productGallery.animateSlide(
+            this.$mainImage,
+            imageUrl,
+            imageAlt,
+            currentIndex,
+            "right"
+          );
+        } else {
+          console.warn('ProductGallery instance not found for variation image');
+        }
       } else {
         // Fallback to first gallery image if no variation image
         const $firstThumbnail = this.$thumbnails.first();
@@ -590,14 +813,17 @@
             const currentIndex = this.currentIndex;
             const imageAlt = this.$mainImage.attr("alt") || "";
 
-            const gallery = new ProductGallery();
-            gallery.animateSlide(
-              this.$mainImage,
-              fullSizeImage,
-              imageAlt,
-              currentIndex,
-              "right"
-            );
+            if (window.productGallery) {
+              window.productGallery.animateSlide(
+                this.$mainImage,
+                fullSizeImage,
+                imageAlt,
+                currentIndex,
+                "right"
+              );
+            } else {
+              console.warn('ProductGallery instance not found for fallback image');
+            }
           }
         }
       }
@@ -606,32 +832,70 @@
     updateAvailableSizes(availableSizes) {
       const sizes = Array.isArray(availableSizes) ? availableSizes : [];
 
-      $(".size-option").each(function () {
-        const $sizeOption = $(this);
-        const sizeValue = $sizeOption.data("size");
+      this.batchUpdateDOM(() => {
+        $(".size-option").each(function () {
+          const $sizeOption = $(this);
+          const sizeValue = $sizeOption.data("size");
 
-        if (sizes.includes(sizeValue)) {
-          $sizeOption
-            .show()
-            .prop("disabled", false)
-            .attr("aria-disabled", "false")
-            .removeClass("unavailable");
-        } else {
-          // Grey out but keep visible
-          $sizeOption
-            .show()
-            .prop("disabled", true)
-            .attr("aria-disabled", "true")
-            .addClass("unavailable")
-            .removeClass("selected");
-        }
+          if (sizes.includes(sizeValue)) {
+            $sizeOption
+              .show()
+              .prop("disabled", false)
+              .attr("aria-disabled", "false")
+              .removeClass("unavailable");
+          } else {
+            // Grey out but keep visible
+            $sizeOption
+              .show()
+              .prop("disabled", true)
+              .attr("aria-disabled", "true")
+              .addClass("unavailable")
+              .removeClass("selected");
+          }
+        });
       });
 
       // If the selected size is no longer available, clear selection
       const $selectedSize = $(".size-option.selected");
       if ($selectedSize.length && $selectedSize.prop("disabled")) {
-        $selectedSize.removeClass("selected");
+        this.batchUpdateDOM(() => {
+          $selectedSize.removeClass("selected");
+        });
       }
+    }
+
+    updateQuantity(value) {
+      // Optimized quantity update with debouncing
+      if (value && parseInt(value) > 0) {
+        this.batchUpdateDOM(() => {
+          $('input[name="quantity"]').val(value);
+          this.updateAddToCartButton();
+        });
+      }
+    }
+
+    handleSearchInput(value) {
+      // Handle search input with debouncing (if search functionality exists)
+      if (typeof this.onSearchInput === 'function') {
+        this.onSearchInput(value);
+      }
+    }
+
+    cleanup() {
+      // Clean up all resources
+      if (this.updateTimer) {
+        window.memoryLeakManager.clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+      }
+
+      // Clean up debounced inputs
+      this.debouncedInputs.forEach((debouncedInput, key) => {
+        debouncedInput.destroy();
+      });
+      this.debouncedInputs.clear();
+
+      // Clear pending updates
+      this.pendingUpdates.clear();
     }
 
     getAvailableSizesForColor(colorValue) {
@@ -3115,7 +3379,11 @@
       // Initialize image preloader for better performance
       new ImagePreloader();
 
-      new ProductGallery();
+      // Initialize main product gallery (only once)
+      // Note: Gallery is now handled by native JavaScript in product-image.php
+      // if (!window.productGallery) {
+      //   window.productGallery = new ProductGallery();
+      // }
       new ProductInformation();
       new ProductVariations();
       new NotifyAvailability();
@@ -3225,16 +3493,340 @@
   }
 
   /**
+   * Virtual Scrolling for Size Options
+   */
+  class VirtualSizeOptions {
+    constructor(container, options = {}) {
+      this.container = container;
+      this.options = options;
+      this.items = [];
+      this.itemHeight = options.itemHeight || 50;
+      this.visibleCount = options.visibleCount || 10;
+      this.totalHeight = 0;
+      this.scrollTop = 0;
+      this.startIndex = 0;
+      this.endIndex = 0;
+      this.renderedItems = new Map();
+      this.debounceTimer = null;
+
+      this.init();
+    }
+
+    init() {
+      if (!this.container) return;
+
+      this.setupContainer();
+      this.bindEvents();
+      this.updateItems();
+    }
+
+    setupContainer() {
+      this.container.style.position = 'relative';
+      this.container.style.overflowY = 'auto';
+      this.container.style.height = `${this.visibleCount * this.itemHeight}px`;
+    }
+
+    bindEvents() {
+      this.container.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
+
+      // Handle window resize
+      window.addEventListener('resize', this.debounce(this.updateDimensions.bind(this), 100));
+
+      // Clean up on page unload
+      window.addEventListener('beforeunload', this.cleanup.bind(this));
+    }
+
+    handleScroll(e) {
+      const newScrollTop = e.target.scrollTop;
+      if (Math.abs(newScrollTop - this.scrollTop) > this.itemHeight) {
+        this.scrollTop = newScrollTop;
+        this.updateVisibleItems();
+      }
+    }
+
+    updateDimensions() {
+      const containerRect = this.container.getBoundingClientRect();
+      this.visibleCount = Math.ceil(containerRect.height / this.itemHeight) + 2; // Add buffer
+      this.container.style.height = `${this.visibleCount * this.itemHeight}px`;
+      this.updateVisibleItems();
+    }
+
+    updateItems() {
+      this.items = Array.from(this.container.querySelectorAll('.size-option'));
+      this.totalHeight = this.items.length * this.itemHeight;
+      this.updateVisibleItems();
+    }
+
+    updateVisibleItems() {
+      if (this.items.length === 0) return;
+
+      const startIndex = Math.max(0, Math.floor(this.scrollTop / this.itemHeight) - 2);
+      const endIndex = Math.min(
+        this.items.length - 1,
+        startIndex + this.visibleCount + 4
+      );
+
+      if (startIndex === this.startIndex && endIndex === this.endIndex) return;
+
+      this.startIndex = startIndex;
+      this.endIndex = endIndex;
+
+      this.renderItems();
+    }
+
+    renderItems() {
+      // Clear rendered items outside the visible range
+      this.renderedItems.forEach((item, index) => {
+        if (index < this.startIndex || index > this.endIndex) {
+          if (item.parentNode === this.container) {
+            this.container.removeChild(item);
+          }
+          this.renderedItems.delete(index);
+        }
+      });
+
+      // Render items in the visible range
+      for (let i = this.startIndex; i <= this.endIndex; i++) {
+        if (!this.renderedItems.has(i)) {
+          const item = this.items[i];
+          if (item) {
+            const clone = item.cloneNode(true);
+            clone.style.position = 'absolute';
+            clone.style.top = `${i * this.itemHeight}px`;
+            clone.style.width = '100%';
+            clone.style.height = `${this.itemHeight}px`;
+
+            this.container.appendChild(clone);
+            this.renderedItems.set(i, clone);
+          }
+        }
+      }
+    }
+
+    updateItem(index, data) {
+      const item = this.renderedItems.get(index);
+      if (item) {
+        // Update item properties based on data
+        if (data.selected !== undefined) {
+          item.classList.toggle('selected', data.selected);
+        }
+        if (data.disabled !== undefined) {
+          item.disabled = data.disabled;
+          item.setAttribute('aria-disabled', data.disabled ? 'true' : 'false');
+        }
+      }
+    }
+
+    setItemHeight(height) {
+      this.itemHeight = height;
+      this.updateDimensions();
+    }
+
+    debounce(func, wait) {
+      return (...args) => {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    cleanup() {
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+      }
+      this.renderedItems.clear();
+    }
+  }
+
+  /**
+   * Debounced Input Handler
+   */
+  class DebouncedInput {
+    constructor(element, callback, delay = 300) {
+      this.element = element;
+      this.callback = callback;
+      this.delay = delay;
+      this.timer = null;
+      this.isProcessing = false;
+
+      this.init();
+    }
+
+    init() {
+      if (!this.element) return;
+
+      this.element.addEventListener('input', this.handleInput.bind(this), { passive: true });
+      this.element.addEventListener('blur', this.flush.bind(this));
+    }
+
+    handleInput(e) {
+      if (this.isProcessing) return;
+
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => {
+        this.isProcessing = true;
+        this.callback(e);
+        this.isProcessing = false;
+      }, this.delay);
+    }
+
+    flush() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.isProcessing = true;
+        this.callback({ target: this.element });
+        this.isProcessing = false;
+      }
+    }
+
+    destroy() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+      if (this.element) {
+        this.element.removeEventListener('input', this.handleInput);
+        this.element.removeEventListener('blur', this.flush);
+      }
+    }
+  }
+
+  /**
+   * Memory Leak Prevention Manager
+   */
+  class MemoryLeakManager {
+    constructor() {
+      this.listeners = new WeakMap();
+      this.timers = new Set();
+      this.observers = new Set();
+      this.cleanupFunctions = new Set();
+    }
+
+    addEventListener(element, event, handler, options = {}) {
+      if (!element || !handler) return;
+
+      const listener = element.addEventListener(event, handler, options);
+
+      // Store weak reference to prevent memory leaks
+      if (!this.listeners.has(element)) {
+        this.listeners.set(element, new Map());
+      }
+
+      const elementListeners = this.listeners.get(element);
+      elementListeners.set(handler, { event, options });
+
+      return listener;
+    }
+
+    removeEventListener(element, event, handler) {
+      if (!element || !handler) return;
+
+      element.removeEventListener(event, handler);
+
+      if (this.listeners.has(element)) {
+        const elementListeners = this.listeners.get(element);
+        elementListeners.delete(handler);
+      }
+    }
+
+    setTimeout(callback, delay) {
+      const timer = window.setTimeout(callback, delay);
+      this.timers.add(timer);
+      return timer;
+    }
+
+    clearTimeout(timer) {
+      if (this.timers.has(timer)) {
+        window.clearTimeout(timer);
+        this.timers.delete(timer);
+      }
+    }
+
+    setInterval(callback, delay) {
+      const timer = window.setInterval(callback, delay);
+      this.timers.add(timer);
+      return timer;
+    }
+
+    clearInterval(timer) {
+      if (this.timers.has(timer)) {
+        window.clearInterval(timer);
+        this.timers.delete(timer);
+      }
+    }
+
+    observe(element, callback) {
+      if (!element) return;
+
+      const observer = new MutationObserver(callback);
+      observer.observe(element, { childList: true, subtree: true });
+      this.observers.add(observer);
+
+      return observer;
+    }
+
+    unobserve(observer) {
+      if (this.observers.has(observer)) {
+          observer.disconnect();
+          this.observers.delete(observer);
+      }
+    }
+
+    addCleanupFunction(func) {
+      this.cleanupFunctions.add(func);
+    }
+
+    cleanup() {
+      // Clear all timers
+      this.timers.forEach(timer => {
+        window.clearTimeout(timer);
+        window.clearInterval(timer);
+      });
+      this.timers.clear();
+
+      // Disconnect all observers
+      this.observers.forEach(observer => {
+        observer.disconnect();
+      });
+      this.observers.clear();
+
+      // Run cleanup functions
+      this.cleanupFunctions.forEach(func => {
+        try {
+          func();
+        } catch (e) {
+          console.warn('Cleanup function failed:', e);
+        }
+      });
+      this.cleanupFunctions.clear();
+
+      // Clear listener references (but keep actual listeners)
+      this.listeners = new WeakMap();
+    }
+  }
+
+  // Initialize global memory leak manager
+  window.memoryLeakManager = new MemoryLeakManager();
+
+  /**
    * Initialize all functionality when DOM is ready
    */
   $(document).ready(function () {
-    // Initialize product gallery
-    new ProductGallery();
+    // Initialize product gallery (only if not already initialized above)
+    // Note: Gallery is now handled by native JavaScript in product-image.php
+    // if (!window.productGallery) {
+    //   window.productGallery = new ProductGallery();
+    // }
 
     // Initialize product variations
     new ProductVariations();
 
     // Initialize size guide modal
     new SizeGuideModal();
+
+    // Initialize memory leak manager cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (window.memoryLeakManager) {
+        window.memoryLeakManager.cleanup();
+      }
+    });
   });
 })(jQuery);
