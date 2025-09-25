@@ -1126,10 +1126,6 @@
     width: 20px;
     height: 20px;
   }
-
-  .woocommerce ul.products li.product .color-swatch.active {
-    border-width: 2px;
-  }
 }
 
 /* Product Price Container for Variable Products */
