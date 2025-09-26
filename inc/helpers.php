@@ -2024,3 +2024,96 @@ function primefit_clear_product_performance_cache( $product_id ) {
 	wp_cache_delete( $product_id, 'posts' );
 	wp_cache_delete( $product_id, 'post_meta' );
 }
+
+/**
+ * Service Worker Cache Management
+ * Mobile-specific caching utilities
+ */
+
+/**
+ * Get cache version for service worker
+ */
+function primefit_get_cache_version() {
+	return 'primefit-mobile-v2.0';
+}
+
+/**
+ * Get critical resources for service worker caching
+ */
+function primefit_get_critical_resources() {
+	$critical_resources = [
+		'/',
+		PRIMEFIT_THEME_URI . '/assets/css/app.css',
+		PRIMEFIT_THEME_URI . '/assets/css/header.css',
+		PRIMEFIT_THEME_URI . '/assets/js/core.js',
+		PRIMEFIT_THEME_URI . '/assets/js/app.js'
+	];
+	
+	// Add page-specific critical resources
+	if ( is_front_page() ) {
+		$critical_resources[] = PRIMEFIT_THEME_URI . '/assets/css/hero.css';
+		$critical_resources[] = PRIMEFIT_THEME_URI . '/assets/js/hero-video.js';
+	}
+	
+	if ( is_product() ) {
+		$critical_resources[] = PRIMEFIT_THEME_URI . '/assets/css/single-product.css';
+		$critical_resources[] = PRIMEFIT_THEME_URI . '/assets/js/single-product.js';
+	}
+	
+	if ( is_shop() || is_product_category() || is_product_tag() ) {
+		$critical_resources[] = PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css';
+		$critical_resources[] = PRIMEFIT_THEME_URI . '/assets/js/shop.js';
+	}
+	
+	return apply_filters( 'primefit_critical_resources', $critical_resources );
+}
+
+/**
+ * Check if device is mobile for service worker registration
+ */
+function primefit_is_mobile_device() {
+	return wp_is_mobile() || 
+		   ( isset( $_SERVER['HTTP_USER_AGENT'] ) && 
+			 preg_match( '/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i', $_SERVER['HTTP_USER_AGENT'] ) );
+}
+
+/**
+ * Get service worker configuration
+ */
+function primefit_get_sw_config() {
+	return [
+		'version' => primefit_get_cache_version(),
+		'critical_resources' => primefit_get_critical_resources(),
+		'cache_strategies' => [
+			'static' => [
+				'maxAge' => 7 * 24 * 60 * 60 * 1000, // 7 days
+				'maxEntries' => 50
+			],
+			'dynamic' => [
+				'maxAge' => 24 * 60 * 60 * 1000, // 1 day
+				'maxEntries' => 30
+			],
+			'images' => [
+				'maxAge' => 3 * 24 * 60 * 60 * 1000, // 3 days
+				'maxEntries' => 100
+			]
+		],
+		'mobile_only' => true,
+		'scope' => '/'
+	];
+}
+
+/**
+ * Add service worker meta tags for mobile
+ */
+add_action( 'wp_head', 'primefit_add_sw_meta_tags', 1 );
+function primefit_add_sw_meta_tags() {
+	if ( ! primefit_is_mobile_device() ) {
+		return;
+	}
+	
+	echo '<meta name="mobile-web-app-capable" content="yes">';
+	echo '<meta name="apple-mobile-web-app-capable" content="yes">';
+	echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">';
+	echo '<meta name="theme-color" content="#0d0d0d">';
+}

@@ -796,6 +796,9 @@
         const sizesForColor = this.getAvailableSizesForColor(color);
         this.updateAvailableSizes(sizesForColor);
 
+        // Update form inputs with selected color (but keep size empty for now)
+        this.updateVariationFormInputs(color, null);
+
         // Update add to cart button
         this.updateAddToCartButton();
       });
@@ -808,6 +811,12 @@
         // Use cached selectors for better performance
         this.$sizeOptions.removeClass("selected");
         $option.addClass("selected");
+
+        // Update form inputs with selected size and current color
+        const sizeValue = $option.data("size");
+        const $selectedColor = this.$colorOptions.filter(".active");
+        const colorValue = $selectedColor.length ? $selectedColor.data("color") : null;
+        this.updateVariationFormInputs(colorValue, sizeValue);
 
         // Update add to cart button
         this.updateAddToCartButton();
@@ -1029,99 +1038,85 @@
      * This is critical for WooCommerce's variation validation to work
      */
     updateVariationFormInputs(colorValue, sizeValue) {
+      // Get the actual form to find the correct input names
+      const $form = $(".primefit-variations-form");
+      if (!$form.length) return;
+
       // Update color attribute input
       if (colorValue) {
-        // Try different possible attribute names for color
-        const colorInputs = [
-          ".attribute_color_input",
-          'input[name="attribute_pa_color"]',
-          'input[name="attribute_color"]',
-          'select[name="attribute_pa_color"]',
-          'select[name="attribute_color"]',
-        ];
+        // Find all inputs with attribute names in the form
+        const colorInputs = $form.find('input[name^="attribute_"], select[name^="attribute_"]').filter(function() {
+          const name = $(this).attr('name');
+          return name && (name.includes('color') || name.includes('pa_color'));
+        });
 
-        colorInputs.forEach((selector) => {
-          const $input = $(selector);
-          if ($input.length) {
-            if ($input.is("select")) {
-              $input.val(colorValue).trigger("change");
-            } else {
-              $input.val(colorValue);
-            }
+        colorInputs.each(function() {
+          const $input = $(this);
+          if ($input.is("select")) {
+            $input.val(colorValue).trigger("change");
+          } else {
+            $input.val(colorValue);
           }
         });
       }
 
       // Update size attribute input
       if (sizeValue) {
-        // Try different possible attribute names for size
-        const sizeInputs = [
-          ".attribute_size_input",
-          'input[name="attribute_pa_size"]',
-          'input[name="attribute_size"]',
-          'select[name="attribute_pa_size"]',
-          'select[name="attribute_size"]',
-        ];
+        // Find all inputs with attribute names in the form
+        const sizeInputs = $form.find('input[name^="attribute_"], select[name^="attribute_"]').filter(function() {
+          const name = $(this).attr('name');
+          return name && (name.includes('size') || name.includes('pa_size'));
+        });
 
-        sizeInputs.forEach((selector) => {
-          const $input = $(selector);
-          if ($input.length) {
-            if ($input.is("select")) {
-              $input.val(sizeValue).trigger("change");
-            } else {
-              $input.val(sizeValue);
-            }
+        sizeInputs.each(function() {
+          const $input = $(this);
+          if ($input.is("select")) {
+            $input.val(sizeValue).trigger("change");
+          } else {
+            $input.val(sizeValue);
           }
         });
       }
 
-      // Trigger WooCommerce variation change event
-      $(".variations_form, .primefit-variations-form").trigger(
-        "woocommerce_variation_select_change"
-      );
+      // Note: Removed WooCommerce variation change event trigger to prevent quantity increment bug
+      // The custom variation handling above is sufficient for our needs
     }
 
     /**
      * Clear WooCommerce variation form inputs
      */
     clearVariationFormInputs() {
-      // Clear color attribute inputs
-      const colorInputs = [
-        ".attribute_color_input",
-        'input[name="attribute_pa_color"]',
-        'input[name="attribute_color"]',
-        'select[name="attribute_pa_color"]',
-        'select[name="attribute_color"]',
-      ];
+      // Get the actual form to find the correct input names
+      const $form = $(".primefit-variations-form");
+      if (!$form.length) return;
 
-      colorInputs.forEach((selector) => {
-        const $input = $(selector);
-        if ($input.length) {
-          if ($input.is("select")) {
-            $input.val("").trigger("change");
-          } else {
-            $input.val("");
-          }
+      // Clear color attribute inputs
+      const colorInputs = $form.find('input[name^="attribute_"], select[name^="attribute_"]').filter(function() {
+        const name = $(this).attr('name');
+        return name && (name.includes('color') || name.includes('pa_color'));
+      });
+
+      colorInputs.each(function() {
+        const $input = $(this);
+        if ($input.is("select")) {
+          $input.val("").trigger("change");
+        } else {
+          $input.val("");
         }
       });
 
       // Clear size attribute inputs
-      const sizeInputs = [
-        ".attribute_size_input",
-        'input[name="attribute_pa_size"]',
-        'input[name="attribute_size"]',
-        'select[name="attribute_pa_size"]',
-        'select[name="attribute_size"]',
-      ];
+      const sizeInputs = $form.find('input[name^="attribute_"], select[name^="attribute_"]').filter(function() {
+        const name = $(this).attr('name');
+        return name && (name.includes('size') || name.includes('pa_size'));
+      });
 
-      sizeInputs.forEach((selector) => {
-        const $input = $(selector);
-        if ($input.length) {
-          if ($input.is("select")) {
-            $input.val("").trigger("change");
-          } else {
-            $input.val("");
-          }
+      sizeInputs.each(function() {
+        const $input = $(this);
+        if ($input.is("select")) {
+          $input.val("").trigger("change");
+        } else {
+          $input.val("");
         }
       });
     }
@@ -2968,8 +2963,7 @@
       $form.find('input[name="variation_id"]').val(variationId);
       $form.find(".variation_id").val(variationId);
 
-      // Trigger WooCommerce variation change event to ensure validation
-      $form.trigger("woocommerce_variation_select_change");
+      // Note: Removed WooCommerce variation change event trigger to prevent quantity increment bug
 
       // Wait a moment for WooCommerce to process the change
       setTimeout(() => {
@@ -3038,10 +3032,8 @@
         });
       }
 
-      // Trigger WooCommerce variation change event
-      $(".variations_form, .primefit-variations-form").trigger(
-        "woocommerce_variation_select_change"
-      );
+      // Note: Removed WooCommerce variation change event trigger to prevent quantity increment bug
+      // The custom variation handling above is sufficient for our needs
     }
 
     /**
@@ -3805,7 +3797,8 @@
     addEventListener(element, event, handler, options = {}) {
       if (!element || !handler) return;
 
-      const listener = element.addEventListener(event, handler, options);
+      // Actually add the event listener
+      element.addEventListener(event, handler, options);
 
       // Store weak reference to prevent memory leaks
       if (!this.listeners.has(element)) {
@@ -3815,7 +3808,7 @@
       const elementListeners = this.listeners.get(element);
       elementListeners.set(handler, { event, options });
 
-      return listener;
+      return handler;
     }
 
     removeEventListener(element, event, handler) {

@@ -48,44 +48,84 @@ function primefit_enqueue_assets() {
 		primefit_get_file_version( '/assets/css/app.css' ),
 		'all'
 	);
+	
+	// Mobile-first CSS loading strategy
+	primefit_optimize_css_delivery();
 
 	// Header-specific styles - Load early for above-the-fold content
+	// Mobile-first: Load immediately on mobile, defer on desktop
+	$header_media = wp_is_mobile() ? 'all' : 'print';
 	wp_enqueue_style(
 		'primefit-header',
 		PRIMEFIT_THEME_URI . '/assets/css/header.css',
 		[ 'primefit-app' ],
-		primefit_get_file_version( '/assets/css/header.css' )
+		primefit_get_file_version( '/assets/css/header.css' ),
+		$header_media
 	);
+	
+	// Load header CSS for desktop after page load
+	if ( ! wp_is_mobile() ) {
+		add_action( 'wp_footer', function() {
+			echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css?v=' . primefit_get_file_version( '/assets/css/header.css' ) . '" media="all">';
+		}, 1 );
+	}
 
 	// Footer-specific styles - load for all devices
+	// Mobile-first: Load immediately on mobile, defer on desktop
+	$footer_media = wp_is_mobile() ? 'all' : 'print';
 	wp_enqueue_style(
 		'primefit-footer',
 		PRIMEFIT_THEME_URI . '/assets/css/footer.css',
 		[ 'primefit-app' ],
 		primefit_get_file_version( '/assets/css/footer.css' ),
-		'all'
+		$footer_media
 	);
+	
+	// Load footer CSS for desktop after page load
+	if ( ! wp_is_mobile() ) {
+		add_action( 'wp_footer', function() {
+			echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/footer.css?v=' . primefit_get_file_version( '/assets/css/footer.css' ) . '" media="all">';
+		}, 1 );
+	}
 
 	// Cart-specific styles - load conditionally to reduce critical path
 	$page_type = primefit_get_page_type();
 	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
+		// Mobile-first: Load immediately on mobile, defer on desktop
+		$cart_media = wp_is_mobile() ? 'all' : 'print';
 		wp_enqueue_style(
 			'primefit-cart',
 			PRIMEFIT_THEME_URI . '/assets/css/cart.css',
 			[ 'primefit-app' ],
 			primefit_get_file_version( '/assets/css/cart.css' ),
-			'all'
+			$cart_media
 		);
+		
+		// Load cart CSS for desktop after page load
+		if ( ! wp_is_mobile() ) {
+			add_action( 'wp_footer', function() {
+				echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/cart.css?v=' . primefit_get_file_version( '/assets/css/cart.css' ) . '" media="all">';
+			}, 1 );
+		}
 	}
 	// WooCommerce styles - load for all devices
 	if ( class_exists( 'WooCommerce' ) ) {
+		// Mobile-first: Load immediately on mobile, defer on desktop
+		$woocommerce_media = wp_is_mobile() ? 'all' : 'print';
 		wp_enqueue_style(
 			'primefit-woocommerce',
 			PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css',
 			[ 'primefit-app' ],
 			primefit_get_file_version( '/assets/css/woocommerce.css' ),
-			'all'
+			$woocommerce_media
 		);
+		
+		// Load WooCommerce CSS for desktop after page load
+		if ( ! wp_is_mobile() ) {
+			add_action( 'wp_footer', function() {
+				echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css?v=' . primefit_get_file_version( '/assets/css/woocommerce.css' ) . '" media="all">';
+			}, 1 );
+		}
 		
 		// Cache page type for optimized CSS loading
 		$page_type = primefit_get_page_type();
@@ -93,19 +133,23 @@ function primefit_enqueue_assets() {
 		// Single product page styles with critical CSS optimization
 		if ( $page_type === 'product' ) {
 			$single_product_css_url = PRIMEFIT_THEME_URI . '/assets/css/single-product.css';
-
+			
+			// Mobile-first: Load immediately on mobile, defer on desktop
+			$single_product_media = wp_is_mobile() ? 'all' : 'print';
 			wp_enqueue_style(
 				'primefit-single-product',
 				$single_product_css_url,
 				[ 'primefit-woocommerce' ],
-				primefit_get_file_version( '/assets/css/single-product.css' )
+				primefit_get_file_version( '/assets/css/single-product.css' ),
+				$single_product_media
 			);
-
-			// Preload critical single product CSS for faster rendering
-			add_action( 'wp_head', function() use ( $single_product_css_url ) {
-				echo '<link rel="preload" href="' . esc_url( $single_product_css_url ) . '" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-				echo '<noscript><link rel="stylesheet" href="' . esc_url( $single_product_css_url ) . '"></noscript>';
-			}, 1 );
+			
+			// Load single product CSS for desktop after page load
+			if ( ! wp_is_mobile() ) {
+				add_action( 'wp_footer', function() use ( $single_product_css_url ) {
+					echo '<link rel="stylesheet" href="' . esc_url( $single_product_css_url ) . '?v=' . primefit_get_file_version( '/assets/css/single-product.css' ) . '" media="all">';
+				}, 1 );
+			}
 		}
 		
 		// Checkout page styles - Load ONLY on checkout pages
@@ -115,12 +159,22 @@ function primefit_enqueue_assets() {
 			$is_custom_checkout = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('checkout')));
 
 			if ( $is_checkout_page || $is_custom_checkout ) {
+				// Mobile-first: Load immediately on mobile, defer on desktop
+				$checkout_media = wp_is_mobile() ? 'all' : 'print';
 				wp_enqueue_style(
 					'primefit-checkout',
 					PRIMEFIT_THEME_URI . '/assets/css/checkout.css',
 					[ 'primefit-woocommerce' ],
-					primefit_get_file_version( '/assets/css/checkout.css' )
+					primefit_get_file_version( '/assets/css/checkout.css' ),
+					$checkout_media
 				);
+				
+				// Load checkout CSS for desktop after page load
+				if ( ! wp_is_mobile() ) {
+					add_action( 'wp_footer', function() {
+						echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/checkout.css?v=' . primefit_get_file_version( '/assets/css/checkout.css' ) . '" media="all">';
+					}, 1 );
+				}
 			}
 		}
 		
@@ -139,12 +193,22 @@ function primefit_enqueue_assets() {
 
 		// Load account styles if we're on any type of account page
 		if ( $page_type === 'account' || $is_account_page || $is_custom_account || $is_account_endpoint ) {
+			// Mobile-first: Load immediately on mobile, defer on desktop
+			$account_media = wp_is_mobile() ? 'all' : 'print';
 			wp_enqueue_style(
 				'primefit-account',
 				PRIMEFIT_THEME_URI . '/assets/css/account.css',
 				[ 'primefit-woocommerce' ],
-				primefit_get_file_version( '/assets/css/account.css' )
+				primefit_get_file_version( '/assets/css/account.css' ),
+				$account_media
 			);
+			
+			// Load account CSS for desktop after page load
+			if ( ! wp_is_mobile() ) {
+				add_action( 'wp_footer', function() {
+					echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/account.css?v=' . primefit_get_file_version( '/assets/css/account.css' ) . '" media="all">';
+				}, 1 );
+			}
 
 			wp_enqueue_script(
 				'primefit-account',
@@ -220,7 +284,8 @@ function primefit_enqueue_assets() {
 	}
 	
 	// Shop functionality - load on shop pages
-	if ( in_array( $page_type, [ 'shop', 'category', 'tag', 'front_page' ] ) ) {
+	// On mobile, this will be lazy loaded instead
+	if ( in_array( $page_type, [ 'shop', 'category', 'tag', 'front_page' ] ) && ! wp_is_mobile() ) {
 		wp_enqueue_script( 
 			'primefit-shop', 
 			PRIMEFIT_THEME_URI . '/assets/js/shop.js', 
@@ -240,7 +305,8 @@ function primefit_enqueue_assets() {
 	);
 	
 	// Hero video - load on front page and pages with hero sections - defer for better performance
-	if ( $page_type === 'front_page' || is_page_template( 'page-hero.php' ) ) {
+	// On mobile, this will be lazy loaded instead
+	if ( ( $page_type === 'front_page' || is_page_template( 'page-hero.php' ) ) && ! wp_is_mobile() ) {
 		wp_enqueue_script( 
 			'primefit-hero-video', 
 			PRIMEFIT_THEME_URI . '/assets/js/hero-video.js', 
@@ -249,6 +315,9 @@ function primefit_enqueue_assets() {
 			true 
 		);
 	}
+	
+	// Lazy load non-critical JavaScript modules for mobile performance
+	primefit_lazy_load_js_modules();
 	
 	// Pass data to JavaScript
 	wp_localize_script( 'primefit-core', 'primefitData', [
@@ -979,4 +1048,329 @@ function primefit_add_module_loading() {
 			wp_script_add_data( $script_handle, 'type', 'module' );
 		}
 	}
+}
+
+/**
+ * Register Service Worker for mobile caching
+ */
+add_action( 'wp_footer', 'primefit_register_service_worker', 999 );
+function primefit_register_service_worker() {
+	// Only register on frontend and for mobile devices
+	if ( is_admin() || ! wp_is_mobile() ) {
+		return;
+	}
+	
+	$sw_url = PRIMEFIT_THEME_URI . '/sw.js';
+	?>
+	<script>
+	(function() {
+		'use strict';
+		
+		// Check if service workers are supported
+		if ('serviceWorker' in navigator) {
+			// Register service worker
+			navigator.serviceWorker.register('<?php echo esc_url( $sw_url ); ?>', {
+				scope: '/'
+			}).then(function(registration) {
+				console.log('PrimeFit SW: Registration successful', registration);
+				
+				// Handle updates
+				registration.addEventListener('updatefound', function() {
+					const newWorker = registration.installing;
+					newWorker.addEventListener('statechange', function() {
+						if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+							// New content is available, notify user
+							if (confirm('New version available! Reload to update?')) {
+								window.location.reload();
+							}
+						}
+					});
+				});
+				
+			}).catch(function(error) {
+				console.log('PrimeFit SW: Registration failed', error);
+			});
+			
+			// Handle service worker messages
+			navigator.serviceWorker.addEventListener('message', function(event) {
+				if (event.data && event.data.type === 'CACHE_UPDATED') {
+					console.log('PrimeFit SW: Cache updated');
+				}
+			});
+			
+			// Handle offline/online events
+			window.addEventListener('online', function() {
+				console.log('PrimeFit SW: Back online');
+				// Notify service worker that we're back online
+				if (navigator.serviceWorker.controller) {
+					navigator.serviceWorker.controller.postMessage({
+						type: 'ONLINE'
+					});
+				}
+			});
+			
+			window.addEventListener('offline', function() {
+				console.log('PrimeFit SW: Gone offline');
+			});
+		}
+	})();
+	</script>
+	<?php
+}
+
+/**
+ * Lazy load non-critical JavaScript modules for mobile performance
+ * Ensures critical functionality (cart, mobile menu) remains intact
+ */
+function primefit_lazy_load_js_modules() {
+	// Only apply lazy loading on mobile devices for performance
+	if ( ! wp_is_mobile() ) {
+		return;
+	}
+	
+	$page_type = primefit_get_page_type();
+	
+	// Define modules that can be safely lazy loaded
+	$lazy_modules = [
+		'primefit-hero-video' => [
+			'condition' => $page_type === 'front_page' || is_page_template( 'page-hero.php' ),
+			'load_on' => 'scroll', // Load when user scrolls
+			'priority' => 'low'
+		],
+		'primefit-shop' => [
+			'condition' => in_array( $page_type, [ 'shop', 'category', 'tag', 'front_page' ] ),
+			'load_on' => 'interaction', // Load on first user interaction
+			'priority' => 'medium'
+		]
+	];
+	
+	// Critical modules that must NOT be lazy loaded
+	$critical_modules = [
+		'primefit-core',      // Cart management, scroll utilities
+		'primefit-app',       // Essential initialization
+		'primefit-cart',      // Cart functionality
+		'wc-cart-fragments',  // WooCommerce cart
+		'wc-add-to-cart',     // Add to cart functionality
+		'wc-add-to-cart-variation' // Product variations
+	];
+	
+	// Add lazy loading script to footer
+	add_action( 'wp_footer', function() use ( $lazy_modules, $critical_modules ) {
+		?>
+		<script>
+		(function() {
+			'use strict';
+			
+			// Lazy loading configuration
+			const lazyConfig = {
+				modules: <?php echo json_encode( $lazy_modules ); ?>,
+				critical: <?php echo json_encode( $critical_modules ); ?>,
+				loaded: new Set(),
+				loading: new Set()
+			};
+			
+			// Load script dynamically
+			function loadScript(src, callback) {
+				if (lazyConfig.loaded.has(src) || lazyConfig.loading.has(src)) {
+					if (callback) callback();
+					return;
+				}
+				
+				lazyConfig.loading.add(src);
+				const script = document.createElement('script');
+				script.src = src;
+				script.async = true;
+				
+				script.onload = function() {
+					lazyConfig.loaded.add(src);
+					lazyConfig.loading.delete(src);
+					if (callback) callback();
+				};
+				
+				script.onerror = function() {
+					lazyConfig.loading.delete(src);
+					console.warn('Failed to load script:', src);
+				};
+				
+				document.head.appendChild(script);
+			}
+			
+			// Load module based on trigger
+			function loadModule(moduleName, config) {
+				// Get the correct script URL
+				const baseUrl = '<?php echo PRIMEFIT_THEME_URI; ?>';
+				const scriptSrc = baseUrl + '/assets/js/' + moduleName.replace('primefit-', '') + '.js';
+				
+				loadScript(scriptSrc, function() {
+					console.log('Lazy loaded:', moduleName);
+				});
+			}
+			
+			// Scroll-based loading
+			let scrollLoaded = false;
+			function handleScroll() {
+				if (scrollLoaded) return;
+				
+				const scrollY = window.scrollY || document.documentElement.scrollTop;
+				if (scrollY > 100) { // Load after 100px scroll
+					scrollLoaded = true;
+					
+					// Load scroll-triggered modules
+					Object.entries(lazyConfig.modules).forEach(([moduleName, config]) => {
+						if (config.load_on === 'scroll' && config.condition) {
+							loadModule(moduleName, config);
+						}
+					});
+					
+					window.removeEventListener('scroll', handleScroll);
+				}
+			}
+			
+			// Hover-based loading
+			function handleHover() {
+				Object.entries(lazyConfig.modules).forEach(([moduleName, config]) => {
+					if (config.load_on === 'hover' && config.condition) {
+						const triggerElement = document.querySelector('.menu--primary, .hamburger, .mega-menu');
+						if (triggerElement) {
+							triggerElement.addEventListener('mouseenter', function() {
+								loadModule(moduleName, config);
+							}, { once: true });
+						}
+					}
+				});
+			}
+			
+			// Interaction-based loading
+			function handleInteraction() {
+				let interactionLoaded = false;
+				
+				function loadOnInteraction() {
+					if (interactionLoaded) return;
+					interactionLoaded = true;
+					
+					Object.entries(lazyConfig.modules).forEach(([moduleName, config]) => {
+						if (config.load_on === 'interaction' && config.condition) {
+							loadModule(moduleName, config);
+						}
+					});
+				}
+				
+				// Load on first user interaction
+				['click', 'touchstart', 'keydown'].forEach(eventType => {
+					document.addEventListener(eventType, loadOnInteraction, { once: true, passive: true });
+				});
+			}
+			
+			// Initialize lazy loading
+			function initLazyLoading() {
+				// Set up scroll-based loading
+				window.addEventListener('scroll', handleScroll, { passive: true });
+				
+				// Set up hover-based loading
+				handleHover();
+				
+				// Set up interaction-based loading
+				handleInteraction();
+				
+				// Load high-priority modules after a short delay
+				setTimeout(function() {
+					Object.entries(lazyConfig.modules).forEach(([moduleName, config]) => {
+						if (config.priority === 'high' && config.condition) {
+							loadModule(moduleName, config);
+						}
+					});
+				}, 1000);
+			}
+			
+			// Start lazy loading when DOM is ready
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', initLazyLoading);
+			} else {
+				initLazyLoading();
+			}
+			
+			// Expose lazy loading API for debugging
+			window.primefitLazyLoader = {
+				loadModule: loadModule,
+				loaded: lazyConfig.loaded,
+				loading: lazyConfig.loading
+			};
+			
+		})();
+		</script>
+		<?php
+	}, 999 );
+}
+
+/**
+ * Optimize CSS delivery with media queries for mobile performance
+ * Implements mobile-first loading strategy
+ */
+function primefit_optimize_css_delivery() {
+	// Only apply on frontend
+	if ( is_admin() ) {
+		return;
+	}
+	
+	// Add CSS loading optimization script
+	add_action( 'wp_footer', function() {
+		?>
+		<script>
+		(function() {
+			'use strict';
+			
+			// CSS loading optimization for mobile performance
+			function optimizeCSSLoading() {
+				// Get all stylesheets with media="print"
+				const printStyles = document.querySelectorAll('link[rel="stylesheet"][media="print"]');
+				
+				// Convert print styles to all media after page load
+				printStyles.forEach(function(link) {
+					// Create new link element with media="all"
+					const newLink = document.createElement('link');
+					newLink.rel = 'stylesheet';
+					newLink.href = link.href;
+					newLink.media = 'all';
+					
+					// Insert after the print link
+					link.parentNode.insertBefore(newLink, link.nextSibling);
+					
+					// Remove the print link
+					link.remove();
+				});
+			}
+			
+			// Optimize CSS loading when DOM is ready
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', optimizeCSSLoading);
+			} else {
+				optimizeCSSLoading();
+			}
+			
+			// Additional optimization: Load non-critical CSS asynchronously
+			function loadNonCriticalCSS() {
+				const nonCriticalCSS = [
+					'<?php echo PRIMEFIT_THEME_URI; ?>/assets/css/payment-summary.css'
+				];
+				
+				nonCriticalCSS.forEach(function(cssUrl) {
+					const link = document.createElement('link');
+					link.rel = 'preload';
+					link.href = cssUrl;
+					link.as = 'style';
+					link.onload = function() {
+						this.onload = null;
+						this.rel = 'stylesheet';
+					};
+					document.head.appendChild(link);
+				});
+			}
+			
+			// Load non-critical CSS after page load
+			window.addEventListener('load', loadNonCriticalCSS);
+			
+		})();
+		</script>
+		<?php
+	}, 998 );
 }

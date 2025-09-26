@@ -402,6 +402,11 @@ body.single-product .single-product-page {
   border-color: var(--product-accent);
 }
 
+.color-option.active {
+  border-color: var(--product-accent);
+  box-shadow: 0 0 0 2px var(--product-accent);
+}
+
 .product-option:disabled {
   opacity: 0.5;
   cursor: not-allowed;
