@@ -23,7 +23,7 @@
 
   /* Derived colors - using CSS calc for better performance */
   --background: var(--bg);
-  --headerBackground: var(--bg);
+  --headerBackground: #0d0d0d;
   --card-background: var(--bg);
 
   /* Hero gradient - simplified */
