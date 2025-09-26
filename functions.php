@@ -197,7 +197,6 @@ $includes = [
 	'inc/woocommerce.php',     // WooCommerce integration
 	'inc/discount-system.php', // Discount code tracking system
 	'inc/discount-system-styles.php', // Discount system admin styles
-	'inc/performance.php',     // Performance optimizations
 	'inc/image-optimization.php', // Image optimization and lazy loading
 ];
 
