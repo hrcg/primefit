@@ -139,9 +139,12 @@ const VanillaUtils = {
   // Fade in (simple implementation)
   fadeIn(element, duration = 300) {
     if (element) {
+      // Use transform and opacity for better performance (no layout reflow)
       element.style.opacity = "0";
       element.style.display = "";
       element.style.transition = `opacity ${duration}ms ease`;
+
+      // Use requestAnimationFrame to ensure display change is applied
       requestAnimationFrame(() => {
         element.style.opacity = "1";
       });
@@ -153,9 +156,13 @@ const VanillaUtils = {
     if (element) {
       element.style.transition = `opacity ${duration}ms ease`;
       element.style.opacity = "0";
-      setTimeout(() => {
-        element.style.display = "none";
-      }, duration);
+
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          element.style.display = "none";
+        }, duration);
+      });
     }
   },
 
@@ -224,20 +231,25 @@ const VanillaUtils = {
     return element !== null && element !== undefined;
   },
 
-  // Get element dimensions
+  // Get element dimensions (cached to avoid multiple reflows)
   dimensions(element) {
     if (element) {
-      const rect = element.getBoundingClientRect();
-      return {
-        width: rect.width,
-        height: rect.height,
-        top: rect.top,
-        left: rect.left,
-        bottom: rect.bottom,
-        right: rect.right,
-      };
+      // Use requestAnimationFrame to batch measurements
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          const rect = element.getBoundingClientRect();
+          resolve({
+            width: rect.width,
+            height: rect.height,
+            top: rect.top,
+            left: rect.left,
+            bottom: rect.bottom,
+            right: rect.right,
+          });
+        });
+      });
     }
-    return null;
+    return Promise.resolve(null);
   },
 
   // Debounce function

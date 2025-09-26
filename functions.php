@@ -30,6 +30,25 @@ function primefit_remove_dashicons() {
 }
 
 /**
+ * Completely remove WordPress block library CSS
+ * This prevents Gutenberg block styles from loading on the frontend
+ */
+add_action( 'wp_enqueue_scripts', 'primefit_remove_block_library_css', 1 );
+function primefit_remove_block_library_css() {
+	// Remove WordPress block library CSS
+	wp_dequeue_style( 'wp-block-library' );
+	wp_dequeue_style( 'wp-block-library-theme' );
+	wp_dequeue_style( 'wc-blocks-style' ); // WooCommerce blocks CSS
+	wp_dequeue_style( 'wc-blocks-vendors-style' ); // WooCommerce blocks vendor CSS
+	
+	// Also deregister to prevent any plugins from re-enqueuing
+	wp_deregister_style( 'wp-block-library' );
+	wp_deregister_style( 'wp-block-library-theme' );
+	wp_deregister_style( 'wc-blocks-style' );
+	wp_deregister_style( 'wc-blocks-vendors-style' );
+}
+
+/**
  * Completely remove brands.css from WooCommerce
  * This prevents WooCommerce brands stylesheet from loading
  */
@@ -57,6 +76,20 @@ function primefit_remove_brands_css() {
 	}
 }
 
+// Additional filter to prevent block library CSS from being loaded by any plugin
+add_filter( 'style_loader_tag', 'primefit_remove_block_library_css_tag', 10, 4 );
+function primefit_remove_block_library_css_tag( $html, $handle, $href, $media ) {
+	// Check if this is a block library CSS file from any location
+	if ( strpos( $href, 'wp-block-library' ) !== false ||
+		 strpos( $href, 'blocks.css' ) !== false ||
+		 strpos( $handle, 'wp-block' ) !== false ||
+		 strpos( $handle, 'wc-blocks' ) !== false ||
+		 strpos( $href, '/blocks' ) !== false ) {
+		return ''; // Return empty string to remove the tag completely
+	}
+	return $html;
+}
+
 // Additional filter to prevent brands.css from being loaded by any plugin
 add_filter( 'style_loader_tag', 'primefit_remove_brands_css_tag', 10, 4 );
 function primefit_remove_brands_css_tag( $html, $handle, $href, $media ) {
@@ -67,6 +100,88 @@ function primefit_remove_brands_css_tag( $html, $handle, $href, $media ) {
 		return ''; // Return empty string to remove the tag completely
 	}
 	return $html;
+}
+
+/**
+ * Remove screen reader text from HTML output
+ * This removes screen-reader-text classes and content from various sources
+ */
+add_action( 'wp_enqueue_scripts', 'primefit_remove_screen_reader_text_css', 20 );
+function primefit_remove_screen_reader_text_css() {
+	// Add CSS to hide screen reader text
+	wp_add_inline_style( 'primefit-app', '
+		.screen-reader-text,
+		.sr-only,
+		.visually-hidden,
+		.visuallyhidden {
+			display: none !important;
+			visibility: hidden !important;
+			position: absolute !important;
+			left: -9999px !important;
+			width: 1px !important;
+			height: 1px !important;
+			overflow: hidden !important;
+			clip: rect(1px, 1px, 1px, 1px) !important;
+		}
+	' );
+}
+
+/**
+ * Remove screen reader text from WooCommerce price HTML
+ */
+add_filter( 'woocommerce_price_html', 'primefit_remove_screen_reader_from_price', 10, 2 );
+function primefit_remove_screen_reader_from_price( $price_html, $product ) {
+	// Remove screen reader text spans from price HTML
+	$price_html = preg_replace( '/<span[^>]*class="[^"]*screen-reader-text[^"]*"[^>]*>.*?<\/span>/i', '', $price_html );
+	$price_html = preg_replace( '/<span[^>]*class="[^"]*sr-only[^"]*"[^>]*>.*?<\/span>/i', '', $price_html );
+	$price_html = preg_replace( '/<span[^>]*class="[^"]*visually-hidden[^"]*"[^>]*>.*?<\/span>/i', '', $price_html );
+	
+	return $price_html;
+}
+
+/**
+ * Remove screen reader text from general HTML content
+ */
+add_filter( 'the_content', 'primefit_remove_screen_reader_from_content', 20 );
+function primefit_remove_screen_reader_from_content( $content ) {
+	// Remove screen reader text spans from content
+	$content = preg_replace( '/<span[^>]*class="[^"]*screen-reader-text[^"]*"[^>]*>.*?<\/span>/i', '', $content );
+	$content = preg_replace( '/<span[^>]*class="[^"]*sr-only[^"]*"[^>]*>.*?<\/span>/i', '', $content );
+	$content = preg_replace( '/<span[^>]*class="[^"]*visually-hidden[^"]*"[^>]*>.*?<\/span>/i', '', $content );
+	
+	return $content;
+}
+
+/**
+ * Remove screen reader text from WooCommerce cart item data
+ */
+add_filter( 'woocommerce_cart_item_data', 'primefit_remove_screen_reader_from_cart_data', 10, 3 );
+function primefit_remove_screen_reader_from_cart_data( $item_data, $cart_item, $cart_item_key ) {
+	foreach ( $item_data as $key => $data ) {
+		if ( isset( $data['value'] ) ) {
+			$item_data[$key]['value'] = preg_replace( '/<span[^>]*class="[^"]*screen-reader-text[^"]*"[^>]*>.*?<\/span>/i', '', $data['value'] );
+			$item_data[$key]['value'] = preg_replace( '/<span[^>]*class="[^"]*sr-only[^"]*"[^>]*>.*?<\/span>/i', '', $data['value'] );
+			$item_data[$key]['value'] = preg_replace( '/<span[^>]*class="[^"]*visually-hidden[^"]*"[^>]*>.*?<\/span>/i', '', $data['value'] );
+		}
+	}
+	
+	return $item_data;
+}
+
+/**
+ * Remove screen reader text from WooCommerce formatted cart item data
+ */
+add_filter( 'woocommerce_get_formatted_cart_item_data', 'primefit_remove_screen_reader_from_formatted_cart_data', 10, 2 );
+function primefit_remove_screen_reader_from_formatted_cart_data( $formatted_data, $cart_item ) {
+	foreach ( $formatted_data as $key => $data ) {
+		if ( isset( $data['value'] ) ) {
+			$formatted_data[$key]['value'] = preg_replace( '/<span[^>]*class="[^"]*screen-reader-text[^"]*"[^>]*>.*?<\/span>/i', '', $data['value'] );
+			$formatted_data[$key]['value'] = preg_replace( '/<span[^>]*class="[^"]*sr-only[^"]*"[^>]*>.*?<\/span>/i', '', $data['value'] );
+			$formatted_data[$key]['value'] = preg_replace( '/<span[^>]*class="[^"]*visually-hidden[^"]*"[^>]*>.*?<\/span>/i', '', $data['value'] );
+		}
+	}
+	
+	return $formatted_data;
 }
 
 /**

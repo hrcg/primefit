@@ -15,7 +15,9 @@
     constructor() {
       // Prevent duplicate instances
       if (window.productGallery && window.productGallery !== this) {
-        console.warn('ProductGallery already exists, returning existing instance');
+        console.warn(
+          "ProductGallery already exists, returning existing instance"
+        );
         return window.productGallery;
       }
 
@@ -27,7 +29,7 @@
       this.currentIndex = 0;
       this.isAnimating = false;
 
-      console.log('ProductGallery: Creating new instance');
+      console.log("ProductGallery: Creating new instance");
       this.init();
     }
 
@@ -44,25 +46,28 @@
         this.$mainImage = this.$gallery.find(".main-product-image");
         this.$thumbnails = this.$gallery.find(".thumbnail-item");
         this.$dots = this.$gallery.find(".image-dot");
-        this.currentIndex = parseInt(this.$mainImage.attr("data-image-index")) || 0;
-        console.log(`Gallery: Initialized - Found ${this.$thumbnails.length} thumbnails, current index: ${this.currentIndex}`);
+        this.currentIndex =
+          parseInt(this.$mainImage.attr("data-image-index")) || 0;
+        console.log(
+          `Gallery: Initialized - Found ${this.$thumbnails.length} thumbnails, current index: ${this.currentIndex}`
+        );
       }
     }
 
     // Method to completely reset gallery state
     resetGalleryState() {
-      console.log('Gallery: Resetting gallery state');
+      console.log("Gallery: Resetting gallery state");
       this.isAnimating = false;
       this.cacheDOM();
-      this.$gallery.find('.main-image-wrapper').removeClass('loading');
+      this.$gallery.find(".main-image-wrapper").removeClass("loading");
     }
 
     // Method to clean up event listeners
     destroy() {
       if (this.$gallery) {
-        this.$gallery.off('.thumbnail .dot .nav .swipe');
+        this.$gallery.off(".thumbnail .dot .nav .swipe");
       }
-      $(document).off('.gallery');
+      $(document).off(".gallery");
     }
 
     bindEvents() {
@@ -128,7 +133,7 @@
       }
 
       // Prevent rapid clicking - ensure we're not in the middle of an animation
-      if (this.$gallery.find('.main-image-wrapper').hasClass('loading')) {
+      if (this.$gallery.find(".main-image-wrapper").hasClass("loading")) {
         return;
       }
 
@@ -144,7 +149,12 @@
         const imageUrl = $thumbnailImg.attr("src");
         const imageAlt = $thumbnailImg.attr("alt");
 
-        console.log(`Gallery: Switching to image ${index} - URL: ${imageUrl.substring(0, 60)}..., Direction: ${slideDirection}`);
+        console.log(
+          `Gallery: Switching to image ${index} - URL: ${imageUrl.substring(
+            0,
+            60
+          )}..., Direction: ${slideDirection}`
+        );
 
         // Start slide animation
         this.animateSlide(
@@ -193,9 +203,12 @@
 
       // Add cache busting parameter to prevent browser caching issues
       const timestamp = Date.now();
-      const cacheBustUrl = imageUrl + (imageUrl.includes('?') ? '&' : '?') + 't=' + timestamp;
-      
-      console.log(`Gallery: Attempting to load image - Original: ${imageUrl}, Cache-busted: ${cacheBustUrl}`);
+      const cacheBustUrl =
+        imageUrl + (imageUrl.includes("?") ? "&" : "?") + "t=" + timestamp;
+
+      console.log(
+        `Gallery: Attempting to load image - Original: ${imageUrl}, Cache-busted: ${cacheBustUrl}`
+      );
 
       // Simplified image switch - DISABLED temp-image functionality
       const $newImage = $("<img>", {
@@ -207,7 +220,12 @@
 
       // Simple image replacement with optimized callbacks
       $newImage.on("load", () => {
-        console.log(`Gallery: Image loaded successfully - Index: ${index}, URL: ${cacheBustUrl.substring(0, 50)}...`);
+        console.log(
+          `Gallery: Image loaded successfully - Index: ${index}, URL: ${cacheBustUrl.substring(
+            0,
+            50
+          )}...`
+        );
 
         // Remove the old image after the new one has loaded successfully
         $mainImage.remove();
@@ -223,24 +241,27 @@
 
       // Fallback if image doesn't load
       $newImage.on("error", () => {
-        console.error('Failed to load gallery image:', cacheBustUrl);
-        console.error('Original URL:', imageUrl);
-        
+        console.error("Failed to load gallery image:", cacheBustUrl);
+        console.error("Original URL:", imageUrl);
+
         // Try loading the image without cache busting as fallback
-        console.log('Trying fallback without cache busting...');
+        console.log("Trying fallback without cache busting...");
         const fallbackImage = new Image();
         fallbackImage.onload = () => {
-          console.log('Fallback image loaded successfully');
+          console.log("Fallback image loaded successfully");
           $mainImage.remove();
-          $newImage.attr('src', imageUrl); // Use original URL
+          $newImage.attr("src", imageUrl); // Use original URL
           $newImage.appendTo($mainImageWrapper);
           $mainImageWrapper.removeClass("loading");
           this.$mainImage = $newImage;
           this.isAnimating = false;
         };
         fallbackImage.onerror = () => {
-          console.error('Even fallback image failed to load');
-          console.error('This suggests the image file does not exist at:', imageUrl);
+          console.error("Even fallback image failed to load");
+          console.error(
+            "This suggests the image file does not exist at:",
+            imageUrl
+          );
           $mainImageWrapper.removeClass("loading");
           this.isAnimating = false;
         };
@@ -257,17 +278,21 @@
       this.$mainImage = this.$gallery.find(".main-product-image");
 
       const newIndex =
-        this.currentIndex > 0 ? this.currentIndex - 1 : this.$thumbnails.length - 1;
+        this.currentIndex > 0
+          ? this.currentIndex - 1
+          : this.$thumbnails.length - 1;
 
-      console.log(`Gallery: Previous image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`);
-      
+      console.log(
+        `Gallery: Previous image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`
+      );
+
       // Prevent rapid clicking by adding a small delay
       if (this.lastClickTime && Date.now() - this.lastClickTime < 300) {
-        console.log('Gallery: Click too rapid, ignoring');
+        console.log("Gallery: Click too rapid, ignoring");
         return;
       }
       this.lastClickTime = Date.now();
-      
+
       this.switchImage(newIndex);
     }
 
@@ -280,17 +305,21 @@
       this.$mainImage = this.$gallery.find(".main-product-image");
 
       const newIndex =
-        this.currentIndex < this.$thumbnails.length - 1 ? this.currentIndex + 1 : 0;
+        this.currentIndex < this.$thumbnails.length - 1
+          ? this.currentIndex + 1
+          : 0;
 
-      console.log(`Gallery: Next image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`);
-      
+      console.log(
+        `Gallery: Next image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`
+      );
+
       // Prevent rapid clicking by adding a small delay
       if (this.lastClickTime && Date.now() - this.lastClickTime < 300) {
-        console.log('Gallery: Click too rapid, ignoring');
+        console.log("Gallery: Click too rapid, ignoring");
         return;
       }
       this.lastClickTime = Date.now();
-      
+
       this.switchImage(newIndex);
     }
 
@@ -310,13 +339,17 @@
       let isSwipeGesture = false;
 
       // Use passive event listeners for better performance
-      $productMainImage.on("touchstart.swipe", (e) => {
-        startX = e.originalEvent.touches[0].clientX;
-        startY = e.originalEvent.touches[0].clientY;
-        touchStartTime = Date.now();
-        isScrolling = false;
-        isSwipeGesture = false;
-      }, { passive: true });
+      $productMainImage.on(
+        "touchstart.swipe",
+        (e) => {
+          startX = e.originalEvent.touches[0].clientX;
+          startY = e.originalEvent.touches[0].clientY;
+          touchStartTime = Date.now();
+          isScrolling = false;
+          isSwipeGesture = false;
+        },
+        { passive: true }
+      );
 
       $productMainImage.on("touchmove.swipe", (e) => {
         const currentX = e.originalEvent.touches[0].clientX;
@@ -351,13 +384,17 @@
       // Also add swipe support to the main image wrapper for better touch area
       const $mainImageWrapper = this.$gallery.find(".main-image-wrapper");
       if ($mainImageWrapper.length) {
-        $mainImageWrapper.on("touchstart.swipe", (e) => {
-          startX = e.originalEvent.touches[0].clientX;
-          startY = e.originalEvent.touches[0].clientY;
-          touchStartTime = Date.now();
-          isScrolling = false;
-          isSwipeGesture = false;
-        }, { passive: true });
+        $mainImageWrapper.on(
+          "touchstart.swipe",
+          (e) => {
+            startX = e.originalEvent.touches[0].clientX;
+            startY = e.originalEvent.touches[0].clientY;
+            touchStartTime = Date.now();
+            isScrolling = false;
+            isSwipeGesture = false;
+          },
+          { passive: true }
+        );
 
         $mainImageWrapper.on("touchmove.swipe", (e) => {
           const currentX = e.originalEvent.touches[0].clientX;
@@ -399,12 +436,12 @@
       const swipeTime = Date.now() - touchStartTime;
 
       // Debug logging for mobile testing
-      console.log('Swipe detected:', {
+      console.log("Swipe detected:", {
         deltaX,
         deltaY,
         minDistance: minSwipeDistance,
         swipeTime,
-        isHorizontal: Math.abs(deltaX) > Math.abs(deltaY)
+        isHorizontal: Math.abs(deltaX) > Math.abs(deltaY),
       });
 
       // Only handle horizontal swipes that are quick enough and meet distance requirements
@@ -414,10 +451,10 @@
         swipeTime < maxSwipeTime
       ) {
         if (deltaX > 0) {
-          console.log('Swipe left - previous image');
+          console.log("Swipe left - previous image");
           this.previousImage();
         } else {
-          console.log('Swipe right - next image');
+          console.log("Swipe right - next image");
           this.nextImage();
         }
       }
@@ -548,8 +585,8 @@
 
     bindEvents() {
       // Color selection with memory leak management
-      window.memoryLeakManager.addEventListener(document, 'click', (e) => {
-        if (e.target.matches('.color-option')) {
+      window.memoryLeakManager.addEventListener(document, "click", (e) => {
+        if (e.target.matches(".color-option")) {
           e.preventDefault();
           this.hasUserInteracted = true; // Mark that user has interacted
           const $option = $(e.target);
@@ -558,8 +595,8 @@
       });
 
       // Size selection with memory leak management
-      window.memoryLeakManager.addEventListener(document, 'click', (e) => {
-        if (e.target.matches('.size-option')) {
+      window.memoryLeakManager.addEventListener(document, "click", (e) => {
+        if (e.target.matches(".size-option")) {
           e.preventDefault();
           this.hasUserInteracted = true; // Mark that user has interacted
           const $option = $(e.target);
@@ -568,8 +605,8 @@
       });
 
       // Form submission with memory leak management
-      window.memoryLeakManager.addEventListener(document, 'submit', (e) => {
-        if (e.target.matches('.primefit-variations-form')) {
+      window.memoryLeakManager.addEventListener(document, "submit", (e) => {
+        if (e.target.matches(".primefit-variations-form")) {
           this.handleFormSubmission(e);
         }
       });
@@ -589,11 +626,11 @@
         // Only enable virtual scrolling for products with many size options
         this.virtualScroller = new VirtualSizeOptions(this.$sizeContainer[0], {
           itemHeight: 50,
-          visibleCount: 8
+          visibleCount: 8,
         });
 
         // Add CSS classes for performance optimizations
-        this.$sizeContainer.addClass('virtual-scroll large-list');
+        this.$sizeContainer.addClass("virtual-scroll large-list");
 
         // Update virtual scroller when size options change
         this.virtualScroller.updateItems();
@@ -604,19 +641,27 @@
       // Debounce quantity input changes
       const $quantityInput = $('input[name="quantity"]');
       if ($quantityInput.length) {
-        const debouncedQuantity = new DebouncedInput($quantityInput[0], (e) => {
-          this.updateQuantity(e.target.value);
-        }, 150);
+        const debouncedQuantity = new DebouncedInput(
+          $quantityInput[0],
+          (e) => {
+            this.updateQuantity(e.target.value);
+          },
+          150
+        );
 
-        this.debouncedInputs.set('quantity', debouncedQuantity);
+        this.debouncedInputs.set("quantity", debouncedQuantity);
       }
 
       // Debounce search inputs if they exist
       const $searchInputs = $('input[type="search"], input[name*="search"]');
       $searchInputs.each((index, input) => {
-        const debouncedSearch = new DebouncedInput(input, (e) => {
-          this.handleSearchInput(e.target.value);
-        }, 300);
+        const debouncedSearch = new DebouncedInput(
+          input,
+          (e) => {
+            this.handleSearchInput(e.target.value);
+          },
+          300
+        );
 
         this.debouncedInputs.set(`search-${index}`, debouncedSearch);
       });
@@ -640,15 +685,15 @@
       this.pendingUpdates.clear();
 
       // Add updating class to prevent transitions during batch updates
-      $('body').addClass('product-variations-updating');
+      $("body").addClass("product-variations-updating");
 
       // Process all updates in a single DOM manipulation batch
       requestAnimationFrame(() => {
-        updates.forEach(update => update());
+        updates.forEach((update) => update());
 
         // Remove updating class after updates complete
         setTimeout(() => {
-          $('body').removeClass('product-variations-updating');
+          $("body").removeClass("product-variations-updating");
         }, 16); // Next frame
       });
     }
@@ -662,7 +707,9 @@
       let $activeColor = this.$colorOptions.filter(".active").first();
 
       if (defaultColor) {
-        const $defaultColorOption = this.$colorOptions.filter(`[data-color="${defaultColor}"]`);
+        const $defaultColorOption = this.$colorOptions.filter(
+          `[data-color="${defaultColor}"]`
+        );
         if ($defaultColorOption.length) {
           $activeColor = $defaultColorOption;
           // Update active state
@@ -678,7 +725,9 @@
 
       // Select default size if available
       if (defaultSize) {
-        const $defaultSizeOption = this.$sizeOptions.filter(`[data-size="${defaultSize}"]`);
+        const $defaultSizeOption = this.$sizeOptions.filter(
+          `[data-size="${defaultSize}"]`
+        );
         if (
           $defaultSizeOption.length &&
           $defaultSizeOption.is(":visible") &&
@@ -734,7 +783,9 @@
         const variationImage = $option.data("variation-image");
 
         // Update product color display - use display name if available
-        const $colorOption = this.$colorOptions.filter(`[data-color="${color}"]`);
+        const $colorOption = this.$colorOptions.filter(
+          `[data-color="${color}"]`
+        );
         const displayColor = $colorOption.data("color-display") || color;
         $(".color-value").text(displayColor);
 
@@ -793,7 +844,7 @@
             "right"
           );
         } else {
-          console.warn('ProductGallery instance not found for variation image');
+          console.warn("ProductGallery instance not found for variation image");
         }
       } else {
         // Fallback to first gallery image if no variation image
@@ -822,7 +873,9 @@
                 "right"
               );
             } else {
-              console.warn('ProductGallery instance not found for fallback image');
+              console.warn(
+                "ProductGallery instance not found for fallback image"
+              );
             }
           }
         }
@@ -876,7 +929,7 @@
 
     handleSearchInput(value) {
       // Handle search input with debouncing (if search functionality exists)
-      if (typeof this.onSearchInput === 'function') {
+      if (typeof this.onSearchInput === "function") {
         this.onSearchInput(value);
       }
     }
@@ -1355,7 +1408,7 @@
 
     // Check browser cache before making AJAX requests
     checkBrowserCache(formData) {
-      if (typeof(Storage) !== 'undefined' && formData.product_id) {
+      if (typeof Storage !== "undefined" && formData.product_id) {
         const cacheKey = `primefit_product_${formData.product_id}`;
         const cached = localStorage.getItem(cacheKey);
 
@@ -1363,7 +1416,7 @@
           const cacheData = JSON.parse(cached);
           if (cacheData.expires && cacheData.expires > Date.now() / 1000) {
             // Use cached data instead of making AJAX call
-            console.log('Using cached product data for faster response');
+            console.log("Using cached product data for faster response");
             return true;
           } else {
             // Expired cache, remove it
@@ -1408,7 +1461,7 @@
     // Abort pending requests
     abortPendingRequests() {
       if (this.requestQueue && this.requestQueue.length > 0) {
-        this.requestQueue.forEach(request => {
+        this.requestQueue.forEach((request) => {
           if (request.abort) {
             request.abort.abort();
           }
@@ -2550,7 +2603,7 @@
         // Connection pooling and optimization
         beforeSend: (xhr) => {
           // Set connection header for better performance
-          xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+          xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
           // Add to connection pool
           this.xhrPool = this.xhrPool || [];
           this.xhrPool.push(xhr);
@@ -2567,7 +2620,9 @@
           // Smart retry logic with exponential backoff and jitter
           if (this.shouldRetryRequest(xhr, status, error, retryCount)) {
             const delay = this.calculateRetryDelay(retryCount);
-            console.log(`Retrying request in ${delay}ms (attempt ${retryCount + 1}/3)`);
+            console.log(
+              `Retrying request in ${delay}ms (attempt ${retryCount + 1}/3)`
+            );
 
             setTimeout(() => {
               this.submitToCart(formData, $button, retryCount + 1);
@@ -2626,7 +2681,7 @@
       return {
         activeConnections: this.xhrPool ? this.xhrPool.length : 0,
         pendingRequests: this.requestQueue ? this.requestQueue.length : 0,
-        isProcessing: this.isProcessingQueue || false
+        isProcessing: this.isProcessingQueue || false,
       };
     }
 
@@ -3060,8 +3115,8 @@
 
     init() {
       // Wait for DOM to be ready before preloading
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
           this.preloadCriticalImages();
           this.optimizeMainImageLoading();
           this.setupLazyLoading();
@@ -3084,7 +3139,7 @@
       // Only preload the main product image immediately (highest priority)
       if (criticalImages.length > 0) {
         const mainImage = criticalImages[0];
-        this.preloadImage(mainImage, 'high');
+        this.preloadImage(mainImage, "high");
 
         // Set up smart preloading for thumbnails when they come into view
         this.setupSmartThumbnailPreloading();
@@ -3105,32 +3160,39 @@
 
         // Store thumbnail data for smart preloading (don't preload yet)
         this.thumbnailData = [];
-        $gallery.find(".thumbnail-item").each(function(index) {
-          const $img = $(this).find(".thumbnail-image");
-          const src = $img.attr("src");
-          if (src) {
-            this.thumbnailData.push({
-              src: src,
-              element: this,
-              index: index
-            });
-          }
-        }.bind(this));
+        $gallery.find(".thumbnail-item").each(
+          function (index) {
+            const $img = $(this).find(".thumbnail-image");
+            const src = $img.attr("src");
+            if (src) {
+              this.thumbnailData.push({
+                src: src,
+                element: this,
+                index: index,
+              });
+            }
+          }.bind(this)
+        );
 
         // Store variation images for smart preloading
         this.variationImages = [];
-        $gallery.find(".color-option").each(function() {
-          const variationImage = $(this).data("variation-image");
-          if (variationImage && !this.variationImages.includes(variationImage)) {
-            this.variationImages.push(variationImage);
-          }
-        }.bind(this));
+        $gallery.find(".color-option").each(
+          function () {
+            const variationImage = $(this).data("variation-image");
+            if (
+              variationImage &&
+              !this.variationImages.includes(variationImage)
+            ) {
+              this.variationImages.push(variationImage);
+            }
+          }.bind(this)
+        );
       }
 
       return images; // Only return main image for critical preloading
     }
 
-    preloadImage(imageUrl, priority = 'normal') {
+    preloadImage(imageUrl, priority = "normal") {
       if (this.imageCache.has(imageUrl)) {
         return Promise.resolve(this.imageCache.get(imageUrl));
       }
@@ -3155,8 +3217,8 @@
         const img = new Image();
 
         // Set priority based on image type
-        if (priority === 'high') {
-          img.fetchPriority = 'high';
+        if (priority === "high") {
+          img.fetchPriority = "high";
         }
 
         img.onload = () => {
@@ -3175,19 +3237,22 @@
         };
 
         // Add loading optimization
-        img.loading = 'eager';
-        img.decoding = 'async';
+        img.loading = "eager";
+        img.decoding = "async";
         img.src = imageUrl;
       });
     }
 
     // Adjust concurrent loading based on network conditions
     adjustConcurrentLoading() {
-      if ('connection' in navigator) {
+      if ("connection" in navigator) {
         const connection = navigator.connection;
-        if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+        if (
+          connection.effectiveType === "slow-2g" ||
+          connection.effectiveType === "2g"
+        ) {
           this.maxConcurrent = 1;
-        } else if (connection.effectiveType === '3g') {
+        } else if (connection.effectiveType === "3g") {
           this.maxConcurrent = 2;
         } else {
           this.maxConcurrent = 3;
@@ -3204,7 +3269,10 @@
     }
 
     processQueue() {
-      if (this.preloadQueue.length > 0 && this.activePreloads < this.maxConcurrent) {
+      if (
+        this.preloadQueue.length > 0 &&
+        this.activePreloads < this.maxConcurrent
+      ) {
         const nextItem = this.preloadQueue.shift();
         this.preloadImage(nextItem.url, nextItem.priority);
       }
@@ -3225,16 +3293,16 @@
       };
 
       // Use requestIdleCallback for better performance if available
-      if ('requestIdleCallback' in window) {
+      if ("requestIdleCallback" in window) {
         requestIdleCallback(() => {
-          lazyImages.each(function() {
+          lazyImages.each(function () {
             loadLazyImage(this);
           });
         });
       } else {
         // Fallback to setTimeout
         setTimeout(() => {
-          lazyImages.each(function() {
+          lazyImages.each(function () {
             loadLazyImage(this);
           });
         }, 1000);
@@ -3243,28 +3311,31 @@
 
     setupIntersectionObserver() {
       // Enhanced intersection observer with root margin and threshold
-      if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const $img = $(entry.target);
-              const src = $img.data("src");
-              if (src) {
-                // Preload the image before setting it
-                this.preloadImage(src, 'normal').then(() => {
-                  $img.attr("src", src).removeAttr("data-src");
-                });
-                imageObserver.unobserve(entry.target);
+      if ("IntersectionObserver" in window) {
+        const imageObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const $img = $(entry.target);
+                const src = $img.data("src");
+                if (src) {
+                  // Preload the image before setting it
+                  this.preloadImage(src, "normal").then(() => {
+                    $img.attr("src", src).removeAttr("data-src");
+                  });
+                  imageObserver.unobserve(entry.target);
+                }
               }
-            }
-          });
-        }, {
-          rootMargin: '50px 0px', // Start loading 50px before image comes into view
-          threshold: 0.1
-        });
+            });
+          },
+          {
+            rootMargin: "50px 0px", // Start loading 50px before image comes into view
+            threshold: 0.1,
+          }
+        );
 
         // Observe images with data-src attribute
-        $("[data-src]").each(function() {
+        $("[data-src]").each(function () {
           imageObserver.observe(this);
         });
       }
@@ -3275,17 +3346,17 @@
       const $mainImage = $(".main-product-image");
       if ($mainImage.length) {
         // Ensure main image has high priority
-        $mainImage.attr('fetchpriority', 'high');
-        $mainImage.attr('loading', 'eager');
+        $mainImage.attr("fetchpriority", "high");
+        $mainImage.attr("loading", "eager");
 
         // Add decoding hint for better performance
-        $mainImage.attr('decoding', 'async');
+        $mainImage.attr("decoding", "async");
 
         // Optimize size guide modal image loading
         const $sizeGuideImage = $("#size-guide-modal-image");
         if ($sizeGuideImage.length) {
-          $sizeGuideImage.attr('loading', 'lazy');
-          $sizeGuideImage.attr('decoding', 'async');
+          $sizeGuideImage.attr("loading", "lazy");
+          $sizeGuideImage.attr("decoding", "async");
         }
       }
     }
@@ -3295,46 +3366,49 @@
       if (!this.thumbnailData || this.thumbnailData.length === 0) return;
 
       // Enhanced intersection observer specifically for thumbnails
-      if ('IntersectionObserver' in window) {
-        const thumbnailObserver = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              const thumbnailData = entry.target.thumbnailData;
-              if (thumbnailData && thumbnailData.src) {
-                // Preload thumbnail image with low priority
-                this.preloadImage(thumbnailData.src, 'low').then(() => {
-                  // Mark as preloaded to avoid duplicate requests
-                  this.preloadedImages.add(thumbnailData.src);
-                });
+      if ("IntersectionObserver" in window) {
+        const thumbnailObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const thumbnailData = entry.target.thumbnailData;
+                if (thumbnailData && thumbnailData.src) {
+                  // Preload thumbnail image with low priority
+                  this.preloadImage(thumbnailData.src, "low").then(() => {
+                    // Mark as preloaded to avoid duplicate requests
+                    this.preloadedImages.add(thumbnailData.src);
+                  });
 
-                // Preload next thumbnail proactively (look ahead) with lower priority
-                const nextIndex = thumbnailData.index + 1;
-                if (this.thumbnailData[nextIndex]) {
-                  const nextThumbnail = this.thumbnailData[nextIndex];
-                  if (!this.preloadedImages.has(nextThumbnail.src)) {
-                    // Use requestIdleCallback if available for non-blocking preloading
-                    const preloadNext = () => {
-                      this.preloadImage(nextThumbnail.src, 'low');
-                      this.preloadedImages.add(nextThumbnail.src);
-                    };
+                  // Preload next thumbnail proactively (look ahead) with lower priority
+                  const nextIndex = thumbnailData.index + 1;
+                  if (this.thumbnailData[nextIndex]) {
+                    const nextThumbnail = this.thumbnailData[nextIndex];
+                    if (!this.preloadedImages.has(nextThumbnail.src)) {
+                      // Use requestIdleCallback if available for non-blocking preloading
+                      const preloadNext = () => {
+                        this.preloadImage(nextThumbnail.src, "low");
+                        this.preloadedImages.add(nextThumbnail.src);
+                      };
 
-                    if ('requestIdleCallback' in window) {
-                      requestIdleCallback(preloadNext);
-                    } else {
-                      setTimeout(preloadNext, 1000); // Longer delay for next thumbnails
+                      if ("requestIdleCallback" in window) {
+                        requestIdleCallback(preloadNext);
+                      } else {
+                        setTimeout(preloadNext, 1000); // Longer delay for next thumbnails
+                      }
                     }
                   }
-                }
 
-                // Stop observing this thumbnail
-                thumbnailObserver.unobserve(entry.target);
+                  // Stop observing this thumbnail
+                  thumbnailObserver.unobserve(entry.target);
+                }
               }
-            }
-          });
-        }, {
-          rootMargin: '100px 0px', // Start preloading 100px before thumbnail comes into view
-          threshold: 0.1
-        });
+            });
+          },
+          {
+            rootMargin: "100px 0px", // Start preloading 100px before thumbnail comes into view
+            threshold: 0.1,
+          }
+        );
 
         // Observe all thumbnail elements
         this.thumbnailData.forEach((thumbnail, index) => {
@@ -3347,9 +3421,9 @@
         // Fallback for browsers without IntersectionObserver
         // Preload first few thumbnails after main image loads
         setTimeout(() => {
-          this.thumbnailData.slice(0, 2).forEach(thumbnail => {
+          this.thumbnailData.slice(0, 2).forEach((thumbnail) => {
             if (thumbnail.src && !this.preloadedImages.has(thumbnail.src)) {
-              this.preloadImage(thumbnail.src, 'low');
+              this.preloadImage(thumbnail.src, "low");
             }
           });
         }, 2000); // Wait 2 seconds after page load
@@ -3365,7 +3439,9 @@
         queueLength: this.preloadQueue.length,
         maxConcurrent: this.maxConcurrent,
         thumbnailsStored: this.thumbnailData ? this.thumbnailData.length : 0,
-        variationImagesStored: this.variationImages ? this.variationImages.length : 0
+        variationImagesStored: this.variationImages
+          ? this.variationImages.length
+          : 0,
       };
     }
   }
@@ -3457,11 +3533,11 @@
       // Show the modal
       this.modal.style.display = "flex";
 
-      // Trigger reflow to ensure display change is applied
-      this.modal.offsetHeight;
-
-      // Add active class for animation
-      this.modal.classList.add("active");
+      // Use requestAnimationFrame to ensure display change is applied without forced reflow
+      requestAnimationFrame(() => {
+        // Add active class for animation after display change is applied
+        this.modal.classList.add("active");
+      });
 
       // Focus the close button for accessibility
       if (this.closeButton) {
@@ -3521,19 +3597,29 @@
     }
 
     setupContainer() {
-      this.container.style.position = 'relative';
-      this.container.style.overflowY = 'auto';
-      this.container.style.height = `${this.visibleCount * this.itemHeight}px`;
+      // Batch style changes to avoid multiple reflows
+      requestAnimationFrame(() => {
+        this.container.style.position = "relative";
+        this.container.style.overflowY = "auto";
+        this.container.style.height = `${
+          this.visibleCount * this.itemHeight
+        }px`;
+      });
     }
 
     bindEvents() {
-      this.container.addEventListener('scroll', this.handleScroll.bind(this), { passive: true });
+      this.container.addEventListener("scroll", this.handleScroll.bind(this), {
+        passive: true,
+      });
 
       // Handle window resize
-      window.addEventListener('resize', this.debounce(this.updateDimensions.bind(this), 100));
+      window.addEventListener(
+        "resize",
+        this.debounce(this.updateDimensions.bind(this), 100)
+      );
 
       // Clean up on page unload
-      window.addEventListener('beforeunload', this.cleanup.bind(this));
+      window.addEventListener("beforeunload", this.cleanup.bind(this));
     }
 
     handleScroll(e) {
@@ -3545,14 +3631,21 @@
     }
 
     updateDimensions() {
-      const containerRect = this.container.getBoundingClientRect();
-      this.visibleCount = Math.ceil(containerRect.height / this.itemHeight) + 2; // Add buffer
-      this.container.style.height = `${this.visibleCount * this.itemHeight}px`;
-      this.updateVisibleItems();
+      // Cache the container dimensions to avoid multiple reflows
+      const containerHeight = this.container.clientHeight;
+      this.visibleCount = Math.ceil(containerHeight / this.itemHeight) + 2; // Add buffer
+
+      // Use requestAnimationFrame to batch the height change
+      requestAnimationFrame(() => {
+        this.container.style.height = `${
+          this.visibleCount * this.itemHeight
+        }px`;
+        this.updateVisibleItems();
+      });
     }
 
     updateItems() {
-      this.items = Array.from(this.container.querySelectorAll('.size-option'));
+      this.items = Array.from(this.container.querySelectorAll(".size-option"));
       this.totalHeight = this.items.length * this.itemHeight;
       this.updateVisibleItems();
     }
@@ -3560,7 +3653,10 @@
     updateVisibleItems() {
       if (this.items.length === 0) return;
 
-      const startIndex = Math.max(0, Math.floor(this.scrollTop / this.itemHeight) - 2);
+      const startIndex = Math.max(
+        0,
+        Math.floor(this.scrollTop / this.itemHeight) - 2
+      );
       const endIndex = Math.min(
         this.items.length - 1,
         startIndex + this.visibleCount + 4
@@ -3591,10 +3687,14 @@
           const item = this.items[i];
           if (item) {
             const clone = item.cloneNode(true);
-            clone.style.position = 'absolute';
-            clone.style.top = `${i * this.itemHeight}px`;
-            clone.style.width = '100%';
-            clone.style.height = `${this.itemHeight}px`;
+
+            // Batch style changes to avoid multiple reflows
+            requestAnimationFrame(() => {
+              clone.style.position = "absolute";
+              clone.style.top = `${i * this.itemHeight}px`;
+              clone.style.width = "100%";
+              clone.style.height = `${this.itemHeight}px`;
+            });
 
             this.container.appendChild(clone);
             this.renderedItems.set(i, clone);
@@ -3608,11 +3708,11 @@
       if (item) {
         // Update item properties based on data
         if (data.selected !== undefined) {
-          item.classList.toggle('selected', data.selected);
+          item.classList.toggle("selected", data.selected);
         }
         if (data.disabled !== undefined) {
           item.disabled = data.disabled;
-          item.setAttribute('aria-disabled', data.disabled ? 'true' : 'false');
+          item.setAttribute("aria-disabled", data.disabled ? "true" : "false");
         }
       }
     }
@@ -3654,8 +3754,10 @@
     init() {
       if (!this.element) return;
 
-      this.element.addEventListener('input', this.handleInput.bind(this), { passive: true });
-      this.element.addEventListener('blur', this.flush.bind(this));
+      this.element.addEventListener("input", this.handleInput.bind(this), {
+        passive: true,
+      });
+      this.element.addEventListener("blur", this.flush.bind(this));
     }
 
     handleInput(e) {
@@ -3683,8 +3785,8 @@
         clearTimeout(this.timer);
       }
       if (this.element) {
-        this.element.removeEventListener('input', this.handleInput);
-        this.element.removeEventListener('blur', this.flush);
+        this.element.removeEventListener("input", this.handleInput);
+        this.element.removeEventListener("blur", this.flush);
       }
     }
   }
@@ -3765,8 +3867,8 @@
 
     unobserve(observer) {
       if (this.observers.has(observer)) {
-          observer.disconnect();
-          this.observers.delete(observer);
+        observer.disconnect();
+        this.observers.delete(observer);
       }
     }
 
@@ -3776,24 +3878,24 @@
 
     cleanup() {
       // Clear all timers
-      this.timers.forEach(timer => {
+      this.timers.forEach((timer) => {
         window.clearTimeout(timer);
         window.clearInterval(timer);
       });
       this.timers.clear();
 
       // Disconnect all observers
-      this.observers.forEach(observer => {
+      this.observers.forEach((observer) => {
         observer.disconnect();
       });
       this.observers.clear();
 
       // Run cleanup functions
-      this.cleanupFunctions.forEach(func => {
+      this.cleanupFunctions.forEach((func) => {
         try {
           func();
         } catch (e) {
-          console.warn('Cleanup function failed:', e);
+          console.warn("Cleanup function failed:", e);
         }
       });
       this.cleanupFunctions.clear();
@@ -3823,7 +3925,7 @@
     new SizeGuideModal();
 
     // Initialize memory leak manager cleanup on page unload
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener("beforeunload", () => {
       if (window.memoryLeakManager) {
         window.memoryLeakManager.cleanup();
       }

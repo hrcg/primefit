@@ -82,7 +82,7 @@
 
     // Prevent page scrolling when cart is open
     if (typeof window.preventPageScroll === "function") {
-      window.preventPageScroll();
+      window.preventPageScroll().catch(console.error);
     }
 
     // Ensure all quantity inputs are properly synced when cart opens

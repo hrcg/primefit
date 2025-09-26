@@ -576,18 +576,29 @@
     outer.style.visibility = "hidden";
     outer.style.overflow = "scroll";
     outer.style.msOverflowStyle = "scrollbar";
+    outer.style.position = "absolute";
+    outer.style.top = "-9999px";
+    outer.style.width = "100px";
+    outer.style.height = "100px";
+
     document.body.appendChild(outer);
 
     const inner = document.createElement("div");
+    inner.style.width = "100%";
+    inner.style.height = "200px";
     outer.appendChild(inner);
 
-    const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
-    outer.parentNode.removeChild(outer);
-
-    return scrollbarWidth;
+    // Use requestAnimationFrame to ensure DOM is ready before measuring
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        const scrollbarWidth = outer.offsetWidth - inner.offsetWidth;
+        outer.parentNode.removeChild(outer);
+        resolve(scrollbarWidth);
+      });
+    });
   }
 
-  function preventPageScroll() {
+  async function preventPageScroll() {
     // Only prevent scroll if not already locked
     if (document.body.classList.contains("scroll-locked")) {
       return;
@@ -597,7 +608,7 @@
     scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
 
     // Calculate scrollbar width to prevent content shift
-    const scrollbarWidth = getScrollbarWidth();
+    const scrollbarWidth = await getScrollbarWidth();
 
     // Add class to body for CSS styling
     document.body.classList.add("scroll-locked");
@@ -909,7 +920,7 @@
       $body.addClass("mobile-open");
       $(this).attr("aria-expanded", "true");
       // Prevent page scrolling when mobile menu is open
-      preventPageScroll();
+      preventPageScroll().catch(console.error);
     }
   });
 

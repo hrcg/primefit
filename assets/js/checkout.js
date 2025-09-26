@@ -527,22 +527,21 @@
      * Start batch DOM operations to minimize layout thrashing
      */
     startBatchDOMOperations: function () {
-      // Temporarily disable layout calculations
-      if (document.body.style) {
-        document.body.style.display = "none";
-        // Force a reflow
-        document.body.offsetHeight;
-        document.body.style.display = "";
-      }
+      // Use requestAnimationFrame to batch DOM operations without forced reflow
+      requestAnimationFrame(() => {
+        // DOM operations will be batched naturally by the browser
+        // No need to force reflow
+      });
     },
 
     /**
      * End batch DOM operations and restore normal layout
      */
     endBatchDOMOperations: function () {
-      // Force a final reflow to ensure all changes are applied
+      // Use requestAnimationFrame to ensure all changes are applied without forced reflow
       requestAnimationFrame(() => {
-        document.body.offsetHeight;
+        // Browser will naturally apply all batched changes
+        // No need to force reflow
       });
     },
 
