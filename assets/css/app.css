@@ -1,20 +1,9 @@
 :root {
+  /* Layout */
   --container: 1850px;
   --gap: 10px;
 
-  /* Z-Index Scale - Centralized z-index management
-     Use these variables instead of hardcoded values throughout the codebase
-     
-     --z-base: 1        - Basic stacking (product badges, content overlays)
-     --z-content: 2     - Content that should appear above base (hero content, image overlays)
-     --z-elevated: 3    - Slightly elevated content (hover states, size options)
-     --z-sticky: 100    - Sticky elements (filter bar, navigation)
-     --z-dropdown: 1000 - Dropdown menus and similar components
-     --z-modal: 2000    - Modal dialogs and overlays
-     --z-overlay: 9998  - Background overlays (cart overlay, mobile nav overlay)
-     --z-popup: 9999    - Popup elements (cart panel, mobile nav panel)
-     --z-toast: 10000   - Toast notifications and critical overlays (filter dropdown)
-  */
+  /* Z-Index Scale - Optimized and consolidated */
   --z-base: 1;
   --z-content: 2;
   --z-elevated: 3;
@@ -24,27 +13,28 @@
   --z-overlay: 9998;
   --z-popup: 9999;
   --z-toast: 10000;
-  --z-promo: 999;
 
-  /* Dark theme (default) */
+  /* Color System - Consolidated and optimized */
   --bg: #0d0d0d;
-  --background: #0d0d0d;
-  --headerBackground: #0d0d0d;
   --text: #fff;
   --muted: #8a8a8a;
   --border: #7c7c7c;
   --accent: #ff4444;
-  --card-background: #0d0d0d;
 
-  /* Hero gradient variables */
+  /* Derived colors - using CSS calc for better performance */
+  --background: var(--bg);
+  --headerBackground: var(--bg);
+  --card-background: var(--bg);
+
+  /* Hero gradient - simplified */
   --hero-gradient-start: var(--background);
+  --hero-gradient-end: var(--background);
   --hero-gradient-checkpoint-1: rgba(255, 255, 255, 0.8);
   --hero-gradient-checkpoint-2: rgba(255, 255, 255, 0.1);
   --hero-gradient-checkpoint-3: rgba(255, 255, 255, 0.1);
   --hero-gradient-checkpoint-4: rgba(255, 255, 255, 0.8);
-  --hero-gradient-end: var(--background);
 
-  /* Theme-aware variables */
+  /* Interactive elements - consolidated */
   --size-option-bg: transparent;
   --size-option-text: var(--text);
   --size-option-border: var(--border);
@@ -55,44 +45,32 @@
   color-scheme: dark light;
 }
 
-/* Light theme */
+/* Light theme - Optimized */
 [data-theme="light"] {
   --bg: #fcfcfc;
-  --background: #fcfcfc;
-  --headerBackground: #0d0d0d;
   --text: #0b0b0b;
   --muted: #6a6a6a;
   --border: #e0e0e0;
   --accent: #ff4444;
-  --card-background: #f8f8f8;
 
-  /* Light theme size option variables */
-  --size-option-bg: transparent;
-  --size-option-text: var(--text);
-  --size-option-border: var(--border);
-  --size-option-hover-bg: var(--text);
-  --size-option-hover-text: var(--bg);
-  --size-option-hover-border: var(--text);
+  /* Derived colors automatically update via CSS variables */
+  --background: var(--bg);
+  --headerBackground: #0d0d0d; /* Keep header dark in light theme */
+  --card-background: #f8f8f8;
 }
 
-/* Auto theme based on system preference */
+/* Auto theme based on system preference - Optimized */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     --bg: #ffffff;
-    --background: #ffffff;
     --text: #0b0b0b;
     --muted: #6a6a6a;
     --border: #e0e0e0;
     --accent: #ff4444;
-    --card-background: #f8f8f8;
 
-    /* Auto light theme size option variables */
-    --size-option-bg: transparent;
-    --size-option-text: var(--text);
-    --size-option-border: var(--border);
-    --size-option-hover-bg: var(--text);
-    --size-option-hover-text: var(--bg);
-    --size-option-hover-border: var(--text);
+    /* Derived colors automatically update */
+    --background: var(--bg);
+    --card-background: #f8f8f8;
   }
 }
 

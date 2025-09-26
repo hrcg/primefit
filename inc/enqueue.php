@@ -181,17 +181,71 @@ function primefit_enqueue_assets() {
 		}
 	}
 	
-	// Theme scripts
+	// Load core functionality first (required on all pages)
+	wp_enqueue_script( 
+		'primefit-core', 
+		PRIMEFIT_THEME_URI . '/assets/js/core.js', 
+		[ 'jquery' ], 
+		primefit_get_file_version( '/assets/js/core.js' ), 
+		true 
+	);
+	
+	// Load main app (minimal initialization)
 	wp_enqueue_script( 
 		'primefit-app', 
 		PRIMEFIT_THEME_URI . '/assets/js/app.js', 
-		[ 'jquery' ], 
+		[ 'jquery', 'primefit-core' ], 
 		primefit_get_file_version( '/assets/js/app.js' ), 
 		true 
 	);
 	
+	// Load page-specific modules
+	$page_type = primefit_get_page_type();
+	
+	// Cart functionality - load on pages with cart interactions
+	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'front_page', 'cart', 'checkout' ] ) ) {
+		wp_enqueue_script( 
+			'primefit-cart', 
+			PRIMEFIT_THEME_URI . '/assets/js/cart.js', 
+			[ 'jquery', 'primefit-core' ], 
+			primefit_get_file_version( '/assets/js/cart.js' ), 
+			true 
+		);
+	}
+	
+	// Shop functionality - load on shop pages
+	if ( in_array( $page_type, [ 'shop', 'category', 'tag', 'front_page' ] ) ) {
+		wp_enqueue_script( 
+			'primefit-shop', 
+			PRIMEFIT_THEME_URI . '/assets/js/shop.js', 
+			[ 'jquery', 'primefit-core' ], 
+			primefit_get_file_version( '/assets/js/shop.js' ), 
+			true 
+		);
+	}
+	
+	// Mega menu - load on all pages (header navigation)
+	wp_enqueue_script( 
+		'primefit-mega-menu', 
+		PRIMEFIT_THEME_URI . '/assets/js/mega-menu.js', 
+		[ 'jquery' ], 
+		primefit_get_file_version( '/assets/js/mega-menu.js' ), 
+		true 
+	);
+	
+	// Hero video - load on front page and pages with hero sections
+	if ( $page_type === 'front_page' || is_page_template( 'page-hero.php' ) ) {
+		wp_enqueue_script( 
+			'primefit-hero-video', 
+			PRIMEFIT_THEME_URI . '/assets/js/hero-video.js', 
+			[ 'jquery' ], 
+			primefit_get_file_version( '/assets/js/hero-video.js' ), 
+			true 
+		);
+	}
+	
 	// Pass data to JavaScript
-	wp_localize_script( 'primefit-app', 'primefitData', [
+	wp_localize_script( 'primefit-core', 'primefitData', [
 		'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 		'nonce' => wp_create_nonce( 'primefit_nonce' ),
 		'isMobile' => wp_is_mobile(),
@@ -424,18 +478,18 @@ function primefit_add_cache_headers() {
 	// Get the request URI
 	$request_uri = $_SERVER['REQUEST_URI'];
 
-	// Define cache durations (in seconds)
+	// Define cache durations (in seconds) - Optimized for better performance
 	$cache_durations = array(
 		'.css' => 31536000, // 1 year for CSS files
 		'.js' => 31536000,  // 1 year for JS files
 		'.woff2' => 31536000, // 1 year for fonts
 		'.woff' => 31536000,  // 1 year for fonts
-		'.jpg' => 86400,     // 1 day for images
-		'.jpeg' => 86400,    // 1 day for images
-		'.png' => 86400,     // 1 day for images
-		'.gif' => 86400,     // 1 day for images
-		'.webp' => 86400,    // 1 day for images
-		'.svg' => 86400,     // 1 day for images
+		'.jpg' => 2592000,     // 30 days for images (increased from 1 day)
+		'.jpeg' => 2592000,    // 30 days for images (increased from 1 day)
+		'.png' => 2592000,     // 30 days for images (increased from 1 day)
+		'.gif' => 2592000,     // 30 days for images (increased from 1 day)
+		'.webp' => 2592000,    // 30 days for images (increased from 1 day)
+		'.svg' => 2592000,     // 30 days for images (increased from 1 day)
 	);
 
 	// Check if the request is for a static asset
@@ -467,11 +521,11 @@ function primefit_add_cache_headers() {
 		}
 	}
 
-	// Handle HTML pages with shorter cache duration
+	// Handle HTML pages with optimized cache duration
 	if ( is_front_page() || is_home() || is_page() || is_single() ) {
-		// Cache HTML pages for 15 minutes (900 seconds) for better performance
+		// Increased cache duration for better performance (30 minutes instead of 15)
 		// This works well with our product loop caching (15 minutes)
-		$cache_duration = 900;
+		$cache_duration = 1800;
 
 		header( 'Cache-Control: public, max-age=' . $cache_duration );
 		header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $cache_duration ) . ' GMT' );

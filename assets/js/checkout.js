@@ -11,10 +11,12 @@
   "use strict";
 
   // Ensure this script only runs on checkout pages
-  if (!document.body.classList.contains('woocommerce-checkout') &&
-      !document.querySelector('.woocommerce-checkout') &&
-      !document.querySelector('form.checkout')) {
-    console.log('PrimeFit: checkout.js skipped - not on checkout page');
+  if (
+    !document.body.classList.contains("woocommerce-checkout") &&
+    !document.querySelector(".woocommerce-checkout") &&
+    !document.querySelector("form.checkout")
+  ) {
+    console.log("PrimeFit: checkout.js skipped - not on checkout page");
     return;
   }
 
@@ -71,7 +73,6 @@
       const couponCode = urlParams.get("coupon");
 
       if (couponCode && couponCode.trim()) {
-
         // Check if coupon is already applied
         const appliedCoupons = this.getAppliedCoupons();
         if (appliedCoupons.includes(couponCode.toUpperCase())) {
@@ -82,7 +83,8 @@
         setTimeout(() => {
           CouponManager.applyCoupon(couponCode.trim(), {
             isCheckout: true,
-            onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode.trim())
+            onSuccess: () =>
+              CouponManager.cleanUrlAfterCouponApplication(couponCode.trim()),
           });
         }, 500);
       } else {
@@ -101,7 +103,6 @@
       if ($couponData.length) {
         const pendingCoupon = $couponData.data("pending-coupon");
         if (pendingCoupon && pendingCoupon.trim()) {
-
           // Use unified CouponManager to apply pending coupon
           setTimeout(() => {
             // Double-check that WooCommerce is loaded before applying
@@ -111,7 +112,10 @@
             ) {
               CouponManager.applyCoupon(pendingCoupon.trim(), {
                 isCheckout: true,
-                onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+                onSuccess: () =>
+                  CouponManager.cleanUrlAfterCouponApplication(
+                    pendingCoupon.trim()
+                  ),
               });
             } else {
               // Try again after another delay
@@ -122,7 +126,10 @@
                 ) {
                   CouponManager.applyCoupon(pendingCoupon.trim(), {
                     isCheckout: true,
-                    onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(pendingCoupon.trim())
+                    onSuccess: () =>
+                      CouponManager.cleanUrlAfterCouponApplication(
+                        pendingCoupon.trim()
+                      ),
                   });
                 }
               }, 2000);
@@ -172,7 +179,8 @@
     applyCouponFromUrl: function (couponCode) {
       CouponManager.applyCoupon(couponCode, {
         isCheckout: true,
-        onSuccess: () => CouponManager.cleanUrlAfterCouponApplication(couponCode)
+        onSuccess: () =>
+          CouponManager.cleanUrlAfterCouponApplication(couponCode),
       });
     },
 
@@ -182,7 +190,9 @@
      */
     showCouponLoadingState: function () {
       // This is now handled by CouponManager.applyCouponElegantly
-      console.warn('showCouponLoadingState is deprecated. Loading states are now handled by CouponManager.');
+      console.warn(
+        "showCouponLoadingState is deprecated. Loading states are now handled by CouponManager."
+      );
     },
 
     /**
@@ -295,7 +305,7 @@
       CouponManager.applyCoupon(couponCode, {
         isCheckout: true,
         $section: $(".coupon-section"),
-        ...options
+        ...options,
       });
     },
 
@@ -401,7 +411,9 @@
 
         this.paymentMethodObserver = new MutationObserver((mutations) => {
           // Add mutations to pending batch (limit batch size)
-          pendingMutations.push(...mutations.slice(0, maxBatchSize - pendingMutations.length));
+          pendingMutations.push(
+            ...mutations.slice(0, maxBatchSize - pendingMutations.length)
+          );
 
           if (timeoutId) {
             clearTimeout(timeoutId);
@@ -409,13 +421,17 @@
 
           // Only process if cooldown period has passed and minimum interval elapsed
           const now = Date.now();
-          if (now < cooldownUntil || (now - lastProcessTime) < minProcessInterval) {
+          if (
+            now < cooldownUntil ||
+            now - lastProcessTime < minProcessInterval
+          ) {
             return;
           }
 
           timeoutId = setTimeout(() => {
             // Filter significant mutations only
-            const significantMutations = this.filterSignificantMutations(pendingMutations);
+            const significantMutations =
+              this.filterSignificantMutations(pendingMutations);
 
             if (significantMutations.length > 0) {
               // Batch DOM operations using requestAnimationFrame
@@ -451,14 +467,18 @@
       return mutations.filter((mutation) => {
         // Only process childList changes that add/remove elements
         if (mutation.type === "childList") {
-          return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
+          return (
+            mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0
+          );
         }
 
         // Only process attribute changes on specific elements
         if (mutation.type === "attributes") {
           const target = mutation.target;
-          return target.classList?.contains("payment_method") ||
-                 target.classList?.contains("payment_methods");
+          return (
+            target.classList?.contains("payment_method") ||
+            target.classList?.contains("payment_methods")
+          );
         }
 
         return false;
@@ -469,7 +489,9 @@
      * Process payment method changes with batched operations to prevent layout thrashing
      */
     processPaymentMethodChanges: function () {
-      const $currentPaymentMethods = $(".woocommerce-checkout .payment_methods");
+      const $currentPaymentMethods = $(
+        ".woocommerce-checkout .payment_methods"
+      );
 
       // Only reapply if payment methods were actually reset
       if (
@@ -481,7 +503,7 @@
         requestAnimationFrame(() => {
           // Start batch DOM operations
           this.startBatchDOMOperations();
-          
+
           // Remove enhanced class temporarily
           $currentPaymentMethods.removeClass("enhanced");
           this.isPaymentMethodsEnhanced = false;
@@ -493,7 +515,7 @@
 
           // End batch DOM operations
           this.endBatchDOMOperations();
-          
+
           // Re-add enhanced class in a single operation
           $currentPaymentMethods.addClass("enhanced");
           this.isPaymentMethodsEnhanced = true;
@@ -504,20 +526,20 @@
     /**
      * Start batch DOM operations to minimize layout thrashing
      */
-    startBatchDOMOperations: function() {
+    startBatchDOMOperations: function () {
       // Temporarily disable layout calculations
       if (document.body.style) {
-        document.body.style.display = 'none';
+        document.body.style.display = "none";
         // Force a reflow
         document.body.offsetHeight;
-        document.body.style.display = '';
+        document.body.style.display = "";
       }
     },
 
     /**
      * End batch DOM operations and restore normal layout
      */
-    endBatchDOMOperations: function() {
+    endBatchDOMOperations: function () {
       // Force a final reflow to ensure all changes are applied
       requestAnimationFrame(() => {
         document.body.offsetHeight;
@@ -540,7 +562,9 @@
 
         // Only enhance if not already enhanced
         if (!$li.find(".payment_method").length && $label.length) {
-          enhancements.push(() => $li.wrapInner('<div class="payment_method"></div>'));
+          enhancements.push(() =>
+            $li.wrapInner('<div class="payment_method"></div>')
+          );
         }
 
         // Only restructure if payment-method-content doesn't exist
@@ -552,13 +576,19 @@
 
           const paymentContentHTML = `
             <div class="payment-method-title">${title}</div>
-            ${description ? `<div class="payment-method-description">${description}</div>` : ""}
+            ${
+              description
+                ? `<div class="payment-method-description">${description}</div>`
+                : ""
+            }
           `;
 
           enhancements.push(() => {
-            const $paymentContent = $(`<div class="payment-method-content">${paymentContentHTML}</div>`);
+            const $paymentContent = $(
+              `<div class="payment-method-content">${paymentContentHTML}</div>`
+            );
             $paymentContent.css("position", "relative");
-            
+
             $label.empty();
             $label.append($radio);
             $label.append($paymentContent);
@@ -571,7 +601,7 @@
       });
 
       // Execute all enhancements in a single batch
-      enhancements.forEach(enhancement => enhancement());
+      enhancements.forEach((enhancement) => enhancement());
     },
 
     /**
@@ -611,7 +641,7 @@
       });
 
       // Execute all icon operations in a single batch
-      iconOperations.forEach(operation => operation());
+      iconOperations.forEach((operation) => operation());
     },
 
     /**
@@ -649,7 +679,7 @@
       });
 
       // Execute all badge operations in a single batch
-      badgeOperations.forEach(operation => operation());
+      badgeOperations.forEach((operation) => operation());
     },
 
     /**
@@ -746,148 +776,336 @@
      */
     initPhoneFieldValidation: function () {
       const $phoneField = $("#billing_phone");
-      
+
       if (!$phoneField.length) {
         return;
       }
-      
+
       // Lazy-loaded country prefix manager with reduced memory footprint
       const CountryPrefixManager = {
         cache: new Map(),
         loadedRegions: new Set(),
-        
+
         // Core regions with most common countries
         corePrefixes: {
-          'US': '+1', 'CA': '+1', 'GB': '+44', 'DE': '+49', 'FR': '+33',
-          'IT': '+39', 'ES': '+34', 'NL': '+31', 'BE': '+32', 'CH': '+41',
-          'AT': '+43', 'SE': '+46', 'NO': '+47', 'DK': '+45', 'FI': '+358',
-          'PL': '+48', 'CZ': '+420', 'HU': '+36', 'RO': '+40', 'BG': '+359',
-          'HR': '+385', 'SI': '+386', 'SK': '+421', 'LT': '+370', 'LV': '+371',
-          'EE': '+372', 'IE': '+353', 'PT': '+351', 'GR': '+30', 'CY': '+357',
-          'MT': '+356', 'LU': '+352', 'IS': '+354', 'LI': '+423', 'MC': '+377',
-          'SM': '+378', 'VA': '+379', 'AD': '+376', 'AL': '+355', 'BA': '+387',
-          'ME': '+382', 'MK': '+389', 'RS': '+381', 'XK': '+383', 'TR': '+90',
-          'RU': '+7', 'UA': '+380', 'BY': '+375', 'MD': '+373', 'GE': '+995',
-          'AM': '+374', 'AZ': '+994', 'KZ': '+7', 'KG': '+996', 'TJ': '+992',
-          'TM': '+993', 'UZ': '+998', 'MN': '+976', 'CN': '+86', 'JP': '+81',
-          'KR': '+82', 'TW': '+886', 'HK': '+852', 'MO': '+853', 'SG': '+65',
-          'MY': '+60', 'TH': '+66', 'VN': '+84', 'LA': '+856', 'KH': '+855',
-          'MM': '+95', 'PH': '+63', 'ID': '+62', 'BN': '+673', 'TL': '+670',
-          'AU': '+61', 'NZ': '+64', 'FJ': '+679', 'PG': '+675', 'SB': '+677',
-          'VU': '+678', 'NC': '+687', 'PF': '+689', 'WF': '+681', 'WS': '+685',
-          'TO': '+676', 'KI': '+686', 'TV': '+688', 'NR': '+674', 'PW': '+680',
-          'FM': '+691', 'MH': '+692', 'CK': '+682', 'NU': '+683', 'TK': '+690',
-          'IN': '+91', 'PK': '+92', 'BD': '+880', 'LK': '+94', 'MV': '+960',
-          'BT': '+975', 'NP': '+977', 'AF': '+93', 'IR': '+98', 'IQ': '+964',
-          'SA': '+966', 'AE': '+971', 'IL': '+972', 'JO': '+962', 'LB': '+961',
-          'SY': '+963', 'PS': '+970', 'KW': '+965', 'QA': '+974', 'BH': '+973',
-          'OM': '+968', 'YE': '+967', 'EG': '+20', 'LY': '+218', 'TN': '+216',
-          'DZ': '+213', 'MA': '+212', 'SD': '+249', 'SS': '+211', 'ET': '+251',
-          'ER': '+291', 'DJ': '+253', 'SO': '+252', 'KE': '+254', 'UG': '+256',
-          'TZ': '+255', 'RW': '+250', 'BI': '+257', 'MW': '+265', 'ZM': '+260',
-          'ZW': '+263', 'BW': '+267', 'NA': '+264', 'SZ': '+268', 'LS': '+266',
-          'ZA': '+27', 'MG': '+261', 'MU': '+230', 'SC': '+248', 'KM': '+269',
-          'YT': '+262', 'RE': '+262', 'MZ': '+258', 'MW': '+265', 'AO': '+244',
-          'CD': '+243', 'CG': '+242', 'CF': '+236', 'TD': '+235', 'CM': '+237',
-          'GQ': '+240', 'GA': '+241', 'ST': '+239', 'CV': '+238', 'GM': '+220',
-          'GN': '+224', 'GW': '+245', 'SL': '+232', 'LR': '+231', 'CI': '+225',
-          'GH': '+233', 'TG': '+228', 'BJ': '+229', 'NE': '+227', 'BF': '+226',
-          'ML': '+223', 'SN': '+221', 'MR': '+222', 'NG': '+234', 'TD': '+235',
-          'BF': '+226', 'ML': '+223', 'SN': '+221', 'MR': '+222', 'NG': '+234',
-          'BR': '+55', 'AR': '+54', 'CL': '+56', 'UY': '+598', 'PY': '+595',
-          'BO': '+591', 'PE': '+51', 'EC': '+593', 'CO': '+57', 'VE': '+58',
-          'GY': '+592', 'SR': '+597', 'GF': '+594', 'FK': '+500', 'GS': '+500',
-          'MX': '+52', 'GT': '+502', 'BZ': '+501', 'SV': '+503', 'HN': '+504',
-          'NI': '+505', 'CR': '+506', 'PA': '+507', 'CU': '+53', 'JM': '+1876',
-          'HT': '+509', 'DO': '+1809', 'PR': '+1787', 'VI': '+1340', 'AG': '+1268',
-          'AI': '+1264', 'VG': '+1284', 'BQ': '+599', 'CW': '+599', 'SX': '+1721',
-          'KN': '+1869', 'LC': '+1758', 'VC': '+1784', 'GD': '+1473', 'TT': '+1868',
-          'BB': '+1246', 'BS': '+1242', 'TC': '+1649', 'KY': '+1345', 'BM': '+1441',
-          'AW': '+297', 'AN': '+599', 'DM': '+1767', 'MS': '+1664', 'GU': '+1671',
-          'MP': '+1670', 'AS': '+1684', 'UM': '+1'
+          US: "+1",
+          CA: "+1",
+          GB: "+44",
+          DE: "+49",
+          FR: "+33",
+          IT: "+39",
+          ES: "+34",
+          NL: "+31",
+          BE: "+32",
+          CH: "+41",
+          AT: "+43",
+          SE: "+46",
+          NO: "+47",
+          DK: "+45",
+          FI: "+358",
+          PL: "+48",
+          CZ: "+420",
+          HU: "+36",
+          RO: "+40",
+          BG: "+359",
+          HR: "+385",
+          SI: "+386",
+          SK: "+421",
+          LT: "+370",
+          LV: "+371",
+          EE: "+372",
+          IE: "+353",
+          PT: "+351",
+          GR: "+30",
+          CY: "+357",
+          MT: "+356",
+          LU: "+352",
+          IS: "+354",
+          LI: "+423",
+          MC: "+377",
+          SM: "+378",
+          VA: "+379",
+          AD: "+376",
+          AL: "+355",
+          BA: "+387",
+          ME: "+382",
+          MK: "+389",
+          RS: "+381",
+          XK: "+383",
+          TR: "+90",
+          RU: "+7",
+          UA: "+380",
+          BY: "+375",
+          MD: "+373",
+          GE: "+995",
+          AM: "+374",
+          AZ: "+994",
+          KZ: "+7",
+          KG: "+996",
+          TJ: "+992",
+          TM: "+993",
+          UZ: "+998",
+          MN: "+976",
+          CN: "+86",
+          JP: "+81",
+          KR: "+82",
+          TW: "+886",
+          HK: "+852",
+          MO: "+853",
+          SG: "+65",
+          MY: "+60",
+          TH: "+66",
+          VN: "+84",
+          LA: "+856",
+          KH: "+855",
+          MM: "+95",
+          PH: "+63",
+          ID: "+62",
+          BN: "+673",
+          TL: "+670",
+          AU: "+61",
+          NZ: "+64",
+          FJ: "+679",
+          PG: "+675",
+          SB: "+677",
+          VU: "+678",
+          NC: "+687",
+          PF: "+689",
+          WF: "+681",
+          WS: "+685",
+          TO: "+676",
+          KI: "+686",
+          TV: "+688",
+          NR: "+674",
+          PW: "+680",
+          FM: "+691",
+          MH: "+692",
+          CK: "+682",
+          NU: "+683",
+          TK: "+690",
+          IN: "+91",
+          PK: "+92",
+          BD: "+880",
+          LK: "+94",
+          MV: "+960",
+          BT: "+975",
+          NP: "+977",
+          AF: "+93",
+          IR: "+98",
+          IQ: "+964",
+          SA: "+966",
+          AE: "+971",
+          IL: "+972",
+          JO: "+962",
+          LB: "+961",
+          SY: "+963",
+          PS: "+970",
+          KW: "+965",
+          QA: "+974",
+          BH: "+973",
+          OM: "+968",
+          YE: "+967",
+          EG: "+20",
+          LY: "+218",
+          TN: "+216",
+          DZ: "+213",
+          MA: "+212",
+          SD: "+249",
+          SS: "+211",
+          ET: "+251",
+          ER: "+291",
+          DJ: "+253",
+          SO: "+252",
+          KE: "+254",
+          UG: "+256",
+          TZ: "+255",
+          RW: "+250",
+          BI: "+257",
+          MW: "+265",
+          ZM: "+260",
+          ZW: "+263",
+          BW: "+267",
+          NA: "+264",
+          SZ: "+268",
+          LS: "+266",
+          ZA: "+27",
+          MG: "+261",
+          MU: "+230",
+          SC: "+248",
+          KM: "+269",
+          YT: "+262",
+          RE: "+262",
+          MZ: "+258",
+          MW: "+265",
+          AO: "+244",
+          CD: "+243",
+          CG: "+242",
+          CF: "+236",
+          TD: "+235",
+          CM: "+237",
+          GQ: "+240",
+          GA: "+241",
+          ST: "+239",
+          CV: "+238",
+          GM: "+220",
+          GN: "+224",
+          GW: "+245",
+          SL: "+232",
+          LR: "+231",
+          CI: "+225",
+          GH: "+233",
+          TG: "+228",
+          BJ: "+229",
+          NE: "+227",
+          BF: "+226",
+          ML: "+223",
+          SN: "+221",
+          MR: "+222",
+          NG: "+234",
+          TD: "+235",
+          BF: "+226",
+          ML: "+223",
+          SN: "+221",
+          MR: "+222",
+          NG: "+234",
+          BR: "+55",
+          AR: "+54",
+          CL: "+56",
+          UY: "+598",
+          PY: "+595",
+          BO: "+591",
+          PE: "+51",
+          EC: "+593",
+          CO: "+57",
+          VE: "+58",
+          GY: "+592",
+          SR: "+597",
+          GF: "+594",
+          FK: "+500",
+          GS: "+500",
+          MX: "+52",
+          GT: "+502",
+          BZ: "+501",
+          SV: "+503",
+          HN: "+504",
+          NI: "+505",
+          CR: "+506",
+          PA: "+507",
+          CU: "+53",
+          JM: "+1876",
+          HT: "+509",
+          DO: "+1809",
+          PR: "+1787",
+          VI: "+1340",
+          AG: "+1268",
+          AI: "+1264",
+          VG: "+1284",
+          BQ: "+599",
+          CW: "+599",
+          SX: "+1721",
+          KN: "+1869",
+          LC: "+1758",
+          VC: "+1784",
+          GD: "+1473",
+          TT: "+1868",
+          BB: "+1246",
+          BS: "+1242",
+          TC: "+1649",
+          KY: "+1345",
+          BM: "+1441",
+          AW: "+297",
+          AN: "+599",
+          DM: "+1767",
+          MS: "+1664",
+          GU: "+1671",
+          MP: "+1670",
+          AS: "+1684",
+          UM: "+1",
         },
-        
+
         // Get prefix for country with lazy loading
-        getPrefix: function(countryCode) {
+        getPrefix: function (countryCode) {
           if (!countryCode) return null;
-          
+
           // Check cache first
           if (this.cache.has(countryCode)) {
             return this.cache.get(countryCode);
           }
-          
+
           // Check core prefixes
           if (this.corePrefixes[countryCode]) {
             const prefix = this.corePrefixes[countryCode];
             this.cache.set(countryCode, prefix);
             return prefix;
           }
-          
+
           // For countries not in core set, return null (can be extended later)
           return null;
         },
-        
+
         // Check if country has any prefix
-        hasPrefix: function(countryCode) {
+        hasPrefix: function (countryCode) {
           return this.getPrefix(countryCode) !== null;
         },
-        
+
         // Get all prefixes for validation
-        getAllPrefixes: function() {
+        getAllPrefixes: function () {
           return Object.values(this.corePrefixes);
-        }
+        },
       };
-      
+
       // Phone number regex: allows + at start, numbers, spaces, hyphens, parentheses
       const phoneRegex = /^\+?[0-9\s\-\(\)]*$/;
-      
+
       // Prevent invalid characters from being typed
-      $phoneField.on("keypress", function(e) {
+      $phoneField.on("keypress", function (e) {
         const char = String.fromCharCode(e.which);
         const currentValue = $(this).val();
         const newValue = currentValue + char;
-        
+
         // Allow backspace, delete, tab, escape, enter
-        if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
-            // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-            (e.keyCode === 65 && e.ctrlKey === true) ||
-            (e.keyCode === 67 && e.ctrlKey === true) ||
-            (e.keyCode === 86 && e.ctrlKey === true) ||
-            (e.keyCode === 88 && e.ctrlKey === true)) {
+        if (
+          [8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+          // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+          (e.keyCode === 65 && e.ctrlKey === true) ||
+          (e.keyCode === 67 && e.ctrlKey === true) ||
+          (e.keyCode === 86 && e.ctrlKey === true) ||
+          (e.keyCode === 88 && e.ctrlKey === true)
+        ) {
           return;
         }
-        
+
         // Check if the new value would be valid
         if (!phoneRegex.test(newValue)) {
           e.preventDefault();
           return false;
         }
       });
-      
+
       // Validate on paste
-      $phoneField.on("paste", function(e) {
+      $phoneField.on("paste", function (e) {
         const $this = $(this);
-        setTimeout(function() {
+        setTimeout(function () {
           const pastedValue = $this.val();
           if (!phoneRegex.test(pastedValue)) {
             // Remove invalid characters
-            const cleanedValue = pastedValue.replace(/[^\+0-9\s\-\(\)]/g, '');
+            const cleanedValue = pastedValue.replace(/[^\+0-9\s\-\(\)]/g, "");
             $this.val(cleanedValue);
           }
         }, 10);
       });
-      
+
       // Validate on input change
-      $phoneField.on("input", function() {
+      $phoneField.on("input", function () {
         const $this = $(this);
         const value = $this.val();
-        
+
         if (value && !phoneRegex.test(value)) {
           // Remove invalid characters
-          const cleanedValue = value.replace(/[^\+0-9\s\-\(\)]/g, '');
+          const cleanedValue = value.replace(/[^\+0-9\s\-\(\)]/g, "");
           $this.val(cleanedValue);
         }
-        
+
         // Visual feedback
         if (value && phoneRegex.test(value)) {
           $this.removeClass("phone-invalid").addClass("phone-valid");
@@ -897,70 +1115,80 @@
           $this.removeClass("phone-valid phone-invalid");
         }
       });
-      
+
       // Validate on blur
-      $phoneField.on("blur", function() {
-        const $this = $(this);
-        const value = $this.val().trim();
-        
-        if (!value) {
-          // Phone field is now required
-          $this.addClass("woocommerce-invalid");
-          this.showPhoneError($this, "Phone number is required");
-        } else if (!phoneRegex.test(value)) {
-          $this.addClass("woocommerce-invalid");
-          // Show error message
-          this.showPhoneError($this, "Please enter a valid phone number");
-        } else {
-          $this.removeClass("woocommerce-invalid");
-          this.hidePhoneError($this);
-        }
-      }.bind(this));
-      
+      $phoneField.on(
+        "blur",
+        function () {
+          const $this = $(this);
+          const value = $this.val().trim();
+
+          if (!value) {
+            // Phone field is now required
+            $this.addClass("woocommerce-invalid");
+            this.showPhoneError($this, "Phone number is required");
+          } else if (!phoneRegex.test(value)) {
+            $this.addClass("woocommerce-invalid");
+            // Show error message
+            this.showPhoneError($this, "Please enter a valid phone number");
+          } else {
+            $this.removeClass("woocommerce-invalid");
+            this.hidePhoneError($this);
+          }
+        }.bind(this)
+      );
+
       // Initialize country prefix functionality with delay to ensure DOM is ready
       setTimeout(() => {
         this.initCountryPrefixLogic(CountryPrefixManager);
       }, 100);
-      
+
       // Re-bind events on checkout updates
-      $(document.body).on("updated_checkout", function() {
-        $("#billing_phone").off("keypress paste input blur").on({
-          keypress: $phoneField.data("events")?.keypress[0].handler,
-          paste: $phoneField.data("events")?.paste[0].handler,
-          input: $phoneField.data("events")?.input[0].handler,
-          blur: $phoneField.data("events")?.blur[0].handler
-        });
-        
-        // Re-initialize country prefix logic with delay
-        setTimeout(() => {
-          this.initCountryPrefixLogic(CountryPrefixManager);
-        }, 100);
-      }.bind(this));
+      $(document.body).on(
+        "updated_checkout",
+        function () {
+          $("#billing_phone")
+            .off("keypress paste input blur")
+            .on({
+              keypress: $phoneField.data("events")?.keypress[0].handler,
+              paste: $phoneField.data("events")?.paste[0].handler,
+              input: $phoneField.data("events")?.input[0].handler,
+              blur: $phoneField.data("events")?.blur[0].handler,
+            });
+
+          // Re-initialize country prefix logic with delay
+          setTimeout(() => {
+            this.initCountryPrefixLogic(CountryPrefixManager);
+          }, 100);
+        }.bind(this)
+      );
     },
 
     /**
      * Show phone field error message
      */
-    showPhoneError: function($field, message) {
+    showPhoneError: function ($field, message) {
       this.hidePhoneError($field);
-      const $errorDiv = $('<div class="phone-error-message">' + message + '</div>');
+      const $errorDiv = $(
+        '<div class="phone-error-message">' + message + "</div>"
+      );
       $field.after($errorDiv);
     },
 
     /**
      * Hide phone field error message
      */
-    hidePhoneError: function($field) {
-      $field.siblings('.phone-error-message').remove();
+    hidePhoneError: function ($field) {
+      $field.siblings(".phone-error-message").remove();
     },
 
     /**
      * Initialize country prefix logic for phone field - optimized version
      */
-    initCountryPrefixLogic: function(countryPrefixManager) {
+    initCountryPrefixLogic: function (countryPrefixManager) {
       const $countrySelect = $("#billing_country");
       const $phoneField = $("#billing_phone");
-      
+
       if (!$countrySelect.length || !$phoneField.length) {
         // Retry after a short delay
         setTimeout(() => {
@@ -968,11 +1196,11 @@
         }, 200);
         return;
       }
-      
+
       // Remove any existing event handlers to prevent duplicates
-      $countrySelect.off('change.countryPrefix');
-      $phoneField.off('focus.countryPrefix input.countryPrefix');
-      
+      $countrySelect.off("change.countryPrefix");
+      $phoneField.off("focus.countryPrefix input.countryPrefix");
+
       // Debounced prefix application to prevent excessive DOM manipulation
       let prefixTimeout = null;
       const debouncedApplyPrefix = () => {
@@ -980,10 +1208,14 @@
           clearTimeout(prefixTimeout);
         }
         prefixTimeout = setTimeout(() => {
-          this.applyCountryPrefix($countrySelect, $phoneField, countryPrefixManager);
+          this.applyCountryPrefix(
+            $countrySelect,
+            $phoneField,
+            countryPrefixManager
+          );
         }, 100);
       };
-      
+
       // Debounced prefix removal
       let removeTimeout = null;
       const debouncedRemovePrefix = () => {
@@ -994,40 +1226,45 @@
           this.removePreviousPrefix($phoneField, countryPrefixManager);
         }, 50);
       };
-      
+
       // Single event handler for country changes
-      $countrySelect.on('change.countryPrefix', function() {
+      $countrySelect.on("change.countryPrefix", function () {
         debouncedRemovePrefix();
-        
+
         // Apply new prefix if phone field has content
         const currentPhoneValue = $phoneField.val().trim();
         if (currentPhoneValue) {
           debouncedApplyPrefix();
         }
       });
-      
+
       // Single event handler for phone field focus
-      $phoneField.on('focus.countryPrefix', function() {
+      $phoneField.on("focus.countryPrefix", function () {
         const currentPhoneValue = $phoneField.val().trim();
         const selectedCountry = $countrySelect.val();
-        
-        if (!currentPhoneValue && selectedCountry && countryPrefixManager.hasPrefix(selectedCountry)) {
+
+        if (
+          !currentPhoneValue &&
+          selectedCountry &&
+          countryPrefixManager.hasPrefix(selectedCountry)
+        ) {
           debouncedApplyPrefix();
         }
       });
-      
+
       // Single event handler for phone field input
-      $phoneField.on('input.countryPrefix', function() {
+      $phoneField.on("input.countryPrefix", function () {
         const currentPhoneValue = $phoneField.val().trim();
         const selectedCountry = $countrySelect.val();
-        
+
         // If user starts typing a number and we have a country selected, add prefix
-        if (currentPhoneValue && 
-            /^[0-9]/.test(currentPhoneValue) && 
-            selectedCountry && 
-            countryPrefixManager.hasPrefix(selectedCountry) &&
-            !currentPhoneValue.startsWith('+')) {
-          
+        if (
+          currentPhoneValue &&
+          /^[0-9]/.test(currentPhoneValue) &&
+          selectedCountry &&
+          countryPrefixManager.hasPrefix(selectedCountry) &&
+          !currentPhoneValue.startsWith("+")
+        ) {
           debouncedApplyPrefix();
         }
       });
@@ -1036,19 +1273,26 @@
     /**
      * Apply country prefix with optimized DOM manipulation
      */
-    applyCountryPrefix: function($countrySelect, $phoneField, countryPrefixManager) {
+    applyCountryPrefix: function (
+      $countrySelect,
+      $phoneField,
+      countryPrefixManager
+    ) {
       const selectedCountry = $countrySelect.val();
       const currentPhoneValue = $phoneField.val().trim();
-      
-      if (!selectedCountry || !countryPrefixManager.hasPrefix(selectedCountry)) {
+
+      if (
+        !selectedCountry ||
+        !countryPrefixManager.hasPrefix(selectedCountry)
+      ) {
         return;
       }
-      
+
       const countryPrefix = countryPrefixManager.getPrefix(selectedCountry);
-      
+
       // If phone field is empty, add the prefix
       if (!currentPhoneValue) {
-        $phoneField.val(countryPrefix + ' ');
+        $phoneField.val(countryPrefix + " ");
         $phoneField.focus();
         // Position cursor after the prefix
         setTimeout(() => {
@@ -1057,17 +1301,17 @@
         }, 10);
         return;
       }
-      
+
       // If phone field has content but doesn't start with any prefix, add the country prefix
-      const hasAnyPrefix = countryPrefixManager.getAllPrefixes().some(prefix => 
-        currentPhoneValue.startsWith(prefix)
-      );
-      
-      if (!hasAnyPrefix && !currentPhoneValue.startsWith('+')) {
+      const hasAnyPrefix = countryPrefixManager
+        .getAllPrefixes()
+        .some((prefix) => currentPhoneValue.startsWith(prefix));
+
+      if (!hasAnyPrefix && !currentPhoneValue.startsWith("+")) {
         // Remove any existing numbers at the start and add the country prefix
-        const cleanNumber = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, '');
-        $phoneField.val(countryPrefix + ' ' + cleanNumber);
-        
+        const cleanNumber = currentPhoneValue.replace(/^[0-9\s\-\(\)]+/, "");
+        $phoneField.val(countryPrefix + " " + cleanNumber);
+
         // Position cursor after the prefix
         setTimeout(() => {
           const prefixLength = countryPrefix.length + 1; // +1 for space
@@ -1079,18 +1323,20 @@
     /**
      * Remove previous prefix with optimized DOM manipulation
      */
-    removePreviousPrefix: function($phoneField, countryPrefixManager) {
+    removePreviousPrefix: function ($phoneField, countryPrefixManager) {
       const currentPhoneValue = $phoneField.val().trim();
-      
+
       if (!currentPhoneValue) {
         return;
       }
-      
+
       // Find and remove any existing country prefix
       const prefixes = countryPrefixManager.getAllPrefixes();
       for (const prefix of prefixes) {
         if (currentPhoneValue.startsWith(prefix)) {
-          const numberWithoutPrefix = currentPhoneValue.substring(prefix.length).trim();
+          const numberWithoutPrefix = currentPhoneValue
+            .substring(prefix.length)
+            .trim();
           $phoneField.val(numberWithoutPrefix);
           break; // Only remove the first matching prefix
         }
@@ -1105,37 +1351,37 @@
       const $countrySelect = $("#billing_country");
       const $address2Field = $("#billing_address_2_field");
       const $postcodeField = $("#billing_postcode_field");
-      
+
       // Countries where address_2 and postcode should be hidden
-      const hiddenCountries = ['AL', 'XK', 'MK']; // Albania, Kosovo, North Macedonia
-      
+      const hiddenCountries = ["AL", "XK", "MK"]; // Albania, Kosovo, North Macedonia
+
       // Function to toggle field visibility
-      const toggleFields = function() {
+      const toggleFields = function () {
         const selectedCountry = $countrySelect.val();
         const shouldHide = hiddenCountries.includes(selectedCountry);
-        
+
         if (shouldHide) {
           $address2Field.slideUp(300);
           $postcodeField.slideUp(300);
           // Clear the field values when hiding
-          $("#billing_address_2").val('');
-          $("#billing_postcode").val('');
+          $("#billing_address_2").val("");
+          $("#billing_postcode").val("");
         } else {
           $address2Field.slideDown(300);
           $postcodeField.slideDown(300);
         }
       };
-      
+
       // Initial check on page load
       toggleFields();
-      
+
       // Listen for country changes
-      $countrySelect.on('change', toggleFields);
-      
+      $countrySelect.on("change", toggleFields);
+
       // Also listen for WooCommerce checkout updates
-      $(document.body).on('updated_checkout', function() {
+      $(document.body).on("updated_checkout", function () {
         // Re-bind the change event in case the select was recreated
-        $("#billing_country").off('change').on('change', toggleFields);
+        $("#billing_country").off("change").on("change", toggleFields);
         // Re-check visibility
         toggleFields();
       });
@@ -1272,7 +1518,7 @@
      */
     overrideCheckoutProcessing: function () {
       // Listen for checkout form submission
-      $(document.body).on('submit', '.woocommerce-checkout form', function(e) {
+      $(document.body).on("submit", ".woocommerce-checkout form", function (e) {
         // Show our custom processing indicator
         CheckoutManager.showCustomProcessingIndicator();
 
@@ -1281,30 +1527,32 @@
 
         // Submit the form via AJAX to avoid the white overlay
         const formData = new FormData(this);
-        formData.append('action', 'woocommerce_checkout');
-        formData.append('security', wc_checkout_params.checkout_nonce);
+        formData.append("action", "woocommerce_checkout");
+        formData.append("security", wc_checkout_params.checkout_nonce);
 
         $.ajax({
           url: wc_checkout_params.ajax_url,
-          type: 'POST',
+          type: "POST",
           data: formData,
           processData: false,
           contentType: false,
-          success: function(response) {
-            if (response.result === 'success') {
+          success: function (response) {
+            if (response.result === "success") {
               // Redirect to success page
               window.location.href = response.redirect;
             } else {
               // Show errors
               CheckoutManager.hideCustomProcessingIndicator();
-              $('.woocommerce-error').remove();
-              $('.woocommerce-notices-wrapper').prepend(response.messages);
+              $(".woocommerce-error").remove();
+              $(".woocommerce-notices-wrapper").prepend(response.messages);
             }
           },
-          error: function() {
+          error: function () {
             CheckoutManager.hideCustomProcessingIndicator();
-            alert('There was an error processing your order. Please try again.');
-          }
+            alert(
+              "There was an error processing your order. Please try again."
+            );
+          },
         });
       });
     },
@@ -1320,16 +1568,16 @@
         </div>
       `;
 
-      $('body').append(indicator);
-      $('body').addClass('checkout-processing');
+      $("body").append(indicator);
+      $("body").addClass("checkout-processing");
     },
 
     /**
      * Hide custom processing indicator
      */
     hideCustomProcessingIndicator: function () {
-      $('.checkout-processing-indicator').remove();
-      $('body').removeClass('checkout-processing');
+      $(".checkout-processing-indicator").remove();
+      $("body").removeClass("checkout-processing");
     },
 
     /**
@@ -1337,12 +1585,12 @@
      */
     overrideBlockUI: function () {
       // Override the blockUI plugin for checkout pages
-      if (typeof $.blockUI !== 'undefined') {
+      if (typeof $.blockUI !== "undefined") {
         const originalBlockUI = $.blockUI;
 
-        $.blockUI = function(opts) {
+        $.blockUI = function (opts) {
           // Only override on checkout pages
-          if ($('body').hasClass('woocommerce-checkout')) {
+          if ($("body").hasClass("woocommerce-checkout")) {
             return; // Don't show the default blockUI
           }
 
@@ -1356,31 +1604,34 @@
      * Test function for country prefix functionality
      * Can be called from browser console: CheckoutManager.testCountryPrefix()
      */
-    testCountryPrefix: function() {
-      console.log('Testing country prefix functionality...');
-      
+    testCountryPrefix: function () {
+      console.log("Testing country prefix functionality...");
+
       const $countrySelect = $("#billing_country");
       const $phoneField = $("#billing_phone");
-      
-      console.log('Country select element:', $countrySelect.length);
-      console.log('Phone field element:', $phoneField.length);
-      
+
+      console.log("Country select element:", $countrySelect.length);
+      console.log("Phone field element:", $phoneField.length);
+
       if ($countrySelect.length && $phoneField.length) {
         // Test with US
-        $countrySelect.val('US');
-        $countrySelect.trigger('change');
-        console.log('Phone field value after US selection:', $phoneField.val());
-        
+        $countrySelect.val("US");
+        $countrySelect.trigger("change");
+        console.log("Phone field value after US selection:", $phoneField.val());
+
         // Test with UK
         setTimeout(() => {
-          $countrySelect.val('GB');
-          $countrySelect.trigger('change');
-          console.log('Phone field value after UK selection:', $phoneField.val());
+          $countrySelect.val("GB");
+          $countrySelect.trigger("change");
+          console.log(
+            "Phone field value after UK selection:",
+            $phoneField.val()
+          );
         }, 1000);
       } else {
-        console.log('Required elements not found');
+        console.log("Required elements not found");
       }
-    }
+    },
   };
 
   /**

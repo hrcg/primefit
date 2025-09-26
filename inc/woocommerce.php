@@ -239,6 +239,8 @@ function primefit_optimize_database_queries() {
 		add_filter( 'get_terms_args', 'primefit_add_terms_cache', 10, 2 );
 		// Add post meta caching for product queries
 		add_filter( 'posts_results', 'primefit_cache_post_meta', 10, 2 );
+		// Optimize WooCommerce product queries
+		add_action( 'pre_get_posts', 'primefit_optimize_woocommerce_queries', 20 );
 	}
 }
 
@@ -260,13 +262,78 @@ function primefit_add_terms_cache( $args, $taxonomies ) {
  * Cache post meta for product queries to avoid N+1 queries
  */
 function primefit_cache_post_meta( $posts, $query ) {
-	if ( ! empty( $posts ) && $query->is_main_query() ) {
+if ( ! empty( $posts ) && $query->is_main_query() ) {
 		// Cache meta for product queries
 		if ( $query->get( 'post_type' ) === 'product' ) {
 			update_meta_cache( 'post', wp_list_pluck( $posts, 'ID' ) );
 		}
 	}
 	return $posts;
+}
+
+/**
+ * Optimize WooCommerce product queries for better performance
+ */
+function primefit_optimize_woocommerce_queries( $query ) {
+	// Only apply to main queries on frontend
+	if ( is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+	
+	// Only apply to WooCommerce product queries
+	if ( ! ( $query->is_post_type_archive( 'product' ) || $query->is_tax( get_object_taxonomies( 'product' ) ) ) ) {
+		return;
+	}
+	
+	// Reduce products per page for better performance
+	$query->set( 'posts_per_page', 8 );
+	
+	// Optimize query by removing unnecessary fields
+	$query->set( 'no_found_rows', false ); // We need found_rows for pagination
+	$query->set( 'update_post_meta_cache', true );
+	$query->set( 'update_post_term_cache', true );
+	
+	// Add query caching
+	$cache_key = 'primefit_product_query_' . md5( serialize( $query->query_vars ) );
+	$cached_results = get_transient( $cache_key );
+	
+	if ( $cached_results !== false ) {
+		$query->posts = $cached_results['posts'];
+		$query->post_count = count( $cached_results['posts'] );
+		$query->found_posts = $cached_results['found_posts'];
+		$query->max_num_pages = $cached_results['max_num_pages'];
+		return;
+	}
+}
+
+/**
+ * Cache WooCommerce query results for better performance
+ */
+add_action( 'wp', 'primefit_cache_woocommerce_query_results', 20 );
+function primefit_cache_woocommerce_query_results() {
+	global $wp_query;
+	
+	// Only cache WooCommerce product queries
+	if ( ! ( is_shop() || is_product_category() || is_product_tag() ) ) {
+		return;
+	}
+	
+	if ( ! $wp_query->is_main_query() || empty( $wp_query->posts ) ) {
+		return;
+	}
+	
+	// Generate cache key
+	$cache_key = 'primefit_product_query_' . md5( serialize( $wp_query->query_vars ) );
+	
+	// Cache the results for 15 minutes
+	$cache_data = array(
+		'posts' => $wp_query->posts,
+		'found_posts' => $wp_query->found_posts,
+		'max_num_pages' => $wp_query->max_num_pages,
+		'post_count' => $wp_query->post_count
+	);
+	
+	set_transient( $cache_key, $cache_data, 900 ); // 15 minutes
 }
 
 /**
@@ -349,6 +416,140 @@ function primefit_ajax_add_to_cart_link( $link, $product ) {
 		$link = str_replace( '<a ', '<a data-product_id="' . $product->get_id() . '" ', $link );
 	}
 	return $link;
+}
+
+/**
+ * Optimize WooCommerce product loop for better performance
+ */
+add_action( 'woocommerce_before_shop_loop', 'primefit_optimize_product_loop_start', 5 );
+function primefit_optimize_product_loop_start() {
+	// Set optimized loop properties
+	wc_set_loop_prop( 'is_shortcode', false );
+	wc_set_loop_prop( 'columns', 4 );
+	wc_set_loop_prop( 'per_page', 8 );
+	
+	// Add performance optimizations
+	add_filter( 'woocommerce_product_get_image', 'primefit_optimize_loop_images', 10, 2 );
+	add_filter( 'woocommerce_loop_add_to_cart_args', 'primefit_optimize_add_to_cart_args', 10, 2 );
+}
+
+/**
+ * Optimize product images in loop for better performance
+ */
+function primefit_optimize_loop_images( $image, $product ) {
+	$image_id = $product->get_image_id();
+	
+	if ( $image_id ) {
+		// Use optimized image size for loop
+		$optimized_image = wp_get_attachment_image( $image_id, 'woocommerce_thumbnail', false, array(
+			'loading' => 'lazy',
+			'decoding' => 'async',
+			'class' => 'attachment-woocommerce_thumbnail size-woocommerce_thumbnail'
+		) );
+		
+		return $optimized_image ?: $image;
+	}
+	
+	return $image;
+}
+
+/**
+ * Optimize add to cart arguments for better performance
+ */
+function primefit_optimize_add_to_cart_args( $args, $product ) {
+	// Reduce unnecessary data in add to cart args
+	$args['class'] = 'button product_type_' . $product->get_type() . ' add_to_cart_button ajax_add_to_cart';
+	$args['attributes']['data-product_id'] = $product->get_id();
+	$args['attributes']['data-product_sku'] = $product->get_sku();
+	$args['attributes']['aria-label'] = $product->add_to_cart_description();
+	
+	return $args;
+}
+
+/**
+ * Remove unnecessary WooCommerce hooks for better performance
+ */
+add_action( 'init', 'primefit_remove_unnecessary_woocommerce_hooks' );
+function primefit_remove_unnecessary_woocommerce_hooks() {
+	if ( is_admin() || wp_doing_ajax() ) {
+		return;
+	}
+	
+	// Remove unnecessary hooks on category pages
+	if ( is_product_category() || is_product_tag() || is_shop() ) {
+		// Remove default WooCommerce breadcrumbs (we have our own)
+		remove_action( 'woocommerce_before_main_content', 'woocommerce_breadcrumb', 20 );
+		
+		// Remove default result count (we have it in filter bar)
+		remove_action( 'woocommerce_before_shop_loop', 'woocommerce_result_count', 20 );
+		
+		// Remove default catalog ordering (we have it in filter bar)
+		remove_action( 'woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30 );
+		
+		// Optimize product loop hooks
+		add_action( 'woocommerce_after_shop_loop', 'primefit_optimize_product_loop_end', 5 );
+	}
+}
+
+/**
+ * Clean up after product loop
+ */
+function primefit_optimize_product_loop_end() {
+	// Remove performance optimizations
+	remove_filter( 'woocommerce_product_get_image', 'primefit_optimize_loop_images', 10 );
+	remove_filter( 'woocommerce_loop_add_to_cart_args', 'primefit_optimize_add_to_cart_args', 10 );
+}
+
+/**
+ * Clear product query cache when products are updated
+ */
+add_action( 'save_post', 'primefit_clear_product_query_cache' );
+add_action( 'delete_post', 'primefit_clear_product_query_cache' );
+add_action( 'woocommerce_product_set_stock_status', 'primefit_clear_product_query_cache' );
+add_action( 'woocommerce_variation_set_stock_status', 'primefit_clear_product_query_cache' );
+
+function primefit_clear_product_query_cache( $post_id = null ) {
+	// Clear all product query caches
+	global $wpdb;
+	
+	$wpdb->query( 
+		$wpdb->prepare( 
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+			'_transient_primefit_product_query_%'
+		)
+	);
+	
+	$wpdb->query( 
+		$wpdb->prepare( 
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+			'_transient_timeout_primefit_product_query_%'
+		)
+	);
+}
+
+/**
+ * Set optimized WooCommerce shop settings
+ */
+add_action( 'init', 'primefit_set_optimized_woocommerce_settings', 5 );
+function primefit_set_optimized_woocommerce_settings() {
+	// Set products per page to 8 for better performance
+	add_filter( 'loop_shop_per_page', function() {
+		return 8;
+	}, 20 );
+	
+	// Set default catalog orderby to menu_order for better performance
+	add_filter( 'woocommerce_default_catalog_orderby', function() {
+		return 'menu_order';
+	}, 20 );
+	
+	// Optimize WooCommerce image sizes
+	add_filter( 'woocommerce_get_image_size_woocommerce_thumbnail', function( $size ) {
+		return array(
+			'width'  => 300,
+			'height' => 300,
+			'crop'   => 1,
+		);
+	} );
 }
 
 /**

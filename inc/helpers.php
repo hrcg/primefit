@@ -1584,8 +1584,8 @@ function primefit_get_cached_categories( $args = [] ) {
 	
 	if ( false === $cached ) {
 		$cached = get_terms( $args );
-		// Cache for 24 hours for better performance
-		set_transient( $cache_key, $cached, 24 * HOUR_IN_SECONDS );
+		// Cache for 48 hours for better performance (increased from 24 hours)
+		set_transient( $cache_key, $cached, 48 * HOUR_IN_SECONDS );
 	}
 	
 	return $cached;
@@ -1604,8 +1604,8 @@ function primefit_get_cached_products( $args = [] ) {
 	
 	if ( false === $cached ) {
 		$cached = get_posts( $args );
-		// Cache for 12 hours for better performance
-		set_transient( $cache_key, $cached, 12 * HOUR_IN_SECONDS );
+		// Cache for 24 hours for better performance (increased from 12 hours)
+		set_transient( $cache_key, $cached, 24 * HOUR_IN_SECONDS );
 	}
 	
 	return $cached;
