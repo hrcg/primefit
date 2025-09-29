@@ -703,6 +703,67 @@ function primefit_customize_register( $wp_customize ) {
 		'type'        => 'textarea',
 		'description' => __( 'Enter links separated by commas. Example: Run,Train,Rec', 'primefit' ),
 	) );
+
+	// Navigation Badge Section
+	$wp_customize->add_section( 'primefit_navigation_badge', array(
+		'title'    => __( 'Navigation Badge', 'primefit' ),
+		'priority' => 41,
+	) );
+
+	// NEW Badge Enable/Disable
+	$wp_customize->add_setting( 'primefit_new_badge_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_new_badge_enabled', array(
+		'label'   => __( 'Enable NEW Badge', 'primefit' ),
+		'section' => 'primefit_navigation_badge',
+		'type'    => 'checkbox',
+	) );
+
+	// NEW Badge Text
+	$wp_customize->add_setting( 'primefit_new_badge_text', array(
+		'default'           => 'NEW',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_new_badge_text', array(
+		'label'   => __( 'Badge Text', 'primefit' ),
+		'section' => 'primefit_navigation_badge',
+		'type'    => 'text',
+	) );
+
+	// NEW Badge Menu Item
+	$wp_customize->add_setting( 'primefit_new_badge_menu_item', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( 'primefit_new_badge_menu_item', array(
+		'label'       => __( 'Menu Item for NEW Badge', 'primefit' ),
+		'section'     => 'primefit_navigation_badge',
+		'type'        => 'select',
+		'choices'     => primefit_get_primary_menu_items_choices(),
+		'description' => __( 'Select which menu item should display the NEW badge.', 'primefit' ),
+	) );
+
+	// NEW Badge Background Color
+	$wp_customize->add_setting( 'primefit_new_badge_bg_color', array(
+		'default'           => '#ff3b30',
+		'sanitize_callback' => 'sanitize_hex_color',
+	) );
+	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'primefit_new_badge_bg_color', array(
+		'label'   => __( 'Badge Background Color', 'primefit' ),
+		'section' => 'primefit_navigation_badge',
+	) ) );
+
+	// NEW Badge Text Color
+	$wp_customize->add_setting( 'primefit_new_badge_text_color', array(
+		'default'           => '#ffffff',
+		'sanitize_callback' => 'sanitize_hex_color',
+	) );
+	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'primefit_new_badge_text_color', array(
+		'label'   => __( 'Badge Text Color', 'primefit' ),
+		'section' => 'primefit_navigation_badge',
+	) ) );
 }
 
 /**
@@ -945,6 +1006,19 @@ function primefit_get_category_tiles_config() {
 	set_transient( $cache_key, $config, 3600 );
 
 	return $config;
+}
+
+/**
+ * Helper function to get navigation badge configuration from customizer
+ */
+function primefit_get_navigation_badge_config() {
+	return array(
+		'enabled' => get_theme_mod( 'primefit_new_badge_enabled', true ),
+		'text' => get_theme_mod( 'primefit_new_badge_text', 'NEW' ),
+		'menu_item_id' => get_theme_mod( 'primefit_new_badge_menu_item', '' ),
+		'bg_color' => get_theme_mod( 'primefit_new_badge_bg_color', '#ff3b30' ),
+		'text_color' => get_theme_mod( 'primefit_new_badge_text_color', '#ffffff' ),
+	);
 }
 
 /**

@@ -57,6 +57,38 @@
   opacity: 0.85;
 }
 
+/* Menu Badge Styles */
+.menu-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 6px;
+  vertical-align: top;
+  line-height: 1.2;
+}
+
+.menu-badge--new {
+  position: relative;
+  top: -2px;
+}
+
+/* Mobile-specific badge adjustments */
+@media (max-width: 1024px) {
+  .menu-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+    margin-left: 4px;
+  }
+  
+  .menu-badge--new {
+    top: -1px;
+  }
+}
+
 /* Hide desktop submenus - keep mobile functionality */
 @media (min-width: 1025px) {
   .menu--primary .sub-menu {
@@ -218,6 +250,15 @@
 
 .mobile-menu a:hover {
   color: var(--accent);
+}
+
+/* Mobile menu badge styles */
+.mobile-menu .menu-badge {
+  font-size: 8px;
+  padding: 1px 3px;
+  margin-left: 6px;
+  vertical-align: middle;
+  top: 0;
 }
 
 /* Mobile menu dropdown styles */

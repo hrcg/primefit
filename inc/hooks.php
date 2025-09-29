@@ -301,6 +301,34 @@ function primefit_add_mega_menu_attribute( $atts, $item, $args ) {
 }
 
 /**
+ * Add NEW badge to specific menu items
+ */
+add_filter( 'nav_menu_item_title', 'primefit_add_new_badge_to_menu_item', 10, 4 );
+function primefit_add_new_badge_to_menu_item( $title, $item, $args, $depth ) {
+	// Only apply to primary menu and top-level items
+	if ( $args->theme_location !== 'primary' || $depth !== 0 ) {
+		return $title;
+	}
+	
+	// Get the navigation badge configuration from customizer
+	$badge_config = primefit_get_navigation_badge_config();
+	
+	// Check if badge is enabled and this is the correct menu item
+	if ( $badge_config['enabled'] && ! empty( $badge_config['menu_item_id'] ) && $item->ID == $badge_config['menu_item_id'] ) {
+		$badge_html = sprintf(
+			'<span class="menu-badge menu-badge--new" style="background-color: %s; color: %s;">%s</span>',
+			esc_attr( $badge_config['bg_color'] ),
+			esc_attr( $badge_config['text_color'] ),
+			esc_html( $badge_config['text'] )
+		);
+		
+		$title = $title . $badge_html;
+	}
+	
+	return $title;
+}
+
+/**
  * Clear product caches when product is updated
  */
 add_action( 'save_post', 'primefit_clear_product_cache_on_save', 10, 2 );
