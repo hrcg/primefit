@@ -15,9 +15,6 @@
     constructor() {
       // Prevent duplicate instances
       if (window.productGallery && window.productGallery !== this) {
-        console.warn(
-          "ProductGallery already exists, returning existing instance"
-        );
         return window.productGallery;
       }
 
@@ -29,7 +26,7 @@
       this.currentIndex = 0;
       this.isAnimating = false;
 
-      console.log("ProductGallery: Creating new instance");
+      // ProductGallery instance created
       this.init();
     }
 
@@ -48,15 +45,13 @@
         this.$dots = this.$gallery.find(".image-dot");
         this.currentIndex =
           parseInt(this.$mainImage.attr("data-image-index")) || 0;
-        console.log(
-          `Gallery: Initialized - Found ${this.$thumbnails.length} thumbnails, current index: ${this.currentIndex}`
-        );
+        // Gallery initialized with thumbnails
       }
     }
 
     // Method to completely reset gallery state
     resetGalleryState() {
-      console.log("Gallery: Resetting gallery state");
+      // Resetting gallery state
       this.isAnimating = false;
       this.cacheDOM();
       this.$gallery.find(".main-image-wrapper").removeClass("loading");
@@ -149,12 +144,7 @@
         const imageUrl = $thumbnailImg.attr("src");
         const imageAlt = $thumbnailImg.attr("alt");
 
-        console.log(
-          `Gallery: Switching to image ${index} - URL: ${imageUrl.substring(
-            0,
-            60
-          )}..., Direction: ${slideDirection}`
-        );
+        // Gallery image switching
 
         // Start slide animation
         this.animateSlide(
@@ -176,7 +166,7 @@
       // Update current index - do this before starting animation
       const oldIndex = this.currentIndex;
       this.currentIndex = index;
-      console.log(`Gallery: Index updated from ${oldIndex} to ${index}`);
+      // Gallery index updated
 
       // Update cached main image reference to prevent stale references
       this.$mainImage = this.$gallery.find(".main-product-image");
@@ -206,9 +196,7 @@
       const cacheBustUrl =
         imageUrl + (imageUrl.includes("?") ? "&" : "?") + "t=" + timestamp;
 
-      console.log(
-        `Gallery: Attempting to load image - Original: ${imageUrl}, Cache-busted: ${cacheBustUrl}`
-      );
+      // Gallery attempting to load image
 
       // Simplified image switch - DISABLED temp-image functionality
       const $newImage = $("<img>", {
@@ -220,12 +208,7 @@
 
       // Simple image replacement with optimized callbacks
       $newImage.on("load", () => {
-        console.log(
-          `Gallery: Image loaded successfully - Index: ${index}, URL: ${cacheBustUrl.substring(
-            0,
-            50
-          )}...`
-        );
+        // Gallery image loaded successfully
 
         // Remove the old image after the new one has loaded successfully
         $mainImage.remove();
@@ -236,19 +219,18 @@
         this.$mainImage = $newImage;
 
         this.isAnimating = false; // Reset animation flag
-        console.log(`Gallery: Animation complete for image ${index}`);
+        // Gallery animation complete
       });
 
       // Fallback if image doesn't load
       $newImage.on("error", () => {
-        console.error("Failed to load gallery image:", cacheBustUrl);
-        console.error("Original URL:", imageUrl);
+        // Failed to load gallery image
 
         // Try loading the image without cache busting as fallback
-        console.log("Trying fallback without cache busting...");
+        // Trying fallback without cache busting
         const fallbackImage = new Image();
         fallbackImage.onload = () => {
-          console.log("Fallback image loaded successfully");
+          // Fallback image loaded successfully
           $mainImage.remove();
           $newImage.attr("src", imageUrl); // Use original URL
           $newImage.appendTo($mainImageWrapper);
@@ -257,11 +239,7 @@
           this.isAnimating = false;
         };
         fallbackImage.onerror = () => {
-          console.error("Even fallback image failed to load");
-          console.error(
-            "This suggests the image file does not exist at:",
-            imageUrl
-          );
+          // Even fallback image failed to load
           $mainImageWrapper.removeClass("loading");
           this.isAnimating = false;
         };
@@ -282,13 +260,11 @@
           ? this.currentIndex - 1
           : this.$thumbnails.length - 1;
 
-      console.log(
-        `Gallery: Previous image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`
-      );
+      // Gallery previous image
 
       // Prevent rapid clicking by adding a small delay
       if (this.lastClickTime && Date.now() - this.lastClickTime < 300) {
-        console.log("Gallery: Click too rapid, ignoring");
+        // Gallery click too rapid, ignoring
         return;
       }
       this.lastClickTime = Date.now();
@@ -309,13 +285,11 @@
           ? this.currentIndex + 1
           : 0;
 
-      console.log(
-        `Gallery: Next image - Current: ${this.currentIndex}, New: ${newIndex}, Total: ${this.$thumbnails.length}`
-      );
+      // Gallery next image
 
       // Prevent rapid clicking by adding a small delay
       if (this.lastClickTime && Date.now() - this.lastClickTime < 300) {
-        console.log("Gallery: Click too rapid, ignoring");
+        // Gallery click too rapid, ignoring
         return;
       }
       this.lastClickTime = Date.now();
@@ -435,14 +409,7 @@
       const maxSwipeTime = 500; // Maximum time for a swipe gesture
       const swipeTime = Date.now() - touchStartTime;
 
-      // Debug logging for mobile testing
-      console.log("Swipe detected:", {
-        deltaX,
-        deltaY,
-        minDistance: minSwipeDistance,
-        swipeTime,
-        isHorizontal: Math.abs(deltaX) > Math.abs(deltaY),
-      });
+      // Swipe detected
 
       // Only handle horizontal swipes that are quick enough and meet distance requirements
       if (
@@ -451,10 +418,10 @@
         swipeTime < maxSwipeTime
       ) {
         if (deltaX > 0) {
-          console.log("Swipe left - previous image");
+          // Swipe left - previous image
           this.previousImage();
         } else {
-          console.log("Swipe right - next image");
+          // Swipe right - next image
           this.nextImage();
         }
       }
@@ -838,7 +805,7 @@
             "right"
           );
         } else {
-          console.warn("ProductGallery instance not found for variation image");
+          // ProductGallery instance not found for variation image
         }
       } else {
         // Fallback to first gallery image if no variation image
@@ -867,9 +834,7 @@
                 "right"
               );
             } else {
-              console.warn(
-                "ProductGallery instance not found for fallback image"
-              );
+              // ProductGallery instance not found for fallback image
             }
           }
         }
@@ -1408,7 +1373,7 @@
           const cacheData = JSON.parse(cached);
           if (cacheData.expires && cacheData.expires > Date.now() / 1000) {
             // Use cached data instead of making AJAX call
-            console.log("Using cached product data for faster response");
+            // Using cached product data for faster response
             return true;
           } else {
             // Expired cache, remove it
@@ -2612,9 +2577,7 @@
           // Smart retry logic with exponential backoff and jitter
           if (this.shouldRetryRequest(xhr, status, error, retryCount)) {
             const delay = this.calculateRetryDelay(retryCount);
-            console.log(
-              `Retrying request in ${delay}ms (attempt ${retryCount + 1}/3)`
-            );
+            // Retrying request
 
             setTimeout(() => {
               this.submitToCart(formData, $button, retryCount + 1);
@@ -3885,7 +3848,7 @@
         try {
           func();
         } catch (e) {
-          console.warn("Cleanup function failed:", e);
+          // Cleanup function failed
         }
       });
       this.cleanupFunctions.clear();

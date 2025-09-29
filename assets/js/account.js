@@ -22,7 +22,7 @@
   );
 
   if (!isAccountPage) {
-    console.log('PrimeFit: account.js skipped - not on account page');
+    // PrimeFit: account.js skipped - not on account page
     return;
   }
 

@@ -11,9 +11,7 @@
 
   // Ensure CartManager is available (from core.js)
   if (typeof window.CartManager === "undefined") {
-    console.error(
-      "PrimeFit: CartManager not found. Make sure core.js is loaded first."
-    );
+    // CartManager not found - core.js must be loaded first
     return;
   }
 
@@ -131,7 +129,7 @@
 
     // Prevent page scrolling when cart is open
     if (typeof window.preventPageScroll === "function") {
-      window.preventPageScroll().catch(console.error);
+      window.preventPageScroll().catch(() => {});
     }
 
     // Ensure all quantity inputs are properly synced when cart opens
@@ -484,12 +482,12 @@
 
     // Validate we have the required parameters
     if (!primefit_cart_params.ajax_url) {
-      console.error("Configuration error: No AJAX URL");
+      // Configuration error: No AJAX URL
       return;
     }
 
     if (!primefit_cart_params.remove_cart_nonce) {
-      console.error("Configuration error: No security nonce");
+      // Configuration error: No security nonce
       return;
     }
 
@@ -559,7 +557,7 @@
           }
           errorMessage += " Please check browser console for details.";
 
-          console.error("Cart removal failed:", errorMessage);
+          // Cart removal failed
           
           // Show error in cart if possible
           const $cartPanel = $("#mini-cart-panel");
@@ -597,7 +595,7 @@
         if (typeof window.showCartNotification === "function") {
           window.showCartNotification(errorMessage, "error");
         } else {
-          console.error("Cart removal failed:", errorMessage);
+          // Cart removal failed
           // Fallback: show a temporary message in the cart
           const $cartPanel = $("#mini-cart-panel");
           if ($cartPanel.length) {

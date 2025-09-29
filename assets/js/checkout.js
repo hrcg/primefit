@@ -16,7 +16,7 @@
     !document.querySelector(".woocommerce-checkout") &&
     !document.querySelector("form.checkout")
   ) {
-    console.log("PrimeFit: checkout.js skipped - not on checkout page");
+    // PrimeFit: checkout.js skipped - not on checkout page
     return;
   }
 
@@ -190,9 +190,7 @@
      */
     showCouponLoadingState: function () {
       // This is now handled by CouponManager.applyCouponElegantly
-      console.warn(
-        "showCouponLoadingState is deprecated. Loading states are now handled by CouponManager."
-      );
+      // showCouponLoadingState is deprecated
     },
 
     /**
@@ -1604,31 +1602,28 @@
      * Can be called from browser console: CheckoutManager.testCountryPrefix()
      */
     testCountryPrefix: function () {
-      console.log("Testing country prefix functionality...");
+      // Testing country prefix functionality
 
       const $countrySelect = $("#billing_country");
       const $phoneField = $("#billing_phone");
 
-      console.log("Country select element:", $countrySelect.length);
-      console.log("Phone field element:", $phoneField.length);
+      // Country select element found
+      // Phone field element found
 
       if ($countrySelect.length && $phoneField.length) {
         // Test with US
         $countrySelect.val("US");
         $countrySelect.trigger("change");
-        console.log("Phone field value after US selection:", $phoneField.val());
+        // Phone field value after US selection
 
         // Test with UK
         setTimeout(() => {
           $countrySelect.val("GB");
           $countrySelect.trigger("change");
-          console.log(
-            "Phone field value after UK selection:",
-            $phoneField.val()
-          );
+          // Phone field value after UK selection
         }, 1000);
       } else {
-        console.log("Required elements not found");
+        // Required elements not found
       }
     },
   };

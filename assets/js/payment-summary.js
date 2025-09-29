@@ -24,7 +24,7 @@
   );
 
   if (!isOrderReceivedPage) {
-    console.log('PrimeFit: payment-summary.js skipped - not on order received page');
+    // PrimeFit: payment-summary.js skipped - not on order received page
     return;
   }
 

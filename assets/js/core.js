@@ -108,7 +108,7 @@
           }, 50);
         })
         .catch((error) => {
-          console.error("Error executing cart operation:", operation, error);
+          // Error executing cart operation - handled silently in production
 
           // Retry logic
           if (retries < this.maxRetries) {
@@ -170,7 +170,7 @@
                   }
                   break;
                 default:
-                  console.warn("Unknown cart operation:", operation);
+                  // Unknown cart operation - handled silently
               }
               resolve();
             } catch (error) {
@@ -489,7 +489,7 @@
         } catch (error) {
           this.handleCouponError(
             normalizedCode,
-            { data: error.message },
+            { data: "An error occurred while applying the coupon" },
             $couponSection,
             options
           );
@@ -920,7 +920,7 @@
       $body.addClass("mobile-open");
       $(this).attr("aria-expanded", "true");
       // Prevent page scrolling when mobile menu is open
-      preventPageScroll().catch(console.error);
+      preventPageScroll().catch(() => {});
     }
   });
 

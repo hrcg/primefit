@@ -464,35 +464,33 @@ function primefit_enqueue_product_scripts() {
 }
 
 /**
- * Preload important assets for performance
+ * Prioritize critical resources for better first load performance
  */
-add_action( 'wp_head', 'primefit_preload_assets', 1 );
-function primefit_preload_assets() {
-	// Inline critical CSS for immediate rendering
-	if ( is_front_page() ) {
-		primefit_inline_critical_css();
-	}
-
-	// Preload hero image on homepage with modern formats
-	if ( is_front_page() ) {
+add_action('wp_head', 'primefit_prioritize_critical_resources', 1);
+function primefit_prioritize_critical_resources() {
+	// Preload critical fonts with higher priority
+	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" as="style" fetchpriority="high">';
+	
+	// Preload above-the-fold images
+	if (is_front_page()) {
 		$hero_config = primefit_get_hero_config();
-		if ( ! empty( $hero_config['image_desktop'] ) ) {
+		if (!empty($hero_config['image_desktop'])) {
 			$desktop_url = $hero_config['image_desktop'];
 			$mobile_url = $hero_config['image_mobile'] ?? $desktop_url;
-
-			// Fallback preload for WebP
-			$webp_desktop = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $desktop_url);
-			$webp_mobile = str_replace(['.jpg', '.jpeg', '.png'], '.webp', $mobile_url);
-
-			echo '<link rel="preload" href="' . esc_url( $webp_desktop ) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
-			echo '<link rel="preload" href="' . esc_url( $webp_mobile ) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
+			
+			// Preload hero images with high priority
+			echo '<link rel="preload" href="' . esc_url($desktop_url) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
+			echo '<link rel="preload" href="' . esc_url($mobile_url) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
 		}
 	}
-
-	// Preload critical fonts with optimized display=swap
-	$font_url = 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap';
-	echo '<link rel="preload" href="' . esc_url($font_url) . '" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<noscript><link rel="stylesheet" href="' . esc_url($font_url) . '"></noscript>';
+	
+	// Preload critical CSS with high priority
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css" as="style" fetchpriority="high">';
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css" as="style" fetchpriority="high">';
+	
+	// Preload critical JavaScript with high priority
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="script" fetchpriority="high">';
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="script" fetchpriority="high">';
 }
 
 /**

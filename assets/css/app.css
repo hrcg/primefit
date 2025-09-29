@@ -785,6 +785,7 @@ article {
    FEATURED PRODUCTS SECTION
    ======================================== */
 .featured-products {
+  contain: layout style paint;
   padding: 80px 0;
   background: var(--bg);
 }
@@ -1356,6 +1357,7 @@ article {
 
 /* Product Showcase Responsive Design */
 .product-showcase {
+  contain: layout style paint;
   padding: 80px 0;
 }
 

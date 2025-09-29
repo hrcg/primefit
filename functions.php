@@ -21,12 +21,22 @@ define( 'PRIMEFIT_THEME_DIR', get_template_directory() );
 define( 'PRIMEFIT_THEME_URI', get_template_directory_uri() );
 
 /**
- * Completely remove dashicons from WordPress
- * This prevents dashicons from loading on any page
+ * Optimize font loading with preload hints for better performance
  */
-add_action( 'wp_enqueue_scripts', 'primefit_remove_dashicons', 1 );
-function primefit_remove_dashicons() {
-	wp_deregister_style( 'dashicons' );
+add_action('wp_head', 'primefit_optimize_font_loading', 1);
+function primefit_optimize_font_loading() {
+	// Preload critical font files with high priority
+	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v1/figtree-400.woff2" as="font" type="font/woff2" crossorigin>';
+	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v1/figtree-600.woff2" as="font" type="font/woff2" crossorigin>';
+	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v1/figtree-700.woff2" as="font" type="font/woff2" crossorigin>';
+	
+	// Add font-display: swap for better loading experience
+	echo '<style>
+		@font-face {
+			font-family: "Figtree";
+			font-display: swap;
+		}
+	</style>';
 }
 
 /**
@@ -182,6 +192,323 @@ function primefit_remove_screen_reader_from_formatted_cart_data( $formatted_data
 	}
 	
 	return $formatted_data;
+}
+
+/**
+ * Enhanced Database Query Optimization with Product Data Caching
+ * Advanced caching system for WooCommerce products and queries
+ */
+add_action( 'init', 'primefit_init_advanced_caching', 1 );
+function primefit_init_advanced_caching() {
+	// Initialize object cache groups
+	if ( ! wp_cache_get( 'primefit_cache_init', 'primefit_cache' ) ) {
+		wp_cache_set( 'primefit_cache_init', true, 'primefit_cache', 0 );
+		
+		// Add advanced product caching hooks
+		add_action( 'pre_get_posts', 'primefit_advanced_product_query_optimization', 5 );
+		add_filter( 'posts_results', 'primefit_cache_product_meta_bulk', 10, 2 );
+		add_action( 'wp', 'primefit_cache_query_results_advanced', 15 );
+		
+		// Enhanced cache invalidation
+		add_action( 'save_post', 'primefit_invalidate_product_cache_advanced', 10, 2 );
+		add_action( 'delete_post', 'primefit_invalidate_product_cache_advanced', 10, 2 );
+		add_action( 'woocommerce_product_set_stock_status', 'primefit_invalidate_product_cache_advanced' );
+		add_action( 'woocommerce_variation_set_stock_status', 'primefit_invalidate_product_cache_advanced' );
+		add_action( 'woocommerce_product_object_updated_props', 'primefit_invalidate_product_cache_advanced' );
+	}
+}
+
+/**
+ * Advanced product query optimization with intelligent caching
+ */
+function primefit_advanced_product_query_optimization( $query ) {
+	// Only optimize main queries on frontend
+	if ( is_admin() || ! $query->is_main_query() || wp_doing_ajax() ) {
+		return;
+	}
+	
+	// Check if this is a WooCommerce product query
+	$is_product_query = $query->is_post_type_archive( 'product' ) || 
+						$query->is_tax( get_object_taxonomies( 'product' ) ) ||
+						( $query->get( 'post_type' ) === 'product' );
+	
+	if ( ! $is_product_query ) {
+		return;
+	}
+	
+	// Generate comprehensive cache key
+	$query_vars = $query->query_vars;
+	$cache_key = 'primefit_advanced_query_' . md5( serialize( $query_vars ) );
+	
+	// Try to get cached results
+	$cached_results = wp_cache_get( $cache_key, 'primefit_queries' );
+	
+	if ( false !== $cached_results ) {
+		// Apply cached results
+		$query->posts = $cached_results['posts'];
+		$query->post_count = $cached_results['post_count'];
+		$query->found_posts = $cached_results['found_posts'];
+		$query->max_num_pages = $cached_results['max_num_pages'];
+		$query->is_cached = true;
+		return;
+	}
+	
+	// Optimize query parameters
+	$query->set( 'posts_per_page', 12 ); // Increased for better UX
+	$query->set( 'update_post_meta_cache', true );
+	$query->set( 'update_post_term_cache', true );
+	$query->set( 'no_found_rows', false );
+	
+	// Store cache key for later use
+	$query->primefit_cache_key = $cache_key;
+}
+
+/**
+ * Bulk cache product meta data to prevent N+1 queries
+ */
+function primefit_cache_product_meta_bulk( $posts, $query ) {
+	if ( empty( $posts ) || ! $query->is_main_query() ) {
+		return $posts;
+	}
+	
+	// Only cache for product queries
+	if ( $query->get( 'post_type' ) !== 'product' && 
+		 ! $query->is_post_type_archive( 'product' ) && 
+		 ! $query->is_tax( get_object_taxonomies( 'product' ) ) ) {
+		return $posts;
+	}
+	
+	$post_ids = wp_list_pluck( $posts, 'ID' );
+	
+	// Bulk cache post meta
+	update_meta_cache( 'post', $post_ids );
+	
+	// Bulk cache product-specific meta
+	primefit_cache_product_meta_bulk_advanced( $post_ids );
+	
+	return $posts;
+}
+
+/**
+ * Advanced bulk caching for product-specific meta data
+ */
+function primefit_cache_product_meta_bulk_advanced( $post_ids ) {
+	global $wpdb;
+	
+	if ( empty( $post_ids ) ) {
+		return;
+	}
+	
+	$post_ids_str = implode( ',', array_map( 'intval', $post_ids ) );
+	
+	// Cache all product meta in one query
+	$meta_query = $wpdb->prepare( "
+		SELECT post_id, meta_key, meta_value 
+		FROM {$wpdb->postmeta} 
+		WHERE post_id IN ({$post_ids_str}) 
+		AND meta_key IN (
+			'_sku', '_price', '_sale_price', '_regular_price', 
+			'_stock_status', '_stock', '_manage_stock', '_product_type',
+			'_product_attributes', '_default_attributes', '_product_image_gallery',
+			'_thumbnail_id', '_weight', '_length', '_width', '_height',
+			'_virtual', '_downloadable', '_sold_individually', '_backorders',
+			'_featured', '_visibility', '_purchase_note', '_menu_order'
+		)
+	", $post_ids );
+	
+	$meta_results = $wpdb->get_results( $meta_query );
+	
+	// Organize meta by post ID
+	$meta_by_post = array();
+	foreach ( $meta_results as $meta ) {
+		$meta_by_post[ $meta->post_id ][ $meta->meta_key ] = $meta->meta_value;
+	}
+	
+	// Cache organized meta data
+	foreach ( $post_ids as $post_id ) {
+		if ( isset( $meta_by_post[ $post_id ] ) ) {
+			wp_cache_set( $post_id, $meta_by_post[ $post_id ], 'primefit_product_meta', 3600 );
+		}
+	}
+}
+
+/**
+ * Cache query results with advanced metadata
+ */
+function primefit_cache_query_results_advanced() {
+	global $wp_query;
+	
+	if ( ! $wp_query->is_main_query() || empty( $wp_query->posts ) ) {
+		return;
+	}
+	
+	// Check if we have a cache key from optimization
+	if ( ! isset( $wp_query->primefit_cache_key ) ) {
+		return;
+	}
+	
+	$cache_key = $wp_query->primefit_cache_key;
+	
+	// Prepare comprehensive cache data
+	$cache_data = array(
+		'posts' => $wp_query->posts,
+		'post_count' => $wp_query->post_count,
+		'found_posts' => $wp_query->found_posts,
+		'max_num_pages' => $wp_query->max_num_pages,
+		'cached_at' => time(),
+		'query_vars' => $wp_query->query_vars
+	);
+	
+	// Cache for 30 minutes
+	wp_cache_set( $cache_key, $cache_data, 'primefit_queries', 1800 );
+	
+	// Also cache individual product data
+	foreach ( $wp_query->posts as $post ) {
+		if ( $post->post_type === 'product' ) {
+			primefit_cache_individual_product_data( $post->ID );
+		}
+	}
+}
+
+/**
+ * Cache individual product data comprehensively
+ */
+function primefit_cache_individual_product_data( $product_id ) {
+	$cache_key = "product_comprehensive_{$product_id}";
+	$cached_data = wp_cache_get( $cache_key, 'primefit_products' );
+	
+	if ( false !== $cached_data ) {
+		return $cached_data;
+	}
+	
+	global $wpdb;
+	
+	// Single optimized query for all product data
+	$query = $wpdb->prepare( "
+		SELECT
+			p.ID, p.post_title, p.post_content, p.post_excerpt, p.post_status,
+			p.post_date, p.post_modified, p.menu_order,
+			pm_sku.meta_value as sku,
+			pm_price.meta_value as price,
+			pm_sale_price.meta_value as sale_price,
+			pm_regular_price.meta_value as regular_price,
+			pm_stock_status.meta_value as stock_status,
+			pm_stock.meta_value as stock_quantity,
+			pm_manage_stock.meta_value as manage_stock,
+			pm_product_type.meta_value as product_type,
+			pm_weight.meta_value as weight,
+			pm_dimensions.meta_value as dimensions,
+			pm_virtual.meta_value as virtual,
+			pm_downloadable.meta_value as downloadable,
+			pm_featured.meta_value as featured,
+			pm_visibility.meta_value as visibility,
+			pm_gallery.meta_value as gallery_images,
+			pm_thumbnail.meta_value as thumbnail_id,
+			pm_attributes.meta_value as attributes,
+			pm_default_attributes.meta_value as default_attributes
+		FROM {$wpdb->posts} p
+		LEFT JOIN {$wpdb->postmeta} pm_sku ON (p.ID = pm_sku.post_id AND pm_sku.meta_key = '_sku')
+		LEFT JOIN {$wpdb->postmeta} pm_price ON (p.ID = pm_price.post_id AND pm_price.meta_key = '_price')
+		LEFT JOIN {$wpdb->postmeta} pm_sale_price ON (p.ID = pm_sale_price.post_id AND pm_sale_price.meta_key = '_sale_price')
+		LEFT JOIN {$wpdb->postmeta} pm_regular_price ON (p.ID = pm_regular_price.post_id AND pm_regular_price.meta_key = '_regular_price')
+		LEFT JOIN {$wpdb->postmeta} pm_stock_status ON (p.ID = pm_stock_status.post_id AND pm_stock_status.meta_key = '_stock_status')
+		LEFT JOIN {$wpdb->postmeta} pm_stock ON (p.ID = pm_stock.post_id AND pm_stock.meta_key = '_stock')
+		LEFT JOIN {$wpdb->postmeta} pm_manage_stock ON (p.ID = pm_manage_stock.post_id AND pm_manage_stock.meta_key = '_manage_stock')
+		LEFT JOIN {$wpdb->postmeta} pm_product_type ON (p.ID = pm_product_type.post_id AND pm_product_type.meta_key = '_product_type')
+		LEFT JOIN {$wpdb->postmeta} pm_weight ON (p.ID = pm_weight.post_id AND pm_weight.meta_key = '_weight')
+		LEFT JOIN {$wpdb->postmeta} pm_dimensions ON (p.ID = pm_dimensions.post_id AND pm_dimensions.meta_key = '_dimensions')
+		LEFT JOIN {$wpdb->postmeta} pm_virtual ON (p.ID = pm_virtual.post_id AND pm_virtual.meta_key = '_virtual')
+		LEFT JOIN {$wpdb->postmeta} pm_downloadable ON (p.ID = pm_downloadable.post_id AND pm_downloadable.meta_key = '_downloadable')
+		LEFT JOIN {$wpdb->postmeta} pm_featured ON (p.ID = pm_featured.post_id AND pm_featured.meta_key = '_featured')
+		LEFT JOIN {$wpdb->postmeta} pm_visibility ON (p.ID = pm_visibility.post_id AND pm_visibility.meta_key = '_visibility')
+		LEFT JOIN {$wpdb->postmeta} pm_gallery ON (p.ID = pm_gallery.post_id AND pm_gallery.meta_key = '_product_image_gallery')
+		LEFT JOIN {$wpdb->postmeta} pm_thumbnail ON (p.ID = pm_thumbnail.post_id AND pm_thumbnail.meta_key = '_thumbnail_id')
+		LEFT JOIN {$wpdb->postmeta} pm_attributes ON (p.ID = pm_attributes.post_id AND pm_attributes.meta_key = '_product_attributes')
+		LEFT JOIN {$wpdb->postmeta} pm_default_attributes ON (p.ID = pm_default_attributes.post_id AND pm_default_attributes.meta_key = '_default_attributes')
+		WHERE p.ID = %d AND p.post_type = 'product' AND p.post_status = 'publish'
+	", $product_id );
+	
+	$result = $wpdb->get_row( $query );
+	
+	if ( ! $result ) {
+		return false;
+	}
+	
+	// Process and structure comprehensive product data
+	$product_data = array(
+		'id' => $result->ID,
+		'title' => $result->post_title,
+		'content' => $result->post_content,
+		'excerpt' => $result->post_excerpt,
+		'status' => $result->post_status,
+		'date' => $result->post_date,
+		'modified' => $result->post_modified,
+		'menu_order' => $result->menu_order,
+		'sku' => $result->sku ?: '',
+		'price' => $result->price ?: '',
+		'sale_price' => $result->sale_price ?: '',
+		'regular_price' => $result->regular_price ?: '',
+		'stock_status' => $result->stock_status ?: 'instock',
+		'stock_quantity' => $result->stock_quantity ?: '',
+		'manage_stock' => $result->manage_stock ?: 'no',
+		'product_type' => $result->product_type ?: 'simple',
+		'weight' => $result->weight ?: '',
+		'dimensions' => $result->dimensions ? maybe_unserialize( $result->dimensions ) : array(),
+		'virtual' => $result->virtual === 'yes',
+		'downloadable' => $result->downloadable === 'yes',
+		'featured' => $result->featured === 'yes',
+		'visibility' => $result->visibility ?: 'visible',
+		'gallery_images' => $result->gallery_images ? array_filter( explode( ',', $result->gallery_images ) ) : array(),
+		'thumbnail_id' => $result->thumbnail_id ?: 0,
+		'attributes' => $result->attributes ? maybe_unserialize( $result->attributes ) : array(),
+		'default_attributes' => $result->default_attributes ? maybe_unserialize( $result->default_attributes ) : array(),
+		'is_variable' => $result->product_type === 'variable',
+		'is_in_stock' => $result->stock_status === 'instock',
+		'is_featured' => $result->featured === 'yes',
+		'is_virtual' => $result->virtual === 'yes',
+		'is_downloadable' => $result->downloadable === 'yes',
+		'cached_at' => time()
+	);
+	
+	// Cache for 1 hour
+	wp_cache_set( $cache_key, $product_data, 'primefit_products', 3600 );
+	
+	return $product_data;
+}
+
+/**
+ * Advanced cache invalidation system
+ */
+function primefit_invalidate_product_cache_advanced( $post_id, $post = null ) {
+	if ( ! $post_id ) {
+		return;
+	}
+	
+	// Clear individual product cache
+	wp_cache_delete( "product_comprehensive_{$post_id}", 'primefit_products' );
+	wp_cache_delete( "product_variations_optimized_{$post_id}", 'primefit_variations' );
+	wp_cache_delete( $post_id, 'primefit_product_meta' );
+	
+	// Clear query caches
+	primefit_clear_all_query_caches();
+	
+	// Clear transient caches
+	global $wpdb;
+	$wpdb->query( $wpdb->prepare( 
+		"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+		'_transient_primefit_%'
+	) );
+}
+
+/**
+ * Clear all query caches
+ */
+function primefit_clear_all_query_caches() {
+	// Clear object cache for queries
+	wp_cache_flush_group( 'primefit_queries' );
+	wp_cache_flush_group( 'primefit_products' );
+	wp_cache_flush_group( 'primefit_variations' );
+	wp_cache_flush_group( 'primefit_product_meta' );
 }
 
 /**

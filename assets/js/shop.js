@@ -85,7 +85,7 @@
         if (this.isMobile) {
           document.body.classList.add("filter-dropdown-open");
           if (typeof window.preventPageScroll === "function") {
-            window.preventPageScroll().catch(console.error);
+            window.preventPageScroll().catch(() => {});
           }
         }
       }
