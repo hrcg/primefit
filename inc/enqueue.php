@@ -423,9 +423,7 @@ function primefit_enqueue_product_scripts() {
 			);
 
 			// Add preload for critical above-the-fold content
-			add_action( 'wp_head', function() {
-				echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js' . '" as="script">';
-			}, 1 );
+			// Note: This is handled by primefit_add_critical_preloads() function
 		}
 		
 		// Checkout page specific scripts - Only load on actual checkout pages
@@ -729,9 +727,9 @@ function primefit_preload_product_resources() {
 		}
 	}
 
-	// Preload critical CSS and JS files specifically for product pages
+	// Preload critical CSS files specifically for product pages
 	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js" as="script">';
+	// Note: JS preload is handled by primefit_add_critical_preloads() function
 
 	// Add resource hints for external dependencies
 	echo '<link rel="dns-prefetch" href="//fonts.googleapis.com">';
@@ -988,22 +986,27 @@ add_action( 'wp_head', 'primefit_add_critical_preloads', 1 );
 function primefit_add_critical_preloads() {
 	$page_type = primefit_get_page_type();
 	
-	// Preload critical JavaScript files
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="script">';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="script">';
+	// Preload critical JavaScript files that are used immediately
+	// Only preload scripts that are actually executed within a few seconds of page load
 	
-	// Preload jQuery and WordPress core scripts
-	echo '<link rel="preload" href="' . includes_url( 'js/jquery/jquery.min.js' ) . '" as="script">';
-	
-	// Page-specific preloads
+	// Page-specific preloads - only for scripts that are used immediately
 	if ( $page_type === 'product' ) {
 		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js" as="script">';
 		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/product.js" as="script">';
 	}
 	
+	// Use fetch preload for scripts that are loaded but not immediately executed
+	// This prevents the "preloaded but not used" warnings
 	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
-		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/cart.js" as="script">';
+		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/cart.js" as="fetch" crossorigin>';
 	}
+	
+	// Preload core.js and app.js as fetch since they're deferred
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="fetch" crossorigin>';
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="fetch" crossorigin>';
+	
+	// Preload jQuery as fetch since it's loaded by WordPress core
+	echo '<link rel="preload" href="' . includes_url( 'js/jquery/jquery.min.js' ) . '" as="fetch" crossorigin>';
 }
 
 /**

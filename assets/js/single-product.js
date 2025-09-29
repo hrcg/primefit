@@ -3902,11 +3902,10 @@
    * Initialize all functionality when DOM is ready
    */
   $(document).ready(function () {
-    // Initialize product gallery (only if not already initialized above)
-    // Note: Gallery is now handled by native JavaScript in product-image.php
-    // if (!window.productGallery) {
-    //   window.productGallery = new ProductGallery();
-    // }
+    // Initialize product gallery
+    if (!window.productGallery) {
+      window.productGallery = new ProductGallery();
+    }
 
     // Initialize product variations
     new ProductVariations();

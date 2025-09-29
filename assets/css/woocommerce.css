@@ -621,6 +621,17 @@
     padding: 12px 14px;
     font-size: 13px;
   }
+
+  /* Hide color swatches on small mobile devices */
+  .woocommerce ul.products li.product .product-loop-color-swatches {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .woocommerce ul.products li.product .color-swatch {
+    display: none !important;
+  }
 }
 
 /* Tablet landscape optimization */
@@ -1117,17 +1128,15 @@
     font-size: 9px;
   }
 
-  /* Adjust color swatches for mobile */
+  /* Hide color swatches on mobile */
   .woocommerce ul.products li.product .product-loop-color-swatches {
-    bottom: 8px;
-    left: 8px;
-    right: 8px;
-    gap: 4px;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
   }
 
   .woocommerce ul.products li.product .color-swatch {
-    width: 20px;
-    height: 20px;
+    display: none !important;
   }
 }
 
@@ -1466,6 +1475,17 @@
     padding: 3px 5px;
     font-size: 9px;
     min-width: 20px;
+  }
+
+  /* Hide color swatches on extra small mobile devices */
+  .woocommerce ul.products li.product .product-loop-color-swatches {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .woocommerce ul.products li.product .color-swatch {
+    display: none !important;
   }
 }
 

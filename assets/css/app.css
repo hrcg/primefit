@@ -862,7 +862,8 @@ article {
 }
 .tiles-3 .tile img {
   width: 100%;
-  height: auto;
+  height: 800px;
+  object-fit: cover;
   display: block;
 }
 .tiles-3 .tile .tile-label {
