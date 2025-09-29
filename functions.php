@@ -302,7 +302,7 @@ function primefit_cache_product_meta_bulk_advanced( $post_ids ) {
 	$post_ids_str = implode( ',', array_map( 'intval', $post_ids ) );
 	
 	// Cache all product meta in one query
-	$meta_query = $wpdb->prepare( "
+	$meta_query = "
 		SELECT post_id, meta_key, meta_value 
 		FROM {$wpdb->postmeta} 
 		WHERE post_id IN ({$post_ids_str}) 
@@ -314,7 +314,7 @@ function primefit_cache_product_meta_bulk_advanced( $post_ids ) {
 			'_virtual', '_downloadable', '_sold_individually', '_backorders',
 			'_featured', '_visibility', '_purchase_note', '_menu_order'
 		)
-	", $post_ids );
+	";
 	
 	$meta_results = $wpdb->get_results( $meta_query );
 	
@@ -398,7 +398,7 @@ function primefit_cache_individual_product_data( $product_id ) {
 			pm_product_type.meta_value as product_type,
 			pm_weight.meta_value as weight,
 			pm_dimensions.meta_value as dimensions,
-			pm_virtual.meta_value as virtual,
+			pm_virtual.meta_value as `virtual`,
 			pm_downloadable.meta_value as downloadable,
 			pm_featured.meta_value as featured,
 			pm_visibility.meta_value as visibility,
