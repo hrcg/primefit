@@ -658,7 +658,7 @@ function primefit_get_size_guide_image( $product_id = null ) {
 	$size_guide_image_id = get_field( 'size_guide_image', $product_id );
 	
 	if ( $size_guide_image_id ) {
-		$size_guide_url = wp_get_attachment_image_url( $size_guide_image_id, 'full' );
+		$size_guide_url = wp_get_attachment_image_url( $size_guide_image_id, 'large' );
 	} else {
 		$size_guide_url = false;
 	}

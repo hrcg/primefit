@@ -467,6 +467,32 @@ body.single-product .single-product-page {
   color: var(--product-muted);
 }
 
+.size-option.unavailable {
+  position: relative;
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: var(--product-muted);
+  background-color: var(--product-card-bg);
+}
+
+.size-option.unavailable::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 50%,
+    var(--product-muted) 50%,
+    var(--product-muted) 50%,
+    transparent 55%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Specific button implementations */
 .size-option.loading {
   opacity: 0.7;
@@ -1258,6 +1284,10 @@ body.single-product .single-product-page {
   .size-option {
     padding: 10px 8px;
     font-size: 12px;
+  }
+
+  .size-option.unavailable::before {
+    font-size: 18px;
   }
 }
 

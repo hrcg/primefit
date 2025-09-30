@@ -172,11 +172,11 @@ function primefit_get_best_image_uri( $urls = [] ) {
  * Get hero image for WooCommerce category
  *
  * @param object $category WooCommerce category object
- * @param string $size Image size (default: 'full')
+ * @param string $size Image size (default: 'large')
  * @return string Hero image URL
  * @since 1.0.0
  */
-function primefit_get_category_hero_image( $category, $size = 'full' ) {
+function primefit_get_category_hero_image( $category, $size = 'large' ) {
 	$category_image_url = '';
 	
 	// Get category image from WooCommerce
@@ -1508,7 +1508,7 @@ function primefit_render_product_loop_color_swatches( $product ) {
 			if ( ! empty( $variation['image']['src'] ) ) {
 				$variation_images[ $color_value ] = $variation['image']['src'];
 			} elseif ( ! empty( $variation['image_id'] ) ) {
-				$variation_images[ $color_value ] = wp_get_attachment_image_url( $variation['image_id'], 'full' );
+				$variation_images[ $color_value ] = wp_get_attachment_image_url( $variation['image_id'], 'large' );
 			}
 		}
 	}
@@ -1539,7 +1539,7 @@ function primefit_render_product_loop_color_swatches( $product ) {
 		if ( empty( $variation_image ) ) {
 			$main_image_id = $product->get_image_id();
 			if ( $main_image_id ) {
-				$variation_image = wp_get_attachment_image_url( $main_image_id, 'full' );
+				$variation_image = wp_get_attachment_image_url( $main_image_id, 'large' );
 			} else {
 				$variation_image = '';
 			}
@@ -1752,7 +1752,7 @@ function primefit_cache_attachment_meta( $attachment_id, $meta_key, $value, $exp
  * @param string $size Image size
  * @return string|false Cached image URL or false if not cached
  */
-function primefit_get_cached_attachment_image_url( $attachment_id, $size = 'full' ) {
+function primefit_get_cached_attachment_image_url( $attachment_id, $size = 'large' ) {
 	$cache_key = "attachment_url_{$attachment_id}_{$size}";
 	return wp_cache_get( $cache_key, 'primefit_attachment_urls' );
 }
