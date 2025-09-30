@@ -63,6 +63,12 @@ get_header( 'shop' );
 					do_action( 'woocommerce_single_product_summary' );
 					?>
 				</div>
+
+				<?php if ( is_active_sidebar( 'product-gallery-area' ) ) : ?>
+					<div class="product-gallery-widgets">
+						<?php dynamic_sidebar( 'product-gallery-area' ); ?>
+					</div>
+				<?php endif; ?>
 			</div>
 
 			<?php

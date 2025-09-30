@@ -1275,6 +1275,27 @@ function primefit_show_product_images() {
 }
 
 /**
+ * Add variation gallery field to WooCommerce variation settings
+ */
+// REMOVED: Variation gallery field display in variations tab
+// The ACF field "Variation Gallery Images" remains available for managing images
+
+// REMOVED: Save variation gallery field function
+// The ACF field "Variation Gallery Images" handles saving automatically
+
+// REMOVED: Alternative save hook for variation gallery field
+// The ACF field "Variation Gallery Images" handles saving automatically
+
+// REMOVED: Debug and save functions for variation gallery field
+// The ACF field "Variation Gallery Images" handles saving automatically
+
+// REMOVED: Add variation gallery data to available variations
+// The ACF field "Variation Gallery Images" handles this functionality
+
+// REMOVED: Admin scripts and styles for variation gallery
+// The ACF field "Variation Gallery Images" handles this functionality
+
+/**
  * Custom product summary
  */
 function primefit_template_single_product_summary() {

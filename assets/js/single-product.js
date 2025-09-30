@@ -38,6 +38,12 @@
     }
 
     cacheDOM() {
+      // Check if native gallery is active and defer to it
+      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+        console.log('Native gallery is active, jQuery gallery cache disabled');
+        return;
+      }
+
       this.$gallery = $(".product-gallery-container");
       if (this.$gallery.length) {
         this.$mainImage = this.$gallery.find(".main-product-image");
@@ -66,6 +72,12 @@
     }
 
     bindEvents() {
+      // Check if native gallery is active and defer to it
+      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+        console.log('Native gallery is active, jQuery gallery events disabled');
+        return;
+      }
+
       // Use event delegation with optimized selectors and cached elements
       this.$gallery.on("click.thumbnail", ".thumbnail-item", (e) => {
         e.preventDefault();
@@ -298,6 +310,12 @@
     }
 
     initSwipe() {
+      // Check if native gallery is active and defer to it
+      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+        console.log('Native gallery is active, jQuery swipe events disabled');
+        return;
+      }
+
       // Touch/swipe support for mobile - use cached elements
       if (!this.$gallery) return;
 
@@ -777,18 +795,36 @@
     }
 
     updateGalleryForColor(color) {
-      // Use cached selectors for better performance
-      const $colorOption = this.$colorOptions.filter(`[data-color="${color}"]`);
-      const variationImage = $colorOption.data("variation-image");
+      // Dispatch custom event for color selection
+      const colorSelectedEvent = new CustomEvent('colorSelected', {
+        detail: { color: color }
+      });
+      document.dispatchEvent(colorSelectedEvent);
 
-      if (variationImage) {
-        this.updateGalleryImage(variationImage);
+      // Use the global gallery switching function to switch to variation gallery
+      if (window.switchProductGallery) {
+        window.switchProductGallery(color);
+      } else {
+        // Fallback to single image update if gallery switching not available
+        const $colorOption = this.$colorOptions.filter(`[data-color="${color}"]`);
+        const variationImage = $colorOption.data("variation-image");
+
+        if (variationImage) {
+          this.updateGalleryImage(variationImage);
+        }
       }
     }
 
     updateGalleryImage(imageUrl) {
       // Use cached gallery instance elements
       if (!this.$gallery || !this.$mainImage) return;
+
+      // Check if native gallery is available and use it instead
+      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+        // For fallback cases, we still need to handle single image updates
+        // The native gallery handles the main switching logic
+        return;
+      }
 
       if (imageUrl) {
         // Use slide animation for variation image changes

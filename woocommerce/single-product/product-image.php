@@ -48,8 +48,8 @@ if ( false !== $cached_gallery ) {
 		return;
 	}
 
-	// Gallery data for JavaScript (variation galleries removed)
-	$variation_galleries = array();
+	// Get variation galleries from ACF field
+	$variation_galleries = primefit_get_variation_gallery_data( $product_id );
 
 	// Generate URLs for all images with caching
 	$image_urls = array();
@@ -83,9 +83,6 @@ $gallery_data = array(
 	'image_urls' => $image_urls
 );
 
-// Debug: Log the gallery data being sent to JavaScript
-if (!empty($variation_galleries)) {
-}
 
 ?>
 
@@ -111,31 +108,22 @@ if (!empty($variation_galleries)) {
 			}
 			?>
 			<?php
-			// Use responsive image with modern formats
-			echo primefit_get_responsive_image( $main_attachment_id, 'full', [
-				'class' => 'main-product-image',
-				'alt' => $main_image_alt,
-				'loading' => 'eager',
-				'fetchpriority' => 'high',
-				'webp' => true,
-				'sizes' => '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw',
-				'width' => '800',
-				'height' => '800'
-			] );
+			// Use original image without WebP conversion
+			$main_image_url = wp_get_attachment_image_url( $main_attachment_id, 'full' );
 			?>
+			<img src="<?php echo esc_url( $main_image_url ); ?>" 
+				 alt="<?php echo esc_attr( $main_image_alt ); ?>" 
+				 class="main-product-image" 
+				 loading="eager" 
+				 fetchpriority="high" 
+				 decoding="async" 
+				 width="800" 
+				 height="800" />
 		</div>
 
 		<!-- Image Navigation Dots -->
 		<?php if ( count( $attachment_ids ) > 1 ) : ?>
-			<div class="image-navigation-dots">
-				<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
-					<button
-						class="image-dot <?php echo $index === 0 ? 'active' : ''; ?>"
-						data-image-index="<?php echo esc_attr( $index ); ?>"
-						aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
-					></button>
-				<?php endforeach; ?>
-			</div>
+
 
 			<!-- Navigation Arrows -->
 			<button class="image-nav image-nav-prev" aria-label="<?php esc_attr_e( 'Previous image', 'primefit' ); ?>">
@@ -176,17 +164,16 @@ if (!empty($variation_galleries)) {
 					aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
 				>
 					<?php
-					// Use responsive image for thumbnails
-					echo primefit_get_responsive_image( $attachment_id, 'thumbnail', [
-						'class' => 'thumbnail-image',
-						'alt' => $thumbnail_alt,
-						'loading' => 'lazy',
-						'webp' => true,
-						'sizes' => '150px',
-						'width' => '150',
-						'height' => '150'
-					] );
+					// Use original image without WebP conversion
+					$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
 					?>
+					<img src="<?php echo esc_url( $thumbnail_url ); ?>" 
+						 alt="<?php echo esc_attr( $thumbnail_alt ); ?>" 
+						 class="thumbnail-image" 
+						 loading="lazy" 
+						 decoding="async" 
+						 width="150" 
+						 height="150" />
 				</button>
 			<?php endforeach; ?>
 		</div>
@@ -200,12 +187,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	const mainImage = galleryContainer.querySelector('.main-product-image');
 	const thumbnails = galleryContainer.querySelectorAll('.thumbnail-item');
-	const dots = galleryContainer.querySelectorAll('.image-dot');
 	const prevBtn = galleryContainer.querySelector('.image-nav-prev');
 	const nextBtn = galleryContainer.querySelector('.image-nav-next');
 
 	// Gallery data from PHP
 	const galleryData = <?php echo json_encode( $gallery_data ); ?>;
+	
 
 
 	let currentImages = galleryData.default;
@@ -256,23 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		const imageAlt = `Product image ${index + 1}`;
 
-		// Update image source and attributes
+		// Update image source and attributes (no WebP conversion)
 		mainImage.src = imageUrl;
 		mainImage.alt = imageAlt;
 		mainImage.dataset.imageIndex = index;
-		
-		// Update srcset for responsive images if they exist
-		const webpUrl = imageUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
-
-		// Check if we're using a picture element
-		const picture = mainImage.closest('picture');
-		if (picture) {
-			// Update WebP source
-			const webpSource = picture.querySelector('source[type="image/webp"]');
-			if (webpSource) {
-				webpSource.srcset = webpUrl;
-			}
-		}
 
 		// Update active states for thumbnails (after ensuring they exist)
 		const thumbnails = galleryContainer.querySelectorAll('.thumbnail-item');
@@ -280,40 +254,88 @@ document.addEventListener('DOMContentLoaded', function() {
 			thumb.classList.toggle('active', i === index);
 		});
 
-		// Update active states for dots (after ensuring they exist)
-		const dots = galleryContainer.querySelectorAll('.image-dot');
-		dots.forEach((dot, i) => {
-			dot.classList.toggle('active', i === index);
-		});
-
 		currentIndex = index;
 	}
 
 	// Switch to a different color gallery
 	function switchColorGallery(color) {
+		console.log('switchColorGallery called with color:', color);
+		console.log('Available variations:', Object.keys(galleryData.variations || {}));
 
 		// Normalize color for consistent matching
 		const normalizedColor = color ? color.toLowerCase().trim() : '';
+		console.log('Normalized color:', normalizedColor);
 
 		if (!normalizedColor || !galleryData.variations || !galleryData.variations[normalizedColor]) {
+			console.log('Switching to default gallery');
 			// Switch back to default gallery
 			currentImages = galleryData.default;
 			currentColor = '';
 		} else {
+			console.log('Switching to variation gallery for color:', normalizedColor);
 			// Switch to specific color gallery
 			currentImages = galleryData.variations[normalizedColor].images;
 			currentColor = color; // Keep original color for reference
 		}
 
+		// Validate that we have images to display
+		if (!currentImages || currentImages.length === 0) {
+			console.log('No images found, falling back to default gallery');
+			currentImages = galleryData.default;
+			currentColor = '';
+		}
 
-		// Reset to first image
-		currentIndex = 0;
+		// Find the main variation image for this color and set it as the primary image
+		if (currentColor && galleryData.variations && galleryData.variations[normalizedColor]) {
+			// Get the main variation image from the color option data
+			const colorOption = document.querySelector(`[data-color="${color}"]`);
+			if (colorOption) {
+				const variationImage = colorOption.getAttribute('data-variation-image');
+				if (variationImage) {
+					// Find this image in the current gallery array
+					const imageIndex = currentImages.findIndex(imageId => {
+						if (!imageId || imageId === 0) return false;
+						const imageUrl = galleryData.image_urls[imageId];
+						return imageUrl === variationImage;
+					});
+
+					if (imageIndex !== -1) {
+						console.log('Found main variation image at index:', imageIndex);
+						currentIndex = imageIndex;
+					} else {
+						console.log('Main variation image not found in ACF gallery, using index 0');
+						currentIndex = 0;
+					}
+				} else {
+					console.log('No variation image found for color, using index 0');
+					currentIndex = 0;
+				}
+			} else {
+				console.log('Color option not found, using index 0');
+				currentIndex = 0;
+			}
+		} else {
+			// For default gallery or fallback cases, use index 0
+			currentIndex = 0;
+		}
 
 		// Update thumbnail gallery first
 		updateThumbnailGallery();
 
-		// Then update main image
-		updateMainImage(0);
+		// Then update main image - ensure we have a valid image at currentIndex
+		if (currentImages && currentImages.length > 0 && currentImages[currentIndex]) {
+			updateMainImage(currentIndex);
+		} else {
+			console.log('No valid image at currentIndex, trying to find first valid image');
+			// Find the first valid image in the gallery
+			for (let i = 0; i < currentImages.length; i++) {
+				if (currentImages[i] && currentImages[i] !== 0) {
+					currentIndex = i;
+					updateMainImage(i);
+					break;
+				}
+			}
+		}
 	}
 
 	// Update thumbnail gallery to show current images
@@ -326,63 +348,42 @@ document.addEventListener('DOMContentLoaded', function() {
 			galleryContainer.appendChild(thumbnailContainer);
 		}
 
-		// Ensure dots container exists
-		let dotsContainer = galleryContainer.querySelector('.image-navigation-dots');
-		if (!dotsContainer) {
-			dotsContainer = document.createElement('div');
-			dotsContainer.className = 'image-navigation-dots';
-			galleryContainer.appendChild(dotsContainer);
-		}
-
 		// Clear existing thumbnails
 		thumbnailContainer.innerHTML = '';
 
+		// Validate currentImages before processing
+		if (!currentImages || currentImages.length === 0) {
+			console.log('No images to display in thumbnail gallery');
+			return;
+		}
+
 		// Add new thumbnails
 		currentImages.forEach((imageId, index) => {
-			if (!imageId) return; // Skip empty image IDs
+			if (!imageId || imageId === 0) return; // Skip empty or invalid image IDs
 
 			const thumbnailUrl = galleryData.image_urls[imageId] || '';
 			const thumbnailAlt = `Product image ${index + 1}`;
 
 			if (!thumbnailUrl) {
+				console.log('No thumbnail URL found for image ID:', imageId);
 				return;
 			}
 
-			const webpThumbnailUrl = thumbnailUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
 			const thumbnailHtml = `
-				<button class="thumbnail-item ${index === 0 ? 'active' : ''}"
+				<button class="thumbnail-item ${index === currentIndex ? 'active' : ''}"
 						data-image-index="${index}"
 						aria-label="View image ${index + 1}">
-					<picture>
-						<source type="image/webp" srcset="${webpThumbnailUrl}">
-						<img src="${thumbnailUrl}"
-							 alt="${thumbnailAlt}"
-							 class="thumbnail-image"
-							 loading="lazy"
-							 decoding="async"
-							 width="150"
-							 height="150" />
-					</picture>
+					<img src="${thumbnailUrl}"
+						 alt="${thumbnailAlt}"
+						 class="thumbnail-image"
+						 loading="lazy"
+						 decoding="async"
+						 width="150"
+						 height="150" />
 				</button>
 			`;
 
 			thumbnailContainer.insertAdjacentHTML('beforeend', thumbnailHtml);
-		});
-
-		// Update dots if they exist
-		dotsContainer.innerHTML = '';
-
-		currentImages.forEach((imageId, index) => {
-			if (!imageId) return; // Skip empty image IDs
-
-			const dotHtml = `
-				<button class="image-dot ${index === 0 ? 'active' : ''}"
-						data-image-index="${index}"
-						aria-label="View image ${index + 1}">
-				</button>
-			`;
-
-			dotsContainer.insertAdjacentHTML('beforeend', dotHtml);
 		});
 	}
 
@@ -392,9 +393,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		galleryContainer.removeEventListener('click', handleThumbnailClick);
 		galleryContainer.addEventListener('click', handleThumbnailClick);
 
-		// Dot click handlers
-		galleryContainer.removeEventListener('click', handleDotClick);
-		galleryContainer.addEventListener('click', handleDotClick);
 
 		// Navigation handlers
 		if (prevBtn) {
@@ -426,16 +424,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 
-	// Handle dot clicks
-	function handleDotClick(e) {
-		if (e.target.closest('.image-dot')) {
-			e.preventDefault();
-			const index = parseInt(e.target.closest('.image-dot').dataset.imageIndex);
-			if (!isNaN(index)) {
-				updateMainImage(index);
-			}
-		}
-	}
 
 	// Listen for color changes from the product variations
 	function bindColorChangeEvents() {
@@ -492,6 +480,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		} else if (e.key === 'ArrowRight' && nextBtn) {
 			nextBtn.click();
 		}
+	});
+
+	// Listen for color selection events from the ProductVariations class
+	document.addEventListener('colorSelected', function(e) {
+		console.log('Color selection event received:', e.detail.color);
+		switchColorGallery(e.detail.color);
 	});
 
 	// Expose the switchColorGallery function globally for external use

@@ -522,6 +522,7 @@ $includes = [
 	'inc/customizer.php',      // Theme customizer settings
 	'inc/acf-fields.php',      // ACF field groups and helpers
 	'inc/woocommerce.php',     // WooCommerce integration
+	'inc/widgets.php',         // Custom widgets
 	'inc/discount-system.php', // Discount code tracking system
 	'inc/discount-system-styles.php', // Discount system admin styles
 	'inc/image-optimization.php', // Image optimization and lazy loading

@@ -85,15 +85,7 @@ if ( empty( $attachment_ids ) ) {
 		
 		<!-- Image Navigation Dots -->
 		<?php if ( count( $attachment_ids ) > 1 ) : ?>
-			<div class="image-navigation-dots">
-				<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
-					<button 
-						class="image-dot <?php echo $index === 0 ? 'active' : ''; ?>"
-						data-image-index="<?php echo esc_attr( $index ); ?>"
-						aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
-					></button>
-				<?php endforeach; ?>
-			</div>
+
 			
 			<!-- Navigation Arrows -->
 			<button class="image-nav image-nav-prev" aria-label="<?php esc_attr_e( 'Previous image', 'primefit' ); ?>">

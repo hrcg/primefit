@@ -1966,6 +1966,69 @@ function primefit_get_cached_acf_field( $field_name, $post_id ) {
 }
 
 /**
+ * Get variation galleries from WooCommerce variations
+ *
+ * @param int $product_id Product ID
+ * @return array Variation galleries organized by color
+ */
+function primefit_get_woo_variation_galleries( $product_id ) {
+	$cache_key = "woo_variation_galleries_{$product_id}";
+	$cached = wp_cache_get( $cache_key, 'primefit_variations' );
+	
+	if ( false !== $cached ) {
+		return $cached;
+	}
+	
+	$product = wc_get_product( $product_id );
+	if ( ! $product || ! $product->is_type( 'variable' ) ) {
+		return array();
+	}
+	
+	$variations = $product->get_available_variations();
+	$variation_galleries = array();
+	
+	// Debug: Log variations data
+	error_log( 'PrimeFit Debug: Found ' . count( $variations ) . ' variations for product ' . $product_id );
+	
+	foreach ( $variations as $variation ) {
+		// Get color attribute
+		$color = '';
+		foreach ( $variation['attributes'] as $attr_name => $attr_value ) {
+			if ( stripos( $attr_name, 'color' ) !== false && ! empty( $attr_value ) ) {
+				$color = strtolower( trim( $attr_value ) );
+				break;
+			}
+		}
+		
+		// Debug: Log variation data
+		error_log( 'PrimeFit Debug: Variation ' . $variation['variation_id'] . ' - Color: ' . $color . ' - Has gallery_images: ' . ( ! empty( $variation['gallery_images'] ) ? 'Yes' : 'No' ) );
+		
+		if ( ! empty( $color ) && ! empty( $variation['gallery_images'] ) ) {
+			$gallery_images = array();
+			foreach ( $variation['gallery_images'] as $image_data ) {
+				$gallery_images[] = $image_data['id'];
+			}
+			
+			if ( ! empty( $gallery_images ) ) {
+				$variation_galleries[ $color ] = array(
+					'images' => $gallery_images,
+					'count' => count( $gallery_images )
+				);
+				error_log( 'PrimeFit Debug: Added gallery for color ' . $color . ' with ' . count( $gallery_images ) . ' images' );
+			}
+		}
+	}
+	
+	// Debug: Log final result
+	error_log( 'PrimeFit Debug: Final variation galleries: ' . print_r( $variation_galleries, true ) );
+	
+	// Cache the result
+	wp_cache_set( $cache_key, $variation_galleries, 'primefit_variations', 3600 );
+	
+	return $variation_galleries;
+}
+
+/**
  * Clear product-related caches when product is updated
  *
  * @param int $product_id Product ID
