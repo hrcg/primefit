@@ -254,11 +254,11 @@
 
 /* Mobile menu badge styles */
 .mobile-menu .menu-badge {
-  font-size: 8px;
+  font-size: 10px;
   padding: 1px 3px;
   margin-left: 6px;
   vertical-align: middle;
-  top: 0;
+  top: -8px;
 }
 
 /* Mobile menu dropdown styles */
