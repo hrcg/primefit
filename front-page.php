@@ -6,17 +6,11 @@ $hero_args = primefit_get_hero_config();
 primefit_render_hero($hero_args);
 
 // Featured Products Section
-$featured_products_args = primefit_get_product_loop_config('sale', array(
-	'title' => 'END OF SEASON SALE',
-	'limit' => 12,
-	'columns' => 4,
-	'on_sale' => true,
-	'show_view_all' => true,
-	'view_all_text' => 'VIEW ALL',
-	'view_all_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
-	'section_class' => 'featured-products'
-));
-primefit_render_product_loop($featured_products_args);
+$featured_products_config = primefit_get_featured_products_config();
+if ( $featured_products_config['enabled'] ) {
+	$featured_products_args = primefit_get_product_loop_config('sale', $featured_products_config);
+	primefit_render_product_loop($featured_products_args);
+}
 
 // Category Tiles Section
 get_template_part('templates/parts/category-tiles');
@@ -26,16 +20,11 @@ get_template_part('templates/parts/category-tiles');
 get_template_part('templates/parts/training-division');
 
 // Product Showcase Section
-$product_showcase_args = primefit_get_product_loop_config('new', array(
-	'title' => 'NEW ARRIVALS',
-	'limit' => 8,
-	'columns' => 4,
-	'show_view_all' => true,
-	'view_all_text' => 'SHOP ALL',
-	'view_all_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
-	'section_class' => 'product-showcase'
-));
-primefit_render_product_loop($product_showcase_args);
+$product_showcase_config = primefit_get_product_showcase_config();
+if ( $product_showcase_config['enabled'] ) {
+	$product_showcase_args = primefit_get_product_loop_config('new', $product_showcase_config);
+	primefit_render_product_loop($product_showcase_args);
+}
 
 // Second Training Division Section (uses customizer settings)
 $training_division_2_config = primefit_get_training_division_2_config();

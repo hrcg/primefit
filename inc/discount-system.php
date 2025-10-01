@@ -17,17 +17,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 // to allow the discount system to load even if WooCommerce isn't ready yet
 
 /**
- * Create custom database table for discount code tracking
- * Note: Using theme activation instead of plugin activation
+ * Initialize discount system and create tables if needed
  */
-add_action( 'after_switch_theme', 'primefit_create_discount_tracking_table_on_theme_activation' );
-function primefit_create_discount_tracking_table_on_theme_activation() {
+add_action( 'after_setup_theme', 'primefit_initialize_discount_system' );
+function primefit_initialize_discount_system() {
+	// Create the discount tracking table if it doesn't exist
 	primefit_create_discount_tracking_table();
+
+	// Update table structure and create new tables if needed
+	primefit_update_discount_tracking_table();
 }
+
+/**
+ * Create custom database table for discount code tracking
+ * Note: Tables are now created on init instead of theme activation
+ */
 function primefit_create_discount_tracking_table() {
 	global $wpdb;
 
 	$table_name = $wpdb->prefix . 'discount_code_tracking';
+
+	// Check if table already exists
+	if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) === $table_name ) {
+		return; // Table already exists
+	}
 
 	$charset_collate = $wpdb->get_charset_collate();
 
@@ -52,10 +65,12 @@ function primefit_create_discount_tracking_table() {
 	) $charset_collate;";
 
 	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-	dbDelta( $sql );
+	$result = dbDelta( $sql );
 
-	// Store version for future updates
-	add_option( 'primefit_discount_tracking_version', '1.0' );
+	// Store version for future updates (only if table was actually created)
+	if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) === $table_name ) {
+		add_option( 'primefit_discount_tracking_version', '1.0' );
+	}
 }
 
 /**
@@ -74,6 +89,51 @@ function primefit_update_discount_tracking_table() {
 		$wpdb->query( "ALTER TABLE $table_name ADD COLUMN user_agent text DEFAULT NULL AFTER ip_address" );
 
 		update_option( 'primefit_discount_tracking_version', '1.1' );
+	}
+
+	if ( version_compare( $current_version, '1.2', '<' ) ) {
+		// Create coupon reset tracking table for version 1.2
+		primefit_create_coupon_reset_tracking_table();
+
+		update_option( 'primefit_discount_tracking_version', '1.2' );
+	}
+}
+
+/**
+ * Create coupon reset tracking table
+ */
+function primefit_create_coupon_reset_tracking_table() {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'coupon_reset_tracking';
+
+	// Check if table already exists
+	if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) === $table_name ) {
+		return; // Table already exists
+	}
+
+	$charset_collate = $wpdb->get_charset_collate();
+
+	$sql = "CREATE TABLE $table_name (
+		id mediumint(9) NOT NULL AUTO_INCREMENT,
+		coupon_code varchar(50) NOT NULL,
+		reset_date datetime DEFAULT CURRENT_TIMESTAMP,
+		reset_by_user_id bigint(20) unsigned DEFAULT NULL,
+		previous_uses_count int(11) DEFAULT 0,
+		previous_total_savings decimal(10,2) DEFAULT 0.00,
+		PRIMARY KEY (id),
+		KEY coupon_code (coupon_code),
+		KEY reset_date (reset_date),
+		KEY coupon_reset_date (coupon_code, reset_date)
+	) $charset_collate;";
+
+	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+	dbDelta( $sql );
+
+	// Verify table was created
+	if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) !== $table_name ) {
+		// Log error if table creation failed
+		error_log( "Failed to create coupon reset tracking table: $table_name" );
 	}
 }
 
@@ -170,12 +230,151 @@ function primefit_track_discount_usage( $order_id ) {
  */
 function primefit_clear_discount_stats_cache() {
 	global $wpdb;
-	
+
 	// Clear all discount statistics related transients
 	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_usage_by_date_%'" );
 	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_usage_by_date_%'" );
 	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_top_users_%'" );
 	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_top_users_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_coupon_stats_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_coupon_stats_%'" );
+}
+
+/**
+ * Reset coupon statistics
+ */
+function primefit_reset_coupon_stats( $coupon_code ) {
+	global $wpdb;
+
+	if ( empty( $coupon_code ) ) {
+		return new WP_Error( 'invalid_coupon', 'Coupon code is required' );
+	}
+
+	// Get current stats before resetting
+	$current_stats = primefit_get_coupon_stats( $coupon_code );
+
+	if ( $current_stats['total_uses'] == 0 && $current_stats['total_savings'] == 0 ) {
+		return new WP_Error( 'no_data', 'No usage data to reset for this coupon' );
+	}
+
+	// Start transaction
+	$wpdb->query( 'START TRANSACTION' );
+
+	try {
+		// Get current user ID for tracking
+		$current_user_id = get_current_user_id();
+
+		// Insert reset record
+		$reset_table = $wpdb->prefix . 'coupon_reset_tracking';
+
+		// Ensure reset tracking table exists
+		if ( $wpdb->get_var( "SHOW TABLES LIKE '$reset_table'" ) !== $reset_table ) {
+			primefit_create_coupon_reset_tracking_table();
+		}
+
+		$reset_result = $wpdb->insert(
+			$reset_table,
+			array(
+				'coupon_code' => sanitize_text_field( $coupon_code ),
+				'reset_date' => current_time( 'mysql' ),
+				'reset_by_user_id' => intval( $current_user_id ),
+				'previous_uses_count' => intval( $current_stats['total_uses'] ),
+				'previous_total_savings' => floatval( $current_stats['total_savings'] )
+			),
+			array( '%s', '%s', '%d', '%d', '%f' )
+		);
+
+		if ( $reset_result === false ) {
+			throw new Exception( 'Failed to record reset action' );
+		}
+
+		// Delete all usage records for this coupon
+		$tracking_table = $wpdb->prefix . 'discount_code_tracking';
+		$delete_result = $wpdb->delete(
+			$tracking_table,
+			array( 'coupon_code' => sanitize_text_field( $coupon_code ) ),
+			array( '%s' )
+		);
+
+		if ( $delete_result === false ) {
+			throw new Exception( 'Failed to reset coupon statistics' );
+		}
+
+		// Commit transaction
+		$wpdb->query( 'COMMIT' );
+
+		// Clear cache
+		primefit_clear_discount_stats_cache();
+
+		return array(
+			'success' => true,
+			'reset_count' => $delete_result,
+			'previous_uses' => $current_stats['total_uses'],
+			'previous_savings' => $current_stats['total_savings']
+		);
+
+	} catch ( Exception $e ) {
+		// Rollback on error
+		$wpdb->query( 'ROLLBACK' );
+		return new WP_Error( 'reset_failed', $e->getMessage() );
+	}
+}
+
+/**
+ * Get coupon reset history
+ */
+function primefit_get_coupon_reset_history( $coupon_code = null, $limit = 10 ) {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'coupon_reset_tracking';
+
+	// Check if table exists
+	if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) !== $table_name ) {
+		return array(); // Return empty array if table doesn't exist
+	}
+
+	$where_clause = '';
+	$params = array();
+
+	if ( $coupon_code ) {
+		$where_clause = 'WHERE coupon_code = %s';
+		$params[] = $coupon_code;
+	}
+
+	if ( ! empty( $params ) ) {
+		$query = $wpdb->prepare(
+			"SELECT * FROM $table_name $where_clause ORDER BY reset_date DESC LIMIT %d",
+			array_merge( $params, array( $limit ) )
+		);
+	} else {
+		$query = $wpdb->prepare(
+			"SELECT * FROM $table_name $where_clause ORDER BY reset_date DESC LIMIT %d",
+			array( $limit )
+		);
+	}
+
+	return $wpdb->get_results( $query );
+}
+
+/**
+ * Get last reset date for a coupon
+ */
+function primefit_get_coupon_last_reset_date( $coupon_code ) {
+	global $wpdb;
+
+	$table_name = $wpdb->prefix . 'coupon_reset_tracking';
+
+	// Check if table exists
+	if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) !== $table_name ) {
+		return false; // Return false if table doesn't exist
+	}
+
+	$last_reset = $wpdb->get_var( $wpdb->prepare(
+		"SELECT reset_date FROM $table_name WHERE coupon_code = %s ORDER BY reset_date DESC LIMIT 1",
+		$coupon_code
+	) );
+
+	return $last_reset ? $last_reset : false;
 }
 
 /**
@@ -282,7 +481,11 @@ function primefit_get_cached_usage_by_date( $where_clause, $params ) {
 			ORDER BY usage_date DESC
 			LIMIT 30
 		";
-		$cached = $wpdb->get_results( $wpdb->prepare( $usage_by_date_query, $params ) );
+		if ( ! empty( $params ) ) {
+			$cached = $wpdb->get_results( $wpdb->prepare( $usage_by_date_query, $params ) );
+		} else {
+			$cached = $wpdb->get_results( $usage_by_date_query );
+		}
 		
 		// Cache for 1 hour
 		set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
@@ -313,7 +516,11 @@ function primefit_get_cached_top_users( $where_clause, $params ) {
 			ORDER BY uses_count DESC, total_savings DESC
 			LIMIT 10
 		";
-		$cached = $wpdb->get_results( $wpdb->prepare( $top_users_query, $params ) );
+		if ( ! empty( $params ) ) {
+			$cached = $wpdb->get_results( $wpdb->prepare( $top_users_query, $params ) );
+		} else {
+			$cached = $wpdb->get_results( $top_users_query );
+		}
 		
 		// Cache for 1 hour
 		set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
@@ -364,7 +571,11 @@ function primefit_get_discount_stats( $coupon_code = null, $email = null, $start
 		FROM $table_name $where_clause
 	";
 	
-	$stats = $wpdb->get_row( $wpdb->prepare( $stats_query, $params ) );
+	if ( ! empty( $params ) ) {
+		$stats = $wpdb->get_row( $wpdb->prepare( $stats_query, $params ) );
+	} else {
+		$stats = $wpdb->get_row( $stats_query );
+	}
 	
 	// Extract values with proper fallbacks
 	$total_uses = (int) $stats->total_uses;
@@ -673,7 +884,7 @@ function primefit_schedule_weekly_coupon_reports() {
 add_action( 'primefit_weekly_coupon_report', 'primefit_send_weekly_coupon_report' );
 function primefit_send_weekly_coupon_report() {
 	// Ensure WooCommerce is loaded and available
-	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_coupons' ) ) {
+	if ( ! class_exists( 'WooCommerce' ) ) {
 		return;
 	}
 
@@ -685,10 +896,15 @@ function primefit_send_weekly_coupon_report() {
 	$weekly_stats = primefit_get_discount_stats( null, null, $start_date, $end_date );
 
 	// Get coupon-specific stats
-	$coupons = wc_get_coupons( array( 'posts_per_page' => -1 ) );
+	$coupons = get_posts( array(
+		'post_type' => 'shop_coupon',
+		'posts_per_page' => -1,
+		'post_status' => 'publish'
+	) );
 	$coupon_stats = array();
 
-	foreach ( $coupons as $coupon ) {
+	foreach ( $coupons as $coupon_post ) {
+		$coupon = new WC_Coupon( $coupon_post->ID );
 		$coupon_stats[] = array(
 			'code' => $coupon->get_code(),
 			'stats' => primefit_get_discount_stats( $coupon->get_code(), null, $start_date, $end_date )
@@ -727,7 +943,7 @@ function primefit_send_weekly_coupon_report() {
  */
 function primefit_get_weekly_report_recipients() {
 	// Ensure WooCommerce is loaded
-	if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_coupons' ) ) {
+	if ( ! class_exists( 'WooCommerce' ) ) {
 		return array( get_option( 'admin_email' ) );
 	}
 
@@ -740,9 +956,14 @@ function primefit_get_weekly_report_recipients() {
 	}
 
 	// Get recipients from coupon notification settings
-	$coupons = wc_get_coupons( array( 'posts_per_page' => -1 ) );
+	$coupons = get_posts( array(
+		'post_type' => 'shop_coupon',
+		'posts_per_page' => -1,
+		'post_status' => 'publish'
+	) );
 
-	foreach ( $coupons as $coupon ) {
+	foreach ( $coupons as $coupon_post ) {
+		$coupon = new WC_Coupon( $coupon_post->ID );
 		if ( ! function_exists( 'get_field' ) ) {
 			continue;
 		}
@@ -920,6 +1141,171 @@ function primefit_add_coupon_quick_actions( $actions, $post ) {
 }
 
 /**
+ * Add custom columns to coupon list
+ */
+add_filter( 'manage_edit-shop_coupon_columns', 'primefit_add_coupon_columns' );
+function primefit_add_coupon_columns( $columns ) {
+	$new_columns = array();
+
+	foreach ( $columns as $key => $value ) {
+		$new_columns[$key] = $value;
+
+		// Add usage statistics columns after the coupon code column
+		if ( $key === 'coupon_code' ) {
+			$new_columns['usage_count'] = __( 'Uses', 'primefit' );
+			$new_columns['total_savings'] = __( 'Total Savings', 'primefit' );
+			$new_columns['unique_users'] = __( 'Unique Users', 'primefit' );
+			$new_columns['last_reset'] = __( 'Last Reset', 'primefit' );
+		}
+	}
+
+	return $new_columns;
+}
+
+/**
+ * Display custom column content for coupons
+ */
+add_action( 'manage_shop_coupon_posts_custom_column', 'primefit_display_coupon_column_content', 10, 2 );
+function primefit_display_coupon_column_content( $column, $post_id ) {
+	$coupon = new WC_Coupon( $post_id );
+
+	switch ( $column ) {
+		case 'usage_count':
+			$stats = primefit_get_coupon_stats( $coupon->get_code() );
+			echo number_format( $stats['total_uses'] );
+			break;
+
+		case 'total_savings':
+			$stats = primefit_get_coupon_stats( $coupon->get_code() );
+			echo '€' . number_format( $stats['total_savings'], 2 );
+			break;
+
+		case 'unique_users':
+			$stats = primefit_get_coupon_stats( $coupon->get_code() );
+			echo number_format( $stats['unique_emails'] );
+			break;
+
+		case 'last_reset':
+			$last_reset = primefit_get_coupon_last_reset_date( $coupon->get_code() );
+			if ( $last_reset ) {
+				echo '<span style="color: #d63638; font-size: 12px;">' .
+				     date_i18n( get_option( 'date_format' ), strtotime( $last_reset ) ) .
+				     '</span>';
+			} else {
+				echo '<span style="color: #999; font-size: 12px;">' . __( 'Never', 'primefit' ) . '</span>';
+			}
+			break;
+	}
+}
+
+/**
+ * Make coupon columns sortable
+ */
+add_filter( 'manage_edit-shop_coupon_sortable_columns', 'primefit_make_coupon_columns_sortable' );
+function primefit_make_coupon_columns_sortable( $columns ) {
+	$columns['usage_count'] = 'usage_count';
+	$columns['total_savings'] = 'total_savings';
+	$columns['unique_users'] = 'unique_users';
+	$columns['last_reset'] = 'last_reset';
+	return $columns;
+}
+
+/**
+ * Handle coupon column sorting
+ */
+add_action( 'pre_get_posts', 'primefit_handle_coupon_column_sorting' );
+function primefit_handle_coupon_column_sorting( $query ) {
+	if ( ! is_admin() || ! $query->is_main_query() ) {
+		return;
+	}
+
+	$screen = get_current_screen();
+	if ( ! $screen || $screen->post_type !== 'shop_coupon' ) {
+		return;
+	}
+
+	$orderby = $query->get( 'orderby' );
+
+	switch ( $orderby ) {
+		case 'usage_count':
+			$query->set( 'meta_query', array(
+				array(
+					'key' => '_usage_count',
+					'compare' => 'EXISTS',
+				)
+			));
+			$query->set( 'orderby', 'meta_value_num' );
+			break;
+
+		case 'total_savings':
+			$query->set( 'meta_query', array(
+				array(
+					'key' => '_total_savings',
+					'compare' => 'EXISTS',
+				)
+			));
+			$query->set( 'orderby', 'meta_value_num' );
+			break;
+
+		case 'unique_users':
+			$query->set( 'meta_query', array(
+				array(
+					'key' => '_unique_users',
+					'compare' => 'EXISTS',
+				)
+			));
+			$query->set( 'orderby', 'meta_value_num' );
+			break;
+
+		case 'last_reset':
+			$query->set( 'meta_query', array(
+				array(
+					'key' => '_last_reset',
+					'compare' => 'EXISTS',
+				)
+			));
+			$query->set( 'orderby', 'meta_value' );
+			break;
+	}
+}
+
+/**
+ * Store coupon statistics as post meta for sorting
+ */
+add_action( 'woocommerce_order_status_completed', 'primefit_update_coupon_meta_for_sorting', 20, 1 );
+function primefit_update_coupon_meta_for_sorting( $order_id ) {
+	$order = wc_get_order( $order_id );
+	if ( ! $order ) {
+		return;
+	}
+
+	$coupons = $order->get_coupon_codes();
+	if ( empty( $coupons ) ) {
+		return;
+	}
+
+	foreach ( $coupons as $coupon_code ) {
+		$coupon = new WC_Coupon( $coupon_code );
+		if ( ! $coupon || ! $coupon->get_id() ) {
+			continue;
+		}
+
+		$stats = primefit_get_coupon_stats( $coupon_code );
+
+		// Update coupon meta for sorting
+		update_post_meta( $coupon->get_id(), '_usage_count', $stats['total_uses'] );
+		update_post_meta( $coupon->get_id(), '_total_savings', $stats['total_savings'] );
+		update_post_meta( $coupon->get_id(), '_unique_users', $stats['unique_emails'] );
+
+		if ( $last_reset = primefit_get_coupon_last_reset_date( $coupon_code ) ) {
+			update_post_meta( $coupon->get_id(), '_last_reset', $last_reset );
+		} else {
+			delete_post_meta( $coupon->get_id(), '_last_reset' );
+		}
+	}
+}
+
+/**
  * Add bulk actions for coupons
  */
 add_filter( 'bulk_actions-edit-shop_coupon', 'primefit_add_coupon_bulk_actions' );
@@ -1094,4 +1480,396 @@ function primefit_coupon_bulk_action_notices() {
 			$count
 		);
 	}
+
+	if ( isset( $_GET['coupon_reset'] ) ) {
+		$coupon_code = sanitize_text_field( $_GET['coupon_reset'] );
+		printf(
+			'<div class="notice notice-success is-dismissible"><p>' .
+			__( 'Statistics reset for coupon "%s".', 'primefit' ) .
+			'</p></div>',
+			esc_html( $coupon_code )
+		);
+	}
+
+	if ( isset( $_GET['reset_error'] ) ) {
+		$error = sanitize_text_field( $_GET['reset_error'] );
+		printf(
+			'<div class="notice notice-error is-dismissible"><p>' .
+			__( 'Error resetting coupon: %s', 'primefit' ) .
+			'</p></div>',
+			esc_html( $error )
+		);
+	}
+}
+
+/**
+ * Add coupon analytics submenu page
+ */
+add_action( 'admin_menu', 'primefit_add_coupon_analytics_menu' );
+function primefit_add_coupon_analytics_menu() {
+	add_submenu_page(
+		'woocommerce',
+		__( 'Coupon Analytics', 'primefit' ),
+		__( 'Coupon Analytics', 'primefit' ),
+		'manage_woocommerce',
+		'coupon-analytics',
+		'primefit_coupon_analytics_page'
+	);
+}
+
+/**
+ * Display coupon analytics page
+ */
+function primefit_coupon_analytics_page() {
+	// Handle coupon reset action
+	if ( isset( $_POST['reset_coupon'] ) && isset( $_POST['coupon_code'] ) ) {
+		check_admin_referer( 'reset_coupon_stats' );
+
+		$coupon_code = sanitize_text_field( $_POST['coupon_code'] );
+		$result = primefit_reset_coupon_stats( $coupon_code );
+
+		if ( is_wp_error( $result ) ) {
+			wp_redirect( add_query_arg( array( 'reset_error' => urlencode( $result->get_error_message() ) ) ) );
+		} else {
+			wp_redirect( add_query_arg( array( 'coupon_reset' => urlencode( $coupon_code ) ) ) );
+		}
+		exit;
+	}
+
+	?>
+	<div class="wrap">
+		<h1><?php _e( 'Coupon Analytics Dashboard', 'primefit' ); ?></h1>
+
+		<?php primefit_display_coupon_analytics_overview(); ?>
+
+		<?php primefit_display_coupon_analytics_table(); ?>
+
+		<?php primefit_display_coupon_reset_history(); ?>
+	</div>
+	<?php
+}
+
+/**
+ * Display coupon analytics overview
+ */
+function primefit_display_coupon_analytics_overview() {
+	// Get overall statistics
+	$overall_stats = primefit_get_discount_stats();
+
+	// Get all coupons and their stats
+	$coupons = get_posts( array(
+		'post_type' => 'shop_coupon',
+		'posts_per_page' => -1,
+		'post_status' => 'publish'
+	) );
+	$coupon_stats = array();
+
+	foreach ( $coupons as $coupon_post ) {
+		$coupon = new WC_Coupon( $coupon_post->ID );
+		$stats = primefit_get_coupon_stats( $coupon->get_code() );
+		if ( $stats['total_uses'] > 0 ) {
+			$coupon_stats[] = array(
+				'code' => $coupon->get_code(),
+				'stats' => $stats,
+				'last_reset' => primefit_get_coupon_last_reset_date( $coupon->get_code() )
+			);
+		}
+	}
+
+	// Sort by total savings
+	usort( $coupon_stats, function( $a, $b ) {
+		return $b['stats']['total_savings'] <=> $a['stats']['total_savings'];
+	});
+
+	$top_performing = array_slice( $coupon_stats, 0, 5 );
+	?>
+	<div class="coupon-analytics-overview">
+		<div class="analytics-grid">
+			<div class="analytics-card">
+				<h3><?php _e( 'Total Coupons Used', 'primefit' ); ?></h3>
+				<div class="stat-number"><?php echo number_format( $overall_stats['total_uses'] ); ?></div>
+			</div>
+			<div class="analytics-card">
+				<h3><?php _e( 'Total Savings Given', 'primefit' ); ?></h3>
+				<div class="stat-number">€<?php echo number_format( $overall_stats['total_savings'], 2 ); ?></div>
+			</div>
+			<div class="analytics-card">
+				<h3><?php _e( 'Unique Customers', 'primefit' ); ?></h3>
+				<div class="stat-number"><?php echo number_format( $overall_stats['unique_emails'] ); ?></div>
+			</div>
+			<div class="analytics-card">
+				<h3><?php _e( 'Active Coupons', 'primefit' ); ?></h3>
+				<div class="stat-number"><?php echo count( $coupon_stats ); ?></div>
+			</div>
+		</div>
+
+		<?php if ( ! empty( $top_performing ) ) : ?>
+		<div class="top-coupons-section">
+			<h2><?php _e( 'Top Performing Coupons', 'primefit' ); ?></h2>
+			<div class="coupon-grid">
+				<?php foreach ( $top_performing as $coupon ) : ?>
+				<div class="coupon-card">
+					<h4><?php echo esc_html( $coupon['code'] ); ?></h4>
+					<div class="coupon-stats">
+						<div class="stat-item">
+							<span class="stat-label"><?php _e( 'Uses:', 'primefit' ); ?></span>
+							<span class="stat-value"><?php echo number_format( $coupon['stats']['total_uses'] ); ?></span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label"><?php _e( 'Savings:', 'primefit' ); ?></span>
+							<span class="stat-value">€<?php echo number_format( $coupon['stats']['total_savings'], 2 ); ?></span>
+						</div>
+						<div class="stat-item">
+							<span class="stat-label"><?php _e( 'Avg/User:', 'primefit' ); ?></span>
+							<span class="stat-value">€<?php echo number_format( $coupon['stats']['avg_savings_per_user'], 2 ); ?></span>
+						</div>
+						<?php if ( $coupon['last_reset'] ) : ?>
+						<div class="stat-item reset-info">
+							<span class="stat-label"><?php _e( 'Last Reset:', 'primefit' ); ?></span>
+							<span class="stat-value"><?php echo date_i18n( get_option( 'date_format' ), strtotime( $coupon['last_reset'] ) ); ?></span>
+						</div>
+						<?php endif; ?>
+					</div>
+					<div class="coupon-actions">
+						<form method="post" style="display: inline;">
+							<?php wp_nonce_field( 'reset_coupon_stats' ); ?>
+							<input type="hidden" name="coupon_code" value="<?php echo esc_attr( $coupon['code'] ); ?>">
+							<button type="submit" name="reset_coupon" class="button button-secondary"
+									onclick="return confirm('<?php printf( esc_js( __( 'Are you sure you want to reset statistics for coupon "%s"? This action cannot be undone.', 'primefit' ) ), esc_js( $coupon['code'] ) ); ?>');">
+								<?php _e( 'Reset Stats', 'primefit' ); ?>
+							</button>
+						</form>
+					</div>
+				</div>
+				<?php endforeach; ?>
+			</div>
+		</div>
+		<?php endif; ?>
+	</div>
+
+	<style>
+	.coupon-analytics-overview {
+		margin-bottom: 40px;
+	}
+
+	.analytics-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 20px;
+		margin-bottom: 30px;
+	}
+
+	.analytics-card {
+		background: #fff;
+		border: 1px solid #e1e1e1;
+		border-radius: 8px;
+		padding: 20px;
+		text-align: center;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	}
+
+	.analytics-card h3 {
+		margin: 0 0 10px 0;
+		color: #666;
+		font-size: 14px;
+		text-transform: uppercase;
+	}
+
+	.stat-number {
+		font-size: 2.5em;
+		font-weight: bold;
+		color: #0073aa;
+		margin: 0;
+	}
+
+	.top-coupons-section {
+		background: #fff;
+		border: 1px solid #e1e1e1;
+		border-radius: 8px;
+		padding: 20px;
+	}
+
+	.top-coupons-section h2 {
+		margin-top: 0;
+		color: #333;
+	}
+
+	.coupon-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 20px;
+	}
+
+	.coupon-card {
+		border: 1px solid #e1e1e1;
+		border-radius: 6px;
+		padding: 15px;
+		background: #f9f9f9;
+	}
+
+	.coupon-card h4 {
+		margin: 0 0 15px 0;
+		color: #333;
+		font-size: 16px;
+	}
+
+	.coupon-stats {
+		margin-bottom: 15px;
+	}
+
+	.stat-item {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 5px;
+		font-size: 13px;
+	}
+
+	.stat-label {
+		color: #666;
+	}
+
+	.stat-value {
+		font-weight: bold;
+		color: #333;
+	}
+
+	.reset-info .stat-value {
+		color: #d63638;
+	}
+
+	.coupon-actions .button {
+		font-size: 12px;
+		padding: 6px 12px;
+	}
+	</style>
+	<?php
+}
+
+/**
+ * Display coupon analytics table
+ */
+function primefit_display_coupon_analytics_table() {
+	// Get all coupons with usage data
+	$coupons = get_posts( array(
+		'post_type' => 'shop_coupon',
+		'posts_per_page' => -1,
+		'post_status' => 'publish'
+	) );
+	$coupons_with_data = array();
+
+	foreach ( $coupons as $coupon_post ) {
+		$coupon = new WC_Coupon( $coupon_post->ID );
+		$stats = primefit_get_coupon_stats( $coupon->get_code() );
+		if ( $stats['total_uses'] > 0 ) {
+			$coupons_with_data[] = array(
+				'coupon' => $coupon,
+				'stats' => $stats,
+				'last_reset' => primefit_get_coupon_last_reset_date( $coupon->get_code() )
+			);
+		}
+	}
+
+	if ( empty( $coupons_with_data ) ) {
+		echo '<p>' . __( 'No coupon usage data available yet.', 'primefit' ) . '</p>';
+		return;
+	}
+
+	?>
+	<div class="coupon-analytics-table-section">
+		<h2><?php _e( 'All Coupon Statistics', 'primefit' ); ?></h2>
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th><?php _e( 'Coupon Code', 'primefit' ); ?></th>
+					<th><?php _e( 'Usage Count', 'primefit' ); ?></th>
+					<th><?php _e( 'Total Savings', 'primefit' ); ?></th>
+					<th><?php _e( 'Unique Users', 'primefit' ); ?></th>
+					<th><?php _e( 'Avg. per User', 'primefit' ); ?></th>
+					<th><?php _e( 'Last Reset', 'primefit' ); ?></th>
+					<th><?php _e( 'Actions', 'primefit' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $coupons_with_data as $coupon_data ) : ?>
+				<tr>
+					<td><strong><?php echo esc_html( $coupon_data['coupon']->get_code() ); ?></strong></td>
+					<td><?php echo number_format( $coupon_data['stats']['total_uses'] ); ?></td>
+					<td>€<?php echo number_format( $coupon_data['stats']['total_savings'], 2 ); ?></td>
+					<td><?php echo number_format( $coupon_data['stats']['unique_emails'] ); ?></td>
+					<td>€<?php echo number_format( $coupon_data['stats']['avg_savings_per_user'], 2 ); ?></td>
+					<td>
+						<?php if ( $coupon_data['last_reset'] ) : ?>
+							<span style="color: #d63638; font-size: 12px;">
+								<?php echo date_i18n( get_option( 'date_format' ), strtotime( $coupon_data['last_reset'] ) ); ?>
+							</span>
+						<?php else : ?>
+							<span style="color: #999; font-size: 12px;"><?php _e( 'Never', 'primefit' ); ?></span>
+						<?php endif; ?>
+					</td>
+					<td>
+						<form method="post" style="display: inline;">
+							<?php wp_nonce_field( 'reset_coupon_stats' ); ?>
+							<input type="hidden" name="coupon_code" value="<?php echo esc_attr( $coupon_data['coupon']->get_code() ); ?>">
+							<button type="submit" name="reset_coupon" class="button button-secondary button-small"
+									onclick="return confirm('<?php printf( esc_js( __( 'Are you sure you want to reset statistics for coupon "%s"? This action cannot be undone.', 'primefit' ) ), esc_js( $coupon_data['coupon']->get_code() ) ); ?>');">
+								<?php _e( 'Reset', 'primefit' ); ?>
+							</button>
+						</form>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+	<?php
+}
+
+/**
+ * Display coupon reset history
+ */
+function primefit_display_coupon_reset_history() {
+	$reset_history = primefit_get_coupon_reset_history( null, 20 );
+
+	if ( empty( $reset_history ) ) {
+		echo '<div class="coupon-reset-history-section">';
+		echo '<h2>' . __( 'Recent Coupon Resets', 'primefit' ) . '</h2>';
+		echo '<p>' . __( 'No coupon reset history available yet.', 'primefit' ) . '</p>';
+		echo '</div>';
+		return;
+	}
+
+	?>
+	<div class="coupon-reset-history-section">
+		<h2><?php _e( 'Recent Coupon Resets', 'primefit' ); ?></h2>
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th><?php _e( 'Coupon Code', 'primefit' ); ?></th>
+					<th><?php _e( 'Reset Date', 'primefit' ); ?></th>
+					<th><?php _e( 'Previous Uses', 'primefit' ); ?></th>
+					<th><?php _e( 'Previous Savings', 'primefit' ); ?></th>
+					<th><?php _e( 'Reset By', 'primefit' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $reset_history as $reset ) : ?>
+				<tr>
+					<td><strong><?php echo esc_html( $reset->coupon_code ); ?></strong></td>
+					<td><?php echo date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $reset->reset_date ) ); ?></td>
+					<td><?php echo number_format( $reset->previous_uses_count ); ?></td>
+					<td>€<?php echo number_format( $reset->previous_total_savings, 2 ); ?></td>
+					<td>
+						<?php if ( $reset->reset_by_user_id ) : ?>
+							<?php $user = get_user_by( 'id', $reset->reset_by_user_id ); ?>
+							<?php echo $user ? esc_html( $user->display_name ) : __( 'User ID:', 'primefit' ) . ' ' . $reset->reset_by_user_id; ?>
+						<?php else : ?>
+							<?php _e( 'System', 'primefit' ); ?>
+						<?php endif; ?>
+					</td>
+				</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+	<?php
 }

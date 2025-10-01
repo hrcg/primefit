@@ -764,6 +764,158 @@ function primefit_customize_register( $wp_customize ) {
 		'label'   => __( 'Badge Text Color', 'primefit' ),
 		'section' => 'primefit_navigation_badge',
 	) ) );
+
+	// Homepage Product Loops Section Panel
+	$wp_customize->add_section( 'primefit_homepage_product_loops', array(
+		'title'    => __( 'Homepage Product Loops', 'primefit' ),
+		'priority' => 42,
+	) );
+
+	// Featured Products Section
+	$wp_customize->add_setting( 'primefit_featured_products_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_featured_products_enabled', array(
+		'label'   => __( 'Enable Featured Products Section', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'checkbox',
+	) );
+
+	// Featured Products Category
+	$wp_customize->add_setting( 'primefit_featured_products_category', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( 'primefit_featured_products_category', array(
+		'label'       => __( 'Featured Products Category', 'primefit' ),
+		'section'     => 'primefit_homepage_product_loops',
+		'type'        => 'select',
+		'choices'     => primefit_get_product_categories_choices(),
+		'description' => __( 'Leave empty to show all products, or select a specific category to filter by.', 'primefit' ),
+	) );
+
+	// Featured Products Title
+	$wp_customize->add_setting( 'primefit_featured_products_title', array(
+		'default'           => 'END OF SEASON SALE',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_featured_products_title', array(
+		'label'   => __( 'Featured Products Title', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Featured Products Button Text
+	$wp_customize->add_setting( 'primefit_featured_products_button_text', array(
+		'default'           => 'VIEW ALL',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_featured_products_button_text', array(
+		'label'   => __( 'Featured Products Button Text', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Featured Products Button Link
+	$wp_customize->add_setting( 'primefit_featured_products_button_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_featured_products_button_link', array(
+		'label'   => __( 'Featured Products Button Link', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'url',
+	) );
+
+	// Featured Products Limit
+	$wp_customize->add_setting( 'primefit_featured_products_limit', array(
+		'default'           => 12,
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( 'primefit_featured_products_limit', array(
+		'label'   => __( 'Featured Products Limit', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'number',
+		'input_attrs' => array(
+			'min' => 1,
+			'max' => 50,
+		),
+		'description' => __( 'Number of products to display (1-50)', 'primefit' ),
+	) );
+
+	// Product Showcase Section
+	$wp_customize->add_setting( 'primefit_product_showcase_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_product_showcase_enabled', array(
+		'label'   => __( 'Enable Product Showcase Section', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'checkbox',
+	) );
+
+	// Product Showcase Category
+	$wp_customize->add_setting( 'primefit_product_showcase_category', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( 'primefit_product_showcase_category', array(
+		'label'       => __( 'Product Showcase Category', 'primefit' ),
+		'section'     => 'primefit_homepage_product_loops',
+		'type'        => 'select',
+		'choices'     => primefit_get_product_categories_choices(),
+		'description' => __( 'Leave empty to show all products, or select a specific category to filter by.', 'primefit' ),
+	) );
+
+	// Product Showcase Title
+	$wp_customize->add_setting( 'primefit_product_showcase_title', array(
+		'default'           => 'NEW ARRIVALS',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_product_showcase_title', array(
+		'label'   => __( 'Product Showcase Title', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Product Showcase Button Text
+	$wp_customize->add_setting( 'primefit_product_showcase_button_text', array(
+		'default'           => 'SHOP ALL',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_product_showcase_button_text', array(
+		'label'   => __( 'Product Showcase Button Text', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Product Showcase Button Link
+	$wp_customize->add_setting( 'primefit_product_showcase_button_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_product_showcase_button_link', array(
+		'label'   => __( 'Product Showcase Button Link', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'url',
+	) );
+
+	// Product Showcase Limit
+	$wp_customize->add_setting( 'primefit_product_showcase_limit', array(
+		'default'           => 8,
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( 'primefit_product_showcase_limit', array(
+		'label'   => __( 'Product Showcase Limit', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'number',
+		'input_attrs' => array(
+			'min' => 1,
+			'max' => 50,
+		),
+		'description' => __( 'Number of products to display (1-50)', 'primefit' ),
+	) );
 }
 
 /**
@@ -1042,4 +1194,93 @@ function primefit_get_primary_menu_items_choices() {
 	}
 	
 	return $choices;
+}
+
+/**
+ * Helper function to get product categories for customizer dropdown
+ */
+function primefit_get_product_categories_choices() {
+	$choices = array(
+		'' => __( 'All Products', 'primefit' ),
+	);
+
+	$categories = get_terms( array(
+		'taxonomy'   => 'product_cat',
+		'hide_empty' => false,
+		'orderby'    => 'name',
+		'order'      => 'ASC',
+	) );
+
+	if ( ! empty( $categories ) && ! is_wp_error( $categories ) ) {
+		foreach ( $categories as $category ) {
+			$choices[ $category->term_id ] = $category->name;
+		}
+	}
+
+	return $choices;
+}
+
+/**
+ * Helper function to get featured products configuration from customizer
+ */
+function primefit_get_featured_products_config() {
+	// Get category slug from ID
+	$category_id = get_theme_mod( 'primefit_featured_products_category', '' );
+	$category_slug = '';
+
+	if ( ! empty( $category_id ) ) {
+		$category = get_term( $category_id, 'product_cat' );
+		$category_slug = $category ? $category->slug : '';
+	}
+
+	// Get button link with fallback
+	$button_link = get_theme_mod( 'primefit_featured_products_button_link', '' );
+	if ( empty( $button_link ) && function_exists( 'wc_get_page_permalink' ) ) {
+		$button_link = wc_get_page_permalink( 'shop' );
+	}
+
+	return array(
+		'enabled' => get_theme_mod( 'primefit_featured_products_enabled', true ),
+		'category' => $category_slug,
+		'title' => get_theme_mod( 'primefit_featured_products_title', 'END OF SEASON SALE' ),
+		'button_text' => get_theme_mod( 'primefit_featured_products_button_text', 'VIEW ALL' ),
+		'button_link' => $button_link,
+		'limit' => get_theme_mod( 'primefit_featured_products_limit', 12 ),
+		'columns' => 4,
+		'on_sale' => true,
+		'show_view_all' => true,
+		'section_class' => 'featured-products'
+	);
+}
+
+/**
+ * Helper function to get product showcase configuration from customizer
+ */
+function primefit_get_product_showcase_config() {
+	// Get category slug from ID
+	$category_id = get_theme_mod( 'primefit_product_showcase_category', '' );
+	$category_slug = '';
+
+	if ( ! empty( $category_id ) ) {
+		$category = get_term( $category_id, 'product_cat' );
+		$category_slug = $category ? $category->slug : '';
+	}
+
+	// Get button link with fallback
+	$button_link = get_theme_mod( 'primefit_product_showcase_button_link', '' );
+	if ( empty( $button_link ) && function_exists( 'wc_get_page_permalink' ) ) {
+		$button_link = wc_get_page_permalink( 'shop' );
+	}
+
+	return array(
+		'enabled' => get_theme_mod( 'primefit_product_showcase_enabled', true ),
+		'category' => $category_slug,
+		'title' => get_theme_mod( 'primefit_product_showcase_title', 'NEW ARRIVALS' ),
+		'button_text' => get_theme_mod( 'primefit_product_showcase_button_text', 'SHOP ALL' ),
+		'button_link' => $button_link,
+		'limit' => get_theme_mod( 'primefit_product_showcase_limit', 8 ),
+		'columns' => 4,
+		'show_view_all' => true,
+		'section_class' => 'product-showcase'
+	);
 }

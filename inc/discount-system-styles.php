@@ -36,7 +36,8 @@ function primefit_enqueue_discount_system_styles( $hook ) {
 		.column-usage_count,
 		.column-total_savings,
 		.column-unique_users,
-		.column-avg_savings {
+		.column-avg_savings,
+		.column-last_reset {
 			width: 120px;
 			text-align: center;
 		}
@@ -149,6 +150,7 @@ function primefit_enqueue_discount_system_styles( $hook ) {
 			.column-total_savings,
 			.column-unique_users,
 			.column-avg_savings,
+			.column-last_reset,
 			.column-has_restrictions {
 				width: auto;
 			}
