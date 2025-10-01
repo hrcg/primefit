@@ -154,7 +154,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="mobile-nav-overlay" aria-hidden="true"></div>
 				<aside class="mobile-nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
 					<div class="mobile-nav-header">
+						<a href="product-category/sale" style="text-decoration: none; color: inherit;">
 						<span class="mobile-nav-title">END OF SEASON SALE</span>
+				</a>
 						<button class="mobile-nav-close" aria-label="Close menu">&times;</button>
 					</div>
 					<nav class="mobile-nav" aria-label="Mobile Primary Menu">
