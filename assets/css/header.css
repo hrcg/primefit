@@ -487,8 +487,9 @@
 }
 
 /* When scrolled, force black background even on front page */
-.site-header.is-scrolled {
-  background: var(--headerBackground);
+.site-header.is-scrolled,
+.has-hero-header .site-header.is-scrolled {
+  background: var(--headerBackground) !important;
 }
 
 /* Scroll Prevention Styles */

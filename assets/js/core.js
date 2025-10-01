@@ -891,17 +891,101 @@
   }
 
   // Header: add scrolled state to force black background on sticky
-  const $header = $(".site-header");
-  if ($header.length) {
-    const toggleScrolled = () => {
-      if (window.scrollY > 10) {
-        $header.addClass("is-scrolled");
-      } else {
-        $header.removeClass("is-scrolled");
+  function initHeaderScroll() {
+    // Use a more robust selector and check multiple times
+    const checkForHeader = () => {
+      const $header = $(".site-header");
+      if ($header.length) {
+        const toggleScrolled = () => {
+          if (window.scrollY > 10) {
+            $header.addClass("is-scrolled");
+          } else {
+            $header.removeClass("is-scrolled");
+          }
+        };
+
+        // Initialize immediately
+        toggleScrolled();
+
+        // Add scroll listener with throttling for better performance
+        let scrollTimeout;
+        $(window).on("scroll", function() {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleScrolled, 10);
+        });
+
+        return true; // Header found and initialized
       }
+      return false; // Header not found yet
     };
-    toggleScrolled();
-    $(window).on("scroll", toggleScrolled);
+
+    // Try to find header immediately
+    if (!checkForHeader()) {
+      // If header not found, try again after a short delay
+      setTimeout(checkForHeader, 100);
+      setTimeout(checkForHeader, 500);
+    }
+  }
+
+  // Expose function globally for inline script
+  window.initHeaderScroll = initHeaderScroll;
+
+  // Initialize header scroll when DOM is ready or when jQuery is available
+  if (typeof jQuery !== 'undefined') {
+    $(document).ready(initHeaderScroll);
+  } else {
+    // Fallback if jQuery is not loaded yet
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof jQuery !== 'undefined') {
+        $(document).ready(initHeaderScroll);
+      } else {
+        // Last resort - use vanilla JavaScript
+        initHeaderScrollVanilla();
+      }
+    });
+  }
+
+  // Expose vanilla function globally as well
+  window.initHeaderScrollVanilla = initHeaderScrollVanilla;
+
+  // Vanilla JavaScript fallback for header scroll
+  function initHeaderScrollVanilla() {
+    const checkForHeader = () => {
+      const header = document.querySelector('.site-header');
+      if (header) {
+        const toggleScrolled = () => {
+          if (window.scrollY > 10) {
+            header.classList.add('is-scrolled');
+          } else {
+            header.classList.remove('is-scrolled');
+          }
+        };
+
+        // Initialize immediately
+        toggleScrolled();
+
+        // Add scroll listener
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleScrolled, 10);
+        });
+
+        return true; // Header found and initialized
+      }
+      return false; // Header not found yet
+    };
+
+    // Try to find header immediately
+    if (!checkForHeader()) {
+      // If header not found, try again after delays
+      setTimeout(checkForHeader, 100);
+      setTimeout(checkForHeader, 500);
+    }
   }
 
   // Mobile hamburger menu

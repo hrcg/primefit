@@ -77,8 +77,6 @@ const isMobile = () => {
 
 // Install event - cache critical resources
 self.addEventListener("install", (event) => {
-  console.log("PrimeFit SW: Installing with compression support...");
-
   event.waitUntil(
     Promise.all([
       // Cache critical static resources
@@ -89,7 +87,6 @@ self.addEventListener("install", (event) => {
       }),
       // Initialize compressed cache
       caches.open(COMPRESSED_CACHE).then((cache) => {
-        console.log("PrimeFit SW: Compressed cache initialized");
         return cache;
       }),
       // Skip waiting to activate immediately
@@ -100,8 +97,6 @@ self.addEventListener("install", (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
-  console.log("PrimeFit SW: Activating with compression support...");
-
   event.waitUntil(
     Promise.all([
       // Clean up old caches
@@ -114,7 +109,6 @@ self.addEventListener("activate", (event) => {
               cacheName !== IMAGE_CACHE &&
               cacheName !== COMPRESSED_CACHE
             ) {
-              console.log("PrimeFit SW: Deleting old cache:", cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -191,7 +185,6 @@ async function compressResponse(response) {
     
     return compressedResponse;
   } catch (error) {
-    console.warn("PrimeFit SW: Compression failed, returning original response:", error);
     return response;
   }
 }
@@ -255,7 +248,6 @@ async function decompressResponse(response) {
       }
     });
   } catch (error) {
-    console.warn("PrimeFit SW: Decompression failed, returning original response:", error);
     return response;
   }
 }
@@ -317,7 +309,6 @@ async function cacheFirstStrategy(request, cacheName) {
     }
     return networkResponse;
   } catch (error) {
-    console.error("PrimeFit SW: Cache first strategy failed:", error);
     return new Response("Offline", { status: 503 });
   }
 }
@@ -356,7 +347,6 @@ async function cacheFirstStrategyWithCompression(request, cacheName) {
     
     return networkResponse;
   } catch (error) {
-    console.error("PrimeFit SW: Cache first strategy with compression failed:", error);
     return new Response("Offline", { status: 503 });
   }
 }
@@ -536,7 +526,6 @@ self.addEventListener("sync", (event) => {
 
 async function doBackgroundSync() {
   // Handle offline actions when connection is restored
-  console.log("PrimeFit SW: Background sync triggered");
 }
 
 // Push notifications (for future use)

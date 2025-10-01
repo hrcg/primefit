@@ -20,14 +20,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 add_action( 'wp_enqueue_scripts', 'primefit_enqueue_assets' );
 function primefit_enqueue_assets() {
-	// Google Fonts - Figtree with optimized loading
+	// Google Fonts - Figtree with optimized loading and font-display: swap
 	wp_enqueue_style(
 		'primefit-fonts',
-		'https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap',
+		'https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap',
 		[],
 		null,
 		'all'
 	);
+
+	// Add font preload hints for better performance
+	add_action('wp_head', function() {
+		echo '<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>';
+		echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
+		echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" as="style">';
+	}, 1);
 	
 	// Critical CSS - inline for immediate rendering
 	primefit_inline_critical_css();
@@ -251,35 +258,56 @@ function primefit_enqueue_assets() {
 		}
 	}
 	
-	// Load core functionality first (required on all pages) - defer for better performance
-	wp_enqueue_script( 
-		'primefit-core', 
-		PRIMEFIT_THEME_URI . '/assets/js/core.js', 
-		[ 'jquery' ], 
-		primefit_get_file_version( '/assets/js/core.js' ), 
-		true 
+	// Load core functionality first (required on all pages) - high priority
+	wp_enqueue_script(
+		'primefit-core',
+		PRIMEFIT_THEME_URI . '/assets/js/core.js',
+		[ 'jquery' ],
+		primefit_get_file_version( '/assets/js/core.js' ),
+		false // Load in head for immediate scroll listener setup
+	);
+
+	// Add inline script to ensure scroll listener is initialized after scripts are loaded
+	add_action('wp_footer', function() {
+		?>
+		<script>
+		(function($) {
+			$(document).ready(function() {
+				// Ensure header scroll is initialized
+				if (typeof window.initHeaderScroll === 'function') {
+					window.initHeaderScroll();
+				} else if (typeof window.initHeaderScrollVanilla === 'function') {
+					window.initHeaderScrollVanilla();
+				}
+
+				// Debug: Check if header element exists
+				const $header = $('.site-header');
+			});
+		})(jQuery);
+		</script>
+		<?php
+	}, 999);
+
+	// Load main app (minimal initialization) - high priority
+	wp_enqueue_script(
+		'primefit-app',
+		PRIMEFIT_THEME_URI . '/assets/js/app.js',
+		[ 'primefit-core' ],
+		primefit_get_file_version( '/assets/js/app.js' ),
+		false // Load in head for immediate availability
 	);
 	
-	// Load main app (minimal initialization) - defer for better performance
-	wp_enqueue_script( 
-		'primefit-app', 
-		PRIMEFIT_THEME_URI . '/assets/js/app.js', 
-		[ 'jquery' ], // Remove dependency on core.js to break the chain
-		primefit_get_file_version( '/assets/js/app.js' ), 
-		true 
-	);
-	
-	// Load page-specific modules
+	// Load page-specific modules in order of importance
 	$page_type = primefit_get_page_type();
-	
-	// Cart functionality - load on pages with cart interactions
+
+	// Critical functionality - load first
 	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'front_page', 'cart', 'checkout' ] ) ) {
-		wp_enqueue_script( 
-			'primefit-cart', 
-			PRIMEFIT_THEME_URI . '/assets/js/cart.js', 
-			[ 'jquery' ], // Remove dependency on core.js to break the chain
-			primefit_get_file_version( '/assets/js/cart.js' ), 
-			true 
+		wp_enqueue_script(
+			'primefit-cart',
+			PRIMEFIT_THEME_URI . '/assets/js/cart.js',
+			[ 'primefit-app' ],
+			primefit_get_file_version( '/assets/js/cart.js' ),
+			true // Defer for better performance
 		);
 	}
 	
@@ -469,18 +497,31 @@ function primefit_enqueue_product_scripts() {
 add_action('wp_head', 'primefit_prioritize_critical_resources', 1);
 function primefit_prioritize_critical_resources() {
 	// Preload critical fonts with higher priority
-	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" as="style" fetchpriority="high">';
-	
+	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" as="style" fetchpriority="high">';
+
 	// Preload above-the-fold images
 	if (is_front_page()) {
 		$hero_config = primefit_get_hero_config();
 		if (!empty($hero_config['image_desktop'])) {
 			$desktop_url = $hero_config['image_desktop'];
 			$mobile_url = $hero_config['image_mobile'] ?? $desktop_url;
-			
-			// Preload hero images with high priority
+
+			// Preload hero images with high priority - desktop
 			echo '<link rel="preload" href="' . esc_url($desktop_url) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
+
+			// Preload hero images with high priority - mobile
 			echo '<link rel="preload" href="' . esc_url($mobile_url) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
+
+			// Preload WebP versions if available
+			$desktop_webp = primefit_get_optimized_image_url($desktop_url, 'webp');
+			if ($desktop_webp !== $desktop_url) {
+				echo '<link rel="preload" href="' . esc_url($desktop_webp) . '" as="image" media="(min-width: 769px)" fetchpriority="high">';
+			}
+
+			$mobile_webp = primefit_get_optimized_image_url($mobile_url, 'webp');
+			if ($mobile_webp !== $mobile_url) {
+				echo '<link rel="preload" href="' . esc_url($mobile_webp) . '" as="image" media="(max-width: 768px)" fetchpriority="high">';
+			}
 		}
 	}
 	
@@ -500,9 +541,20 @@ function primefit_inline_critical_css() {
 	$critical_css = "
 	<style>
 	/* Critical CSS for immediate rendering - optimized for LCP */
-	* { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-	body { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #0d0d0d; color: #fff; }
-	h1, h2, h3, h4, h5, h6 { font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+	* {
+		font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-display: swap;
+	}
+	body {
+		font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		margin: 0;
+		background: #0d0d0d;
+		color: #fff;
+	}
+	h1, h2, h3, h4, h5, h6 {
+		font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		font-display: swap;
+	}
 	
 	/* Header critical styles */
 	.header { position: relative; z-index: 100; background: #0d0d0d; }
@@ -540,27 +592,36 @@ function primefit_add_resource_hints() {
 	echo '<link rel="dns-prefetch" href="//fonts.gstatic.com">';
 	echo '<link rel="dns-prefetch" href="//newprime.swissdigital.io">';
 
-	// Preconnect to critical external resources for faster font loading
-	echo '<link rel="preconnect" href="https://fonts.googleapis.com">';
+	// Preconnect to critical external resources for faster loading
+	echo '<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>';
 	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
-	echo '<link rel="preconnect" href="https://newprime.swissdigital.io">';
+	echo '<link rel="preconnect" href="https://newprime.swissdigital.io" crossorigin>';
+
+	// Preload critical resources
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css" as="style" fetchpriority="high">';
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="script" fetchpriority="high">';
+	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="script" fetchpriority="high">';
 
 	// Preload critical CSS files with optimized loading
 	$page_type = primefit_get_page_type();
-	
+
 	// Always preload main app CSS
 	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
 	echo '<noscript><link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css"></noscript>';
-	
+
 	// Preload page-specific critical CSS
 	if ( $page_type === 'product' ) {
 		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
 		echo '<noscript><link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css"></noscript>';
 	}
-	
+
 	// Preload header CSS for above-the-fold content
 	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
 	echo '<noscript><link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css"></noscript>';
+
+	// Preload critical fonts
+	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
+	echo '<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap"></noscript>';
 }
 
 /**
@@ -734,6 +795,10 @@ function primefit_preload_product_resources() {
 	echo '<link rel="dns-prefetch" href="//fonts.gstatic.com">';
 	echo '<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>';
 	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
+
+	// Preconnect for Figtree font
+	echo '<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>';
+	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
 }
 
 /**
@@ -745,7 +810,7 @@ function primefit_add_product_preconnect_hints() {
 		return;
 	}
 
-	// Preconnect to critical external domains
+	// Preconnect to critical external domains for Figtree font
 	$preconnect_domains = [
 		'https://fonts.googleapis.com',
 		'https://fonts.gstatic.com',
@@ -790,11 +855,14 @@ function primefit_defer_non_critical_scripts() {
  */
 add_action( 'wp_enqueue_scripts', 'primefit_optimize_script_loading', 998 );
 function primefit_optimize_script_loading() {
-	// Ensure critical scripts load first
+	// Ensure critical scripts load first in correct order
 	wp_enqueue_script( 'jquery-core' );
 	wp_enqueue_script( 'jquery-migrate' );
 
-	// Load our critical app script first
+	// Load our critical scripts first (core then app)
+	if ( wp_script_is( 'primefit-core', 'registered' ) ) {
+		wp_enqueue_script( 'primefit-core' );
+	}
 	if ( wp_script_is( 'primefit-app', 'registered' ) ) {
 		wp_enqueue_script( 'primefit-app' );
 	}
@@ -868,7 +936,6 @@ function primefit_add_browser_cache_script() {
 						});
 					} catch (e) {
 						// localStorage might be full or disabled
-						console.warn('Browser cache not available');
 					}
 				}
 
@@ -1073,8 +1140,7 @@ function primefit_register_service_worker() {
 			navigator.serviceWorker.register('<?php echo esc_url( $sw_url ); ?>', {
 				scope: '/'
 			}).then(function(registration) {
-				console.log('PrimeFit SW: Registration successful', registration);
-				
+
 				// Handle updates
 				registration.addEventListener('updatefound', function() {
 					const newWorker = registration.installing;
@@ -1087,21 +1153,18 @@ function primefit_register_service_worker() {
 						}
 					});
 				});
-				
+
 			}).catch(function(error) {
-				console.log('PrimeFit SW: Registration failed', error);
 			});
-			
+
 			// Handle service worker messages
 			navigator.serviceWorker.addEventListener('message', function(event) {
 				if (event.data && event.data.type === 'CACHE_UPDATED') {
-					console.log('PrimeFit SW: Cache updated');
 				}
 			});
-			
+
 			// Handle offline/online events
 			window.addEventListener('online', function() {
-				console.log('PrimeFit SW: Back online');
 				// Notify service worker that we're back online
 				if (navigator.serviceWorker.controller) {
 					navigator.serviceWorker.controller.postMessage({
@@ -1109,9 +1172,8 @@ function primefit_register_service_worker() {
 					});
 				}
 			});
-			
+
 			window.addEventListener('offline', function() {
-				console.log('PrimeFit SW: Gone offline');
 			});
 		}
 	})();
@@ -1190,7 +1252,6 @@ function primefit_lazy_load_js_modules() {
 				
 				script.onerror = function() {
 					lazyConfig.loading.delete(src);
-					console.warn('Failed to load script:', src);
 				};
 				
 				document.head.appendChild(script);
@@ -1203,7 +1264,6 @@ function primefit_lazy_load_js_modules() {
 				const scriptSrc = baseUrl + '/assets/js/' + moduleName.replace('primefit-', '') + '.js';
 				
 				loadScript(scriptSrc, function() {
-					console.log('Lazy loaded:', moduleName);
 				});
 			}
 			

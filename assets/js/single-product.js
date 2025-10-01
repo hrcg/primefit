@@ -40,7 +40,6 @@
     cacheDOM() {
       // Check if native gallery is active and defer to it
       if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
-        console.log('Native gallery is active, jQuery gallery cache disabled');
         return;
       }
 
@@ -74,7 +73,6 @@
     bindEvents() {
       // Check if native gallery is active and defer to it
       if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
-        console.log('Native gallery is active, jQuery gallery events disabled');
         return;
       }
 
@@ -312,7 +310,6 @@
     initSwipe() {
       // Check if native gallery is active and defer to it
       if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
-        console.log('Native gallery is active, jQuery swipe events disabled');
         return;
       }
 

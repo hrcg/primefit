@@ -58,10 +58,14 @@ if ( empty( $attachment_ids ) ) {
 					data-image-index="<?php echo esc_attr( $index ); ?>"
 					aria-label="<?php printf( esc_attr__( 'View image %d', 'primefit' ), $index + 1 ); ?>"
 				>
-					<img 
-						src="<?php echo esc_url( $thumbnail_url ); ?>" 
+					<img
+						src="<?php echo esc_url( $thumbnail_url ); ?>"
 						alt="<?php echo esc_attr( $thumbnail_alt ); ?>"
 						class="thumbnail-image"
+						loading="lazy"
+						decoding="async"
+						width="150"
+						height="150"
 					/>
 				</button>
 			<?php endforeach; ?>

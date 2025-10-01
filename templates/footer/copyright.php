@@ -20,5 +20,5 @@ $copyright_text = get_theme_mod('primefit_copyright_text', $copyright['text']);
 
 <div class="footer-bottom">
 	<p>COPYRIGHT © 2025 - PRIMEFIT ATHLETICS</p>
-	<img src="<?php echo get_template_directory_uri(); ?>/assets/images/symbol.webp" alt="PrimeFit Symbol" class="footer-symbol" />
+	<img src="<?php echo get_template_directory_uri(); ?>/assets/images/symbol.webp" alt="PrimeFit Symbol" class="footer-symbol" loading="lazy" />
 </div>

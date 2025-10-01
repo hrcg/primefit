@@ -25,16 +25,36 @@ define( 'PRIMEFIT_THEME_URI', get_template_directory_uri() );
  */
 add_action('wp_head', 'primefit_optimize_font_loading', 1);
 function primefit_optimize_font_loading() {
-	// Preload critical font files with high priority
-	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v1/figtree-400.woff2" as="font" type="font/woff2" crossorigin>';
-	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v1/figtree-600.woff2" as="font" type="font/woff2" crossorigin>';
-	echo '<link rel="preload" href="https://fonts.gstatic.com/s/figtree/v1/figtree-700.woff2" as="font" type="font/woff2" crossorigin>';
-	
+	// Preload critical font files with high priority - multiple weights for better performance
+	$font_weights = ['400', '600', '700'];
+	$font_styles = ['normal', 'italic'];
+
+	foreach ($font_weights as $weight) {
+		foreach ($font_styles as $style) {
+			$font_url = "https://fonts.gstatic.com/s/figtree/v5/prK0fO2kfY5hOEYcPevBrVBa14nA.woff2";
+			echo '<link rel="preload" href="' . esc_url($font_url) . '" as="font" type="font/woff2" crossorigin fetchpriority="high">';
+		}
+	}
+
 	// Add font-display: swap for better loading experience
 	echo '<style>
 		@font-face {
 			font-family: "Figtree";
 			font-display: swap;
+			font-style: normal;
+			font-weight: 400;
+		}
+		@font-face {
+			font-family: "Figtree";
+			font-display: swap;
+			font-style: normal;
+			font-weight: 600;
+		}
+		@font-face {
+			font-family: "Figtree";
+			font-display: swap;
+			font-style: normal;
+			font-weight: 700;
 		}
 	</style>';
 }

@@ -98,29 +98,70 @@ if (empty($hero_image_mobile_url)) {
 			</div>
 		<?php endif; ?>
 		
-		<!-- Optimized Hero Image with Modern Formats -->
+		<!-- Optimized Hero Image with Modern Formats and Responsive Srcset -->
 		<picture class="hero-fallback-image">
 			<?php
+			// Generate responsive srcset for desktop image
+			$desktop_srcset = '';
+			$desktop_sizes = array(480, 768, 1024, 1280, 1920);
+			foreach ($desktop_sizes as $size) {
+				$desktop_responsive_url = primefit_get_responsive_image_url($hero_image_desktop_url, $size);
+				if ($desktop_responsive_url && $desktop_responsive_url !== $hero_image_desktop_url) {
+					$desktop_srcset .= esc_url($desktop_responsive_url) . ' ' . $size . 'w, ';
+				}
+			}
+
+			// Generate responsive srcset for mobile image
+			$mobile_srcset = '';
+			$mobile_sizes = array(320, 480, 768);
+			foreach ($mobile_sizes as $size) {
+				$mobile_responsive_url = primefit_get_responsive_image_url($hero_image_mobile_url, $size);
+				if ($mobile_responsive_url && $mobile_responsive_url !== $hero_image_mobile_url) {
+					$mobile_srcset .= esc_url($mobile_responsive_url) . ' ' . $size . 'w, ';
+				}
+			}
+
 			// Get optimized WebP versions with fallback to original format
 			$desktop_webp = primefit_get_optimized_image_url($hero_image_desktop_url, 'webp');
 			$mobile_webp = primefit_get_optimized_image_url($hero_image_mobile_url, 'webp');
 
-			// Only add WebP sources if they're different from the original
+			// Add WebP sources if available
 			if ($desktop_webp !== $hero_image_desktop_url) {
-				echo '<source media="(min-width: 769px)" type="image/webp" srcset="' . esc_url($desktop_webp) . '">';
+				$desktop_webp_srcset = '';
+				foreach ($desktop_sizes as $size) {
+					$desktop_webp_responsive = primefit_get_responsive_image_url($desktop_webp, $size);
+					if ($desktop_webp_responsive && $desktop_webp_responsive !== $desktop_webp) {
+						$desktop_webp_srcset .= esc_url($desktop_webp_responsive) . ' ' . $size . 'w, ';
+					}
+				}
+				if ($desktop_webp_srcset) {
+					echo '<source media="(min-width: 769px)" type="image/webp" srcset="' . rtrim($desktop_webp_srcset, ', ') . '">';
+				}
 			}
+
 			if ($mobile_webp !== $hero_image_mobile_url) {
-				echo '<source media="(max-width: 768px)" type="image/webp" srcset="' . esc_url($mobile_webp) . '">';
+				$mobile_webp_srcset = '';
+				foreach ($mobile_sizes as $size) {
+					$mobile_webp_responsive = primefit_get_responsive_image_url($mobile_webp, $size);
+					if ($mobile_webp_responsive && $mobile_webp_responsive !== $mobile_webp) {
+						$mobile_webp_srcset .= esc_url($mobile_webp_responsive) . ' ' . $size . 'w, ';
+					}
+				}
+				if ($mobile_webp_srcset) {
+					echo '<source media="(max-width: 768px)" type="image/webp" srcset="' . rtrim($mobile_webp_srcset, ', ') . '">';
+				}
 			}
 			?>
 
-			<!-- Fallback img -->
+			<!-- Responsive img with srcset -->
 			<img
 				src="<?php echo esc_url($hero_image_desktop_url); ?>"
+				srcset="<?php echo !empty($desktop_srcset) ? rtrim($desktop_srcset, ', ') : ''; ?>"
+				sizes="(max-width: 768px) 100vw, (min-width: 769px) 100vw"
 				alt="<?php echo esc_attr($hero['heading']); ?>"
 				loading="eager"
 				fetchpriority="high"
-				decoding="sync"
+				decoding="async"
 				class="hero-image"
 				width="1920"
 				height="1080"

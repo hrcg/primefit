@@ -259,20 +259,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Switch to a different color gallery
 	function switchColorGallery(color) {
-		console.log('switchColorGallery called with color:', color);
-		console.log('Available variations:', Object.keys(galleryData.variations || {}));
-
 		// Normalize color for consistent matching
 		const normalizedColor = color ? color.toLowerCase().trim() : '';
-		console.log('Normalized color:', normalizedColor);
 
 		if (!normalizedColor || !galleryData.variations || !galleryData.variations[normalizedColor]) {
-			console.log('Switching to default gallery');
 			// Switch back to default gallery
 			currentImages = galleryData.default;
 			currentColor = '';
 		} else {
-			console.log('Switching to variation gallery for color:', normalizedColor);
 			// Switch to specific color gallery
 			currentImages = galleryData.variations[normalizedColor].images;
 			currentColor = color; // Keep original color for reference
@@ -280,7 +274,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// Validate that we have images to display
 		if (!currentImages || currentImages.length === 0) {
-			console.log('No images found, falling back to default gallery');
 			currentImages = galleryData.default;
 			currentColor = '';
 		}
@@ -300,18 +293,14 @@ document.addEventListener('DOMContentLoaded', function() {
 					});
 
 					if (imageIndex !== -1) {
-						console.log('Found main variation image at index:', imageIndex);
 						currentIndex = imageIndex;
 					} else {
-						console.log('Main variation image not found in ACF gallery, using index 0');
 						currentIndex = 0;
 					}
 				} else {
-					console.log('No variation image found for color, using index 0');
 					currentIndex = 0;
 				}
 			} else {
-				console.log('Color option not found, using index 0');
 				currentIndex = 0;
 			}
 		} else {
@@ -326,7 +315,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (currentImages && currentImages.length > 0 && currentImages[currentIndex]) {
 			updateMainImage(currentIndex);
 		} else {
-			console.log('No valid image at currentIndex, trying to find first valid image');
 			// Find the first valid image in the gallery
 			for (let i = 0; i < currentImages.length; i++) {
 				if (currentImages[i] && currentImages[i] !== 0) {
@@ -353,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// Validate currentImages before processing
 		if (!currentImages || currentImages.length === 0) {
-			console.log('No images to display in thumbnail gallery');
 			return;
 		}
 
@@ -365,7 +352,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			const thumbnailAlt = `Product image ${index + 1}`;
 
 			if (!thumbnailUrl) {
-				console.log('No thumbnail URL found for image ID:', imageId);
 				return;
 			}
 
@@ -484,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Listen for color selection events from the ProductVariations class
 	document.addEventListener('colorSelected', function(e) {
-		console.log('Color selection event received:', e.detail.color);
 		switchColorGallery(e.detail.color);
 	});
 

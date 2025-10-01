@@ -97,8 +97,84 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 		}
 	}
 
-	// Return original URL if no optimized version exists
-	return $image_url;
+	return $image_url; // Return original if no optimized version found
+}
+
+/**
+ * Get responsive image URL for specific dimensions
+ *
+ * @param string $image_url Original image URL
+ * @param int $width Target width
+ * @return string Responsive image URL or original if not available
+ */
+function primefit_get_responsive_image_url( $image_url, $width ) {
+	if ( empty( $image_url ) ) {
+		return $image_url;
+	}
+
+	// For theme assets, try to find responsive versions
+	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
+		$path_info = pathinfo( $image_url );
+		$dirname = $path_info['dirname'];
+		$filename = $path_info['filename'];
+		$extension = $path_info['extension'];
+
+		// Try common responsive naming patterns
+		$responsive_patterns = [
+			"{$dirname}/{$filename}-{$width}w.{$extension}",
+			"{$dirname}/{$filename}@{$width}w.{$extension}",
+			"{$dirname}/{$width}/{$filename}.{$extension}",
+		];
+
+		foreach ( $responsive_patterns as $pattern ) {
+			$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $pattern );
+			if ( file_exists( $local_path ) ) {
+				return $pattern;
+			}
+		}
+	}
+
+	// For uploaded images, try WordPress responsive image sizes
+	if ( strpos( $image_url, home_url() ) === 0 ) {
+		// Try to get attachment ID and generate responsive URL
+		$attachment_id = primefit_get_attachment_id_from_url( $image_url );
+		if ( $attachment_id ) {
+			$responsive_url = wp_get_attachment_image_url( $attachment_id, array( $width, $width ) );
+			if ( $responsive_url ) {
+				return $responsive_url;
+			}
+		}
+	}
+
+	return $image_url; // Return original if no responsive version found
+}
+
+/**
+ * Get attachment ID from image URL
+ *
+ * @param string $image_url Image URL
+ * @return int|null Attachment ID or null if not found
+ */
+function primefit_get_attachment_id_from_url( $image_url ) {
+	global $wpdb;
+
+	if ( empty( $image_url ) ) {
+		return null;
+	}
+
+	// Remove query parameters
+	$url = strtok( $image_url, '?' );
+
+	// Get attachment ID from URL
+	$attachment_id = $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} WHERE guid = %s OR post_name = %s",
+			$url,
+			basename( $url )
+		)
+	);
+
+	return $attachment_id ? (int) $attachment_id : null;
 }
 
 /**
