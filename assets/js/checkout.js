@@ -48,6 +48,7 @@
         // Initialize UI enhancements only - batch DOM operations
         this.improveFormUsability();
         this.initCouponToggle();
+        this.initCouponRemoval();
         this.initSummaryToggle();
         this.initHelpTooltips();
         this.initFieldSpecificErrors();
@@ -62,6 +63,82 @@
 
         this.isInitialized = true;
       });
+    },
+
+    /**
+     * Handle coupon removal on checkout using same AJAX flow as mini cart
+     */
+    initCouponRemoval: function () {
+      const self = this;
+
+      $(document).on(
+        "click",
+        ".woocommerce-checkout a.woocommerce-remove-coupon, .woocommerce-checkout .remove-coupon",
+        function (e) {
+          e.preventDefault();
+
+          const $button = $(this);
+
+          // Resolve coupon code from data attribute or URL
+          let couponCode = $button.data("coupon");
+          if (!couponCode && $button.attr("href")) {
+            try {
+              const href = $button.attr("href");
+              const url = new URL(href, window.location.origin);
+              couponCode =
+                url.searchParams.get("coupon") ||
+                (href.match(/remove_coupon=([^&#]+)/) || [])[1];
+            } catch (err) {
+              // Ignore URL parsing errors
+            }
+          }
+
+          if (!couponCode) return;
+
+          // Loading state
+          $button.addClass("loading").prop("disabled", true);
+
+          // Remove via AJAX just like mini cart
+          $.ajax({
+            type: "POST",
+            url: window.primefit_cart_params
+              ? window.primefit_cart_params.ajax_url
+              : "/wp-admin/admin-ajax.php",
+            data: {
+              action: "remove_coupon",
+              security: window.primefit_cart_params
+                ? window.primefit_cart_params.remove_coupon_nonce
+                : "",
+              coupon: couponCode,
+            },
+            success: function (response) {
+              if (response && response.success) {
+                // Refresh checkout + fragments via unified manager
+                if (typeof CartManager !== "undefined") {
+                  CartManager.queueRefresh("update_checkout");
+                  CartManager.queueRefresh("wc_fragment_refresh");
+                } else {
+                  // Fallback to WooCommerce events
+                  $(document.body).trigger("update_checkout");
+                  $(document.body).trigger("wc_fragment_refresh");
+                }
+              } else if ($button.attr("href")) {
+                // Fallback to default navigation if AJAX fails logically
+                window.location.href = $button.attr("href");
+              }
+            },
+            error: function () {
+              // Hard fallback to original link
+              if ($button.attr("href")) {
+                window.location.href = $button.attr("href");
+              }
+            },
+            complete: function () {
+              $button.removeClass("loading").prop("disabled", false);
+            },
+          });
+        }
+      );
     },
 
     /**
@@ -1582,18 +1659,28 @@
      */
     overrideBlockUI: function () {
       // Override the blockUI plugin for checkout pages
-      if (typeof $.blockUI !== "undefined") {
+      if (typeof $.blockUI !== "undefined" && !$.blockUI.__primefitOverridden) {
         const originalBlockUI = $.blockUI;
+        const originalDefaults = originalBlockUI && originalBlockUI.defaults ? originalBlockUI.defaults : {};
+        const originalVersion = originalBlockUI && originalBlockUI.version ? originalBlockUI.version : undefined;
+        const originalSetDefaults = originalBlockUI && originalBlockUI.setDefaults ? originalBlockUI.setDefaults : undefined;
 
-        $.blockUI = function (opts) {
-          // Only override on checkout pages
+        // Create a thin wrapper that disables ONLY the global page overlay on checkout
+        const blockUIWrapper = function () {
           if ($("body").hasClass("woocommerce-checkout")) {
-            return; // Don't show the default blockUI
+            // Suppress the full-page white overlay on checkout
+            return; 
           }
-
-          // Use original blockUI for other pages
           return originalBlockUI.apply(this, arguments);
         };
+
+        // Preserve plugin metadata/properties so $.fn.block continues to work
+        blockUIWrapper.defaults = originalDefaults;
+        if (originalVersion) blockUIWrapper.version = originalVersion;
+        if (originalSetDefaults) blockUIWrapper.setDefaults = originalSetDefaults;
+        blockUIWrapper.__primefitOverridden = true;
+
+        $.blockUI = blockUIWrapper;
       }
     },
 

@@ -1233,6 +1233,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-transform: uppercase;
 }
 
 .woocommerce-checkout #place_order:hover {

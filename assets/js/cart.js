@@ -339,22 +339,8 @@
 
   // Remove item from cart: handle both WooCommerce core and custom handlers
   $(document).ready(function () {
-    // Handle WooCommerce core remove buttons
-    $(document).off("click.primefit-cart", ".remove_from_cart_button");
-    $(document).on(
-      "click.primefit-cart",
-      ".remove_from_cart_button",
-      function (e) {
-        e.preventDefault();
-        const $btn = $(this);
-        const cartItemKey = $btn.data("cart_item_key");
-
-        if (cartItemKey) {
-          $btn.addClass("loading").prop("disabled", true);
-          removeCartItem(cartItemKey, $btn);
-        }
-      }
-    );
+    // Let WooCommerce core handle default .remove_from_cart_button clicks
+    // (prevents duplicate AJAX requests and intermittent errors)
 
     // Keep fallback for custom remove buttons
     $(document).off(

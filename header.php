@@ -52,12 +52,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_1_heading'] ); ?></h3>
 							<ul class="mega-menu-links">
 								<?php
-								$links_1 = explode( ',', $mega_menu_config['column_1_links'] );
+								$links_1 = primefit_get_category_links( $mega_menu_config['column_1_links'] );
 								foreach ( $links_1 as $link ) {
-									$link = trim( $link );
-									if ( ! empty( $link ) ) {
-										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
-									}
+									echo '<li><a href="' . esc_url( $link['url'] ) . '">' . esc_html( $link['name'] ) . '</a></li>';
 								}
 								?>
 							</ul>
@@ -66,12 +63,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_2_heading'] ); ?></h3>
 							<ul class="mega-menu-links">
 								<?php
-								$links_2 = explode( ',', $mega_menu_config['column_2_links'] );
+								$links_2 = primefit_get_category_links( $mega_menu_config['column_2_links'] );
 								foreach ( $links_2 as $link ) {
-									$link = trim( $link );
-									if ( ! empty( $link ) ) {
-										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
-									}
+									echo '<li><a href="' . esc_url( $link['url'] ) . '">' . esc_html( $link['name'] ) . '</a></li>';
 								}
 								?>
 							</ul>
@@ -80,12 +74,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_3_heading'] ); ?></h3>
 							<ul class="mega-menu-links">
 								<?php
-								$links_3 = explode( ',', $mega_menu_config['column_3_links'] );
+								$links_3 = primefit_get_category_links( $mega_menu_config['column_3_links'] );
 								foreach ( $links_3 as $link ) {
-									$link = trim( $link );
-									if ( ! empty( $link ) ) {
-										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
-									}
+									echo '<li><a href="' . esc_url( $link['url'] ) . '">' . esc_html( $link['name'] ) . '</a></li>';
 								}
 								?>
 							</ul>
@@ -94,12 +85,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_4_heading'] ); ?></h3>
 							<ul class="mega-menu-links">
 								<?php
-								$links_4 = explode( ',', $mega_menu_config['column_4_links'] );
+								$links_4 = primefit_get_category_links( $mega_menu_config['column_4_links'] );
 								foreach ( $links_4 as $link ) {
-									$link = trim( $link );
-									if ( ! empty( $link ) ) {
-										echo '<li><a href="#">' . esc_html( $link ) . '</a></li>';
-									}
+									echo '<li><a href="' . esc_url( $link['url'] ) . '">' . esc_html( $link['name'] ) . '</a></li>';
 								}
 								?>
 							</ul>

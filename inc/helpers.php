@@ -2256,3 +2256,49 @@ function primefit_add_sw_meta_tags() {
 	echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">';
 	echo '<meta name="theme-color" content="#0d0d0d">';
 }
+
+/**
+ * Convert category names to category links for mega menu
+ *
+ * @param string $category_names Comma-separated category names
+ * @return array Array of category links with name and url
+ */
+function primefit_get_category_links( $category_names ) {
+	$links = array();
+
+	if ( empty( $category_names ) ) {
+		return $links;
+	}
+
+	$category_names_array = array_map( 'trim', explode( ',', $category_names ) );
+
+	foreach ( $category_names_array as $category_name ) {
+		if ( empty( $category_name ) ) {
+			continue;
+		}
+
+		// Try to find category by name first
+		$category = get_term_by( 'name', $category_name, 'product_cat' );
+
+		// If not found by name, try by slug
+		if ( ! $category ) {
+			$category_slug = sanitize_title( $category_name );
+			$category = get_term_by( 'slug', $category_slug, 'product_cat' );
+		}
+
+		if ( $category && ! is_wp_error( $category ) ) {
+			$links[] = array(
+				'name' => $category_name,
+				'url'  => get_term_link( $category )
+			);
+		} else {
+			// If category doesn't exist, create a fallback URL
+			$links[] = array(
+				'name' => $category_name,
+				'url'  => home_url( '/product-category/' . sanitize_title( $category_name ) . '/' )
+			);
+		}
+	}
+
+	return $links;
+}
