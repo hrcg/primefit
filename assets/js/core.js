@@ -838,6 +838,24 @@
       // Ignore if URL API not available
     }
 
+    // Keep mini cart and checkout in sync when coupons change anywhere
+    // Listen for WooCommerce coupon events and refresh fragments accordingly
+    try {
+      $(document.body).on(
+        'applied_coupon removed_coupon updated_checkout',
+        function () {
+          if (typeof CartManager !== 'undefined') {
+            CartManager.queueRefresh('wc_fragment_refresh');
+          } else {
+            // Fallback to WooCommerce event if CartManager is not available
+            $(document.body).trigger('wc_fragment_refresh');
+          }
+        }
+      );
+    } catch (e) {
+      // Silently ignore event binding errors
+    }
+
     // Non-critical initialization - deferred to next animation frame
     requestAnimationFrame(function () {
       initSmartLazyLoading();
