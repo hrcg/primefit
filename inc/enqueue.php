@@ -551,6 +551,19 @@ function primefit_inline_critical_css() {
 		font-display: swap;
 	}
 	
+	/* Navigation critical hides to prevent menu flash before header.css loads */
+	.menu--primary .sub-menu,
+	.menu--secondary .sub-menu { display: none; }
+	/* Mega menu should be hidden by default */
+	.mega-menu { opacity: 0; visibility: hidden; transform: translateY(-10px); }
+	/* Mobile nav elements hidden by default */
+	.mobile-nav-wrap { visibility: hidden; opacity: 0; }
+	.mobile-nav-overlay { opacity: 0; visibility: hidden; }
+	.mobile-nav-panel { transform: translateX(-100%); }
+	/* Ensure open state works even if header.css hasn't applied yet */
+	.mobile-open .mobile-nav-wrap { visibility: visible; opacity: 1; }
+	.mobile-open .mobile-nav-panel { transform: translateX(0); }
+	
 	/* Header critical styles */
 	.header { position: relative; z-index: 100; background: #0d0d0d; }
 	.header__container { max-width: 1850px; margin: 0 auto; padding: 0 1rem; }
