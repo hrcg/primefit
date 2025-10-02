@@ -392,7 +392,6 @@
   position: relative;
   width: 80px;
   height: 80px;
-  border-radius: 4px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -405,11 +404,10 @@
 
 .item-quantity {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -2px;
+  right: -2px;
   background: var(--checkout-button-bg);
   color: var(--checkout-button-text);
-  border-radius: 50%;
   width: 20px;
   height: 20px;
   display: flex;

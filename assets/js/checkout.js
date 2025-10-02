@@ -1723,6 +1723,48 @@
     },
   };
 
+  // ----- Private helpers: safe checkout redirect when cart is empty -----
+  let hasCheckoutRedirected = false;
+
+  function isOnCheckoutPage() {
+    return document.body.classList.contains("woocommerce-checkout");
+  }
+
+  function isOnOrderEndpoint() {
+    var path = window.location.pathname || "";
+    return (
+      path.indexOf("/order-received") !== -1 || path.indexOf("/order-pay") !== -1
+    );
+  }
+
+  function isCartEmptyInDom() {
+    var miniEmpty =
+      jQuery(".woocommerce-mini-cart__empty-message").length > 0 ||
+      jQuery(".pf-mini-cart-empty").length > 0;
+
+    var hasReviewTable =
+      jQuery(".woocommerce-checkout-review-order-table").length > 0;
+    var reviewHasItems =
+      jQuery(".woocommerce-checkout-review-order-table .cart_item").length > 0;
+    var reviewEmpty = hasReviewTable && !reviewHasItems;
+
+    return miniEmpty || reviewEmpty;
+  }
+
+  function tryCheckoutRedirectIfCartEmpty(force) {
+    if (!isOnCheckoutPage() || isOnOrderEndpoint()) return;
+    if (hasCheckoutRedirected && !force) return;
+    if (!force && !isCartEmptyInDom()) return;
+
+    var shopUrl =
+      (window.primefit_checkout_params && window.primefit_checkout_params.shop_url) ||
+      "/";
+    if (!shopUrl) return;
+
+    hasCheckoutRedirected = true;
+    window.location.href = shopUrl;
+  }
+
   /**
    * Initialize when document is ready
    */
@@ -1757,7 +1799,27 @@
           CheckoutManager.isPaymentMethodsEnhanced = false;
           CheckoutManager.initPaymentMethodEnhancements();
         }
+        // After fragments refresh, verify if cart became empty and redirect safely
+        tryCheckoutRedirectIfCartEmpty();
       });
+
+      // Also listen for cart item removal events to check emptiness
+      $(document.body).on("removed_from_cart", function () {
+        setTimeout(function () {
+          tryCheckoutRedirectIfCartEmpty();
+        }, 50);
+      });
+
+      // If server indicated redirect (rare), honor it once on load
+      if (
+        typeof window.primefit_checkout_params !== "undefined" &&
+        window.primefit_checkout_params &&
+        window.primefit_checkout_params.should_redirect
+      ) {
+        setTimeout(function () {
+          tryCheckoutRedirectIfCartEmpty(true);
+        }, 50);
+      }
     }
   });
 
