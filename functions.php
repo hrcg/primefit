@@ -25,17 +25,10 @@ define( 'PRIMEFIT_THEME_URI', get_template_directory_uri() );
  */
 add_action('wp_head', 'primefit_optimize_font_loading', 1);
 function primefit_optimize_font_loading() {
-	// Preload critical font files with high priority - multiple weights for better performance
-	$font_weights = ['400', '600', '700'];
-	$font_styles = ['normal', 'italic'];
-
-	foreach ($font_weights as $weight) {
-		foreach ($font_styles as $style) {
-			$font_url = "https://fonts.gstatic.com/s/figtree/v5/prK0fO2kfY5hOEYcPevBrVBa14nA.woff2";
-			echo '<link rel="preload" href="' . esc_url($font_url) . '" as="font" type="font/woff2" crossorigin fetchpriority="high">';
-		}
-	}
-
+	// Preload critical font files with high priority - using Google Fonts API
+	// Let Google Fonts handle the specific font file URLs dynamically
+	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" as="style" fetchpriority="high">';
+	
 	// Add font-display: swap for better loading experience
 	echo '<style>
 		@font-face {

@@ -855,6 +855,14 @@
       },
       success: function (response) {
         if (response.success) {
+          // Update fragments directly if available
+          var frags = (response && response.fragments) || (response && response.data && response.data.fragments);
+          if (frags) {
+            $.each(frags, function (key, value) {
+              $(key).replaceWith(value);
+            });
+          }
+          
           // Refresh cart fragments using unified CartManager
           CartManager.queueRefresh("update_checkout");
           CartManager.queueRefresh("wc_fragment_refresh");

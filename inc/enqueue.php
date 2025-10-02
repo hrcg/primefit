@@ -29,12 +29,8 @@ function primefit_enqueue_assets() {
 		'all'
 	);
 
-	// Add font preload hints for better performance
-	add_action('wp_head', function() {
-		echo '<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>';
-		echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
-		echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" as="style">';
-	}, 1);
+	// Font preload hints are handled by primefit_prioritize_critical_resources()
+	// Removed duplicate preload to prevent "not used" warnings
 	
 	// Critical CSS - inline for immediate rendering
 	primefit_inline_critical_css();
@@ -525,13 +521,12 @@ function primefit_prioritize_critical_resources() {
 		}
 	}
 	
-	// Preload critical CSS with high priority
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css" as="style" fetchpriority="high">';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css" as="style" fetchpriority="high">';
+    // Preload critical CSS with version so browser reuses the preload
+    echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css?ver=' . primefit_get_file_version( '/assets/css/app.css' ) . '" as="style" fetchpriority="high">';
+    echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css?ver=' . primefit_get_file_version( '/assets/css/header.css' ) . '" as="style" fetchpriority="high">';
 	
-	// Preload critical JavaScript with high priority
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="script" fetchpriority="high">';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="script" fetchpriority="high">';
+	// Only preload JavaScript that loads in head and is used immediately
+	// Remove preloads for deferred scripts to prevent "not used" warnings
 }
 
 /**
@@ -597,31 +592,8 @@ function primefit_add_resource_hints() {
 	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>';
 	echo '<link rel="preconnect" href="https://newprime.swissdigital.io" crossorigin>';
 
-	// Preload critical resources
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css" as="style" fetchpriority="high">';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="script" fetchpriority="high">';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="script" fetchpriority="high">';
-
-	// Preload critical CSS files with optimized loading
-	$page_type = primefit_get_page_type();
-
-	// Always preload main app CSS
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<noscript><link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/app.css"></noscript>';
-
-	// Preload page-specific critical CSS
-	if ( $page_type === 'product' ) {
-		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-		echo '<noscript><link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css"></noscript>';
-	}
-
-	// Preload header CSS for above-the-fold content
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<noscript><link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css"></noscript>';
-
-	// Preload critical fonts
-	echo '<link rel="preload" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
-	echo '<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap"></noscript>';
+	// Remove duplicate preloads - these are handled by primefit_prioritize_critical_resources()
+	// This prevents "preloaded but not used" warnings
 }
 
 /**
@@ -786,8 +758,8 @@ function primefit_preload_product_resources() {
 		}
 	}
 
-	// Preload critical CSS files specifically for product pages
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
+    // Preload critical CSS files specifically for product pages (include version)
+    echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/css/single-product.css?ver=' . primefit_get_file_version( '/assets/css/single-product.css' ) . '" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">';
 	// Note: JS preload is handled by primefit_add_critical_preloads() function
 
 	// Add resource hints for external dependencies
@@ -1051,27 +1023,21 @@ add_action( 'wp_head', 'primefit_add_critical_preloads', 1 );
 function primefit_add_critical_preloads() {
 	$page_type = primefit_get_page_type();
 	
-	// Preload critical JavaScript files that are used immediately
-	// Only preload scripts that are actually executed within a few seconds of page load
+	// Only preload scripts that are actually executed immediately
+	// Remove preloads for deferred scripts to prevent "not used" warnings
 	
 	// Page-specific preloads - only for scripts that are used immediately
 	if ( $page_type === 'product' ) {
-		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js" as="script">';
-		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/product.js" as="script">';
+		// Only preload if these scripts are loaded in head (not deferred)
+		if ( ! wp_script_is( 'primefit-single-product', 'enqueued' ) || 
+			 ! wp_script_is( 'primefit-product', 'enqueued' ) ) {
+			echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/single-product.js" as="script">';
+			echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/product.js" as="script">';
+		}
 	}
 	
-	// Use fetch preload for scripts that are loaded but not immediately executed
+	// Don't preload deferred scripts - let them load naturally
 	// This prevents the "preloaded but not used" warnings
-	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
-		echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/cart.js" as="fetch" crossorigin>';
-	}
-	
-	// Preload core.js and app.js as fetch since they're deferred
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/core.js" as="fetch" crossorigin>';
-	echo '<link rel="preload" href="' . PRIMEFIT_THEME_URI . '/assets/js/app.js" as="fetch" crossorigin>';
-	
-	// Preload jQuery as fetch since it's loaded by WordPress core
-	echo '<link rel="preload" href="' . includes_url( 'js/jquery/jquery.min.js' ) . '" as="fetch" crossorigin>';
 }
 
 /**

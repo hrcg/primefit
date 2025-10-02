@@ -676,6 +676,23 @@ function primefit_header_cart_fragment( $fragments ) {
 		$fragments['div.widget_shopping_cart_content'] = ob_get_clean();
 	}
 
+	// Add checkout summary total fragment (available globally so AJAX can update it)
+	if ( ! WC()->cart->is_empty() ) {
+		ob_start();
+		?>
+		<div class="summary-total-mobile">
+			<?php wc_cart_totals_order_total_html(); ?>
+		</div>
+		<?php
+		$fragments['.summary-total-mobile'] = ob_get_clean();
+
+		// Add main order total (within checkout order totals block)
+		ob_start();
+		wc_cart_totals_order_total_html();
+		$order_total_html = ob_get_clean();
+		$fragments['.order-totals .final-total .total-value'] = '<span class="total-value">' . $order_total_html . '</span>';
+	}
+
 	return $fragments;
 }
 
@@ -1733,7 +1750,15 @@ function primefit_handle_apply_coupon() {
 	
 	if ( $result ) {
 		WC()->cart->calculate_totals();
-		wp_send_json_success( __( 'Coupon applied successfully!', 'primefit' ) );
+		
+		// Get updated fragments to ensure all totals are synchronized
+		$fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
+		
+		wp_send_json_success( array(
+			'message' => __( 'Coupon applied successfully!', 'primefit' ),
+			'fragments' => $fragments,
+			'cart_hash' => WC()->cart->get_cart_hash(),
+		) );
 	} else {
 		$error_messages = wc_get_notices( 'error' );
 		$error_message = ! empty( $error_messages ) ? $error_messages[0]['notice'] : __( 'Invalid coupon code', 'primefit' );
@@ -1770,7 +1795,15 @@ function primefit_handle_remove_coupon() {
 	
 	if ( $result ) {
 		WC()->cart->calculate_totals();
-		wp_send_json_success( __( 'Coupon removed successfully!', 'primefit' ) );
+		
+		// Get updated fragments to ensure all totals are synchronized
+		$fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
+		
+		wp_send_json_success( array(
+			'message' => __( 'Coupon removed successfully!', 'primefit' ),
+			'fragments' => $fragments,
+			'cart_hash' => WC()->cart->get_cart_hash(),
+		) );
 	} else {
 		wp_send_json_error( __( 'Failed to remove coupon', 'primefit' ) );
 	}

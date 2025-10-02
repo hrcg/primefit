@@ -382,6 +382,14 @@
           if (response.success) {
             this.clearProcessingFlag(normalizedCode);
 
+            // Update fragments directly if available
+            var frags = (response && response.fragments) || (response && response.data && response.data.fragments);
+            if (frags) {
+              $.each(frags, function (key, value) {
+                $(key).replaceWith(value);
+              });
+            }
+
             // Clear loading state
             if ($couponForm.length) {
               $couponForm.find(".coupon-code-input").val("");

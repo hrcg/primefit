@@ -113,6 +113,14 @@
             },
             success: function (response) {
               if (response && response.success) {
+                // Update fragments directly if available
+                var frags = (response && response.fragments) || (response && response.data && response.data.fragments);
+                if (frags) {
+                  $.each(frags, function (key, value) {
+                    $(key).replaceWith(value);
+                  });
+                }
+                
                 // Refresh checkout + fragments via unified manager
                 if (typeof CartManager !== "undefined") {
                   CartManager.queueRefresh("update_checkout");
