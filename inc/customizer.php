@@ -947,9 +947,9 @@ function primefit_get_hero_config() {
 	$hero_image_desktop_id = get_theme_mod( 'primefit_hero_image_desktop' );
 	$hero_image_mobile_id = get_theme_mod( 'primefit_hero_image_mobile' );
 
-	// Get image URLs
-	$hero_image_desktop_url = $hero_image_desktop_id ? wp_get_attachment_image_url( $hero_image_desktop_id, 'large' ) : '';
-	$hero_image_mobile_url = $hero_image_mobile_id ? wp_get_attachment_image_url( $hero_image_mobile_id, 'large' ) : '';
+	// Get image URLs - use full resolution for hero images
+	$hero_image_desktop_url = $hero_image_desktop_id ? wp_get_attachment_image_url( $hero_image_desktop_id, 'full' ) : '';
+	$hero_image_mobile_url = $hero_image_mobile_id ? wp_get_attachment_image_url( $hero_image_mobile_id, 'full' ) : '';
 
 	// Get video IDs and URLs
 	$hero_video_desktop_id = get_theme_mod( 'primefit_hero_video_desktop' );
@@ -962,8 +962,8 @@ function primefit_get_hero_config() {
 	$hero_video_poster_desktop_id = get_theme_mod( 'primefit_hero_video_poster_desktop' );
 	$hero_video_poster_mobile_id = get_theme_mod( 'primefit_hero_video_poster_mobile' );
 
-	$hero_video_poster_desktop_url = $hero_video_poster_desktop_id ? wp_get_attachment_image_url( $hero_video_poster_desktop_id, 'large' ) : '';
-	$hero_video_poster_mobile_url = $hero_video_poster_mobile_id ? wp_get_attachment_image_url( $hero_video_poster_mobile_id, 'large' ) : '';
+	$hero_video_poster_desktop_url = $hero_video_poster_desktop_id ? wp_get_attachment_image_url( $hero_video_poster_desktop_id, 'full' ) : '';
+	$hero_video_poster_mobile_url = $hero_video_poster_mobile_id ? wp_get_attachment_image_url( $hero_video_poster_mobile_id, 'full' ) : '';
 
 	// Fallback to default image if no custom images are set
 	$default_image_url = primefit_get_asset_uri( array( '/assets/images/DSC03756.webp', '/assets/images/hero-image.jpg' ) );
@@ -1008,9 +1008,9 @@ function primefit_get_hero_config() {
  * Helper function to get training division configuration from customizer
  */
 function primefit_get_training_division_config() {
-	// Get background image ID and URL
+	// Get background image ID and URL - use full resolution
 	$training_image_id = get_theme_mod( 'primefit_training_division_image' );
-	$training_image_url = $training_image_id ? wp_get_attachment_image_url( $training_image_id, 'large' ) : '';
+	$training_image_url = $training_image_id ? wp_get_attachment_image_url( $training_image_id, 'full' ) : '';
 	
 	// Fallback to default image if no custom image is set
 	if ( empty( $training_image_url ) ) {

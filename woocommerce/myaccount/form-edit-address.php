@@ -4,6 +4,7 @@
  *
  * @package PrimeFit
  * @since 1.0.0
+ * @version 9.3.0
  */
 
 defined( 'ABSPATH' ) || exit;

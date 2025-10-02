@@ -101,6 +101,60 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 }
 
 /**
+ * Get high-quality optimized image URL for hero images
+ *
+ * @param string $image_url Original image URL
+ * @param string $format Desired format (webp, avif)
+ * @return string High-quality optimized image URL or original if not available
+ */
+function primefit_get_hero_optimized_image_url( $image_url, $format = 'webp' ) {
+	if ( empty( $image_url ) ) {
+		return $image_url;
+	}
+
+	// Check if the image is already in the desired format
+	$current_format = strtolower( pathinfo( $image_url, PATHINFO_EXTENSION ) );
+	if ( $current_format === $format ) {
+		return $image_url;
+	}
+
+	// Generate optimized URL with high quality
+	$optimized_url = str_replace( ['.jpg', '.jpeg', '.png'], '.' . $format, $image_url );
+
+	// Check if optimized version exists (for local images)
+	if ( strpos( $optimized_url, home_url() ) === 0 ) {
+		$local_path = str_replace( home_url(), ABSPATH, $optimized_url );
+		if ( file_exists( $local_path ) ) {
+			return $optimized_url;
+		}
+	}
+
+	// For theme assets, check multiple fallback formats
+	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
+		// Try multiple fallback formats
+		$fallback_formats = ['webp', 'jpg', 'jpeg', 'png'];
+
+		foreach ( $fallback_formats as $fallback_format ) {
+			if ( $fallback_format === $format ) {
+				continue; // Skip the requested format as we've already tried it
+			}
+
+			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp'], '.' . $fallback_format, $image_url );
+
+			if ( strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
+				$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $fallback_url );
+
+				if ( file_exists( $local_path ) ) {
+					return $fallback_url;
+				}
+			}
+		}
+	}
+
+	return $image_url; // Return original if no optimized version found
+}
+
+/**
  * Get responsive image URL for specific dimensions
  *
  * @param string $image_url Original image URL
@@ -960,16 +1014,34 @@ function primefit_render_hero( $args = array() ) {
 				</div>
 			<?php endif; ?>
 			
-			<!-- Fallback Image (always present for loading state and fallback) -->
-			<picture class="hero-fallback-image">
-				<source media="(max-width: 768px)" srcset="<?php echo esc_url( $hero_image_mobile_url ); ?>">
-				<img 
-					src="<?php echo esc_url( $hero_image_desktop_url ); ?>" 
-					alt="<?php echo esc_attr( $hero['heading'] ); ?>" 
-					loading="eager"
-					class="hero-image"
-				/>
-			</picture>
+		<!-- High Quality Fallback Image (always present for loading state and fallback) -->
+		<picture class="hero-fallback-image">
+			<?php
+			// Get WebP versions for better compression while maintaining quality
+			$desktop_webp = primefit_get_hero_optimized_image_url($hero_image_desktop_url, 'webp');
+			$mobile_webp = primefit_get_hero_optimized_image_url($hero_image_mobile_url, 'webp');
+
+			// Add WebP sources if available (but keep full resolution)
+			if ($desktop_webp !== $hero_image_desktop_url) {
+				echo '<source media="(min-width: 769px)" type="image/webp" srcset="' . esc_url($desktop_webp) . '">';
+			}
+
+			if ($mobile_webp !== $hero_image_mobile_url) {
+				echo '<source media="(max-width: 768px)" type="image/webp" srcset="' . esc_url($mobile_webp) . '">';
+			}
+			?>
+			<source media="(max-width: 768px)" srcset="<?php echo esc_url( $hero_image_mobile_url ); ?>">
+			<img
+				src="<?php echo esc_url( $hero_image_desktop_url ); ?>"
+				alt="<?php echo esc_attr( $hero['heading'] ); ?>"
+				loading="eager"
+				fetchpriority="high"
+				decoding="async"
+				class="hero-image"
+				width="1920"
+				height="1080"
+			/>
+		</picture>
 			<div class="hero-overlay" style="opacity: <?php echo esc_attr( $hero['overlay_opacity'] ); ?>;"></div>
 		</div>
 		

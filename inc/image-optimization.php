@@ -29,7 +29,7 @@ function primefit_get_responsive_image( $attachment_id, $size = 'full', $args = 
 		'fetchpriority' => 'auto',
 		'sizes' => '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 		'webp' => true,
-		'quality' => 85, // Higher quality for better compression
+		'quality' => 95, // High quality for hero images
 		'width' => '',
 		'height' => '',
 		'decoding' => 'async',
@@ -152,7 +152,7 @@ function primefit_generate_responsive_sources( $attachment_id, $size, $args ) {
  * @param int $quality Quality setting (1-100)
  * @return string|false WebP file path or false
  */
-function primefit_generate_webp_image( $attachment_id, $size = 'full', $quality = 85 ) {
+function primefit_generate_webp_image( $attachment_id, $size = 'full', $quality = 95 ) {
 	// Get the original image file
 	$original_file = get_attached_file( $attachment_id );
 	if ( ! $original_file || ! file_exists( $original_file ) ) {
