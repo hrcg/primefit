@@ -673,39 +673,42 @@ function primefit_debug_size_overlay() {
 			return;
 		}
 
-		echo '<div style="position: fixed; bottom: 0; left: 0; background: black; color: white; padding: 10px; z-index: 9999; max-width: 400px; font-size: 12px; max-height: 300px; overflow-y: auto;">';
-		echo '<strong>Size Overlay Debug:</strong><br>';
+		?>
+		<div style="position: fixed; bottom: 0; left: 0; background: black; color: white; padding: 10px; z-index: 9999; max-width: 400px; font-size: 12px; max-height: 300px; overflow-y: auto;">
+			<strong>Size Overlay Debug:</strong><br>
 
-		global $woocommerce_loop;
-		if ( isset( $woocommerce_loop['is_shortcode'] ) && $woocommerce_loop['is_shortcode'] ) {
-			echo '✓ WooCommerce shortcode detected<br>';
-		}
-
-		if ( function_exists( 'wc_get_products' ) ) {
-			$variable_products = wc_get_products( array(
-				'type' => 'variable',
-				'limit' => 5,
-				'status' => 'publish'
-			) );
-
-			echo 'Variable products found: ' . count( $variable_products ) . '<br>';
-
-			foreach ( $variable_products as $product ) {
-				echo '<hr style="margin: 5px 0;">';
-				echo '<strong>Product:</strong> ' . esc_html( $product->get_name() ) . '<br>';
-				$attributes = $product->get_variation_attributes();
-				echo '<strong>Attributes:</strong> ' . esc_html( implode( ', ', array_keys( $attributes ) ) ) . '<br>';
-
-				foreach ( $attributes as $attr_name => $options ) {
-					echo '<strong>' . esc_html( $attr_name ) . ':</strong> ' . esc_html( implode( ', ', $options ) ) . '<br>';
-				}
-
-				$variations = $product->get_available_variations();
-				echo '<strong>Variations:</strong> ' . count( $variations ) . '<br>';
+			<?php
+			global $woocommerce_loop;
+			if ( isset( $woocommerce_loop['is_shortcode'] ) && $woocommerce_loop['is_shortcode'] ) {
+				echo '✓ WooCommerce shortcode detected<br>';
 			}
-		}
 
-		echo '</div>';
+			if ( function_exists( 'wc_get_products' ) ) {
+				$variable_products = wc_get_products( array(
+					'type' => 'variable',
+					'limit' => 5,
+					'status' => 'publish'
+				) );
+
+				echo 'Variable products found: ' . count( $variable_products ) . '<br>';
+
+				foreach ( $variable_products as $product ) {
+					echo '<hr style="margin: 5px 0;">';
+					echo '<strong>Product:</strong> ' . esc_html( $product->get_name() ) . '<br>';
+					$attributes = $product->get_variation_attributes();
+					echo '<strong>Attributes:</strong> ' . esc_html( implode( ', ', array_keys( $attributes ) ) ) . '<br>';
+
+					foreach ( $attributes as $attr_name => $options ) {
+						echo '<strong>' . esc_html( $attr_name ) . ':</strong> ' . esc_html( implode( ', ', $options ) ) . '<br>';
+					}
+
+					$variations = $product->get_available_variations();
+					echo '<strong>Variations:</strong> ' . count( $variations ) . '<br>';
+				}
+			}
+			?>
+		</div>
+		<?php
 	}
 }
 

@@ -148,7 +148,9 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
 			// Instead of showing notice, we'll trigger a toast notification via JavaScript
 			// Add a flag to trigger toast notification on the client side
 			add_action('wp_footer', function() {
-				echo '<script>window.primefitShowOutOfStockToast = true;</script>';
+				?>
+				<script>window.primefitShowOutOfStockToast = true;</script>
+				<?php
 			});
 			return false;
 		}
@@ -1970,27 +1972,31 @@ function primefit_force_flush_rewrite_rules() {
 // add_action( 'wp_footer', 'primefit_debug_payment_summary' );
 function primefit_debug_payment_summary() {
     if ( current_user_can( 'manage_options' ) && isset( $_GET['debug_payment'] ) ) {
-        echo '<div style="position: fixed; top: 0; left: 0; background: #000; color: #fff; padding: 10px; z-index: 9999; font-size: 12px;">';
-        echo '<strong>Debug Information:</strong><br>';
-        echo 'Is Account Page: ' . ( is_account_page() ? 'Yes' : 'No' ) . '<br>';
-        echo 'Is Payment Summary Endpoint: ' . ( is_wc_endpoint_url( 'payment-summary' ) ? 'Yes' : 'No' ) . '<br>';
-        echo 'Current User ID: ' . get_current_user_id() . '<br>';
-        
-        $customer_orders = wc_get_orders( array(
-            'customer' => get_current_user_id(),
-            'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
-            'limit'    => 1,
-            'orderby'  => 'date',
-            'order'    => 'DESC',
-        ) );
-        
-        echo 'Orders Found: ' . count( $customer_orders ) . '<br>';
-        if ( ! empty( $customer_orders ) ) {
-            $order = $customer_orders[0];
-            echo 'Latest Order ID: ' . $order->get_id() . '<br>';
-            echo 'Order Status: ' . $order->get_status() . '<br>';
-        }
-        echo '</div>';
+        ?>
+        <div style="position: fixed; top: 0; left: 0; background: #000; color: #fff; padding: 10px; z-index: 9999; font-size: 12px;">
+            <strong>Debug Information:</strong><br>
+            Is Account Page: <?php echo is_account_page() ? 'Yes' : 'No'; ?><br>
+            Is Payment Summary Endpoint: <?php echo is_wc_endpoint_url( 'payment-summary' ) ? 'Yes' : 'No'; ?><br>
+            Current User ID: <?php echo get_current_user_id(); ?><br>
+            
+            <?php
+            $customer_orders = wc_get_orders( array(
+                'customer' => get_current_user_id(),
+                'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
+                'limit'    => 1,
+                'orderby'  => 'date',
+                'order'    => 'DESC',
+            ) );
+            
+            echo 'Orders Found: ' . count( $customer_orders ) . '<br>';
+            if ( ! empty( $customer_orders ) ) {
+                $order = $customer_orders[0];
+                echo 'Latest Order ID: ' . $order->get_id() . '<br>';
+                echo 'Order Status: ' . $order->get_status() . '<br>';
+            }
+            ?>
+        </div>
+        <?php
     }
 }
 
@@ -2019,15 +2025,17 @@ function primefit_handle_payment_summary_query() {
         ) );
         
         if ( empty( $customer_orders ) ) {
-            echo '<div class="payment-summary-container">';
-            echo '<div class="payment-summary-header">';
-            echo '<h1 class="payment-summary-title">' . esc_html__( 'No Orders Found', 'primefit' ) . '</h1>';
-            echo '<p class="payment-summary-subtitle">' . esc_html__( 'You haven\'t placed any orders yet.', 'primefit' ) . '</p>';
-            echo '</div>';
-            echo '<div class="payment-summary-actions">';
-            echo '<a href="' . esc_url( wc_get_page_permalink( 'shop' ) ) . '" class="button button--primary">' . esc_html__( 'Start Shopping', 'primefit' ) . '</a>';
-            echo '</div>';
-            echo '</div>';
+            ?>
+            <div class="payment-summary-container">
+                <div class="payment-summary-header">
+                    <h1 class="payment-summary-title"><?php esc_html_e( 'No Orders Found', 'primefit' ); ?></h1>
+                    <p class="payment-summary-subtitle"><?php esc_html_e( 'You haven\'t placed any orders yet.', 'primefit' ); ?></p>
+                </div>
+                <div class="payment-summary-actions">
+                    <a href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>" class="button button--primary"><?php esc_html_e( 'Start Shopping', 'primefit' ); ?></a>
+                </div>
+            </div>
+            <?php
             return;
         }
         
