@@ -56,7 +56,7 @@ if ( false !== $cached_gallery ) {
 	$image_urls = array();
 	foreach ($attachment_ids as $attachment_id) {
 		if ($attachment_id) {
-			$image_urls[$attachment_id] = wp_get_attachment_image_url($attachment_id, 'full');
+			$image_urls[$attachment_id] = wp_get_attachment_image_url($attachment_id, 'large');
 		}
 	}
 
@@ -70,7 +70,7 @@ foreach ($variation_galleries as $color => $gallery_data) {
 	if (isset($gallery_data['images']) && is_array($gallery_data['images'])) {
 		foreach ($gallery_data['images'] as $attachment_id) {
 			if ($attachment_id && !isset($image_urls[$attachment_id])) {
-				$image_urls[$attachment_id] = wp_get_attachment_image_url($attachment_id, 'full');
+				$image_urls[$attachment_id] = wp_get_attachment_image_url($attachment_id, 'large');
 			}
 		}
 	}
@@ -95,10 +95,10 @@ $gallery_data = array(
 			$main_attachment_id = $attachment_ids[0];
 
 			// Try to get cached image URL first
-			$main_image_url = primefit_get_cached_attachment_image_url( $main_attachment_id, 'full' );
+			$main_image_url = primefit_get_cached_attachment_image_url( $main_attachment_id, 'large' );
 			if ( false === $main_image_url ) {
-				$main_image_url = wp_get_attachment_image_url( $main_attachment_id, 'full' );
-				primefit_cache_attachment_image_url( $main_attachment_id, 'full', $main_image_url );
+				$main_image_url = wp_get_attachment_image_url( $main_attachment_id, 'large' );
+				primefit_cache_attachment_image_url( $main_attachment_id, 'large', $main_image_url );
 			}
 
 			// Try to get cached alt text first
@@ -110,7 +110,7 @@ $gallery_data = array(
 			?>
 			<?php
 			// Use original image without WebP conversion
-			$main_image_url = wp_get_attachment_image_url( $main_attachment_id, 'full' );
+			$main_image_url = wp_get_attachment_image_url( $main_attachment_id, 'large' );
 			?>
 			<img src="<?php echo esc_url( $main_image_url ); ?>" 
 				 alt="<?php echo esc_attr( $main_image_alt ); ?>" 

@@ -57,7 +57,6 @@
   max-width: 1440px;
   margin: 0 auto;
   background: var(--payment-summary-bg);
-  min-height: 100vh;
   padding: 40px 0;
 }
 
@@ -71,6 +70,7 @@
   background: var(--payment-summary-card-bg);
   position: relative;
   overflow: hidden;
+  padding-top: 10px;
 }
 
 .payment-summary-icon {

@@ -900,6 +900,10 @@
   display: none;
 }
 
+.woocommerce-message {
+  display: none;
+}
+
 /* Override WooCommerce form styling */
 .woocommerce-checkout .form-row {
   margin-bottom: 20px;
@@ -1048,7 +1052,7 @@
 .woocommerce-checkout .payment_methods li .payment_method {
   background: var(--checkout-input-bg);
   border: 1px solid var(--checkout-input-border);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 20px;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -1480,7 +1484,7 @@
 .woocommerce-checkout .payment_methods li .payment_method {
   background: var(--checkout-input-bg);
   border: 1px solid var(--checkout-input-border);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 20px;
   transition: all 0.3s ease;
   cursor: pointer;
@@ -1608,7 +1612,7 @@ body.woocommerce-checkout
   .payment_method {
   background: var(--checkout-input-bg) !important;
   border: 1px solid var(--checkout-input-border) !important;
-  border-radius: 8px !important;
+  border-radius: 4px !important;
   padding: 20px !important;
   transition: all 0.3s ease !important;
   cursor: pointer !important;
@@ -1703,7 +1707,7 @@ body .checkout-processing-indicator {
   background: var(--checkout-bg);
   color: var(--checkout-text);
   padding: 20px 30px;
-  border-radius: 8px;
+  border-radius: 4px;
   border: 1px solid var(--checkout-border);
   z-index: 9999;
   text-align: center;

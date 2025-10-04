@@ -937,6 +937,7 @@
   display: inline-block;
 }
 
+
 /* Override border for white color swatches to make them visible */
 .woocommerce ul.products li.product .color-swatch:has(.color-swatch-inner.color-white) {
   border: 1px solid #cccccc;
@@ -1217,6 +1218,7 @@
   text-align: center;
   line-height: 1;
 }
+
 
 .woocommerce ul.products li.product .product-size-options .size-option:hover {
   background: var(--size-option-hover-bg);
