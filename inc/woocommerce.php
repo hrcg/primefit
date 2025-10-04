@@ -338,6 +338,8 @@ function primefit_cache_woocommerce_query_results() {
 	);
 	
 	set_transient( $cache_key, $cache_data, 900 ); // 15 minutes
+	// Register this transient key for targeted invalidation
+	primefit_register_product_query_transient( $cache_key );
 }
 
 /**
@@ -513,22 +515,42 @@ add_action( 'woocommerce_product_set_stock_status', 'primefit_clear_product_quer
 add_action( 'woocommerce_variation_set_stock_status', 'primefit_clear_product_query_cache' );
 
 function primefit_clear_product_query_cache( $post_id = null ) {
-	// Clear all product query caches
-	global $wpdb;
-	
-	$wpdb->query( 
-		$wpdb->prepare( 
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-			'_transient_primefit_product_query_%'
-		)
-	);
-	
-	$wpdb->query( 
-		$wpdb->prepare( 
-			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-			'_transient_timeout_primefit_product_query_%'
-		)
-	);
+	// Targeted deletion of registered product query transients
+	primefit_clear_registered_product_query_transients();
+}
+
+/**
+ * Register a product query transient key for targeted invalidation
+ */
+function primefit_register_product_query_transient( $cache_key ) {
+	$option_name = 'primefit_product_query_keys';
+	$keys = get_option( $option_name, array() );
+	if ( ! is_array( $keys ) ) {
+		$keys = array();
+	}
+	if ( ! in_array( $cache_key, $keys, true ) ) {
+		$keys[] = $cache_key;
+		// Cap the list to avoid unbounded growth
+		if ( count( $keys ) > 500 ) {
+			$keys = array_slice( $keys, -300 );
+		}
+		update_option( $option_name, $keys, false ); // not autoloaded
+	}
+}
+
+/**
+ * Clear all registered product query transients without scanning wp_options
+ */
+function primefit_clear_registered_product_query_transients() {
+	$option_name = 'primefit_product_query_keys';
+	$keys = get_option( $option_name, array() );
+	if ( is_array( $keys ) && ! empty( $keys ) ) {
+		foreach ( $keys as $key ) {
+			delete_transient( $key );
+		}
+	}
+	// Reset registry after clearing
+	update_option( $option_name, array(), false );
 }
 
 /**
