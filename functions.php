@@ -518,10 +518,19 @@ function primefit_invalidate_product_cache_advanced( $post_id, $post = null ) {
  */
 function primefit_clear_all_query_caches() {
 	// Clear object cache for queries
-	wp_cache_flush_group( 'primefit_queries' );
-	wp_cache_flush_group( 'primefit_products' );
-	wp_cache_flush_group( 'primefit_variations' );
-	wp_cache_flush_group( 'primefit_product_meta' );
+	if ( function_exists( 'wp_cache_flush_group' ) ) {
+		wp_cache_flush_group( 'primefit_queries' );
+		wp_cache_flush_group( 'primefit_products' );
+		wp_cache_flush_group( 'primefit_variations' );
+		wp_cache_flush_group( 'primefit_product_meta' );
+	} else {
+		// Fallback: only flush entire cache in controlled contexts to avoid site-wide impact
+		if ( ( function_exists( 'is_admin' ) && is_admin() ) || ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) ) {
+			if ( function_exists( 'wp_cache_flush' ) ) {
+				wp_cache_flush();
+			}
+		}
+	}
 }
 
 /**
