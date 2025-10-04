@@ -286,10 +286,6 @@
   min-width: 0;
 }
 
-/* Hide WooCommerce labels and use placeholders */
-.woocommerce-checkout .form-row label {
-  display: none;
-}
 
 /* ==========================================================================
    Order Summary Styles
@@ -907,20 +903,13 @@
 /* Override WooCommerce form styling */
 .woocommerce-checkout .form-row {
   margin-bottom: 20px;
-  width: 100%;
   box-sizing: border-box;
   flex-direction: column;
-}
-
-.woocommerce-checkout .form-row label {
-  display: none;
 }
 
 .woocommerce-checkout .form-row input,
 .woocommerce-checkout .form-row select,
 .woocommerce-checkout .form-row textarea {
-  width: 100%;
-  max-width: 100%;
   padding: 12px 16px;
   border: 1px solid var(--checkout-input-border);
   border-radius: 4px;
@@ -928,7 +917,6 @@
   background: var(--checkout-input-bg) !important;
   color: var(--checkout-text) !important;
   box-sizing: border-box;
-  display: block;
 }
 
 .woocommerce-checkout .form-row input:focus,
@@ -946,7 +934,6 @@
 
 /* Ensure consistent field widths in billing section */
 .woocommerce-checkout .woocommerce-billing-fields .form-row {
-  display: block;
   margin-bottom: 20px;
 }
 
@@ -1321,8 +1308,6 @@
   .woocommerce-checkout .form-row input,
   .woocommerce-checkout .form-row select,
   .woocommerce-checkout .form-row textarea {
-    width: 100% !important;
-    max-width: 100% !important;
     font-size: 16px; /* Prevent zoom on iOS */
   }
 
