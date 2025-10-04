@@ -556,7 +556,6 @@
 }
 
 .total-value {
-  color: var(--checkout-text);
   font-weight: 500;
   text-transform: uppercase;
 }

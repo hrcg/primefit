@@ -602,19 +602,7 @@ add_action( 'init', function() {
 	}, 10, 2 );
 }, 5 );
 
-/**
- * Initialize session early for coupon handling
- */
-add_action( 'init', 'primefit_init_session_early', 1 );
-function primefit_init_session_early() {
-	// Start session early if we have a coupon parameter and not in admin
-	if ( isset( $_GET['coupon'] ) && ! is_admin() && ! session_id() && ! wp_doing_ajax() ) {
-		// Check if headers have been sent before starting session
-		if ( ! headers_sent() ) {
-			session_start();
-		}
-	}
-}
+// Deprecated: session-based initialization removed in favor of short-lived cookie approach
 
 /**
  * Handle URL coupon application on page load
@@ -634,24 +622,21 @@ function primefit_handle_url_coupon() {
 		return;
 	}
 
-	// Don't apply on admin pages
-	if ( is_admin() ) {
+	// Don't process on admin or AJAX
+	if ( is_admin() || wp_doing_ajax() ) {
 		return;
 	}
 
-	// Store coupon in session for later application
-	if ( ! session_id() ) {
-		session_start();
-	}
-	$_SESSION['primefit_pending_coupon'] = $coupon_code;
+	// Store coupon in a short-lived cookie (10 minutes)
+	$expires = time() + 10 * MINUTE_IN_SECONDS;
+	// Secure cookie flags where possible
+	$secure   = is_ssl();
+	$httponly = true;
+	setcookie( 'primefit_pending_coupon', $coupon_code, [ 'expires' => $expires, 'path' => '/', 'secure' => $secure, 'httponly' => $httponly, 'samesite' => 'Lax' ] );
 
-	// Try to apply coupon if cart is available and not empty
-	if ( WC()->cart && ! WC()->cart->is_empty() ) {
-		$applied = primefit_apply_coupon_if_valid( $coupon_code );
-		if ( $applied ) {
-			// Remove from session since it's applied
-			unset( $_SESSION['primefit_pending_coupon'] );
-		}
+	// If on cart/checkout and cart exists and not empty, attempt immediate apply
+	if ( ( is_cart() || is_checkout() ) && function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
+		primefit_try_apply_coupon_from_cookie();
 	}
 
 	// Redirect to clean URL (but don't exit to avoid headers already sent error)
@@ -704,39 +689,33 @@ function primefit_apply_coupon_if_valid( $coupon_code ) {
  * Moved to wp_loaded to avoid early cart access
  * FIXED: Added state management to prevent race conditions
  */
-add_action( 'wp_loaded', 'primefit_apply_pending_coupon_from_session', 20 );
-function primefit_apply_pending_coupon_from_session() {
-	// Only run on frontend
-	if ( is_admin() ) {
+add_action( 'wp_loaded', 'primefit_apply_pending_coupon_from_cookie', 20 );
+function primefit_apply_pending_coupon_from_cookie() {
+	// Only run on frontend and when not admin/ajax
+	if ( is_admin() || wp_doing_ajax() ) {
 		return;
 	}
 
-	if ( ! session_id() ) {
-		session_start();
+	primefit_try_apply_coupon_from_cookie();
+}
+
+function primefit_try_apply_coupon_from_cookie() {
+	if ( empty( $_COOKIE['primefit_pending_coupon'] ) ) {
+		return;
 	}
 
-	if ( isset( $_SESSION['primefit_pending_coupon'] ) ) {
-		$coupon_code = $_SESSION['primefit_pending_coupon'];
+	$coupon_code = sanitize_text_field( wp_unslash( $_COOKIE['primefit_pending_coupon'] ) );
 
-		// CRITICAL: Check if coupon is already being processed to prevent race conditions
-		if ( isset( $_SESSION['primefit_coupon_processing'] ) && $_SESSION['primefit_coupon_processing'] === $coupon_code ) {
-			return;
-		}
+	// Only on cart/checkout to avoid cache-busting elsewhere
+	if ( ! ( is_cart() || is_checkout() ) ) {
+		return;
+	}
 
-		// Only try to apply if cart exists and is not empty
-		if ( WC()->cart && ! WC()->cart->is_empty() ) {
-			// Mark as processing to prevent race conditions
-			$_SESSION['primefit_coupon_processing'] = $coupon_code;
-
-			$applied = primefit_apply_coupon_if_valid( $coupon_code );
-
-			if ( $applied ) {
-				// Remove from session since it's now applied
-				unset( $_SESSION['primefit_pending_coupon'] );
-			}
-
-			// Remove processing flag
-			unset( $_SESSION['primefit_coupon_processing'] );
+	if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
+		$applied = primefit_apply_coupon_if_valid( $coupon_code );
+		if ( $applied ) {
+			// Clear cookie after successful application
+			setcookie( 'primefit_pending_coupon', '', [ 'expires' => time() - HOUR_IN_SECONDS, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' ] );
 		}
 	}
 }
@@ -745,64 +724,14 @@ function primefit_apply_pending_coupon_from_session() {
  * Add pending coupon data to cart fragments for JavaScript
  * Only add if we have a pending coupon
  */
-add_filter( 'woocommerce_add_to_cart_fragments', 'primefit_add_coupon_data_to_fragments' );
-function primefit_add_coupon_data_to_fragments( $fragments ) {
-	// Only add if we have a pending coupon and not in admin
-	if ( is_admin() || ! isset( $_SESSION['primefit_pending_coupon'] ) ) {
-		return $fragments;
-	}
-
-	if ( ! session_id() ) {
-		session_start();
-	}
-
-	if ( isset( $_SESSION['primefit_pending_coupon'] ) ) {
-		$pending_coupon = $_SESSION['primefit_pending_coupon'];
-		// Add coupon data to a hidden element for JavaScript
-		$fragments['.primefit-coupon-data'] = '<div class="primefit-coupon-data" data-pending-coupon="' . esc_attr( $pending_coupon ) . '" style="display:none;"></div>';
-	}
-
-	return $fragments;
-}
+// Session-based fragments removed; cookie is read server-side on cart/checkout
 
 /**
  * Check for pending coupons when WooCommerce is ready
  * Moved to wp_loaded to avoid early cart access
  * FIXED: Added state management to prevent race conditions
  */
-add_action( 'wp_loaded', 'primefit_check_pending_coupon_on_wc_init', 30 );
-function primefit_check_pending_coupon_on_wc_init() {
-	// Only run on frontend
-	if ( is_admin() ) {
-		return;
-	}
-
-	// Only run if we have a pending coupon
-	if ( ! session_id() ) {
-		session_start();
-	}
-
-	if ( ! isset( $_SESSION['primefit_pending_coupon'] ) ) {
-		return;
-	}
-
-	$coupon_code = $_SESSION['primefit_pending_coupon'];
-
-	// CRITICAL: Check if coupon is already being processed to prevent race conditions
-	if ( isset( $_SESSION['primefit_coupon_processing'] ) && $_SESSION['primefit_coupon_processing'] === $coupon_code ) {
-		return;
-	}
-
-	// Try to apply the coupon now that WC is fully loaded
-	if ( WC()->cart && ! WC()->cart->is_empty() ) {
-		$applied = primefit_apply_coupon_if_valid( $coupon_code );
-
-		if ( $applied ) {
-			// Remove from session since it's now applied
-			unset( $_SESSION['primefit_pending_coupon'] );
-		}
-	}
-}
+// Redundant session-based WC init hook removed
 
 /**
  * Redirect to the same page without the coupon parameter
