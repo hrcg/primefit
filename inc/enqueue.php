@@ -258,7 +258,6 @@ function primefit_enqueue_assets() {
 					window.initHeaderScrollVanilla();
 				}
 
-				// Debug: Check if header element exists
 				const $header = $('.site-header');
 			});
 		})(jQuery);
@@ -1290,7 +1289,6 @@ function primefit_lazy_load_js_modules() {
 				initLazyLoading();
 			}
 			
-			// Expose lazy loading API for debugging
 			window.primefitLazyLoader = {
 				loadModule: loadModule,
 				loaded: lazyConfig.loaded,

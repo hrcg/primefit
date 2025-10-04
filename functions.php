@@ -557,7 +557,6 @@ foreach ( $includes as $file ) {
 	}
 }
 
-// Debug include removed - checkout is now working
 
 // Emergency shortcode fix removed - using custom checkout template
 

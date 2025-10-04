@@ -937,9 +937,11 @@
   display: inline-block;
 }
 
-
 /* Override border for white color swatches to make them visible */
-.woocommerce ul.products li.product .color-swatch:has(.color-swatch-inner.color-white) {
+.woocommerce
+  ul.products
+  li.product
+  .color-swatch:has(.color-swatch-inner.color-white) {
   border: 1px solid #cccccc;
 }
 
@@ -1184,14 +1186,6 @@
   visibility: hidden;
 }
 
-/* Debug: Temporarily make size options always visible for testing */
-.woocommerce ul.products li.product .product-size-options.debug-visible {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: all !important;
-  background: rgba(255, 0, 0, 0.8) !important;
-}
-
 .woocommerce ul.products li.product .product-size-options .size-options {
   display: flex;
   flex-wrap: wrap;
@@ -1218,7 +1212,6 @@
   text-align: center;
   line-height: 1;
 }
-
 
 .woocommerce ul.products li.product .product-size-options .size-option:hover {
   background: var(--size-option-hover-bg);

@@ -585,7 +585,7 @@ function primefit_render_size_selection_overlay( $product ) {
 	}
 	
 	?>
-	<div class="product-size-options<?php echo isset( $_GET['debug_sizes'] ) ? ' debug-visible' : ''; ?>" 
+	<div class="product-size-options" 
 		 data-product-id="<?php echo esc_attr( $product->get_id() ); ?>"
 		 data-variations="<?php echo esc_attr( wp_json_encode( $all_variations_data ) ); ?>">
 		<div class="size-options">
@@ -661,56 +661,6 @@ function primefit_render_size_selection_overlay( $product ) {
 	<?php
 }
 
-/**
- * Debug function to test size overlay rendering
- * Add ?debug_sizes=1 to any page URL to see debug info
- */
-add_action( 'wp_footer', 'primefit_debug_size_overlay' );
-function primefit_debug_size_overlay() {
-	if ( isset( $_GET['debug_sizes'] ) && $_GET['debug_sizes'] == '1' ) {
-		// SECURITY: Only allow admin users to see debug info
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		?>
-		<div style="position: fixed; bottom: 0; left: 0; background: black; color: white; padding: 10px; z-index: 9999; max-width: 400px; font-size: 12px; max-height: 300px; overflow-y: auto;">
-			<strong>Size Overlay Debug:</strong><br>
-
-			<?php
-			global $woocommerce_loop;
-			if ( isset( $woocommerce_loop['is_shortcode'] ) && $woocommerce_loop['is_shortcode'] ) {
-				echo '✓ WooCommerce shortcode detected<br>';
-			}
-
-			if ( function_exists( 'wc_get_products' ) ) {
-				$variable_products = wc_get_products( array(
-					'type' => 'variable',
-					'limit' => 5,
-					'status' => 'publish'
-				) );
-
-				echo 'Variable products found: ' . count( $variable_products ) . '<br>';
-
-				foreach ( $variable_products as $product ) {
-					echo '<hr style="margin: 5px 0;">';
-					echo '<strong>Product:</strong> ' . esc_html( $product->get_name() ) . '<br>';
-					$attributes = $product->get_variation_attributes();
-					echo '<strong>Attributes:</strong> ' . esc_html( implode( ', ', array_keys( $attributes ) ) ) . '<br>';
-
-					foreach ( $attributes as $attr_name => $options ) {
-						echo '<strong>' . esc_html( $attr_name ) . ':</strong> ' . esc_html( implode( ', ', $options ) ) . '<br>';
-					}
-
-					$variations = $product->get_available_variations();
-					echo '<strong>Variations:</strong> ' . count( $variations ) . '<br>';
-				}
-			}
-			?>
-		</div>
-		<?php
-	}
-}
 
 /**
  * Get WooCommerce product categories for shop page
@@ -1701,9 +1651,6 @@ function primefit_render_product_loop_color_swatches( $product ) {
 			$variation_image = add_query_arg( 'v', '1.0', $variation_image );
 		}
 
-		// Debug: Log variation image data
-		if ( WP_DEBUG && $variation_image ) {
-		}
 		
 		?>
 		<button 
@@ -2138,8 +2085,6 @@ function primefit_get_woo_variation_galleries( $product_id ) {
 	$variations = $product->get_available_variations();
 	$variation_galleries = array();
 	
-	// Debug: Log variations data
-	error_log( 'PrimeFit Debug: Found ' . count( $variations ) . ' variations for product ' . $product_id );
 	
 	foreach ( $variations as $variation ) {
 		// Get color attribute
@@ -2151,8 +2096,6 @@ function primefit_get_woo_variation_galleries( $product_id ) {
 			}
 		}
 		
-		// Debug: Log variation data
-		error_log( 'PrimeFit Debug: Variation ' . $variation['variation_id'] . ' - Color: ' . $color . ' - Has gallery_images: ' . ( ! empty( $variation['gallery_images'] ) ? 'Yes' : 'No' ) );
 		
 		if ( ! empty( $color ) && ! empty( $variation['gallery_images'] ) ) {
 			$gallery_images = array();
@@ -2165,13 +2108,10 @@ function primefit_get_woo_variation_galleries( $product_id ) {
 					'images' => $gallery_images,
 					'count' => count( $gallery_images )
 				);
-				error_log( 'PrimeFit Debug: Added gallery for color ' . $color . ' with ' . count( $gallery_images ) . ' images' );
 			}
 		}
 	}
 	
-	// Debug: Log final result
-	error_log( 'PrimeFit Debug: Final variation galleries: ' . print_r( $variation_galleries, true ) );
 	
 	// Cache the result
 	wp_cache_set( $cache_key, $variation_galleries, 'primefit_variations', 3600 );

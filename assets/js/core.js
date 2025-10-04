@@ -214,7 +214,7 @@
     },
 
     /**
-     * Get queue status for debugging
+     * Get queue status
      */
     getQueueStatus: function () {
       return {
@@ -1193,17 +1193,9 @@
         }
       };
 
-      // Also override console.error for debugging purposes (optional)
+      // Also override console.error for better error handling
       const originalConsoleError = console.error;
       console.error = function (...args) {
-        // Show error toast for console errors (only in development/debugging)
-        if (
-          window.ToastNotification &&
-          window.location.hostname === "localhost"
-        ) {
-          const message = args.join(" ");
-          ToastNotification.error("Console Error: " + message);
-        }
         // Always call original console.error
         originalConsoleError.apply(console, args);
       };
@@ -1426,7 +1418,7 @@
   );
 
   /**
-   * Expose CartManager, CouponManager, and ToastNotification globally for debugging
+   * Expose CartManager, CouponManager, and ToastNotification globally
    */
   window.CartManager = CartManager;
   window.CouponManager = CouponManager;

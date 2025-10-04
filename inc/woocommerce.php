@@ -110,8 +110,7 @@ add_filter( 'woocommerce_enqueue_styles', '__return_empty_array' );
  * This ensures stock limits are enforced on the server side
  * Only run for direct add-to-cart attempts on product pages
  */
-// Temporarily disabled to debug AJAX add to cart issues
-// add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
+add_filter( 'woocommerce_add_to_cart_validation', 'primefit_validate_stock_on_add_to_cart', 10, 5 );
 function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity, $variation_id = 0, $variation_data = array() ) {
 	// Get the product
 	$product = wc_get_product( $product_id );
@@ -352,7 +351,6 @@ function primefit_cache_woocommerce_query_results() {
 add_action( 'wp_ajax_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_nopriv_wc_ajax_add_to_cart', 'primefit_ensure_wc_ajax_add_to_cart' );
 
-// Removed add to cart validation debugging
 function primefit_ensure_wc_ajax_add_to_cart() {
 	// Ensure variation_id is properly set
 	if ( isset( $_POST['variation_id'] ) && ! empty( $_POST['variation_id'] ) ) {
@@ -1900,33 +1898,8 @@ function primefit_ensure_order_completion( $order_id ) {
 		return;
 	}
 	
-	// Log successful order completion for debugging
 }
 
-/**
- * Debug checkout redirect issues (only for admins)
- */
-add_action( 'template_redirect', 'primefit_debug_checkout_redirect', 1 );
-function primefit_debug_checkout_redirect() {
-	// Only run for admins and on checkout-related pages
-	if ( ! current_user_can( 'manage_options' ) ) {
-		return;
-	}
-	
-	
-	if ( is_wc_endpoint_url( 'order-received' ) ) {
-		$order_id = get_query_var( 'order-received' );
-		$order_key = isset( $_GET['key'] ) ? sanitize_text_field( $_GET['key'] ) : '';
-		
-		
-		if ( $order_id ) {
-			$order = wc_get_order( $order_id );
-			if ( $order ) {
-			} else {
-			}
-		}
-	}
-}
 
 /**
  * Customize checkout page layout
@@ -1966,39 +1939,6 @@ function primefit_force_flush_rewrite_rules() {
 
 // Flush rewrite rules function already declared above
 
-/**
- * Debug function to check payment summary status (disabled in production)
- */
-// add_action( 'wp_footer', 'primefit_debug_payment_summary' );
-function primefit_debug_payment_summary() {
-    if ( current_user_can( 'manage_options' ) && isset( $_GET['debug_payment'] ) ) {
-        ?>
-        <div style="position: fixed; top: 0; left: 0; background: #000; color: #fff; padding: 10px; z-index: 9999; font-size: 12px;">
-            <strong>Debug Information:</strong><br>
-            Is Account Page: <?php echo is_account_page() ? 'Yes' : 'No'; ?><br>
-            Is Payment Summary Endpoint: <?php echo is_wc_endpoint_url( 'payment-summary' ) ? 'Yes' : 'No'; ?><br>
-            Current User ID: <?php echo get_current_user_id(); ?><br>
-            
-            <?php
-            $customer_orders = wc_get_orders( array(
-                'customer' => get_current_user_id(),
-                'status'   => array( 'completed', 'processing', 'on-hold', 'pending', 'cancelled', 'refunded', 'failed' ),
-                'limit'    => 1,
-                'orderby'  => 'date',
-                'order'    => 'DESC',
-            ) );
-            
-            echo 'Orders Found: ' . count( $customer_orders ) . '<br>';
-            if ( ! empty( $customer_orders ) ) {
-                $order = $customer_orders[0];
-                echo 'Latest Order ID: ' . $order->get_id() . '<br>';
-                echo 'Order Status: ' . $order->get_status() . '<br>';
-            }
-            ?>
-        </div>
-        <?php
-    }
-}
 
 
 /**

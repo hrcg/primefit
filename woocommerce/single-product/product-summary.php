@@ -179,10 +179,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 					$color_slug = sanitize_title( $color_option );
 					$is_default_color = ( $index === $default_color_index );
 
-					// Debug logging for color matching
-					if ( $index === 0 ) { // Only log for first color to avoid spam
-						echo "<!-- Debug: Color option: " . esc_html( $color_option ) . " -->";
-					}
 					
 					// Try to get variation image for this color
 					$variation_image = '';
@@ -454,11 +450,6 @@ window.primefitProductData = {
 	productId: <?php echo absint( $product->get_id() ); ?>,
 	defaultColor: <?php echo json_encode( $default_color ); ?>,
 	defaultSize: <?php echo json_encode( $default_size ); ?>,
-	variationGalleries: <?php echo json_encode( primefit_get_variation_gallery_data( $product->get_id() ) ); ?>,
-	debugInfo: {
-		defaultAttributes: <?php echo json_encode( $default_attributes ); ?>,
-		colorOptions: <?php echo json_encode( $color_options ?? array() ); ?>,
-		sizeOptions: <?php echo json_encode( $size_options ?? array() ); ?>
-	}
+	variationGalleries: <?php echo json_encode( primefit_get_variation_gallery_data( $product->get_id() ) ); ?>
 };
 </script>

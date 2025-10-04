@@ -114,13 +114,15 @@
             success: function (response) {
               if (response && response.success) {
                 // Update fragments directly if available
-                var frags = (response && response.fragments) || (response && response.data && response.data.fragments);
+                var frags =
+                  (response && response.fragments) ||
+                  (response && response.data && response.data.fragments);
                 if (frags) {
                   $.each(frags, function (key, value) {
                     $(key).replaceWith(value);
                   });
                 }
-                
+
                 // Refresh checkout + fragments via unified manager
                 if (typeof CartManager !== "undefined") {
                   CartManager.queueRefresh("update_checkout");
@@ -1669,15 +1671,24 @@
       // Override the blockUI plugin for checkout pages
       if (typeof $.blockUI !== "undefined" && !$.blockUI.__primefitOverridden) {
         const originalBlockUI = $.blockUI;
-        const originalDefaults = originalBlockUI && originalBlockUI.defaults ? originalBlockUI.defaults : {};
-        const originalVersion = originalBlockUI && originalBlockUI.version ? originalBlockUI.version : undefined;
-        const originalSetDefaults = originalBlockUI && originalBlockUI.setDefaults ? originalBlockUI.setDefaults : undefined;
+        const originalDefaults =
+          originalBlockUI && originalBlockUI.defaults
+            ? originalBlockUI.defaults
+            : {};
+        const originalVersion =
+          originalBlockUI && originalBlockUI.version
+            ? originalBlockUI.version
+            : undefined;
+        const originalSetDefaults =
+          originalBlockUI && originalBlockUI.setDefaults
+            ? originalBlockUI.setDefaults
+            : undefined;
 
         // Create a thin wrapper that disables ONLY the global page overlay on checkout
         const blockUIWrapper = function () {
           if ($("body").hasClass("woocommerce-checkout")) {
             // Suppress the full-page white overlay on checkout
-            return; 
+            return;
           }
           return originalBlockUI.apply(this, arguments);
         };
@@ -1685,7 +1696,8 @@
         // Preserve plugin metadata/properties so $.fn.block continues to work
         blockUIWrapper.defaults = originalDefaults;
         if (originalVersion) blockUIWrapper.version = originalVersion;
-        if (originalSetDefaults) blockUIWrapper.setDefaults = originalSetDefaults;
+        if (originalSetDefaults)
+          blockUIWrapper.setDefaults = originalSetDefaults;
         blockUIWrapper.__primefitOverridden = true;
 
         $.blockUI = blockUIWrapper;
@@ -1733,7 +1745,8 @@
   function isOnOrderEndpoint() {
     var path = window.location.pathname || "";
     return (
-      path.indexOf("/order-received") !== -1 || path.indexOf("/order-pay") !== -1
+      path.indexOf("/order-received") !== -1 ||
+      path.indexOf("/order-pay") !== -1
     );
   }
 
@@ -1757,7 +1770,8 @@
     if (!force && !isCartEmptyInDom()) return;
 
     var shopUrl =
-      (window.primefit_checkout_params && window.primefit_checkout_params.shop_url) ||
+      (window.primefit_checkout_params &&
+        window.primefit_checkout_params.shop_url) ||
       "/";
     if (!shopUrl) return;
 
@@ -1824,7 +1838,7 @@
   });
 
   /**
-   * Expose CheckoutManager globally for debugging
+   * Expose CheckoutManager globally
    * CartManager and CouponManager are already exposed from app.js
    */
   window.CheckoutManager = CheckoutManager;
