@@ -83,7 +83,7 @@
     padding: 1px 4px;
     margin-left: 4px;
   }
-  
+
   .menu-badge--new {
     top: -1px;
   }
@@ -144,8 +144,6 @@
   color: var(--text);
   text-transform: uppercase;
 }
-
-
 
 /* Hamburger Menu */
 .hamburger {
@@ -259,6 +257,10 @@
   margin-left: 6px;
   vertical-align: middle;
   top: -8px;
+}
+
+.menu-item {
+  width: fit-content;
 }
 
 /* Mobile menu dropdown styles */
@@ -521,7 +523,6 @@
   display: block;
 }
 
-
 .promo-bar-content {
   display: flex;
   align-items: center;
@@ -587,7 +588,6 @@ body:has(.promo-bar) .site-header {
     padding: 0 15px;
   }
 }
-
 
 body:not(.has-hero-header):not(:has(.promo-bar)) .site-content {
   padding-top: 46px; /* Reduced by 43px when promo bar is not active */

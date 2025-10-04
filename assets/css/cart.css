@@ -326,8 +326,7 @@
   z-index: 10;
   padding: 0;
   cursor: pointer;
-  width: 60px;
-  max-width: 60px;
+  width: fit-content;
 }
 
 .woocommerce-mini-cart.cart_list.product_list_widget
@@ -1428,7 +1427,6 @@
     overflow: hidden;
   }
 
-
   /* Ensure close button has proper touch target and is not affected by drag */
   .cart-panel-header .cart-close {
     cursor: pointer;
@@ -1436,8 +1434,6 @@
     z-index: 10;
     pointer-events: auto;
   }
-
-
 
   /* Reduce padding on mobile for better space utilization */
   .cart-panel-header {

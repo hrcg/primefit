@@ -459,48 +459,6 @@ function primefit_webp_supported() {
 }
 
 
-/**
- * Add image optimization admin notice
- */
-add_action( 'admin_notices', 'primefit_image_optimization_notice' );
-function primefit_image_optimization_notice() {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		return;
-	}
-	
-	// Check WebP support
-	if ( ! primefit_webp_supported() ) {
-		?>
-		<div class="notice notice-warning is-dismissible">
-			<p>
-				<strong><?php _e( 'PrimeFit Theme:', 'primefit' ); ?></strong>
-				<?php _e( 'WebP generation is not supported on this server. Please contact your hosting provider to enable GD library with WebP support.', 'primefit' ); ?>
-			</p>
-		</div>
-		<?php
-		return;
-	}
-	
-	$optimized_count = get_option( 'primefit_images_optimized', 0 );
-	$total_images = wp_count_posts( 'attachment' )->inherit;
-	
-	if ( $optimized_count < $total_images ) {
-		?>
-		<div class="notice notice-info is-dismissible">
-			<p>
-				<strong><?php _e( 'PrimeFit Theme:', 'primefit' ); ?></strong>
-				<?php printf( 
-					__( 'Generate WebP versions for %d images to improve performance. ', 'primefit' ), 
-					$total_images - $optimized_count 
-				); ?>
-				<a href="<?php echo admin_url( 'admin.php?page=primefit-optimize-images' ); ?>" class="button button-primary">
-					<?php _e( 'Generate WebP Images', 'primefit' ); ?>
-				</a>
-			</p>
-		</div>
-		<?php
-	}
-}
 
 /**
  * Add image optimization admin page

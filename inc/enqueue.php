@@ -85,25 +85,22 @@ function primefit_enqueue_assets() {
 		}, 1 );
 	}
 
-	// Cart-specific styles - load conditionally to reduce critical path
-	$page_type = primefit_get_page_type();
-	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
-		// Mobile-first: Load immediately on mobile, defer on desktop
-		$cart_media = wp_is_mobile() ? 'all' : 'print';
-		wp_enqueue_style(
-			'primefit-cart',
-			PRIMEFIT_THEME_URI . '/assets/css/cart.css',
-			[ 'primefit-app' ],
-			primefit_get_file_version( '/assets/css/cart.css' ),
-			$cart_media
-		);
-		
-		// Load cart CSS for desktop after page load
-		if ( ! wp_is_mobile() ) {
-			add_action( 'wp_footer', function() {
-				echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/cart.css?v=' . primefit_get_file_version( '/assets/css/cart.css' ) . '" media="all">';
-			}, 1 );
-		}
+	// Cart-specific styles - load on all pages for consistent cart functionality
+	// Mobile-first: Load immediately on mobile, defer on desktop
+	$cart_media = wp_is_mobile() ? 'all' : 'print';
+	wp_enqueue_style(
+		'primefit-cart',
+		PRIMEFIT_THEME_URI . '/assets/css/cart.css',
+		[ 'primefit-app' ],
+		primefit_get_file_version( '/assets/css/cart.css' ),
+		$cart_media
+	);
+	
+	// Load cart CSS for desktop after page load
+	if ( ! wp_is_mobile() ) {
+		add_action( 'wp_footer', function() {
+			echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/cart.css?v=' . primefit_get_file_version( '/assets/css/cart.css' ) . '" media="all">';
+		}, 1 );
 	}
 	// WooCommerce styles - load for all devices
 	if ( class_exists( 'WooCommerce' ) ) {
@@ -277,16 +274,14 @@ function primefit_enqueue_assets() {
 	// Load page-specific modules in order of importance
 	$page_type = primefit_get_page_type();
 
-	// Critical functionality - load first
-	if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'front_page', 'cart', 'checkout' ] ) ) {
-		wp_enqueue_script(
-			'primefit-cart',
-			PRIMEFIT_THEME_URI . '/assets/js/cart.js',
-			[ 'primefit-app' ],
-			primefit_get_file_version( '/assets/js/cart.js' ),
-			true // Defer for better performance
-		);
-	}
+	// Cart functionality - load on all pages for consistent cart behavior
+	wp_enqueue_script(
+		'primefit-cart',
+		PRIMEFIT_THEME_URI . '/assets/js/cart.js',
+		[ 'primefit-app' ],
+		primefit_get_file_version( '/assets/js/cart.js' ),
+		true // Defer for better performance
+	);
 	
 	// Shop functionality - load on shop pages
 	// On mobile, this will be lazy loaded instead
