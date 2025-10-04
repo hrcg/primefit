@@ -124,6 +124,43 @@ function primefit_performance_optimizations() {
 }
 
 /**
+ * Ensure helpful DB indexes exist for WooCommerce meta-heavy queries
+ * - Adds composite indexes on postmeta for faster JOINs and lookups
+ * - Runs once per environment, guarded by an option flag
+ * - Uses dynamic table prefix via $wpdb
+ */
+add_action( 'admin_init', 'primefit_ensure_postmeta_indexes' );
+function primefit_ensure_postmeta_indexes() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$flag = get_option( 'primefit_postmeta_indexes_added', false );
+	if ( $flag ) {
+		return;
+	}
+	global $wpdb;
+	$table = $wpdb->postmeta;
+
+	// Detect if indexes already exist to avoid errors
+	$existing = $wpdb->get_col( $wpdb->prepare( "SHOW INDEX FROM {$table} WHERE Key_name IN (%s,%s)", 'idx_postmeta_meta_key_post_id', 'idx_postmeta_post_id_meta_key' ) );
+
+	$queries = array();
+	if ( ! in_array( 'idx_postmeta_meta_key_post_id', $existing, true ) ) {
+		$queries[] = "CREATE INDEX idx_postmeta_meta_key_post_id ON {$table} (meta_key(191), post_id)";
+	}
+	if ( ! in_array( 'idx_postmeta_post_id_meta_key', $existing, true ) ) {
+		$queries[] = "CREATE INDEX idx_postmeta_post_id_meta_key ON {$table} (post_id, meta_key(191))";
+	}
+
+	if ( ! empty( $queries ) ) {
+		foreach ( $queries as $sql ) {
+			$wpdb->query( $sql );
+		}
+		update_option( 'primefit_postmeta_indexes_added', true, false );
+	}
+}
+
+/**
  * Enable WebP image upload support
  */
 add_filter( 'upload_mimes', 'primefit_add_webp_mime_types' );
