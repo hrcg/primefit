@@ -145,7 +145,11 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
 		
 		// Check if variation is in stock
 		if ( ! $variation->is_in_stock() ) {
-			wc_add_notice( __( 'This variation is currently out of stock.', 'primefit' ), 'error' );
+			// Instead of showing notice, we'll trigger a toast notification via JavaScript
+			// Add a flag to trigger toast notification on the client side
+			add_action('wp_footer', function() {
+				echo '<script>window.primefitShowOutOfStockToast = true;</script>';
+			});
 			return false;
 		}
 		

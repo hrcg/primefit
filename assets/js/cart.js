@@ -80,7 +80,7 @@
 
     // Default timeout with accessibility consideration
     // Longer timeout for users who may need more time
-    return 8000; // 8 seconds instead of 5 for better UX
+    return 5000; // 8 seconds instead of 5 for better UX
   }
 
   // Initialize cart timer management
@@ -619,7 +619,9 @@
         const errorMessage = "Unable to remove item. Please try again.";
 
         // Try to show error in cart if possible, otherwise use console
-        if (typeof window.showCartNotification === "function") {
+        if (typeof window.ToastNotification === "function") {
+          window.ToastNotification.error(errorMessage);
+        } else if (typeof window.showCartNotification === "function") {
           window.showCartNotification(errorMessage, "error");
         } else {
           // Cart removal failed

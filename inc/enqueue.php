@@ -56,8 +56,8 @@ function primefit_enqueue_assets() {
 	primefit_optimize_css_delivery();
 
 	// Header-specific styles - Load early for above-the-fold content
-	// Mobile-first: Load immediately on mobile, defer on desktop
-	$header_media = wp_is_mobile() ? 'all' : 'print';
+	// Load immediately to prevent FOUC on all devices
+	$header_media = 'all';
 	wp_enqueue_style(
 		'primefit-header',
 		PRIMEFIT_THEME_URI . '/assets/css/header.css',
@@ -65,13 +65,7 @@ function primefit_enqueue_assets() {
 		primefit_get_file_version( '/assets/css/header.css' ),
 		$header_media
 	);
-	
-	// Load header CSS for desktop after page load
-	if ( ! wp_is_mobile() ) {
-		add_action( 'wp_footer', function() {
-			echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/header.css?v=' . primefit_get_file_version( '/assets/css/header.css' ) . '" media="all">';
-		}, 1 );
-	}
+
 
 	// Footer-specific styles - load for all devices
 	// Mobile-first: Load immediately on mobile, defer on desktop
@@ -113,8 +107,8 @@ function primefit_enqueue_assets() {
 	}
 	// WooCommerce styles - load for all devices
 	if ( class_exists( 'WooCommerce' ) ) {
-		// Mobile-first: Load immediately on mobile, defer on desktop
-		$woocommerce_media = wp_is_mobile() ? 'all' : 'print';
+		// Load WooCommerce base styles immediately to avoid FOUC
+		$woocommerce_media = 'all';
 		wp_enqueue_style(
 			'primefit-woocommerce',
 			PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css',
@@ -123,12 +117,6 @@ function primefit_enqueue_assets() {
 			$woocommerce_media
 		);
 		
-		// Load WooCommerce CSS for desktop after page load
-		if ( ! wp_is_mobile() ) {
-			add_action( 'wp_footer', function() {
-				echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/woocommerce.css?v=' . primefit_get_file_version( '/assets/css/woocommerce.css' ) . '" media="all">';
-			}, 1 );
-		}
 		
 		// Cache page type for optimized CSS loading
 		$page_type = primefit_get_page_type();
@@ -137,8 +125,8 @@ function primefit_enqueue_assets() {
 		if ( $page_type === 'product' ) {
 			$single_product_css_url = PRIMEFIT_THEME_URI . '/assets/css/single-product.css';
 			
-			// Mobile-first: Load immediately on mobile, defer on desktop
-			$single_product_media = wp_is_mobile() ? 'all' : 'print';
+			// Load single product CSS immediately to avoid FOUC
+			$single_product_media = 'all';
 			wp_enqueue_style(
 				'primefit-single-product',
 				$single_product_css_url,
@@ -147,12 +135,6 @@ function primefit_enqueue_assets() {
 				$single_product_media
 			);
 			
-			// Load single product CSS for desktop after page load
-			if ( ! wp_is_mobile() ) {
-				add_action( 'wp_footer', function() use ( $single_product_css_url ) {
-					echo '<link rel="stylesheet" href="' . esc_url( $single_product_css_url ) . '?v=' . primefit_get_file_version( '/assets/css/single-product.css' ) . '" media="all">';
-				}, 1 );
-			}
 		}
 		
 		// Checkout page styles - Load ONLY on checkout pages
@@ -551,23 +533,7 @@ function primefit_inline_critical_css() {
 		font-display: swap;
 	}
 	
-	/* Navigation critical hides to prevent menu flash before header.css loads */
-	.menu--primary .sub-menu,
-	.menu--secondary .sub-menu { display: none; }
-	/* Mega menu should be hidden by default */
-	.mega-menu { opacity: 0; visibility: hidden; transform: translateY(-10px); }
-	/* Mobile nav elements hidden by default */
-	.mobile-nav-wrap { visibility: hidden; opacity: 0; }
-	.mobile-nav-overlay { opacity: 0; visibility: hidden; }
-	.mobile-nav-panel { transform: translateX(-100%); }
-	/* Ensure open state works even if header.css hasn't applied yet */
-	.mobile-open .mobile-nav-wrap { visibility: visible; opacity: 1; }
-	.mobile-open .mobile-nav-panel { transform: translateX(0); }
-	
-	/* Header critical styles */
-	.header { position: relative; z-index: 100; background: #0d0d0d; }
-	.header__container { max-width: 1850px; margin: 0 auto; padding: 0 1rem; }
-	
+
 	/* Hero critical styles for LCP */
 	.hero { position: relative; min-height: 70vh; display: flex; align-items: center; background: #0d0d0d; }
 	.hero-image { width: 100%; height: auto; object-fit: cover; }
@@ -582,8 +548,8 @@ function primefit_inline_critical_css() {
 	.button--primary { background: #000; color: white; }
 	
 	/* Product grid critical styles */
-	.product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
-	.product-card { background: #0d0d0d; border: 1px solid #7c7c7c; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+    .product-card { background: #0d0d0d; border: 1px solid #7c7c7c; }
 	</style>
 	";
 

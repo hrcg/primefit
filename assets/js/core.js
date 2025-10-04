@@ -577,6 +577,316 @@
     },
   };
 
+  /**
+   * Toast Notification System - Unified notification system for the site
+   * Optimized with queueing, deduplication, accessibility, and controls
+   */
+  const ToastNotification = {
+    // Default configuration
+    defaults: {
+      duration: 3000,
+      position: "top-right",
+      type: "info",
+      animation: "slideInRight",
+      maxVisible: 3,
+      pauseOnHover: true,
+      showClose: false,
+      dedupeWindowMs: 2000,
+    },
+
+    // Internal state
+    _containers: new Map(), // position -> container element
+    _queues: new Map(), // position -> [{ message, options }]
+    _visibleCount: new Map(), // position -> number
+    _recentMessages: new Map(), // message -> timestamp
+
+    /**
+     * Show a toast notification
+     */
+    show: function (message, options = {}) {
+      const config = { ...this.defaults, ...options };
+
+      // Dedupe identical messages shown within a short window
+      const now = Date.now();
+      const lastShown = this._recentMessages.get(message);
+      if (lastShown && now - lastShown < config.dedupeWindowMs) {
+        // If an identical toast is currently visible, bump its counter and reset timer
+        const existing = this._findExistingToast(message, config.position);
+        if (existing) {
+          this._incrementCountBadge(existing);
+          this._resetAutoRemove(existing);
+          return existing;
+        }
+      }
+      this._recentMessages.set(message, now);
+
+      // If too many visible for this position, enqueue
+      const visible = this._visibleCount.get(config.position) || 0;
+      if (visible >= config.maxVisible) {
+        const queue = this._queues.get(config.position) || [];
+        queue.push({ message, options: config });
+        this._queues.set(config.position, queue);
+        return null;
+      }
+
+      const container = this._getContainer(config.position);
+      const toast = this._createToastElement(message, config);
+      container.appendChild(toast);
+
+      // Track visible count
+      this._visibleCount.set(config.position, visible + 1);
+
+      // Animate in
+      this._animateIn(toast, config);
+
+      // Auto remove handling
+      this._setAutoRemove(toast, config);
+
+      return toast;
+    },
+
+    success: function (message, options = {}) {
+      return this.show(message, { ...options, type: "success" });
+    },
+    error: function (message, options = {}) {
+      return this.show(message, { ...options, type: "error" });
+    },
+    warning: function (message, options = {}) {
+      return this.show(message, { ...options, type: "warning" });
+    },
+    info: function (message, options = {}) {
+      return this.show(message, { ...options, type: "info" });
+    },
+
+    /** Create or get container for a position */
+    _getContainer: function (position) {
+      if (this._containers.has(position)) return this._containers.get(position);
+
+      const container = document.createElement("div");
+      container.className = `toast-container position-${position}`;
+      container.setAttribute(
+        "aria-live",
+        position.includes("bottom") ? "polite" : "polite"
+      );
+      container.setAttribute("role", "status");
+      container.style.cssText = this._getContainerStyles(position);
+
+      document.body.appendChild(container);
+      this._containers.set(position, container);
+      return container;
+    },
+
+    /** Find existing toast with same message in a position */
+    _findExistingToast: function (message, position) {
+      const container = this._containers.get(position);
+      if (!container) return null;
+      return container.querySelector(
+        `.toast-notification[data-message="${this._escapeAttr(message)}"]`
+      );
+    },
+
+    /** Escape attribute value */
+    _escapeAttr: function (str) {
+      return String(str).replace(/"/g, "&quot;");
+    },
+
+    /** Create toast DOM element with controls and a11y */
+    _createToastElement: function (message, config) {
+      const toast = document.createElement("div");
+      toast.className = `toast-notification toast-${config.type}`;
+      toast.setAttribute("data-message", message);
+      toast.setAttribute(
+        "role",
+        config.type === "error" || config.type === "warning"
+          ? "alert"
+          : "status"
+      );
+      toast.setAttribute(
+        "aria-live",
+        config.type === "error" || config.type === "warning"
+          ? "assertive"
+          : "polite"
+      );
+      toast.style.cssText = this._getToastStyles(config);
+      toast.style.pointerEvents = "auto";
+
+      // Message container
+      const textEl = document.createElement("span");
+      textEl.className = "toast-message";
+      textEl.textContent = message;
+      textEl.style.display = "inline-block";
+
+      toast.appendChild(textEl);
+
+      // Duplicate count badge
+      const countEl = document.createElement("span");
+      countEl.className = "toast-count";
+      countEl.style.cssText = "margin-left:8px;font-weight:700;opacity:0.9;";
+      countEl.hidden = true;
+      toast.appendChild(countEl);
+
+      // Pause on hover
+      if (config.pauseOnHover) {
+        toast.addEventListener("mouseenter", () =>
+          this._pauseAutoRemove(toast)
+        );
+        toast.addEventListener("mouseleave", () =>
+          this._resumeAutoRemove(toast)
+        );
+      }
+
+      return toast;
+    },
+
+    /** Container fixed styles by position */
+    _getContainerStyles: function (position) {
+      const base = {
+        position: "fixed",
+        zIndex: "10000",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        pointerEvents: "none",
+      };
+
+      const pos = {
+        "top-right": { top: "65px", right: "0px", alignItems: "flex-end" },
+        "top-left": { top: "20px", left: "20px", alignItems: "flex-start" },
+        "bottom-right": {
+          bottom: "20px",
+          right: "20px",
+          alignItems: "flex-end",
+        },
+        "bottom-left": {
+          bottom: "20px",
+          left: "20px",
+          alignItems: "flex-start",
+        },
+        "top-center": {
+          top: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+        },
+        "bottom-center": {
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+        },
+      }[position] || { top: "65px", right: "15px" };
+
+      return Object.entries({ ...base, ...pos })
+        .map(([k, v]) => `${k}: ${v}`)
+        .join("; ");
+    },
+
+    /** Toast styles */
+    _getToastStyles: function (config) {
+      const prefersReducedMotion =
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const base = {
+        position: "relative",
+        padding: "12px 16px",
+        borderRadius: "8px",
+        fontWeight: "600",
+        fontSize: "14px",
+        maxWidth: "340px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        opacity: "0",
+        transform: prefersReducedMotion ? "none" : "translateY(-6px)",
+        transition: prefersReducedMotion
+          ? "opacity 0.2s ease"
+          : "all 0.3s ease",
+      };
+
+      const type = {
+        success: { background: "#4CAF50", color: "#ffffff" },
+        error: { background: "#f44336", color: "#ffffff" },
+        warning: { background: "#ff9800", color: "#ffffff" },
+        info: { background: "#2196F3", color: "#ffffff" },
+      }[config.type] || { background: "#333", color: "#fff" };
+
+      return Object.entries({ ...base, ...type })
+        .map(([k, v]) => `${k}: ${v}`)
+        .join("; ");
+    },
+
+    /** Animate in */
+    _animateIn: function (toast, config) {
+      // initial styles already set; just trigger to visible
+      requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "none";
+      });
+    },
+
+    /** Set auto remove with references for pause/resume */
+    _setAutoRemove: function (toast, config) {
+      const removeAt = Date.now() + config.duration;
+      toast.__toastConfig = { config, removeAt };
+      toast.__toastTimer = setTimeout(
+        () => this._dismissToast(toast, config),
+        config.duration
+      );
+    },
+
+    _resetAutoRemove: function (toast) {
+      if (!toast || !toast.__toastConfig) return;
+      clearTimeout(toast.__toastTimer);
+      this._setAutoRemove(toast, toast.__toastConfig.config);
+    },
+
+    _pauseAutoRemove: function (toast) {
+      if (!toast || !toast.__toastConfig) return;
+      clearTimeout(toast.__toastTimer);
+      const remaining = toast.__toastConfig.removeAt - Date.now();
+      toast.__toastConfig.remaining = Math.max(0, remaining);
+    },
+
+    _resumeAutoRemove: function (toast) {
+      if (!toast || !toast.__toastConfig) return;
+      const remaining =
+        toast.__toastConfig.remaining || toast.__toastConfig.config.duration;
+      toast.__toastTimer = setTimeout(
+        () => this._dismissToast(toast, toast.__toastConfig.config),
+        remaining
+      );
+    },
+
+    /** Dismiss and handle queue */
+    _dismissToast: function (toast, config) {
+      if (!toast || toast.__closing) return;
+      toast.__closing = true;
+      toast.style.animation = "fadeOut 0.25s ease";
+      setTimeout(() => {
+        const parent = toast.parentElement;
+        if (parent && parent.removeChild) parent.removeChild(toast);
+
+        // Decrement visible count and show next from queue
+        const pos = config.position;
+        const current = this._visibleCount.get(pos) || 1;
+        this._visibleCount.set(pos, Math.max(0, current - 1));
+
+        const queue = this._queues.get(pos) || [];
+        if (queue.length > 0) {
+          const next = queue.shift();
+          this._queues.set(pos, queue);
+          this.show(next.message, next.options);
+        }
+      }, 250);
+    },
+
+    /** Increment duplicate counter */
+    _incrementCountBadge: function (toast) {
+      const badge = toast.querySelector(".toast-count");
+      let count = parseInt(badge?.getAttribute("data-count") || "1", 10) + 1;
+      badge.hidden = false;
+      badge.setAttribute("data-count", String(count));
+      badge.textContent = `(${count})`;
+    },
+  };
+
   // Scroll prevention utilities
   let scrollPosition = 0;
 
@@ -866,11 +1176,50 @@
       // Silently ignore event binding errors
     }
 
+    // Function to override browser alert to use toast notifications
+    function overrideBrowserAlert() {
+      // Store the original alert function for fallback
+      const originalAlert = window.alert;
+
+      // Override the alert function
+      window.alert = function (message) {
+        // Check if ToastNotification is available
+        if (window.ToastNotification) {
+          // Show as error toast instead of browser alert
+          ToastNotification.error(message);
+        } else {
+          // Fallback to original alert if ToastNotification is not available
+          originalAlert.call(window, message);
+        }
+      };
+
+      // Also override console.error for debugging purposes (optional)
+      const originalConsoleError = console.error;
+      console.error = function (...args) {
+        // Show error toast for console errors (only in development/debugging)
+        if (
+          window.ToastNotification &&
+          window.location.hostname === "localhost"
+        ) {
+          const message = args.join(" ");
+          ToastNotification.error("Console Error: " + message);
+        }
+        // Always call original console.error
+        originalConsoleError.apply(console, args);
+      };
+    }
+
     // Non-critical initialization - deferred to next animation frame
     requestAnimationFrame(function () {
       initSmartLazyLoading();
       initImageQualityPreferences();
       initConnectionAwareImageLoading();
+
+      // Check for server-side toast triggers
+      if (window.primefitShowOutOfStockToast) {
+        ToastNotification.error("This variation is currently out of stock.");
+        delete window.primefitShowOutOfStockToast;
+      }
     });
   });
 
@@ -1077,10 +1426,11 @@
   );
 
   /**
-   * Expose CartManager and CouponManager globally for debugging
+   * Expose CartManager, CouponManager, and ToastNotification globally for debugging
    */
   window.CartManager = CartManager;
   window.CouponManager = CouponManager;
+  window.ToastNotification = ToastNotification;
   window.preventPageScroll = preventPageScroll;
   window.allowPageScroll = allowPageScroll;
 })(jQuery);

@@ -39,7 +39,10 @@
 
     cacheDOM() {
       // Check if native gallery is active and defer to it
-      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+      if (
+        window.switchProductGallery &&
+        typeof window.switchProductGallery === "function"
+      ) {
         return;
       }
 
@@ -72,7 +75,10 @@
 
     bindEvents() {
       // Check if native gallery is active and defer to it
-      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+      if (
+        window.switchProductGallery &&
+        typeof window.switchProductGallery === "function"
+      ) {
         return;
       }
 
@@ -309,7 +315,10 @@
 
     initSwipe() {
       // Check if native gallery is active and defer to it
-      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+      if (
+        window.switchProductGallery &&
+        typeof window.switchProductGallery === "function"
+      ) {
         return;
       }
 
@@ -793,8 +802,8 @@
 
     updateGalleryForColor(color) {
       // Dispatch custom event for color selection
-      const colorSelectedEvent = new CustomEvent('colorSelected', {
-        detail: { color: color }
+      const colorSelectedEvent = new CustomEvent("colorSelected", {
+        detail: { color: color },
       });
       document.dispatchEvent(colorSelectedEvent);
 
@@ -803,7 +812,9 @@
         window.switchProductGallery(color);
       } else {
         // Fallback to single image update if gallery switching not available
-        const $colorOption = this.$colorOptions.filter(`[data-color="${color}"]`);
+        const $colorOption = this.$colorOptions.filter(
+          `[data-color="${color}"]`
+        );
         const variationImage = $colorOption.data("variation-image");
 
         if (variationImage) {
@@ -817,7 +828,10 @@
       if (!this.$gallery || !this.$mainImage) return;
 
       // Check if native gallery is available and use it instead
-      if (window.switchProductGallery && typeof window.switchProductGallery === 'function') {
+      if (
+        window.switchProductGallery &&
+        typeof window.switchProductGallery === "function"
+      ) {
         // For fallback cases, we still need to handle single image updates
         // The native gallery handles the main switching logic
         return;
@@ -1123,7 +1137,15 @@
 
       if (!$selectedColor.length || !$selectedSize.length) {
         e.preventDefault();
-        alert("Please select both color and size options.");
+
+        // Show toast notification instead of browser alert
+        if (window.ToastNotification) {
+          ToastNotification.error("Please select both color and size options.");
+        } else {
+          // Fallback to alert if ToastNotification is not available
+          alert("Please select both color and size options.");
+        }
+
         return false;
       }
 
@@ -2885,10 +2907,14 @@
     }
 
     showError(message) {
-      // Show error notification
+      // Show error notification using toast system
       if (message && message.trim()) {
-        // You can implement a toast notification system here
-        alert(message);
+        if (window.ToastNotification) {
+          ToastNotification.error(message);
+        } else {
+          // Fallback to alert if ToastNotification is not available
+          alert(message);
+        }
       }
     }
 
