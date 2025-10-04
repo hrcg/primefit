@@ -1680,11 +1680,12 @@ function primefit_get_cached_categories( $args = [] ) {
 	$cache_key = 'primefit_categories_' . md5( serialize( $args ) );
 	$cached = get_transient( $cache_key );
 	
-	if ( false === $cached ) {
-		$cached = get_terms( $args );
-		// Cache for 48 hours for better performance (increased from 24 hours)
-		set_transient( $cache_key, $cached, 48 * HOUR_IN_SECONDS );
-	}
+    if ( false === $cached ) {
+        $cached = get_terms( $args );
+        // Cache for 48 hours for better performance (increased from 24 hours)
+        set_transient( $cache_key, $cached, 48 * HOUR_IN_SECONDS );
+        primefit_register_transient_key( 'primefit_categories_keys', $cache_key );
+    }
 	
 	return $cached;
 }
@@ -1700,13 +1701,46 @@ function primefit_get_cached_products( $args = [] ) {
 	$cache_key = 'primefit_products_' . md5( serialize( $args ) );
 	$cached = get_transient( $cache_key );
 	
-	if ( false === $cached ) {
-		$cached = get_posts( $args );
-		// Cache for 24 hours for better performance (increased from 12 hours)
-		set_transient( $cache_key, $cached, 24 * HOUR_IN_SECONDS );
-	}
+    if ( false === $cached ) {
+        $cached = get_posts( $args );
+        // Cache for 24 hours for better performance (increased from 12 hours)
+        set_transient( $cache_key, $cached, 24 * HOUR_IN_SECONDS );
+        // Register for targeted invalidation
+        primefit_register_transient_key( 'primefit_products_keys', $cache_key );
+    }
 	
 	return $cached;
+}
+
+/**
+ * Register a transient key under a named registry option for targeted invalidation
+ */
+function primefit_register_transient_key( $registry_option, $cache_key ) {
+	$keys = get_option( $registry_option, array() );
+	if ( ! is_array( $keys ) ) {
+		$keys = array();
+	}
+	if ( ! in_array( $cache_key, $keys, true ) ) {
+		$keys[] = $cache_key;
+		// Cap registry to prevent unbounded growth
+		if ( count( $keys ) > 1000 ) {
+			$keys = array_slice( $keys, -600 );
+		}
+		update_option( $registry_option, $keys, false );
+	}
+}
+
+/**
+ * Clear all transients registered under a registry option and reset it
+ */
+function primefit_clear_registered_transients( $registry_option ) {
+	$keys = get_option( $registry_option, array() );
+	if ( is_array( $keys ) && ! empty( $keys ) ) {
+		foreach ( $keys as $key ) {
+			delete_transient( $key );
+		}
+	}
+	update_option( $registry_option, array(), false );
 }
 
 /**
@@ -1720,14 +1754,10 @@ add_action( 'delete_term', 'primefit_clear_category_cache' );
 
 function primefit_clear_product_cache( $post_id ) {
 	if ( get_post_type( $post_id ) === 'product' ) {
-		// Clear all product-related transients
-		global $wpdb;
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_products_%'" );
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_products_%'" );
-		
-		// Clear recommended products cache
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_recommended_products_%'" );
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_recommended_products_%'" );
+		// Clear all product-related transients via registry
+		primefit_clear_registered_transients( 'primefit_products_keys' );
+		// Clear recommended products cache via registry
+		primefit_clear_registered_transients( 'primefit_recommended_products_keys' );
 		
 		// Update cache timestamp for better cache invalidation
 		update_option( 'primefit_last_cache_update', time() );
@@ -1737,10 +1767,8 @@ function primefit_clear_product_cache( $post_id ) {
 function primefit_clear_category_cache( $term_id ) {
 	$term = get_term( $term_id );
 	if ( $term && in_array( $term->taxonomy, [ 'product_cat', 'product_tag' ] ) ) {
-		// Clear all category-related transients
-		global $wpdb;
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_categories_%'" );
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_categories_%'" );
+		// Clear all category-related transients via registry
+		primefit_clear_registered_transients( 'primefit_categories_keys' );
 		
 		// Update cache timestamp for better cache invalidation
 		update_option( 'primefit_last_cache_update', time() );

@@ -1518,7 +1518,7 @@ function primefit_mini_cart_recommended_items() {
  */
 function primefit_get_cached_recommended_products( $category_ids ) {
 	// Create cache key based on category IDs
-	$cache_key = 'primefit_recommended_products_' . md5( implode( ',', $category_ids ) );
+    $cache_key = 'primefit_recommended_products_' . md5( implode( ',', $category_ids ) );
 	$cached = get_transient( $cache_key );
 	
 	if ( false === $cached ) {
@@ -1561,7 +1561,11 @@ function primefit_get_cached_recommended_products( $category_ids ) {
 		}
 		
 		// Cache for 6 hours
-		set_transient( $cache_key, $cached, 6 * HOUR_IN_SECONDS );
+        set_transient( $cache_key, $cached, 6 * HOUR_IN_SECONDS );
+        // Register for targeted invalidation
+        if ( function_exists( 'primefit_register_transient_key' ) ) {
+            primefit_register_transient_key( 'primefit_recommended_products_keys', $cache_key );
+        }
 	}
 	
 	return $cached;

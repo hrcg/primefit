@@ -232,12 +232,12 @@ function primefit_clear_discount_stats_cache() {
 	global $wpdb;
 
 	// Clear all discount statistics related transients
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_usage_by_date_%'" );
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_usage_by_date_%'" );
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_top_users_%'" );
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_top_users_%'" );
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_coupon_stats_%'" );
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_coupon_stats_%'" );
+    // Targeted invalidation via registries
+    if ( function_exists( 'primefit_clear_registered_transients' ) ) {
+        primefit_clear_registered_transients( 'primefit_usage_by_date_keys' );
+        primefit_clear_registered_transients( 'primefit_top_users_keys' );
+        primefit_clear_registered_transients( 'primefit_coupon_stats_keys' );
+    }
 }
 
 /**
@@ -488,7 +488,10 @@ function primefit_get_cached_usage_by_date( $where_clause, $params ) {
 		}
 		
 		// Cache for 1 hour
-		set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
+        set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
+        if ( function_exists( 'primefit_register_transient_key' ) ) {
+            primefit_register_transient_key( 'primefit_usage_by_date_keys', $cache_key );
+        }
 	}
 	
 	return $cached;
@@ -523,7 +526,10 @@ function primefit_get_cached_top_users( $where_clause, $params ) {
 		}
 		
 		// Cache for 1 hour
-		set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
+        set_transient( $cache_key, $cached, HOUR_IN_SECONDS );
+        if ( function_exists( 'primefit_register_transient_key' ) ) {
+            primefit_register_transient_key( 'primefit_top_users_keys', $cache_key );
+        }
 	}
 	
 	return $cached;
