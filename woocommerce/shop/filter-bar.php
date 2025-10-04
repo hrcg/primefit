@@ -32,8 +32,15 @@ $catalog_orderby_options = apply_filters( 'woocommerce_catalog_orderby', array(
 	'price-desc' => __( 'Sort by price: high to low', 'woocommerce' ),
 ) );
 
-// Get current grid view from session/cookie or default to 2 columns (mobile-friendly)
-$current_grid = isset( $_COOKIE['primefit_grid_view'] ) ? $_COOKIE['primefit_grid_view'] : '2';
+// Get current grid view from cookie and constrain to allowed values
+$allowed_grids = array( '1', '2', '3', '4' );
+$current_grid = '2';
+if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
+	$cookie_grid = sanitize_text_field( wp_unslash( $_COOKIE['primefit_grid_view'] ) );
+	if ( in_array( $cookie_grid, $allowed_grids, true ) ) {
+		$current_grid = $cookie_grid;
+	}
+}
 
 ?>
 <div class="shop-filter-bar">
