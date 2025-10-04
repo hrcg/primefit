@@ -170,7 +170,7 @@
                   }
                   break;
                 default:
-                  // Unknown cart operation - handled silently
+                // Unknown cart operation - handled silently
               }
               resolve();
             } catch (error) {
@@ -383,7 +383,9 @@
             this.clearProcessingFlag(normalizedCode);
 
             // Update fragments directly if available
-            var frags = (response && response.fragments) || (response && response.data && response.data.fragments);
+            var frags =
+              (response && response.fragments) ||
+              (response && response.data && response.data.fragments);
             if (frags) {
               $.each(frags, function (key, value) {
                 $(key).replaceWith(value);
@@ -850,13 +852,13 @@
     // Listen for WooCommerce coupon events and refresh fragments accordingly
     try {
       $(document.body).on(
-        'applied_coupon removed_coupon updated_checkout',
+        "applied_coupon removed_coupon updated_checkout",
         function () {
-          if (typeof CartManager !== 'undefined') {
-            CartManager.queueRefresh('wc_fragment_refresh');
+          if (typeof CartManager !== "undefined") {
+            CartManager.queueRefresh("wc_fragment_refresh");
           } else {
             // Fallback to WooCommerce event if CartManager is not available
-            $(document.body).trigger('wc_fragment_refresh');
+            $(document.body).trigger("wc_fragment_refresh");
           }
         }
       );
@@ -935,7 +937,7 @@
 
         // Add scroll listener with throttling for better performance
         let scrollTimeout;
-        $(window).on("scroll", function() {
+        $(window).on("scroll", function () {
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
           }
@@ -959,12 +961,12 @@
   window.initHeaderScroll = initHeaderScroll;
 
   // Initialize header scroll when DOM is ready or when jQuery is available
-  if (typeof jQuery !== 'undefined') {
+  if (typeof jQuery !== "undefined") {
     $(document).ready(initHeaderScroll);
   } else {
     // Fallback if jQuery is not loaded yet
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof jQuery !== 'undefined') {
+    document.addEventListener("DOMContentLoaded", function () {
+      if (typeof jQuery !== "undefined") {
         $(document).ready(initHeaderScroll);
       } else {
         // Last resort - use vanilla JavaScript
@@ -979,13 +981,13 @@
   // Vanilla JavaScript fallback for header scroll
   function initHeaderScrollVanilla() {
     const checkForHeader = () => {
-      const header = document.querySelector('.site-header');
+      const header = document.querySelector(".site-header");
       if (header) {
         const toggleScrolled = () => {
           if (window.scrollY > 10) {
-            header.classList.add('is-scrolled');
+            header.classList.add("is-scrolled");
           } else {
-            header.classList.remove('is-scrolled');
+            header.classList.remove("is-scrolled");
           }
         };
 
@@ -994,7 +996,7 @@
 
         // Add scroll listener
         let scrollTimeout;
-        window.addEventListener('scroll', function() {
+        window.addEventListener("scroll", function () {
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
           }

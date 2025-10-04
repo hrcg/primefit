@@ -16,6 +16,7 @@
       this.$productsGrid = $(".woocommerce ul.products");
       this.currentGrid = this.getCurrentGrid();
       this.isMobile = this.isMobileDevice();
+      this.lastFocusedElement = null;
       this.init();
     }
 
@@ -24,21 +25,73 @@
       this.handleResize();
       this.applyGridLayout();
       this.syncFilterState();
+      this.addAccessibilityAttributes();
+    }
+
+    addAccessibilityAttributes() {
+      // Add ARIA labels to grid options
+      this.$gridOptions.each(function () {
+        const $option = $(this);
+        const gridValue = $option.data("grid");
+        $option.attr({
+          role: "button",
+          "aria-label": `Switch to ${gridValue} column grid view`,
+          tabindex: "0",
+        });
+      });
+
+      // Add ARIA attributes to filter dropdown
+      $(".filter-dropdown-toggle").each(function () {
+        const $toggle = $(this);
+        $toggle.attr({
+          "aria-haspopup": "listbox",
+          "aria-expanded": "false",
+        });
+      });
+
+      $(".filter-dropdown").each(function () {
+        const $dropdown = $(this);
+        $dropdown.attr("role", "listbox");
+      });
+
+      $(".filter-dropdown-option").each(function () {
+        const $option = $(this);
+        $option.attr({
+          role: "option",
+          tabindex: "-1",
+        });
+      });
     }
 
     bindEvents() {
       $(document).on("click", ".grid-option", this.handleGridClick.bind(this));
+      $(document).on(
+        "keydown",
+        ".grid-option",
+        this.handleGridKeydown.bind(this)
+      );
       $(document).on(
         "click",
         ".filter-dropdown-toggle",
         this.handleFilterToggle.bind(this)
       );
       $(document).on(
+        "keydown",
+        ".filter-dropdown-toggle",
+        this.handleFilterKeydown.bind(this)
+      );
+      $(document).on(
         "click",
         ".filter-dropdown-option",
         this.handleFilterOption.bind(this)
       );
+      $(document).on(
+        "keydown",
+        ".filter-dropdown-option",
+        this.handleFilterOptionKeydown.bind(this)
+      );
       $(document).on("click", this.handleOutsideClick.bind(this));
+      $(document).on("keydown", this.handleEscapeKey.bind(this));
       $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
     }
 
@@ -69,6 +122,10 @@
     handleFilterToggle(event) {
       event.preventDefault();
       event.stopPropagation();
+
+      // Track the element that triggered the dropdown for focus management
+      this.lastFocusedElement = $(event.currentTarget);
+
       const $dropdown = $(event.currentTarget).closest(".filter-dropdown");
       const isOpen = $dropdown.hasClass("open");
       $(".filter-dropdown").removeClass("open");
@@ -79,6 +136,8 @@
         if (typeof window.allowPageScroll === "function") {
           window.allowPageScroll();
         }
+        // Update ARIA state
+        $(event.currentTarget).attr("aria-expanded", "false");
       } else {
         $dropdown.addClass("open");
         // Add body class and prevent scroll on mobile when opening
@@ -88,6 +147,8 @@
             window.preventPageScroll().catch(() => {});
           }
         }
+        // Update ARIA state
+        $(event.currentTarget).attr("aria-expanded", "true");
       }
     }
 
@@ -97,25 +158,176 @@
       const $dropdown = $option.closest(".filter-dropdown");
       const filterValue = $option.data("filter");
       const filterText = $option.text().trim();
+
+      $dropdown.find(".filter-dropdown-toggle").attr("aria-expanded", "false");
       $dropdown.find(".filter-dropdown-text").text(filterText);
       $dropdown.removeClass("open");
+
       // Remove body class and restore scroll when selecting option
       document.body.classList.remove("filter-dropdown-open");
       if (typeof window.allowPageScroll === "function") {
         window.allowPageScroll();
       }
+
       this.applyFilter(filterValue);
+    }
+
+    // Cleanup method for memory leak prevention
+    destroy() {
+      $(document).off("click", ".grid-option");
+      $(document).off("keydown", ".grid-option");
+      $(document).off("click", ".filter-dropdown-toggle");
+      $(document).off("keydown", ".filter-dropdown-toggle");
+      $(document).off("click", ".filter-dropdown-option");
+      $(document).off("keydown", ".filter-dropdown-option");
+      $(document).off("click", this.handleOutsideClick.bind(this));
+      $(document).off("keydown", this.handleEscapeKey.bind(this));
+      $(window).off("resize");
     }
 
     handleOutsideClick(event) {
       const $target = $(event.target);
       if (!$target.closest(".filter-dropdown").length) {
-        $(".filter-dropdown").removeClass("open");
-        // Remove body class and restore scroll when closing dropdown
-        document.body.classList.remove("filter-dropdown-open");
-        if (typeof window.allowPageScroll === "function") {
-          window.allowPageScroll();
+        this.closeAllDropdowns();
+      }
+    }
+
+    handleEscapeKey(event) {
+      if (event.key === "Escape") {
+        this.closeAllDropdowns();
+        // Return focus to the last focused element if it was a dropdown trigger
+        if (this.lastFocusedElement && this.lastFocusedElement.length) {
+          this.lastFocusedElement.focus();
         }
+      }
+    }
+
+    closeAllDropdowns() {
+      $(".filter-dropdown").removeClass("open");
+      // Remove body class and restore scroll when closing dropdown
+      document.body.classList.remove("filter-dropdown-open");
+      if (typeof window.allowPageScroll === "function") {
+        window.allowPageScroll();
+      }
+    }
+
+    handleGridKeydown(event) {
+      const $button = $(event.currentTarget);
+      const $allButtons = $(".grid-option");
+
+      switch (event.key) {
+        case "Enter":
+        case " ":
+          event.preventDefault();
+          this.handleGridClick(event);
+          break;
+        case "ArrowRight":
+        case "ArrowDown":
+          event.preventDefault();
+          this.focusNextGridOption($button, $allButtons);
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          event.preventDefault();
+          this.focusPrevGridOption($button, $allButtons);
+          break;
+        case "Home":
+          event.preventDefault();
+          $allButtons.first().focus();
+          break;
+        case "End":
+          event.preventDefault();
+          $allButtons.last().focus();
+          break;
+      }
+    }
+
+    focusNextGridOption($current, $all) {
+      const currentIndex = $all.index($current);
+      const nextIndex = (currentIndex + 1) % $all.length;
+      $all.eq(nextIndex).focus();
+    }
+
+    focusPrevGridOption($current, $all) {
+      const currentIndex = $all.index($current);
+      const prevIndex = currentIndex === 0 ? $all.length - 1 : currentIndex - 1;
+      $all.eq(prevIndex).focus();
+    }
+
+    handleFilterKeydown(event) {
+      switch (event.key) {
+        case "Enter":
+        case " ":
+          event.preventDefault();
+          this.handleFilterToggle(event);
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          this.openFilterDropdown($(event.currentTarget));
+          break;
+      }
+    }
+
+    handleFilterOptionKeydown(event) {
+      const $option = $(event.currentTarget);
+      const $dropdown = $option.closest(".filter-dropdown");
+      const $allOptions = $dropdown.find(".filter-dropdown-option");
+
+      switch (event.key) {
+        case "Enter":
+        case " ":
+          event.preventDefault();
+          this.handleFilterOption(event);
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          this.focusNextFilterOption($option, $allOptions);
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          this.focusPrevFilterOption($option, $allOptions);
+          break;
+        case "Home":
+          event.preventDefault();
+          $allOptions.first().focus();
+          break;
+        case "End":
+          event.preventDefault();
+          $allOptions.last().focus();
+          break;
+        case "Escape":
+          event.preventDefault();
+          this.closeFilterDropdown($dropdown);
+          break;
+      }
+    }
+
+    focusNextFilterOption($current, $all) {
+      const currentIndex = $all.index($current);
+      const nextIndex = (currentIndex + 1) % $all.length;
+      $all.eq(nextIndex).focus();
+    }
+
+    focusPrevFilterOption($current, $all) {
+      const currentIndex = $all.index($current);
+      const prevIndex = currentIndex === 0 ? $all.length - 1 : currentIndex - 1;
+      $all.eq(prevIndex).focus();
+    }
+
+    openFilterDropdown($toggle) {
+      const $dropdown = $toggle.closest(".filter-dropdown");
+      this.handleFilterToggle({ currentTarget: $toggle[0] });
+      // Focus first option
+      setTimeout(() => {
+        $dropdown.find(".filter-dropdown-option").first().focus();
+      }, 100);
+    }
+
+    closeFilterDropdown($dropdown) {
+      $dropdown.removeClass("open");
+      document.body.classList.remove("filter-dropdown-open");
+      if (typeof window.allowPageScroll === "function") {
+        window.allowPageScroll();
       }
     }
 

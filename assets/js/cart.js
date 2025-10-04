@@ -18,38 +18,48 @@
   // Global variables for auto-close timer management
   let autoCloseTimeout = null;
   let userInteractionTimeout = null;
-  
+  let lastUserInteraction = 0;
+
   function startAutoCloseTimer() {
     // Clear any existing timeout
     if (autoCloseTimeout) {
       clearTimeout(autoCloseTimeout);
     }
-    
-    // Set new timeout for 5 seconds
+
+    // Get user-configurable timeout (accessibility preference)
+    const userTimeout = getUserPreferredTimeout();
+
+    // Set new timeout with user preference
     autoCloseTimeout = setTimeout(function () {
-      closeCart();
-    }, 5000);
+      // Only close if no recent user interaction
+      if (Date.now() - lastUserInteraction > userTimeout) {
+        closeCart();
+      }
+    }, userTimeout);
   }
-  
+
   function cancelAutoClose() {
     if (autoCloseTimeout) {
       clearTimeout(autoCloseTimeout);
       autoCloseTimeout = null;
     }
   }
-  
+
   function restartAutoCloseAfterDelay() {
     // Clear any existing restart timeout
     if (userInteractionTimeout) {
       clearTimeout(userInteractionTimeout);
     }
-    
+
+    // Update last interaction time
+    lastUserInteraction = Date.now();
+
     // Restart auto-close after 2 seconds of no interaction
     userInteractionTimeout = setTimeout(function () {
       startAutoCloseTimer();
     }, 2000);
   }
-  
+
   function cleanupAutoCloseTimers() {
     if (autoCloseTimeout) {
       clearTimeout(autoCloseTimeout);
@@ -60,6 +70,32 @@
       userInteractionTimeout = null;
     }
   }
+
+  function getUserPreferredTimeout() {
+    // Check for user preference in localStorage (for accessibility)
+    const storedPreference = localStorage.getItem("primefit_cart_timeout");
+    if (storedPreference) {
+      return parseInt(storedPreference) * 1000; // Convert to milliseconds
+    }
+
+    // Default timeout with accessibility consideration
+    // Longer timeout for users who may need more time
+    return 8000; // 8 seconds instead of 5 for better UX
+  }
+
+  // Initialize cart timer management
+  function initCartTimers() {
+    // Cleanup on page unload to prevent memory leaks
+    $(window).on("beforeunload", cleanupAutoCloseTimers);
+
+    // Track user interactions for better timeout management
+    $(document).on("click keydown scroll", function () {
+      lastUserInteraction = Date.now();
+    });
+  }
+
+  // Initialize timers when cart module loads
+  initCartTimers();
 
   // Cart functionality
   function getCartContext(clickedEl) {
@@ -193,7 +229,7 @@
     ) {
       window.ajaxAddToCartInstance.resetSubmissionFlag();
     }
-    
+
     // Clean up auto-close timers when cart is manually closed
     cleanupAutoCloseTimers();
   }
@@ -544,13 +580,18 @@
           errorMessage += " Please check browser console for details.";
 
           // Cart removal failed
-          
+
           // Show error in cart if possible
           const $cartPanel = $("#mini-cart-panel");
           if ($cartPanel.length) {
-            const $errorDiv = $('<div class="cart-error-message" style="background: #ff4444; color: white; padding: 10px; margin: 10px; border-radius: 4px; text-align: center;">Unable to remove item. Please try again.</div>');
+            const $errorDiv = $(
+              '<div class="cart-error-message" style="background: #ff4444; color: white; padding: 10px; margin: 10px; border-radius: 4px; text-align: center;">Unable to remove item. Please try again.</div>'
+            );
             $cartPanel.prepend($errorDiv);
-            setTimeout(() => $errorDiv.fadeOut(300, () => $errorDiv.remove()), 3000);
+            setTimeout(
+              () => $errorDiv.fadeOut(300, () => $errorDiv.remove()),
+              3000
+            );
           }
 
           // Fallback: reload page if AJAX fails
@@ -576,7 +617,7 @@
 
         // Show user-friendly error message instead of alert
         const errorMessage = "Unable to remove item. Please try again.";
-        
+
         // Try to show error in cart if possible, otherwise use console
         if (typeof window.showCartNotification === "function") {
           window.showCartNotification(errorMessage, "error");
@@ -585,9 +626,16 @@
           // Fallback: show a temporary message in the cart
           const $cartPanel = $("#mini-cart-panel");
           if ($cartPanel.length) {
-            const $errorDiv = $('<div class="cart-error-message" style="background: #ff4444; color: white; padding: 10px; margin: 10px; border-radius: 4px; text-align: center;">' + errorMessage + '</div>');
+            const $errorDiv = $(
+              '<div class="cart-error-message" style="background: #ff4444; color: white; padding: 10px; margin: 10px; border-radius: 4px; text-align: center;">' +
+                errorMessage +
+                "</div>"
+            );
             $cartPanel.prepend($errorDiv);
-            setTimeout(() => $errorDiv.fadeOut(300, () => $errorDiv.remove()), 3000);
+            setTimeout(
+              () => $errorDiv.fadeOut(300, () => $errorDiv.remove()),
+              3000
+            );
           }
         }
 
@@ -742,26 +790,46 @@
   );
 
   // Detect user interaction with cart form elements to prevent auto-close
-  $(document).on('focus', '#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select', function() {
-    cancelAutoClose();
-  });
-  
-  $(document).on('input', '#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select', function() {
-    cancelAutoClose();
-  });
-  
-  $(document).on('keydown', '#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select', function() {
-    cancelAutoClose();
-  });
-  
-  $(document).on('keyup', '#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select', function() {
-    cancelAutoClose();
-  });
-  
+  $(document).on(
+    "focus",
+    "#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select",
+    function () {
+      cancelAutoClose();
+    }
+  );
+
+  $(document).on(
+    "input",
+    "#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select",
+    function () {
+      cancelAutoClose();
+    }
+  );
+
+  $(document).on(
+    "keydown",
+    "#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select",
+    function () {
+      cancelAutoClose();
+    }
+  );
+
+  $(document).on(
+    "keyup",
+    "#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select",
+    function () {
+      cancelAutoClose();
+    }
+  );
+
   // Detect when user stops interacting
-  $(document).on('blur', '#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select', function() {
-    restartAutoCloseAfterDelay();
-  });
+  $(document).on(
+    "blur",
+    "#mini-cart-panel input, #mini-cart-panel textarea, #mini-cart-panel select",
+    function () {
+      restartAutoCloseAfterDelay();
+    }
+  );
 
   // Function to show empty cart state
   function showEmptyCartState() {
@@ -856,13 +924,15 @@
       success: function (response) {
         if (response.success) {
           // Update fragments directly if available
-          var frags = (response && response.fragments) || (response && response.data && response.data.fragments);
+          var frags =
+            (response && response.fragments) ||
+            (response && response.data && response.data.fragments);
           if (frags) {
             $.each(frags, function (key, value) {
               $(key).replaceWith(value);
             });
           }
-          
+
           // Refresh cart fragments using unified CartManager
           CartManager.queueRefresh("update_checkout");
           CartManager.queueRefresh("wc_fragment_refresh");

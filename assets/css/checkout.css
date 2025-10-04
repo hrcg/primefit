@@ -286,7 +286,6 @@
   min-width: 0;
 }
 
-
 /* ==========================================================================
    Order Summary Styles
    ========================================================================== */
@@ -700,7 +699,6 @@
   z-index: 10;
 }
 
-
 /* Tooltip for help icon */
 .help-icon-inside::after {
   content: attr(data-tooltip);
@@ -720,7 +718,6 @@
   margin-bottom: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
-
 
 .help-icon-inside:hover::after {
   opacity: 1;
@@ -1731,8 +1728,12 @@ body .checkout-processing-indicator .message {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Prevent white flash during checkout processing */
