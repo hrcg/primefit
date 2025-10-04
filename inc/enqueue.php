@@ -949,11 +949,6 @@ function primefit_optimize_cart_fragments() {
 		if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
 			// Defer cart fragments to reduce critical path
 			wp_script_add_data( 'wc-cart-fragments', 'defer', true );
-			
-			// Add preload for cart fragments to improve perceived performance
-			add_action( 'wp_head', function() {
-				echo '<link rel="preload" href="' . admin_url( 'admin-ajax.php' ) . '?action=woocommerce_get_refreshed_fragments" as="fetch" crossorigin>';
-			}, 1 );
 		}
 	}
 }
