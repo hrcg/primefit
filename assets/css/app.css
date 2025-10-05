@@ -23,7 +23,7 @@
 
   /* Derived colors - using CSS calc for better performance */
   --background: var(--bg);
-  --headerBackground: #0d0d0d;
+  --headerBackground: #131313;
   --card-background: var(--bg);
 
   /* Hero gradient - simplified */
@@ -55,7 +55,7 @@
 
   /* Derived colors automatically update via CSS variables */
   --background: var(--bg);
-  --headerBackground: #0d0d0d; /* Keep header dark in light theme */
+  --headerBackground: #131313; /* Keep header dark in light theme */
   --card-background: #f8f8f8;
 }
 
@@ -984,7 +984,7 @@ article {
   }
 
   .tiles-3 .tile-content {
-    padding: 16px;
+    padding: 0px 16px 25px 16px;
     max-width: 240px;
   }
 
@@ -1062,7 +1062,7 @@ article {
 
 .category-grid {
   position: relative;
-  margin: 10px 0;
+  margin: 20px 0 40px 0;
 }
 
 .category-grid-content {
@@ -1271,7 +1271,7 @@ article {
   }
 
   .category-tile {
-    flex: 0 0 calc(75% - 12px);
+    flex: 0 0 calc(80% - 12px);
     scroll-snap-align: start;
     scroll-snap-stop: always;
   }
@@ -1320,7 +1320,7 @@ article {
 
 @media (max-width: 480px) {
   .category-tile {
-    flex: 0 0 calc(85% - 10px);
+    flex: 0 0 calc(90% - 10px);
   }
 
   .category-tile-inner {

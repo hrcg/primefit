@@ -667,7 +667,7 @@
 .woocommerce ul.products {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 40px;
   list-style: none;
   margin: 0;
   padding: 0;
