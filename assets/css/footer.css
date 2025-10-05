@@ -29,6 +29,45 @@
   margin: 0 0 20px 0;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-heading-text {
+  flex: 1;
+}
+
+.footer-toggle {
+  background: none;
+  border: none;
+  color: #d0d0d0;
+  font-size: 18px;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.footer-toggle:hover {
+  color: #fff;
+}
+
+.toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.footer-column.collapsed .toggle-icon {
+  transform: rotate(0deg);
+}
+
+.footer-column.expanded .toggle-icon {
+  transform: rotate(45deg);
 }
 
 .footer-links {
@@ -143,13 +182,55 @@
 .footer-symbol {
   width: 18px;
   height: auto;
-  margin-top: 14px;
   vertical-align: middle;
   display: inline-block;
 }
 
+.site-built-with {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.site-built-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.site-built-link:hover {
+  opacity: 0.9;
+}
+
+.site-built-with span {
+  font-size: 10px;
+  color: #888;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.swiss-vector-icon {
+  width: 16px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.swiss-vector-icon:hover {
+  opacity: 1;
+}
+
 .join-link {
   text-decoration: none;
+}
+
+/* Hide toggles on desktop */
+.footer-toggle {
+  display: none;
 }
 
 /* Responsive Design */
@@ -184,12 +265,37 @@
   .download-app-btn {
     align-self: center;
   }
+
+  /* Show toggles on mobile */
+  .footer-toggle {
+    display: flex;
+  }
+
+  /* Make entire heading clickable on mobile */
+  .footer-heading {
+    cursor: pointer;
+    padding: 8px 0;
+    margin: 0 0 10px 0;
+  }
+
+  .footer-heading:hover {
+    color: #fff;
+  }
+
+  /* Collapsed state for mobile */
+  .footer-column.collapsed .footer-links {
+    display: none;
+  }
+
+  .footer-column.expanded .footer-links {
+    display: block;
+  }
 }
 
 @media (max-width: 480px) {
   .footer-content {
     grid-template-columns: 1fr;
-    gap: 25px;
+    gap: 15px;
   }
 
   .footer-column:nth-child(3),
@@ -209,5 +315,10 @@
   .social-icon img {
     width: 18px;
     height: 18px;
+  }
+
+  /* Ensure toggles work on smallest screens */
+  .footer-toggle {
+    display: flex;
   }
 }

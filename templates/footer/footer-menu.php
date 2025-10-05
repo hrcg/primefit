@@ -8,7 +8,12 @@
 
 <div class="footer-content">
 	<div class="footer-column">
-		<h3 class="footer-heading">HELP & SUPPORT</h3>
+		<h3 class="footer-heading">
+			<span class="footer-heading-text">HELP & SUPPORT</span>
+			<button class="footer-toggle" aria-label="Toggle Help & Support menu" aria-expanded="false">
+				<span class="toggle-icon">+</span>
+			</button>
+		</h3>
 		<?php
 		wp_nav_menu([
 			'theme_location' => 'footer-primary',
@@ -20,7 +25,12 @@
 	</div>
 	
 	<div class="footer-column">
-		<h3 class="footer-heading">SHOP</h3>
+		<h3 class="footer-heading">
+			<span class="footer-heading-text">SHOP</span>
+			<button class="footer-toggle" aria-label="Toggle Shop menu" aria-expanded="false">
+				<span class="toggle-icon">+</span>
+			</button>
+		</h3>
 		<?php
 		wp_nav_menu([
 			'theme_location' => 'footer-secondary',
@@ -32,7 +42,12 @@
 	</div>
 	
 	<div class="footer-column">
-		<h3 class="footer-heading">Collections</h3>
+		<h3 class="footer-heading">
+			<span class="footer-heading-text">Collections</span>
+			<button class="footer-toggle" aria-label="Toggle Collections menu" aria-expanded="false">
+				<span class="toggle-icon">+</span>
+			</button>
+		</h3>
 		<?php
 		wp_nav_menu([
 			'theme_location' => 'footer-tertiary',

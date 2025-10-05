@@ -124,6 +124,16 @@
 
 .site-brand .brand-symbol {
   display: none;
+  width: 28px;
+  height: auto;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -14px;
+  margin-top: -15px;
 }
 
 .site-brand .custom-logo {
@@ -135,6 +145,7 @@
   width: 160px;
   height: auto;
   display: block;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .site-title {
@@ -157,13 +168,39 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 0;
+  /* Ensure proper visibility on all devices */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 .hamburger span {
   height: 2px;
-  background: #fff;
+  background: #fff !important;
   display: block;
   transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* 
+ * HAMBURGER BUTTON VISIBILITY FIX
+ * Ensures hamburger button is always white and visible regardless of theme preference
+ * This fixes iOS visibility issues where the button becomes invisible in light themes
+ */
+[data-theme="light"] .hamburger span {
+  background: #fff !important;
+}
+
+@media (prefers-color-scheme: light) {
+  .hamburger span {
+    background: #fff !important;
+  }
+}
+
+/* iOS-specific optimizations for hamburger button visibility */
+@supports (-webkit-touch-callout: none) {
+  .hamburger span {
+    background: #fff !important;
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* Mobile Nav Panel */
@@ -445,7 +482,7 @@
 
   .site-brand .brand-symbol {
     display: block;
-    width: 32px;
+    width: 28px;
     height: auto;
     margin-left: 10px;
     opacity: 0;
@@ -471,6 +508,23 @@
   }
 
   /* Change logo to symbol when header is sticky on mobile */
+  .site-header.is-scrolled .site-brand .brand-logo {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  .site-header.is-scrolled .site-brand .brand-symbol {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Desktop logo to symbol transition on scroll */
+@media (min-width: 641px) {
+  .site-brand .brand-symbol {
+    display: block;
+  }
+
   .site-header.is-scrolled .site-brand .brand-logo {
     opacity: 0;
     transform: scale(0.8);

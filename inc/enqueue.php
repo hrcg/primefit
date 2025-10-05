@@ -283,6 +283,15 @@ function primefit_enqueue_assets() {
 		true // Defer for better performance
 	);
 	
+	// Footer functionality - load on all pages for mobile toggles
+	wp_enqueue_script(
+		'primefit-footer',
+		PRIMEFIT_THEME_URI . '/assets/js/footer.js',
+		[ 'jquery' ],
+		primefit_get_file_version( '/assets/js/footer.js' ),
+		true // Defer for better performance
+	);
+	
 	// Shop functionality - load on shop pages
 	// On mobile, this will be lazy loaded instead
 	if ( in_array( $page_type, [ 'shop', 'category', 'tag', 'front_page' ] ) && ! wp_is_mobile() ) {
