@@ -17,7 +17,7 @@ body.single-product .site-header {
   --product-card-bg: #f8f8f8;
   --product-overlay: rgba(0, 0, 0, 0.1);
   --product-shadow: rgba(0, 0, 0, 0.1);
-  --nav-svg: #000;
+  --nav-svg: #0d0d0d;
 }
 
 /* Dark Mode Variables */
@@ -30,7 +30,7 @@ body.single-product .site-header {
   --product-card-bg: #1a1a1a;
   --product-overlay: rgba(255, 255, 255, 0.1);
   --product-shadow: rgba(0, 0, 0, 0.3);
-  --nav-svg: #000;
+  --nav-svg: #0d0d0d;
 }
 
 @media (prefers-color-scheme: dark) {

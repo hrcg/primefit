@@ -11,17 +11,16 @@
 
   // Ensure this script only runs on order received pages
   const urlParams = new URLSearchParams(window.location.search);
-  const isOrderReceivedPage = (
+  const isOrderReceivedPage =
     // Check for order received page indicators
-    document.body.classList.contains('woocommerce-order-received') ||
-    document.querySelector('.woocommerce-order-received') ||
-    document.querySelector('.order-received') ||
-    document.querySelector('#order-received') ||
+    document.body.classList.contains("woocommerce-order-received") ||
+    document.querySelector(".woocommerce-order-received") ||
+    document.querySelector(".order-received") ||
+    document.querySelector("#order-received") ||
     // Check for URL parameters that indicate order received page
-    (urlParams.get('key') && urlParams.get('order')) ||
+    (urlParams.get("key") && urlParams.get("order")) ||
     // Check for order-received endpoint in URL path
-    window.location.pathname.includes('/order-received/')
-  );
+    window.location.pathname.includes("/order-received/");
 
   if (!isOrderReceivedPage) {
     // PrimeFit: payment-summary.js skipped - not on order received page
@@ -129,10 +128,10 @@
                         .card-content { padding: 15px; }
                         .order-item { border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; }
                         .summary-line { border-bottom: 1px solid #eee; padding: 8px 0; }
-                        .summary-line.total { border-top: 2px solid #000; font-weight: bold; }
+                        .summary-line.total { border-top: 2px solid #0d0d0d; font-weight: bold; }
                         @media print {
                             body { margin: 0; }
-                            .payment-summary-card { box-shadow: none; border: 1px solid #000; }
+                            .payment-summary-card { box-shadow: none; border: 1px solid #0d0d0d; }
                         }
                     </style>
                 </head>
@@ -242,7 +241,7 @@
                 top: 20px;
                 right: 20px;
                 background: var(--payment-summary-success, #44ff44);
-                color: #000;
+                color: #0d0d0d;
                 padding: 12px 20px;
                 border-radius: 8px;
                 font-weight: 600;

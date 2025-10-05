@@ -558,12 +558,14 @@
 .total-value {
   font-weight: 500;
   text-transform: uppercase;
+  color: var(--checkout-text);
 }
 
 .total-line.final-total .total-value {
   font-weight: 700;
   font-size: 18px;
   text-transform: uppercase;
+  color: var(--checkout-text);
 }
 
 /* ==========================================================================
@@ -1177,7 +1179,7 @@
 }
 
 .payment-method-icon.apple-pay {
-  background: #000;
+  background: #0d0d0d;
   color: white;
 }
 

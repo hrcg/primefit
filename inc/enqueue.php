@@ -548,7 +548,7 @@ function primefit_inline_critical_css() {
 	.section-header { text-align: center; margin-bottom: 3rem; }
 	.container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
 	.button { display: inline-block; padding: 0.75rem 1.5rem; border: none; text-decoration: none; cursor: pointer; font-weight: 600; }
-	.button--primary { background: #000; color: white; }
+	.button--primary { background: #0d0d0d; color: white; }
 	
 	/* Product grid critical styles */
     .product-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }

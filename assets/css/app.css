@@ -50,7 +50,7 @@
   --bg: #fcfcfc;
   --text: #0b0b0b;
   --muted: #6a6a6a;
-  --border: #e0e0e0;
+  --border: #272727;
   --accent: #ff4444;
 
   /* Derived colors automatically update via CSS variables */
@@ -65,7 +65,7 @@
     --bg: #ffffff;
     --text: #0b0b0b;
     --muted: #6a6a6a;
-    --border: #e0e0e0;
+    --border: #272727;
     --accent: #ff4444;
 
     /* Derived colors automatically update */
@@ -180,7 +180,7 @@ body.nav-open {
 
 .training-division-button.button--primary {
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
   border: 1px solid #fff;
 }
 
@@ -198,7 +198,7 @@ body.nav-open {
 
 .training-division-button.button--outline:hover {
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
   border: 1px solid #fff;
 }
 
@@ -276,7 +276,7 @@ body.nav-open {
     --background: #ffffff;
     --text: #0b0b0b;
     --muted: #606060;
-    --border: #e0e0e0;
+    --border: #272727;
     --accent: #ff4444;
     --card-background: #f8f8f8;
     --white: #ffffff;
@@ -292,7 +292,7 @@ body.nav-open {
   .button,
   .search-submit,
   .button--primary {
-    background: #000;
+    background: #0d0d0d;
     color: #fff;
   }
   .button:hover,
@@ -302,11 +302,11 @@ body.nav-open {
   }
   .button--secondary {
     background: #fff;
-    color: #000;
-    border: 1px solid #000;
+    color: #0d0d0d;
+    border: 1px solid #0d0d0d;
   }
   .button--secondary:hover {
-    background: #000;
+    background: #0d0d0d;
     color: #fff;
   }
   .button--outline {
@@ -422,7 +422,7 @@ article {
   align-items: center;
   justify-content: center;
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
   border: 0;
   padding: 8px 20px;
   cursor: pointer;
@@ -441,7 +441,7 @@ article {
 /* Button Styles */
 .button--primary {
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
 }
 
 .button--primary:hover {
@@ -449,14 +449,14 @@ article {
 }
 
 .button--secondary {
-  background: #000;
+  background: #0d0d0d;
   color: #fff;
   border: 1px solid #fff;
 }
 
 .button--secondary:hover {
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
 }
 
 .button--outline {
@@ -930,7 +930,7 @@ article {
   text-transform: uppercase;
   text-decoration: none;
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
   border: 1px solid #fff;
   transition: all 0.2s ease;
   min-width: 140px;
@@ -1075,7 +1075,7 @@ article {
   position: relative;
   overflow: hidden;
   border-radius: 0; /* Remove border radius to match example */
-  background: #000; /* Dark background like the example */
+  background: #0d0d0d; /* Dark background like the example */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   border: 1px solid var(--border);
 }
@@ -1211,7 +1211,7 @@ article {
 
   .category-tile-button:hover {
     background: var(--text, #fff);
-    color: var(--background, #000);
+    color: var(--background, #0d0d0d);
     border-color: var(--text, #fff);
   }
 }
@@ -1223,7 +1223,7 @@ article {
 
 [data-theme="dark"] .category-tile-button:hover {
   background: var(--text, #fff);
-  color: var(--background, #000);
+  color: var(--background, #0d0d0d);
   border-color: var(--text, #fff);
 }
 
@@ -1352,7 +1352,7 @@ article {
 }
 .pf-swatch.active {
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
 }
 
 /* Product Showcase Responsive Design */

@@ -710,12 +710,16 @@ function primefit_try_apply_coupon_from_cookie() {
 		return;
 	}
 
+	// Check if cart exists and is not empty before applying coupon
 	if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
 		$applied = primefit_apply_coupon_if_valid( $coupon_code );
 		if ( $applied ) {
 			// Clear cookie after successful application
 			setcookie( 'primefit_pending_coupon', '', [ 'expires' => time() - HOUR_IN_SECONDS, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' ] );
 		}
+	} elseif ( function_exists( 'WC' ) && WC()->cart && WC()->cart->is_empty() ) {
+		// Cart is empty, clear the pending coupon cookie to prevent auto-reapplication
+		setcookie( 'primefit_pending_coupon', '', [ 'expires' => time() - HOUR_IN_SECONDS, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' ] );
 	}
 }
 

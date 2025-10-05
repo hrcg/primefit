@@ -398,7 +398,7 @@
 .pf-mini-cart-empty__title {
   font-size: 20px;
   font-weight: 700;
-  color: #000;
+  color: #0d0d0d;
   margin: 0 0 12px;
   letter-spacing: 0.5px;
 }
@@ -419,7 +419,7 @@
 .pf-mini-cart-empty__btn {
   display: inline-block;
   padding: 12px 24px;
-  background: #000;
+  background: #0d0d0d;
   color: #fff;
   text-decoration: none;
   border-radius: 4px;
@@ -543,7 +543,7 @@
 .recommendations-title {
   font-size: 14px;
   font-weight: 700;
-  color: #000;
+  color: #0d0d0d;
   margin: 0 0 8px 0;
   text-align: center;
   letter-spacing: 0.5px;
@@ -634,7 +634,7 @@
 .recommendation-price {
   font-size: 12px;
   font-weight: 600;
-  color: #000;
+  color: #0d0d0d;
 }
 
 /* Discount Code Section */
@@ -648,7 +648,7 @@
 .discount-title {
   font-size: 14px;
   font-weight: 700;
-  color: #000;
+  color: #0d0d0d;
   margin: 0 0 16px 0;
   letter-spacing: 0.5px;
   padding: 0 20px;
@@ -682,7 +682,7 @@
 }
 
 .apply-coupon-btn {
-  background: #000;
+  background: #0d0d0d;
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -800,7 +800,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #000;
+  color: #0d0d0d;
 }
 
 .woocommerce-mini-cart__total .total strong {
@@ -834,7 +834,7 @@
 
 .woocommerce-mini-cart__buttons .button.wc-forward {
   background: #fff;
-  color: #000;
+  color: #0d0d0d;
   border: 1px solid #ddd;
 }
 
@@ -844,9 +844,9 @@
 }
 
 .woocommerce-mini-cart__buttons .button.checkout {
-  background: #000;
+  background: #0d0d0d;
   color: #fff;
-  border: 1px solid #000;
+  border: 1px solid #0d0d0d;
 }
 
 .woocommerce-mini-cart__buttons .button.checkout:hover {
@@ -864,7 +864,7 @@
 .order-summary-title {
   font-size: 14px;
   font-weight: 700;
-  color: #000;
+  color: #0d0d0d;
   margin: 0 0 16px 0;
   letter-spacing: 0.5px;
   padding: 0 20px;
@@ -891,14 +891,22 @@
 }
 
 .line-value {
-  color: #000;
+  color: #0d0d0d;
   font-weight: 500;
 }
 
 .total-value {
   font-weight: 700;
   font-size: 18px;
-  color: #000;
+  color: #0d0d0d;
+}
+
+/* Mini cart specific total value styling - ensure it stays black */
+.mini-cart-order-summary .total-value,
+.order-summary-line.total-line .total-value,
+.widget_shopping_cart .total-value,
+.woocommerce-mini-cart__total .total-value {
+  color: #0d0d0d !important;
 }
 
 /* Payment Icons */
@@ -940,13 +948,13 @@
 }
 
 .payment-icon.apple-pay {
-  background: #000;
+  background: #0d0d0d;
   color: white;
 }
 
 .payment-icon.klarna {
   background: #ffb3c7;
-  color: #000;
+  color: #0d0d0d;
 }
 
 .payment-icon.amex {
@@ -956,7 +964,7 @@
 
 .payment-icon.afterpay {
   background: #b2fce4;
-  color: #000;
+  color: #0d0d0d;
 }
 
 /* Hidden list fix for recommendations */
@@ -1016,7 +1024,7 @@
 .woocommerce-mini-cart-item-name,
 .mini_cart_item-name {
   font-weight: 600;
-  color: #000;
+  color: #0d0d0d;
   text-decoration: none;
   line-height: 1.3;
   text-transform: uppercase;

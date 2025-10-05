@@ -82,7 +82,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
+  color: #0d0d0d;
   animation: successPulse 2s ease-in-out infinite;
 }
 
@@ -195,22 +195,22 @@
 
 .status-badge.status-completed {
   background: var(--payment-summary-success);
-  color: #000;
+  color: #0d0d0d;
 }
 
 .status-badge.status-processing {
   background: var(--payment-summary-warning);
-  color: #000;
+  color: #0d0d0d;
 }
 
 .status-badge.status-on-hold {
   background: var(--payment-summary-warning);
-  color: #000;
+  color: #0d0d0d;
 }
 
 .status-badge.status-pending {
   background: var(--payment-summary-warning);
-  color: #000;
+  color: #0d0d0d;
 }
 
 .status-badge.status-cancelled,
@@ -741,7 +741,7 @@
   .payment-summary-container {
     padding: 0;
     background: #fff;
-    color: #000;
+    color: #0d0d0d;
   }
 
   .payment-summary-header {

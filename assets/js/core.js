@@ -1151,8 +1151,8 @@
           }, 500);
         }
       } else {
-        // Check for pending coupon from session (base URL case)
-        checkForPendingCouponFromSession();
+        // Note: Legacy session-based coupon checking removed;
+        // coupon persistence is now handled via cookies on the server-side
       }
     } catch (e) {
       // Ignore if URL API not available
@@ -1217,47 +1217,8 @@
 
   // Function to check for pending coupon from session
   // Now uses unified CouponManager for race condition prevention
-  function checkForPendingCouponFromSession() {
-    // Check for pending coupon data from cart fragments (hidden element)
-    var $couponData = jQuery(".primefit-coupon-data");
-    if ($couponData.length) {
-      var pendingCoupon = $couponData.data("pending-coupon");
-      if (pendingCoupon && pendingCoupon.trim()) {
-        // Use unified CouponManager to apply pending coupon
-        setTimeout(function () {
-          // Double-check that WooCommerce is loaded before applying
-          if (
-            typeof wc_add_to_cart_params !== "undefined" ||
-            jQuery(".woocommerce-mini-cart").length
-          ) {
-            CouponManager.applyCoupon(pendingCoupon.trim(), {
-              $form: jQuery(".mini-cart-coupon-form"),
-              onSuccess: () =>
-                CouponManager.cleanUrlAfterCouponApplication(
-                  pendingCoupon.trim()
-                ),
-            });
-          } else {
-            // Try again after another delay
-            setTimeout(function () {
-              if (
-                typeof wc_add_to_cart_params !== "undefined" ||
-                jQuery(".woocommerce-mini-cart").length
-              ) {
-                CouponManager.applyCoupon(pendingCoupon.trim(), {
-                  $form: jQuery(".mini-cart-coupon-form"),
-                  onSuccess: () =>
-                    CouponManager.cleanUrlAfterCouponApplication(
-                      pendingCoupon.trim()
-                    ),
-                });
-              }
-            }, 2000);
-          }
-        }, 1000); // Slightly longer delay for session-based coupons
-      }
-    }
-  }
+  // Note: Legacy DOM-based coupon data elements are no longer used;
+  // coupon persistence is now handled via cookies on the server-side
 
   // Header: add scrolled state to force black background on sticky
   function initHeaderScroll() {

@@ -175,56 +175,17 @@
           });
         }, 500);
       } else {
-        // Check for pending coupon from session (base URL case)
-        this.checkForPendingCouponFromSession();
+        // Note: Legacy session-based coupon checking removed;
+        // coupon persistence is now handled via cookies on the server-side
       }
     },
 
     /**
      * Check for pending coupon from session
      * Now uses unified CouponManager for race condition prevention
+     * Note: Legacy DOM-based coupon data elements are no longer used;
+     * coupon persistence is now handled via cookies on the server-side
      */
-    checkForPendingCouponFromSession: function () {
-      // Check for pending coupon data from cart fragments (hidden element)
-      const $couponData = jQuery(".primefit-coupon-data");
-      if ($couponData.length) {
-        const pendingCoupon = $couponData.data("pending-coupon");
-        if (pendingCoupon && pendingCoupon.trim()) {
-          // Use unified CouponManager to apply pending coupon
-          setTimeout(() => {
-            // Double-check that WooCommerce is loaded before applying
-            if (
-              typeof wc_add_to_cart_params !== "undefined" ||
-              jQuery(".woocommerce-checkout").length
-            ) {
-              CouponManager.applyCoupon(pendingCoupon.trim(), {
-                isCheckout: true,
-                onSuccess: () =>
-                  CouponManager.cleanUrlAfterCouponApplication(
-                    pendingCoupon.trim()
-                  ),
-              });
-            } else {
-              // Try again after another delay
-              setTimeout(() => {
-                if (
-                  typeof wc_add_to_cart_params !== "undefined" ||
-                  jQuery(".woocommerce-checkout").length
-                ) {
-                  CouponManager.applyCoupon(pendingCoupon.trim(), {
-                    isCheckout: true,
-                    onSuccess: () =>
-                      CouponManager.cleanUrlAfterCouponApplication(
-                        pendingCoupon.trim()
-                      ),
-                  });
-                }
-              }, 2000);
-            }
-          }, 1000); // Slightly longer delay for session-based coupons
-        }
-      }
-    },
 
     /**
      * Get currently applied coupons
