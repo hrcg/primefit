@@ -10,7 +10,7 @@ body.single-product .site-header {
 /* CSS Custom Properties for Dark/Light Mode */
 :root {
   --product-bg: #ffffff;
-  --product-text: #000000;
+  --product-text: #0d0d0d;
   --product-border: #e6e6e6;
   --product-muted: #666666;
   --product-accent: #ff4444;
@@ -22,7 +22,7 @@ body.single-product .site-header {
 
 /* Dark Mode Variables */
 [data-theme="dark"] {
-  --product-bg: #000000;
+  --product-bg: #0d0d0d;
   --product-text: #ffffff;
   --product-border: #333333;
   --product-muted: #999999;
@@ -35,7 +35,7 @@ body.single-product .site-header {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --product-bg: #000000;
+    --product-bg: #0d0d0d;
     --product-text: #ffffff;
     --product-border: #333333;
     --product-muted: #999999;
@@ -60,7 +60,7 @@ body.single-product .site-header {
 /* Force override any conflicting styles */
 body.single-product .single-product-page {
   background: var(--product-bg, #ffffff) !important;
-  color: var(--product-text, #000000) !important;
+  color: var(--product-text, #0d0d0d) !important;
 }
 
 .product-container {
@@ -1379,8 +1379,8 @@ body.single-product .single-product-page {
 /* High contrast mode */
 @media (prefers-contrast: high) {
   :root {
-    --product-border: #000000;
-    --product-muted: #000000;
+    --product-border: #0d0d0d;
+    --product-muted: #0d0d0d;
   }
 
   [data-theme="dark"] {

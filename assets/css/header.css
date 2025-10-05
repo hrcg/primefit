@@ -6,6 +6,7 @@
   background: var(--headerBackground);
   z-index: var(--z-dropdown);
   padding: 12px 0;
+  border-bottom: 1px solid transparent;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -128,7 +129,7 @@
   height: auto;
   opacity: 0;
   transform: scale(0.8);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -145,7 +146,7 @@
   width: 160px;
   height: auto;
   display: block;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .site-title {
@@ -210,7 +211,7 @@
   z-index: var(--z-dropdown);
   visibility: hidden;
   opacity: 0;
-  transition: visibility 0s linear 0.3s, opacity 0.3s ease;
+  transition: visibility 0s linear 0.2s, opacity 0.2s ease;
 }
 
 .mobile-nav-overlay {
@@ -232,7 +233,7 @@
   background: var(--background);
   color: var(--text);
   transform: translateX(-100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
 }
@@ -314,7 +315,7 @@
   transform: translateY(-50%);
   font-size: 32px;
   font-weight: 400;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .mobile-menu .menu-item-has-children.mobile-submenu-open > a::after {
@@ -324,7 +325,7 @@
 .mobile-menu .sub-menu {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height 0.2s ease;
   margin: 0 -16px;
   padding: 0 16px;
 }
@@ -343,7 +344,7 @@
   font-weight: 600;
   color: var(--text);
   border-left: 2px solid transparent;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .mobile-menu .sub-menu a:hover {
@@ -387,7 +388,7 @@
   transform: translateY(-50%);
   font-size: 18px;
   font-weight: 400;
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .mobile-menu--tertiary .menu-item-has-children.mobile-submenu-open > a::after {
@@ -397,7 +398,7 @@
 .mobile-menu--tertiary .sub-menu {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease;
+  transition: max-height 0.2s ease;
   background: rgba(255, 255, 255, 0.05);
   margin: 0 -16px;
   padding: 0 16px;
@@ -417,7 +418,7 @@
   font-weight: 600;
   color: var(--text);
   border-left: 2px solid transparent;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .mobile-menu--tertiary .sub-menu a:hover {
@@ -428,7 +429,7 @@
 .mobile-open .mobile-nav-wrap {
   visibility: visible;
   opacity: 1;
-  transition: visibility 0s linear 0s, opacity 0.3s ease;
+  transition: visibility 0s linear 0s, opacity 0.2s ease;
 }
 
 .mobile-open .mobile-nav-overlay {
@@ -476,8 +477,8 @@
   }
 
   .site-brand .brand-logo {
-    width: 130px;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    width: 135px;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
   .site-brand .brand-symbol {
@@ -487,7 +488,7 @@
     margin-left: 10px;
     opacity: 0;
     transform: scale(0.8);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -539,13 +540,13 @@
 /* Front page: transparent header overlaying hero */
 .has-hero-header .site-header {
   background: transparent;
-  border-bottom: 0;
 }
 
 /* When scrolled, force black background even on front page */
 .site-header.is-scrolled,
 .has-hero-header .site-header.is-scrolled {
   background: var(--headerBackground) !important;
+  border-bottom-color: var(--border);
 }
 
 /* Scroll Prevention Styles */
@@ -567,7 +568,7 @@
   background-color: var(--accent);
   z-index: var(--z-promo);
   padding: 12px 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 /* Clickable promo bar styles */
@@ -662,7 +663,7 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
   z-index: var(--z-overlay);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
@@ -718,7 +719,7 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
   display: block;
   padding: 4px 0;
 }

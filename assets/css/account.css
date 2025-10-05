@@ -11,22 +11,22 @@
    ========================================================================== */
 
 :root {
-  --account-bg: #000000;
+  --account-bg: #0d0d0d;
   --account-text: #ffffff;
   --account-text-muted: #cccccc;
   --account-text-light: #999999;
   --account-input-bg: #1a1a1a;
   --account-input-border: #333333;
   --account-input-focus-border: #ffffff;
-  --account-button-bg: #000000;
+  --account-button-bg: #0d0d0d;
   --account-button-hover-bg: #333333;
   --account-button-text: #ffffff;
   --account-border: #333333;
-  --account-card-bg: #000000;
+  --account-card-bg: #0d0d0d;
   --account-error-bg: #ff4444;
   --account-error-text: #ffffff;
   --account-success-bg: #44ff44;
-  --account-success-text: #000000;
+  --account-success-text: #0d0d0d;
   --account-dropdown-bg: #1a1a1a;
   --account-dropdown-text: #ffffff;
   --account-dropdown-hover: #333333;
@@ -41,42 +41,42 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --account-bg: #ffffff;
-    --account-text: #000000;
+    --account-text: #0d0d0d;
     --account-text-muted: #666666;
     --account-text-light: #999999;
     --account-input-bg: #ffffff;
     --account-input-border: #cccccc;
-    --account-input-focus-border: #000000;
-    --account-button-bg: #000000;
+    --account-input-focus-border: #0d0d0d;
+    --account-button-bg: #0d0d0d;
     --account-button-hover-bg: #333333;
     --account-button-text: #ffffff;
     --account-border: #cccccc;
     --account-card-bg: #ffffff;
     --account-dropdown-bg: #ffffff;
-    --account-dropdown-text: #000000;
+    --account-dropdown-text: #0d0d0d;
     --account-dropdown-hover: #f0f0f0;
     --account-dropdown-selected: #e0e0e0;
     --account-nav-bg: #f8f8f8;
     --account-nav-active-bg: #e0e0e0;
-    --account-nav-text: #000000;
+    --account-nav-text: #0d0d0d;
     --account-nav-hover-bg: #f0f0f0;
   }
 }
 
 /* Dark theme override */
 [data-theme="dark"] {
-  --account-bg: #000000;
+  --account-bg: #0d0d0d;
   --account-text: #ffffff;
   --account-text-muted: #cccccc;
   --account-text-light: #999999;
   --account-input-bg: #1a1a1a;
   --account-input-border: #333333;
   --account-input-focus-border: #ffffff;
-  --account-button-bg: #000000;
+  --account-button-bg: #0d0d0d;
   --account-button-hover-bg: #333333;
   --account-button-text: #ffffff;
   --account-border: #333333;
-  --account-card-bg: #000000;
+  --account-card-bg: #0d0d0d;
   --account-dropdown-bg: #1a1a1a;
   --account-dropdown-text: #ffffff;
   --account-dropdown-hover: #333333;
@@ -340,7 +340,7 @@
   align-items: center;
   max-width: fit-content;
   padding: 12px 24px;
-  background: #000000;
+  background: #0d0d0d;
   color: #ffffff;
   text-decoration: none;
   border-radius: 8px;
@@ -859,94 +859,94 @@
 @media (prefers-color-scheme: dark) {
   .sign-in-button {
     background: #ffffff;
-    color: #000000;
+    color: #0d0d0d;
     border: 2px solid #ffffff;
   }
 
   .sign-in-button:hover {
     background: #f0f0f0;
-    color: #000000;
+    color: #0d0d0d;
   }
 
   /* Login submit button in dark mode */
   .login-form .woocommerce-form-login__submit {
     background: #ffffff;
-    color: #000000;
+    color: #0d0d0d;
   }
 
   .login-form .woocommerce-form-login__submit:hover {
     background: #f0f0f0;
-    color: #000000;
+    color: #0d0d0d;
   }
 
   /* Create account button in dark mode */
   .create-account-button {
     background: #ffffff;
-    color: #000000;
+    color: #0d0d0d;
     border: 2px solid #ffffff;
   }
 
   .create-account-button:hover {
     background: #f0f0f0;
-    color: #000000;
+    color: #0d0d0d;
   }
 
   /* Register form submit button in dark mode */
   .woocommerce-form-register .woocommerce-form-register__submit {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #0d0d0d !important;
   }
 
   .woocommerce-form-register .woocommerce-form-register__submit:hover {
     background: #f0f0f0 !important;
-    color: #000000 !important;
+    color: #0d0d0d !important;
   }
 }
 
 [data-theme="dark"] .sign-in-button {
   background: #ffffff;
-  color: #000000;
+  color: #0d0d0d;
   border: 2px solid #ffffff;
 }
 
 [data-theme="dark"] .sign-in-button:hover {
   background: #f0f0f0;
-  color: #000000;
+  color: #0d0d0d;
 }
 
 [data-theme="dark"] .login-form .woocommerce-form-login__submit {
   background: #ffffff;
-  color: #000000;
+  color: #0d0d0d;
 }
 
 [data-theme="dark"] .login-form .woocommerce-form-login__submit:hover {
   background: #f0f0f0;
-  color: #000000;
+  color: #0d0d0d;
 }
 
 [data-theme="dark"] .create-account-button {
   background: #ffffff;
-  color: #000000;
+  color: #0d0d0d;
   border: 2px solid #ffffff;
 }
 
 [data-theme="dark"] .create-account-button:hover {
   background: #f0f0f0;
-  color: #000000;
+  color: #0d0d0d;
 }
 
 [data-theme="dark"]
   .woocommerce-form-register
   .woocommerce-form-register__submit {
   background: #ffffff !important;
-  color: #000000 !important;
+  color: #0d0d0d !important;
 }
 
 [data-theme="dark"]
   .woocommerce-form-register
   .woocommerce-form-register__submit:hover {
   background: #f0f0f0 !important;
-  color: #000000 !important;
+  color: #0d0d0d !important;
 }
 
 /* ==========================================================================
@@ -1264,7 +1264,7 @@
 }
 
 .woocommerce-EditAccountForm .woocommerce-Button {
-  background: #000000;
+  background: #0d0d0d;
   color: #ffffff;
   border: none;
   border-radius: 4px;

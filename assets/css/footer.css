@@ -1,9 +1,9 @@
 /* Footer Styles */
 .site-footer {
-  background-color: #0d0d0d;
+  background-color: #131313;
   color: #b8b8b8;
   padding: 0;
-  border-top: none;
+  border-top: 1px solid var(--border);
 }
 
 .footer-top {

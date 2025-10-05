@@ -13,11 +13,11 @@
 
 :root {
   /* Default dark mode values */
-  --payment-summary-bg: #000000;
+  --payment-summary-bg: #0d0d0d;
   --payment-summary-text: #ffffff;
   --payment-summary-text-muted: #cccccc;
   --payment-summary-text-light: #999999;
-  --payment-summary-card-bg: #000000;
+  --payment-summary-card-bg: #0d0d0d;
   --payment-summary-border: #333333;
   --payment-summary-success: #44ff44;
   --payment-summary-warning: #ffaa00;
@@ -30,7 +30,7 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --payment-summary-bg: #ffffff;
-    --payment-summary-text: #000000;
+    --payment-summary-text: #0d0d0d;
     --payment-summary-text-muted: #666666;
     --payment-summary-text-light: #999999;
     --payment-summary-card-bg: #ffffff;
@@ -40,11 +40,11 @@
 }
 
 [data-theme="dark"] {
-  --payment-summary-bg: #000000;
+  --payment-summary-bg: #0d0d0d;
   --payment-summary-text: #ffffff;
   --payment-summary-text-muted: #cccccc;
   --payment-summary-text-light: #999999;
-  --payment-summary-card-bg: #000000;
+  --payment-summary-card-bg: #0d0d0d;
   --payment-summary-border: #333333;
   --payment-summary-shadow: rgba(0, 0, 0, 0.2);
 }
@@ -110,8 +110,7 @@
   margin: 0 0 16px 0;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .payment-summary-subtitle {
@@ -119,8 +118,7 @@
   color: var(--payment-summary-text-muted);
   margin: 0;
   line-height: 1.5;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .payment-summary-subtitle strong {
@@ -169,8 +167,7 @@
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .card-content {
@@ -227,8 +224,7 @@
   color: var(--payment-summary-text-muted);
   margin: 0;
   line-height: 1.5;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 /* ==========================================================================
@@ -285,8 +281,7 @@
   font-weight: 600;
   color: var(--payment-summary-text);
   margin: 0 0 20px 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .item-meta {
@@ -317,8 +312,7 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--payment-summary-text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 /* ==========================================================================
@@ -331,7 +325,6 @@
   align-items: center;
   padding: 12px 0;
 }
-
 
 .summary-line.total {
   border-top: 1px solid var(--payment-summary-border);
@@ -355,8 +348,7 @@
   font-size: 14px;
   color: var(--payment-summary-text);
   font-weight: 600;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .summary-line.total .summary-label,
@@ -405,8 +397,7 @@
   font-weight: 600;
   color: var(--payment-summary-text);
   margin: 0 0 4px 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .payment-method-description {
@@ -454,8 +445,7 @@
   font-weight: 600;
   color: var(--payment-summary-text);
   margin: 0 0 8px 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .address-content {
@@ -490,8 +480,7 @@
   color: var(--payment-summary-text-muted);
   line-height: 1.6;
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 /* ==========================================================================
@@ -519,8 +508,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .payment-summary-actions .button--primary {
@@ -590,8 +578,7 @@
   margin: 0 0 8px 0;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 .tracking-info p {
@@ -599,8 +586,7 @@
   color: var(--payment-summary-text-muted);
   margin: 0;
   line-height: 1.5;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
-    sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 /* ==========================================================================
@@ -615,7 +601,6 @@
 }
 
 @media (max-width: 768px) {
-
   .payment-summary-title {
     font-size: 28px;
   }

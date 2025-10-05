@@ -11,28 +11,28 @@
    ========================================================================== */
 
 :root {
-  --checkout-bg: #000000;
+  --checkout-bg: #0d0d0d;
   --checkout-text: #ffffff;
   --checkout-text-muted: #cccccc;
   --checkout-text-light: #999999;
   --checkout-input-bg: #1a1a1a;
   --checkout-input-border: #333333;
   --checkout-input-focus-border: #ffffff;
-  --checkout-button-bg: #000000;
+  --checkout-button-bg: #0d0d0d;
   --checkout-button-hover-bg: #333333;
   --checkout-button-text: #ffffff;
   --checkout-border: #333333;
-  --checkout-summary-bg: #000000;
+  --checkout-summary-bg: #0d0d0d;
   --checkout-error-bg: #ff4444;
   --checkout-error-text: #ffffff;
   --checkout-success-bg: #44ff44;
-  --checkout-success-text: #000000;
+  --checkout-success-text: #0d0d0d;
   --checkout-dropdown-bg: #1a1a1a;
   --checkout-dropdown-text: #ffffff;
   --checkout-dropdown-hover: #333333;
   --checkout-dropdown-selected: #444444;
   --checkout-coupon-btn-bg: #ffffff;
-  --checkout-coupon-btn-text: #000000;
+  --checkout-coupon-btn-text: #0d0d0d;
   --checkout-coupon-btn-hover-bg: #f0f0f0;
 }
 
@@ -40,22 +40,22 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     --checkout-bg: #ffffff;
-    --checkout-text: #000000;
+    --checkout-text: #0d0d0d;
     --checkout-text-muted: #666666;
     --checkout-text-light: #999999;
     --checkout-input-bg: #ffffff;
     --checkout-input-border: #cccccc;
-    --checkout-input-focus-border: #000000;
-    --checkout-button-bg: #000000;
+    --checkout-input-focus-border: #0d0d0d;
+    --checkout-button-bg: #0d0d0d;
     --checkout-button-hover-bg: #333333;
     --checkout-button-text: #ffffff;
     --checkout-border: #cccccc;
     --checkout-summary-bg: #ffffff;
     --checkout-dropdown-bg: #ffffff;
-    --checkout-dropdown-text: #000000;
+    --checkout-dropdown-text: #0d0d0d;
     --checkout-dropdown-hover: #f0f0f0;
     --checkout-dropdown-selected: #ffffff;
-    --checkout-coupon-btn-bg: #000000;
+    --checkout-coupon-btn-bg: #0d0d0d;
     --checkout-coupon-btn-text: #ffffff;
     --checkout-coupon-btn-hover-bg: #333333;
   }
@@ -63,24 +63,24 @@
 
 /* Dark theme override */
 [data-theme="dark"] {
-  --checkout-bg: #000000;
+  --checkout-bg: #0d0d0d;
   --checkout-text: #ffffff;
   --checkout-text-muted: #cccccc;
   --checkout-text-light: #999999;
   --checkout-input-bg: #1a1a1a;
   --checkout-input-border: #333333;
   --checkout-input-focus-border: #ffffff;
-  --checkout-button-bg: #000000;
+  --checkout-button-bg: #0d0d0d;
   --checkout-button-hover-bg: #333333;
   --checkout-button-text: #ffffff;
   --checkout-border: #333333;
-  --checkout-summary-bg: #000000;
+  --checkout-summary-bg: #0d0d0d;
   --checkout-dropdown-bg: #1a1a1a;
   --checkout-dropdown-text: #ffffff;
   --checkout-dropdown-hover: #333333;
   --checkout-dropdown-selected: #444444;
   --checkout-coupon-btn-bg: #ffffff;
-  --checkout-coupon-btn-text: #000000;
+  --checkout-coupon-btn-text: #0d0d0d;
   --checkout-coupon-btn-hover-bg: #f0f0f0;
 }
 

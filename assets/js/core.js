@@ -1282,7 +1282,7 @@
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
           }
-          scrollTimeout = setTimeout(toggleScrolled, 10);
+          scrollTimeout = setTimeout(toggleScrolled, 1);
         });
 
         return true; // Header found and initialized
@@ -1341,7 +1341,7 @@
           if (scrollTimeout) {
             clearTimeout(scrollTimeout);
           }
-          scrollTimeout = setTimeout(toggleScrolled, 10);
+          scrollTimeout = setTimeout(toggleScrolled, 1);
         });
 
         return true; // Header found and initialized
