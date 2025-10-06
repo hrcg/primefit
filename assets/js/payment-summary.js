@@ -31,6 +31,10 @@
    * Payment Summary functionality
    */
   const PaymentSummary = {
+    // Store references for cleanup
+    observers: [],
+    eventHandlers: new Map(),
+
     /**
      * Initialize payment summary features
      */
@@ -38,20 +42,48 @@
       this.bindEvents();
       this.initAnimations();
       this.initPrintFunctionality();
+
+      // Add cleanup on page unload to prevent memory leaks
+      window.addEventListener("beforeunload", () => {
+        this.cleanup();
+      });
     },
 
     /**
-     * Bind event handlers
+     * Bind event handlers with stored references for cleanup
      */
     bindEvents: function () {
       // Print order functionality
-      $(document).on("click", ".print-order-btn", this.printOrder);
+      const printHandler = this.printOrder.bind(this);
+      $(document).on("click", ".print-order-btn", printHandler);
+      this.eventHandlers.set("print-order-btn", printHandler);
 
       // Copy order number functionality
-      $(document).on("click", ".copy-order-number", this.copyOrderNumber);
+      const copyHandler = this.copyOrderNumber.bind(this);
+      $(document).on("click", ".copy-order-number", copyHandler);
+      this.eventHandlers.set("copy-order-number", copyHandler);
 
       // Share order functionality
-      $(document).on("click", ".share-order-btn", this.shareOrder);
+      const shareHandler = this.shareOrder.bind(this);
+      $(document).on("click", ".share-order-btn", shareHandler);
+      this.eventHandlers.set("share-order-btn", shareHandler);
+    },
+
+    /**
+     * Cleanup method to prevent memory leaks
+     */
+    cleanup: function () {
+      // Disconnect all observers
+      this.observers.forEach(observer => {
+        observer.disconnect();
+      });
+      this.observers.length = 0;
+
+      // Remove all event listeners
+      this.eventHandlers.forEach((handler, selector) => {
+        $(document).off("click", selector, handler);
+      });
+      this.eventHandlers.clear();
     },
 
     /**
@@ -73,6 +105,9 @@
             rootMargin: "0px 0px -50px 0px",
           }
         );
+
+        // Store observer for cleanup
+        this.observers.push(observer);
 
         document.querySelectorAll(".payment-summary-card").forEach((card) => {
           observer.observe(card);

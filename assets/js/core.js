@@ -1039,14 +1039,16 @@
         document.documentElement.classList.add("reduced-data-mode");
       }
 
-      // Listen for changes
-      reducedDataQuery.addListener(function (e) {
+      // Listen for changes with stored handler for cleanup
+      window.reducedDataHandler = function (e) {
         if (e.matches) {
           document.documentElement.classList.add("reduced-data-mode");
         } else {
           document.documentElement.classList.remove("reduced-data-mode");
         }
-      });
+      };
+
+      reducedDataQuery.addListener(window.reducedDataHandler);
     }
 
     // Check for save data header
@@ -1082,8 +1084,8 @@
         document.head.appendChild(style);
       }
 
-      // Listen for connection changes
-      connection.addEventListener("change", function () {
+      // Listen for connection changes with stored handler for cleanup
+      window.connectionChangeHandler = function () {
         if (
           connection.effectiveType === "slow-2g" ||
           connection.effectiveType === "2g"
@@ -1092,7 +1094,9 @@
         } else {
           document.documentElement.classList.remove("slow-connection");
         }
-      });
+      };
+
+      connection.addEventListener("change", window.connectionChangeHandler);
     }
   }
 

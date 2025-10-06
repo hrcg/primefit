@@ -35,8 +35,8 @@
       column.classList.add("collapsed");
       toggle.setAttribute("aria-expanded", "false");
 
-      // Add click event listener to the entire heading
-      heading.addEventListener("click", function (e) {
+      // Add click event listener to the entire heading with handler reference
+      heading.clickHandler = function (e) {
         e.preventDefault();
 
         const isExpanded = column.classList.contains("expanded");
@@ -52,7 +52,9 @@
           column.classList.add("expanded");
           toggle.setAttribute("aria-expanded", "true");
         }
-      });
+      };
+
+      heading.addEventListener("click", heading.clickHandler);
     });
   }
 
@@ -84,11 +86,42 @@
     // Initialize on page load
     initFooterToggles();
 
-    // Handle window resize
-    let resizeTimeout;
-    window.addEventListener("resize", function () {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(handleResize, 250);
+    // Handle window resize with proper cleanup reference
+    window.footerResizeHandler = function () {
+      clearTimeout(window.footerResizeTimeout);
+      window.footerResizeTimeout = setTimeout(handleResize, 250);
+    };
+
+    window.addEventListener("resize", window.footerResizeHandler);
+
+    // Add cleanup on page unload to prevent memory leaks
+    window.addEventListener("beforeunload", cleanupFooterToggles);
+  }
+
+  /**
+   * Cleanup function to prevent memory leaks
+   */
+  function cleanupFooterToggles() {
+    // Remove resize event listener
+    if (window.footerResizeHandler) {
+      window.removeEventListener("resize", window.footerResizeHandler);
+      window.footerResizeHandler = null;
+    }
+
+    // Clear any pending timeouts
+    if (window.footerResizeTimeout) {
+      clearTimeout(window.footerResizeTimeout);
+      window.footerResizeTimeout = null;
+    }
+
+    // Remove click event listeners from footer headings
+    const footerColumns = document.querySelectorAll(".footer-column");
+    footerColumns.forEach(function (column) {
+      const heading = column.querySelector(".footer-heading");
+      if (heading && heading.clickHandler) {
+        heading.removeEventListener("click", heading.clickHandler);
+        heading.clickHandler = null;
+      }
     });
   }
 

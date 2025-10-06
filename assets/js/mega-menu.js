@@ -17,6 +17,8 @@
       this.isDesktop = this.isDesktopDevice();
       this.isOpen = false;
       this.hoverTimeout = null;
+      this.resizeHandler = null;
+      this.outsideClickHandler = null;
       this.init();
     }
 
@@ -25,39 +27,72 @@
 
       this.bindEvents();
       this.handleResize();
+
+      // Add cleanup on page unload to prevent memory leaks
+      window.addEventListener("beforeunload", () => {
+        this.cleanup();
+      });
+    }
+
+    /**
+     * Cleanup method to prevent memory leaks
+     */
+    cleanup() {
+      // Clear hover timeout
+      if (this.hoverTimeout) {
+        clearTimeout(this.hoverTimeout);
+        this.hoverTimeout = null;
+      }
+
+      // Remove resize event listener
+      if (this.resizeHandler) {
+        $(window).off("resize", this.resizeHandler);
+        this.resizeHandler = null;
+      }
+
+      // Remove document event listeners
+      if (this.outsideClickHandler) {
+        $(document).off("click", this.outsideClickHandler);
+        this.outsideClickHandler = null;
+      }
+
+      // Remove jQuery event listeners using proper namespace
+      $(document).off("mouseenter.megaMenu mouseleave.megaMenu click.megaMenu");
     }
 
     bindEvents() {
       // Show mega menu only on specific menu item hover (desktop only)
       // Look for menu items with data-mega-menu="true" attribute on the link
       $(document).on(
-        "mouseenter",
+        "mouseenter.megaMenu",
         ".menu--primary .menu-item a[data-mega-menu='true']",
         this.handleMenuItemHover.bind(this)
       );
       $(document).on(
-        "mouseleave",
+        "mouseleave.megaMenu",
         ".menu--primary .menu-item a[data-mega-menu='true']",
         this.handleMenuItemLeave.bind(this)
       );
 
       // Also handle hover on the mega menu itself to keep it open
       $(document).on(
-        "mouseenter",
+        "mouseenter.megaMenu",
         ".mega-menu",
         this.handleMegaMenuHover.bind(this)
       );
       $(document).on(
-        "mouseleave",
+        "mouseleave.megaMenu",
         ".mega-menu",
         this.handleMegaMenuLeave.bind(this)
       );
 
       // Hide mega menu when clicking outside
-      $(document).on("click", this.handleOutsideClick.bind(this));
+      this.outsideClickHandler = this.handleOutsideClick.bind(this);
+      $(document).on("click.megaMenu", this.outsideClickHandler);
 
-      // Handle window resize
-      $(window).on("resize", this.debounce(this.handleResize.bind(this), 250));
+      // Handle window resize with stored reference for cleanup
+      this.resizeHandler = this.debounce(this.handleResize.bind(this), 250);
+      $(window).on("resize.megaMenu", this.resizeHandler);
     }
 
     handleMenuItemHover(event) {

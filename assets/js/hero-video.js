@@ -12,6 +12,10 @@
   // Hero Video Background Handler
   class HeroVideoHandler {
     constructor() {
+      this.resizeTimeout = null;
+      this.loadHandler = null;
+      this.resizeHandler = null;
+      this.videoEventHandlers = new Map(); // Store video event handlers for cleanup
       this.init();
     }
 
@@ -21,21 +25,57 @@
         this.handleHeroVideos();
         this.ensureFallbackVisibility();
       } else {
-        window.addEventListener("load", () => {
+        this.loadHandler = () => {
           this.handleHeroVideos();
           this.ensureFallbackVisibility();
-        });
+        };
+        window.addEventListener("load", this.loadHandler);
       }
 
       // Handle window resize (device orientation changes, etc.)
-      let resizeTimeout;
-      window.addEventListener("resize", () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
+      this.resizeHandler = () => {
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = setTimeout(() => {
           this.handleHeroVideos();
           this.ensureFallbackVisibility();
         }, 250);
+      };
+      window.addEventListener("resize", this.resizeHandler);
+
+      // Add cleanup on page unload to prevent memory leaks
+      window.addEventListener("beforeunload", () => {
+        this.cleanup();
       });
+    }
+
+    /**
+     * Cleanup method to prevent memory leaks
+     */
+    cleanup() {
+      // Remove load event listener
+      if (this.loadHandler) {
+        window.removeEventListener("load", this.loadHandler);
+        this.loadHandler = null;
+      }
+
+      // Remove resize event listener and clear timeout
+      if (this.resizeHandler) {
+        window.removeEventListener("resize", this.resizeHandler);
+        this.resizeHandler = null;
+      }
+
+      if (this.resizeTimeout) {
+        clearTimeout(this.resizeTimeout);
+        this.resizeTimeout = null;
+      }
+
+      // Remove video event listeners
+      this.videoEventHandlers.forEach((handlers, videoElement) => {
+        handlers.forEach((handler, event) => {
+          videoElement.removeEventListener(event, handler);
+        });
+      });
+      this.videoEventHandlers.clear();
     }
 
     handleHeroVideos() {
@@ -75,25 +115,40 @@
     }
 
     setupVideoEvents($video, videoElement) {
+      // Store event handlers for cleanup
+      if (!this.videoEventHandlers.has(videoElement)) {
+        this.videoEventHandlers.set(videoElement, new Map());
+      }
+
+      const handlers = this.videoEventHandlers.get(videoElement);
+
       // When video can play through
-      videoElement.addEventListener("canplaythrough", () => {
+      const canPlayHandler = () => {
         this.onVideoReady($video, videoElement);
-      });
+      };
+      videoElement.addEventListener("canplaythrough", canPlayHandler);
+      handlers.set("canplaythrough", canPlayHandler);
 
       // When video starts playing
-      videoElement.addEventListener("playing", () => {
+      const playingHandler = () => {
         this.onVideoPlaying($video, videoElement);
-      });
+      };
+      videoElement.addEventListener("playing", playingHandler);
+      handlers.set("playing", playingHandler);
 
       // Handle video errors
-      videoElement.addEventListener("error", () => {
+      const errorHandler = () => {
         this.onVideoError($video, videoElement);
-      });
+      };
+      videoElement.addEventListener("error", errorHandler);
+      handlers.set("error", errorHandler);
 
       // Handle video loading
-      videoElement.addEventListener("loadstart", () => {
+      const loadStartHandler = () => {
         this.onVideoLoadStart($video, videoElement);
-      });
+      };
+      videoElement.addEventListener("loadstart", loadStartHandler);
+      handlers.set("loadstart", loadStartHandler);
     }
 
     loadVideo($video, videoElement) {

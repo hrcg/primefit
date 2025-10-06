@@ -1,4 +1,32 @@
 (function ($) {
+  // Store references for cleanup
+  const productCleanupHandlers = {
+    eventHandlers: new Map(),
+    timeouts: new Set(),
+
+    /**
+     * Cleanup method to prevent memory leaks
+     */
+    cleanup: function() {
+      // Remove all event listeners
+      this.eventHandlers.forEach((handler, selector) => {
+        $(document).off("click", selector, handler);
+        $(document).off("keydown", selector, handler);
+        $(document).off("found_variation", selector, handler);
+      });
+      this.eventHandlers.clear();
+
+      // Clear all timeouts
+      this.timeouts.forEach(timeout => {
+        clearTimeout(timeout);
+      });
+      this.timeouts.clear();
+
+      // Remove window resize handler
+      $(window).off("resize");
+    }
+  };
+
   function swapMainImageByVariationImage(variation) {
     if (!variation || !variation.image || !variation.image.src) return;
     var $gallery = $(document).find(".woocommerce-product-gallery");
@@ -44,7 +72,7 @@
     });
   }
 
-  $(document).on("click", ".pf-swatch", function () {
+  const swatchClickHandler = function () {
     var $btn = $(this);
     var value = $btn.data("value");
     var $wrap = $btn.closest(".pf-swatches");
@@ -53,15 +81,17 @@
     $wrap.find(".pf-swatch").removeClass("active");
     $btn.addClass("active");
     $select.val(value).trigger("change");
-  });
+  };
 
-  $(document).on(
-    "found_variation",
-    ".variations_form",
-    function (evt, variation) {
-      swapMainImageByVariationImage(variation);
-    }
-  );
+  $(document).on("click", ".pf-swatch", swatchClickHandler);
+  productCleanupHandlers.eventHandlers.set(".pf-swatch", swatchClickHandler);
+
+  const foundVariationHandler = function (evt, variation) {
+    swapMainImageByVariationImage(variation);
+  };
+
+  $(document).on("found_variation", ".variations_form", foundVariationHandler);
+  productCleanupHandlers.eventHandlers.set(".variations_form", foundVariationHandler);
 
   // Handle size selection in product loops
   function initProductLoopSizeSelection() {
@@ -77,12 +107,15 @@
     // Size options are disabled on mobile - users navigate to product page instead
 
     // Handle keyboard navigation for accessibility
-    $(document).on("keydown", ".size-option", function (e) {
+    const sizeOptionKeydownHandler = function (e) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         $(this).click();
       }
-    });
+    };
+
+    $(document).on("keydown", ".size-option", sizeOptionKeydownHandler);
+    productCleanupHandlers.eventHandlers.set(".size-option", sizeOptionKeydownHandler);
   }
 
   // Hide tap indicator for products without size options
@@ -100,9 +133,12 @@
   // Shop Filter Bar functionality
   function initShopFilterBar() {
     // Sort dropdown change
-    $(".woocommerce-ordering .orderby").on("change", function () {
+    const shopFilterHandler = function () {
       $(this).closest("form").submit();
-    });
+    };
+
+    $(".woocommerce-ordering .orderby").on("change", shopFilterHandler);
+    productCleanupHandlers.eventHandlers.set(".woocommerce-ordering .orderby", shopFilterHandler);
   }
 
   // Cookie utility functions
@@ -133,9 +169,17 @@
     initTapIndicators();
     initShopFilterBar();
 
-    // Re-initialize on window resize
-    $(window).on("resize", function () {
+    // Re-initialize on window resize with stored handler for cleanup
+    const resizeHandler = function () {
       initTapIndicators();
+    };
+
+    $(window).on("resize", resizeHandler);
+    productCleanupHandlers.eventHandlers.set("window-resize", resizeHandler);
+
+    // Add cleanup on page unload to prevent memory leaks
+    window.addEventListener("beforeunload", () => {
+      productCleanupHandlers.cleanup();
     });
   });
 })(jQuery);
