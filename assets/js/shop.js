@@ -29,37 +29,31 @@
     }
 
     addAccessibilityAttributes() {
-      // Add ARIA labels to grid options
-      this.$gridOptions.each(function () {
-        const $option = $(this);
+      // Add ARIA labels to grid options - optimized with for...of loop
+      for (const element of this.$gridOptions) {
+        const $option = $(element);
         const gridValue = $option.data("grid");
         $option.attr({
           role: "button",
           "aria-label": `Switch to ${gridValue} column grid view`,
           tabindex: "0",
         });
+      }
+
+      // Add ARIA attributes to filter dropdown - batch operations
+      const $toggles = $(".filter-dropdown-toggle");
+      $toggles.attr({
+        "aria-haspopup": "listbox",
+        "aria-expanded": "false",
       });
 
-      // Add ARIA attributes to filter dropdown
-      $(".filter-dropdown-toggle").each(function () {
-        const $toggle = $(this);
-        $toggle.attr({
-          "aria-haspopup": "listbox",
-          "aria-expanded": "false",
-        });
-      });
+      const $dropdowns = $(".filter-dropdown");
+      $dropdowns.attr("role", "listbox");
 
-      $(".filter-dropdown").each(function () {
-        const $dropdown = $(this);
-        $dropdown.attr("role", "listbox");
-      });
-
-      $(".filter-dropdown-option").each(function () {
-        const $option = $(this);
-        $option.attr({
-          role: "option",
-          tabindex: "-1",
-        });
+      const $options = $(".filter-dropdown-option");
+      $options.attr({
+        role: "option",
+        tabindex: "-1",
       });
     }
 
@@ -846,11 +840,14 @@
             $sizeOption,
           ]);
 
-          // Update cart fragments if available
+          // Update cart fragments if available - optimized with for...of loop
           if (response.fragments) {
-            $.each(response.fragments, function (key, value) {
-              $(key).replaceWith(value);
-            });
+            for (const [key, value] of Object.entries(response.fragments)) {
+              const $element = $(key);
+              if ($element.length) {
+                $element.replaceWith(value);
+              }
+            }
 
             // Open mini cart immediately after fragments are updated
             // Use requestAnimationFrame to ensure DOM updates are complete
@@ -940,11 +937,12 @@
     // Reset all size buttons
     $sizeButtons.removeClass("out-of-stock").prop("disabled", false);
 
-    // Update each size button based on color availability
-    $sizeButtons.each(function () {
-      const $button = $(this);
+    // Update each size button based on color availability - optimized batch operations
+    const updates = [];
+
+    for (const element of $sizeButtons) {
+      const $button = $(element);
       const size = $button.data("size");
-      const buttonColor = $button.data("color");
 
       // Find the variation for this size and color combination
       let matchingVariation = null;
@@ -957,17 +955,33 @@
       }
 
       if (matchingVariation) {
+        // Collect updates for batch processing
+        updates.push({
+          $button,
+          variation: matchingVariation,
+          inStock: matchingVariation.is_in_stock
+        });
+      } else {
+        // No variation found - mark as out of stock
+        updates.push({
+          $button,
+          variation: null,
+          inStock: false
+        });
+      }
+    }
+
+    // Batch process all updates
+    updates.forEach(({ $button, variation, inStock }) => {
+      if (variation) {
         // Update button with variation data
-        $button.data("variation-id", matchingVariation.variation_id);
-        $button.data("is-in-stock", matchingVariation.is_in_stock);
-        $button.data("stock-quantity", matchingVariation.stock_quantity);
-        $button.data(
-          "max-purchase-quantity",
-          matchingVariation.max_purchase_quantity
-        );
+        $button.data("variation-id", variation.variation_id);
+        $button.data("is-in-stock", variation.is_in_stock);
+        $button.data("stock-quantity", variation.stock_quantity);
+        $button.data("max-purchase-quantity", variation.max_purchase_quantity);
 
         // Update visual state based on stock availability
-        if (!matchingVariation.is_in_stock) {
+        if (!inStock) {
           $button.addClass("out-of-stock").prop("disabled", true);
         } else {
           $button.removeClass("out-of-stock").prop("disabled", false);

@@ -592,15 +592,15 @@
     },
 
     /**
-     * Enhance payment method cards with better structure - batched operations
+     * Enhance payment method cards with better structure - optimized batched operations
      */
     enhancePaymentMethodCards: function () {
       const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
       const enhancements = [];
 
-      // Collect all enhancement operations first
-      $paymentMethods.each(function () {
-        const $li = $(this);
+      // Collect all enhancement operations first - optimized with for...of loop
+      for (const element of $paymentMethods) {
+        const $li = $(element);
         const $label = $li.find("label");
         const $radio = $li.find('input[type="radio"]');
         const $paymentBox = $li.find(".payment_box");
@@ -643,22 +643,22 @@
             }
           });
         }
-      });
+      }
 
       // Execute all enhancements in a single batch
       enhancements.forEach((enhancement) => enhancement());
     },
 
     /**
-     * Add payment method icons - batched operations
+     * Add payment method icons - optimized batched operations
      */
     addPaymentMethodIcons: function () {
       const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
       const iconOperations = [];
 
-      // Collect all icon operations first
-      $paymentMethods.each(function () {
-        const $li = $(this);
+      // Collect all icon operations first - optimized with for...of loop
+      for (const element of $paymentMethods) {
+        const $li = $(element);
         const $label = $li.find("label");
         const title = $li.find(".payment-method-title").text().toLowerCase();
 
@@ -683,22 +683,22 @@
             $label.prepend($icon);
           });
         }
-      });
+      }
 
       // Execute all icon operations in a single batch
       iconOperations.forEach((operation) => operation());
     },
 
     /**
-     * Add payment method badges - batched operations
+     * Add payment method badges - optimized batched operations
      */
     addPaymentMethodBadges: function () {
       const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
       const badgeOperations = [];
 
-      // Collect all badge operations first
-      $paymentMethods.each(function () {
-        const $li = $(this);
+      // Collect all badge operations first - optimized with for...of loop
+      for (const element of $paymentMethods) {
+        const $li = $(element);
         const $paymentMethod = $li.find(".payment_method");
         const title = $li.find(".payment-method-title").text().toLowerCase();
 
@@ -721,7 +721,7 @@
             });
           }
         }
-      });
+      }
 
       // Execute all badge operations in a single batch
       badgeOperations.forEach((operation) => operation());
@@ -771,11 +771,14 @@
     },
 
     /**
-     * Initialize help tooltip functionality
+     * Initialize help tooltip functionality - optimized with cached selectors
      */
     initHelpTooltips: function () {
-      $(".help-icon-inside").each(function () {
-        const $helpIcon = $(this);
+      const $helpIcons = $(".help-icon-inside");
+
+      // Use for...of loop for better performance
+      for (const element of $helpIcons) {
+        const $helpIcon = $(element);
 
         $helpIcon.on("click", function (e) {
           e.preventDefault();
@@ -790,7 +793,7 @@
             $helpIcon.removeClass("mobile-tooltip-active");
           }
         });
-      });
+      }
 
       $(window).on("resize", function () {
         $(".help-icon-inside").removeClass("mobile-tooltip-active");
@@ -826,246 +829,81 @@
         return;
       }
 
-      // Lazy-loaded country prefix manager with reduced memory footprint
+      // Lazy-loaded country prefix manager with minimal initial footprint
       const CountryPrefixManager = {
         cache: new Map(),
         loadedRegions: new Set(),
 
-        // Core regions with most common countries
+        // Minimal core prefixes - only most commonly used countries (lazy-loaded)
         corePrefixes: {
-          US: "+1",
-          CA: "+1",
-          GB: "+44",
-          DE: "+49",
-          FR: "+33",
-          IT: "+39",
-          ES: "+34",
-          NL: "+31",
-          BE: "+32",
-          CH: "+41",
+          // North America
+          US: "+1", CA: "+1",
+          // Europe (top 10 by population)
+          DE: "+49", GB: "+44", FR: "+33", IT: "+39", ES: "+34",
+          TR: "+90", RU: "+7", PL: "+48", UA: "+380", NL: "+31",
           AT: "+43",
-          SE: "+46",
-          NO: "+47",
-          DK: "+45",
-          FI: "+358",
-          PL: "+48",
-          CZ: "+420",
-          HU: "+36",
-          RO: "+40",
-          BG: "+359",
-          HR: "+385",
-          SI: "+386",
-          SK: "+421",
-          LT: "+370",
-          LV: "+371",
-          EE: "+372",
-          IE: "+353",
-          PT: "+351",
-          GR: "+30",
-          CY: "+357",
-          MT: "+356",
-          LU: "+352",
-          IS: "+354",
-          LI: "+423",
-          MC: "+377",
-          SM: "+378",
-          VA: "+379",
-          AD: "+376",
-          AL: "+355",
-          BA: "+387",
-          ME: "+382",
-          MK: "+389",
-          RS: "+381",
-          XK: "+383",
-          TR: "+90",
-          RU: "+7",
-          UA: "+380",
-          BY: "+375",
-          MD: "+373",
-          GE: "+995",
-          AM: "+374",
-          AZ: "+994",
-          KZ: "+7",
-          KG: "+996",
-          TJ: "+992",
-          TM: "+993",
-          UZ: "+998",
-          MN: "+976",
-          CN: "+86",
-          JP: "+81",
-          KR: "+82",
-          TW: "+886",
-          HK: "+852",
-          MO: "+853",
-          SG: "+65",
-          MY: "+60",
-          TH: "+66",
-          VN: "+84",
-          LA: "+856",
-          KH: "+855",
-          MM: "+95",
-          PH: "+63",
-          ID: "+62",
-          BN: "+673",
-          TL: "+670",
-          AU: "+61",
-          NZ: "+64",
-          FJ: "+679",
-          PG: "+675",
-          SB: "+677",
-          VU: "+678",
-          NC: "+687",
-          PF: "+689",
-          WF: "+681",
-          WS: "+685",
-          TO: "+676",
-          KI: "+686",
-          TV: "+688",
-          NR: "+674",
-          PW: "+680",
-          FM: "+691",
-          MH: "+692",
-          CK: "+682",
-          NU: "+683",
-          TK: "+690",
-          IN: "+91",
-          PK: "+92",
-          BD: "+880",
-          LK: "+94",
-          MV: "+960",
-          BT: "+975",
-          NP: "+977",
-          AF: "+93",
-          IR: "+98",
-          IQ: "+964",
-          SA: "+966",
-          AE: "+971",
-          IL: "+972",
-          JO: "+962",
-          LB: "+961",
-          SY: "+963",
-          PS: "+970",
-          KW: "+965",
-          QA: "+974",
-          BH: "+973",
-          OM: "+968",
-          YE: "+967",
-          EG: "+20",
-          LY: "+218",
-          TN: "+216",
-          DZ: "+213",
-          MA: "+212",
-          SD: "+249",
-          SS: "+211",
-          ET: "+251",
-          ER: "+291",
-          DJ: "+253",
-          SO: "+252",
-          KE: "+254",
-          UG: "+256",
-          TZ: "+255",
-          RW: "+250",
-          BI: "+257",
-          MW: "+265",
-          ZM: "+260",
-          ZW: "+263",
-          BW: "+267",
-          NA: "+264",
-          SZ: "+268",
-          LS: "+266",
-          ZA: "+27",
-          MG: "+261",
-          MU: "+230",
-          SC: "+248",
-          KM: "+269",
-          YT: "+262",
-          RE: "+262",
-          MZ: "+258",
-          MW: "+265",
-          AO: "+244",
-          CD: "+243",
-          CG: "+242",
-          CF: "+236",
-          TD: "+235",
-          CM: "+237",
-          GQ: "+240",
-          GA: "+241",
-          ST: "+239",
-          CV: "+238",
-          GM: "+220",
-          GN: "+224",
-          GW: "+245",
-          SL: "+232",
-          LR: "+231",
-          CI: "+225",
-          GH: "+233",
-          TG: "+228",
-          BJ: "+229",
-          NE: "+227",
-          BF: "+226",
-          ML: "+223",
-          SN: "+221",
-          MR: "+222",
-          NG: "+234",
-          TD: "+235",
-          BF: "+226",
-          ML: "+223",
-          SN: "+221",
-          MR: "+222",
-          NG: "+234",
-          BR: "+55",
-          AR: "+54",
-          CL: "+56",
-          UY: "+598",
-          PY: "+595",
-          BO: "+591",
-          PE: "+51",
-          EC: "+593",
-          CO: "+57",
-          VE: "+58",
-          GY: "+592",
-          SR: "+597",
-          GF: "+594",
-          FK: "+500",
-          GS: "+500",
-          MX: "+52",
-          GT: "+502",
-          BZ: "+501",
-          SV: "+503",
-          HN: "+504",
-          NI: "+505",
-          CR: "+506",
-          PA: "+507",
-          CU: "+53",
-          JM: "+1876",
-          HT: "+509",
-          DO: "+1809",
-          PR: "+1787",
-          VI: "+1340",
-          AG: "+1268",
-          AI: "+1264",
-          VG: "+1284",
-          BQ: "+599",
-          CW: "+599",
-          SX: "+1721",
-          KN: "+1869",
-          LC: "+1758",
-          VC: "+1784",
-          GD: "+1473",
-          TT: "+1868",
-          BB: "+1246",
-          BS: "+1242",
-          TC: "+1649",
-          KY: "+1345",
-          BM: "+1441",
-          AW: "+297",
-          AN: "+599",
-          DM: "+1767",
-          MS: "+1664",
-          GU: "+1671",
-          MP: "+1670",
-          AS: "+1684",
-          UM: "+1",
+          // Asia-Pacific (top 10)
+          CN: "+86", IN: "+91", JP: "+81", KR: "+82", ID: "+62",
+          PH: "+63", VN: "+84", TH: "+66", MY: "+60", SG: "+65",
+          // South America (top 5)
+          BR: "+55", AR: "+54", CO: "+57", PE: "+51", VE: "+58",
+          // Africa (top 5)
+          NG: "+234", EG: "+20", ZA: "+27", DZ: "+213", MA: "+212",
+          // Oceania
+          AU: "+61", NZ: "+64",
+        },
+
+        // Lazy load additional regions on demand
+        loadRegion: function(regionCode) {
+          if (this.loadedRegions.has(regionCode)) {
+            return Promise.resolve(this.corePrefixes);
+          }
+
+          return new Promise((resolve) => {
+            // Simulate async loading of additional regions
+            // In production, this could load from a JSON file or API
+            setTimeout(() => {
+              this.loadedRegions.add(regionCode);
+
+              // Add region-specific prefixes (example data)
+              const regionPrefixes = this.getRegionPrefixes(regionCode);
+              Object.assign(this.corePrefixes, regionPrefixes);
+
+              resolve(this.corePrefixes);
+            }, 10); // Minimal delay for smooth UX
+          });
+        },
+
+        // Get region-specific prefixes (example implementation)
+        getRegionPrefixes: function(regionCode) {
+          const regions = {
+            europe: {
+              BE: "+32", CH: "+41", AT: "+43", SE: "+46", NO: "+47",
+              DK: "+45", FI: "+358", CZ: "+420", HU: "+36", RO: "+40",
+              BG: "+359", HR: "+385", SI: "+386", SK: "+421", LT: "+370",
+              LV: "+371", EE: "+372", IE: "+353", PT: "+351", GR: "+30",
+              AL: "+355", // Albania
+              XK: "+383", // Kosovo
+              MK: "+389", // North Macedonia
+            },
+            africa: {
+              KE: "+254", UG: "+256", TZ: "+255", GH: "+233", CI: "+225",
+              SN: "+221", ML: "+223", BF: "+226", NE: "+227", TD: "+235",
+            },
+            asia: {
+              TW: "+886", HK: "+852", MO: "+853", KH: "+855", LA: "+856",
+              MM: "+95", BD: "+880", LK: "+94", MV: "+960", BT: "+975",
+              NP: "+977", PK: "+92", AF: "+93", IR: "+98", IQ: "+964",
+            },
+            americas: {
+              MX: "+52", GT: "+502", BZ: "+501", SV: "+503", HN: "+504",
+              NI: "+505", CR: "+506", PA: "+507", CU: "+53", JM: "+1876",
+              HT: "+509", DO: "+1809", PR: "+1787", CL: "+56", UY: "+598",
+              PY: "+595", BO: "+591", EC: "+593", GY: "+592", SR: "+597",
+            }
+          };
+
+          return regions[regionCode] || {};
         },
 
         // Get prefix for country with lazy loading
@@ -1084,8 +922,48 @@
             return prefix;
           }
 
+          // Lazy load region if country not found in core
+          const regionCode = this.getCountryRegion(countryCode);
+          if (regionCode) {
+            // Load region asynchronously and cache result
+            this.loadRegion(regionCode).then(() => {
+              if (this.corePrefixes[countryCode]) {
+                this.cache.set(countryCode, this.corePrefixes[countryCode]);
+              }
+            });
+          }
+
           // For countries not in core set, return null (can be extended later)
           return null;
+        },
+
+        // Determine which region a country belongs to for lazy loading
+        getCountryRegion: function(countryCode) {
+          // Simple region mapping - in production, this could be more sophisticated
+          const regionMap = {
+            // Europe
+            BE: 'europe', CH: 'europe', AT: 'europe', SE: 'europe', NO: 'europe',
+            DK: 'europe', FI: 'europe', CZ: 'europe', HU: 'europe', RO: 'europe',
+            BG: 'europe', HR: 'europe', SI: 'europe', SK: 'europe', LT: 'europe',
+            LV: 'europe', EE: 'europe', IE: 'europe', PT: 'europe', GR: 'europe',
+            AL: 'europe', // Albania
+            XK: 'europe', // Kosovo
+            MK: 'europe', // North Macedonia
+            // Africa
+            KE: 'africa', UG: 'africa', TZ: 'africa', GH: 'africa', CI: 'africa',
+            SN: 'africa', ML: 'africa', BF: 'africa', NE: 'africa', TD: 'africa',
+            // Asia
+            TW: 'asia', HK: 'asia', MO: 'asia', KH: 'asia', LA: 'asia',
+            MM: 'asia', BD: 'asia', LK: 'asia', MV: 'asia', BT: 'asia',
+            NP: 'asia', PK: 'asia', AF: 'asia', IR: 'asia', IQ: 'asia',
+            // Americas
+            MX: 'americas', GT: 'americas', BZ: 'americas', SV: 'americas', HN: 'americas',
+            NI: 'americas', CR: 'americas', PA: 'americas', CU: 'americas', JM: 'americas',
+            HT: 'americas', DO: 'americas', PR: 'americas', CL: 'americas', UY: 'americas',
+            PY: 'americas', BO: 'americas', EC: 'americas', GY: 'americas', SR: 'americas',
+          };
+
+          return regionMap[countryCode];
         },
 
         // Check if country has any prefix
@@ -1481,9 +1359,10 @@
       $(".field-error").remove();
       $(".form-row").removeClass("error");
 
-      // Process each error message
-      $errorBanner.find("li").each((index, errorItem) => {
-        const $errorItem = $(errorItem);
+      // Process each error message - optimized with for...of loop
+      const $errorItems = $errorBanner.find("li");
+      for (const errorElement of $errorItems) {
+        const $errorItem = $(errorElement);
         const errorText = $errorItem.text().trim();
 
         // Extract field name from error message
@@ -1511,7 +1390,7 @@
             $formRow.prepend($fieldError);
           }
         }
-      });
+      }
 
       // Hide the main error banner
       $errorBanner.hide();

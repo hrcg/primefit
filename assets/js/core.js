@@ -311,7 +311,7 @@
     },
 
     /**
-     * Get currently applied coupons
+     * Get currently applied coupons - optimized with cached selectors
      */
     getAppliedCoupons: function () {
       const appliedCoupons = [];
@@ -324,20 +324,23 @@
         appliedCoupons.push(...wc_add_to_cart_params.applied_coupons);
       }
 
-      // Also check from cart data if available
+      // Also check from cart data if available - use cached selectors
       if (
         window.wc_cart_fragments_params &&
         window.wc_cart_fragments_params.cart_hash
       ) {
-        // Try to get from any visible coupon displays
-        $(
+        // Cache selectors to avoid repeated DOM queries
+        const $couponElements = $(
           ".applied-coupon .coupon-code, .woocommerce-notices-wrapper .coupon-code"
-        ).each(function () {
-          const code = $(this).text().trim();
+        );
+
+        // Use for...of loop instead of jQuery.each for better performance
+        for (const element of $couponElements) {
+          const code = element.textContent.trim();
           if (code && !appliedCoupons.includes(code)) {
             appliedCoupons.push(code);
           }
-        });
+        }
       }
 
       return appliedCoupons.map((code) => code.toUpperCase());
@@ -382,14 +385,17 @@
           if (response.success) {
             this.clearProcessingFlag(normalizedCode);
 
-            // Update fragments directly if available
+            // Update fragments directly if available - optimized with for...of loop
             var frags =
               (response && response.fragments) ||
               (response && response.data && response.data.fragments);
             if (frags) {
-              $.each(frags, function (key, value) {
-                $(key).replaceWith(value);
-              });
+              for (const [key, value] of Object.entries(frags)) {
+                const $element = $(key);
+                if ($element.length) {
+                  $element.replaceWith(value);
+                }
+              }
             }
 
             // Clear loading state

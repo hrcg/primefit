@@ -42,34 +42,37 @@
     }
   }
 
-  // Convert select options into clickable swatches (basic output)
+  // Convert select options into clickable swatches (basic output) - optimized
   function enhanceVariationSwatches() {
-    $(".variations_form select").each(function () {
-      var $select = $(this);
-      if ($select.data("pf-enhanced")) return;
+    const $selects = $(".variations_form select");
+
+    for (const element of $selects) {
+      const $select = $(element);
+      if ($select.data("pf-enhanced")) continue;
       $select.data("pf-enhanced", true);
-      var attrName = $select.attr("name");
-      var $wrap = $(
-        '<div class="pf-swatches" data-attr="' + attrName + '"></div>'
-      );
-      $select.find("option").each(function () {
-        var val = $(this).val();
-        if (!val) return;
-        var label = $(this).text();
-        var $btn = $(
-          '<button type="button" class="pf-swatch" data-value="' +
-            val +
-            '">' +
-            label +
-            "</button>"
-        );
-        if ($select.val() === val) {
+
+      const attrName = $select.attr("name");
+      const $wrap = $(`<div class="pf-swatches" data-attr="${attrName}"></div>`);
+
+      const $options = $select.find("option");
+      const currentValue = $select.val();
+
+      for (const optionElement of $options) {
+        const $option = $(optionElement);
+        const val = $option.val();
+        if (!val) continue;
+
+        const label = $option.text();
+        const $btn = $(`<button type="button" class="pf-swatch" data-value="${val}">${label}</button>`);
+
+        if (currentValue === val) {
           $btn.addClass("active");
         }
         $wrap.append($btn);
-      });
+      }
+
       $select.hide().after($wrap);
-    });
+    }
   }
 
   const swatchClickHandler = function () {
@@ -118,16 +121,18 @@
     productCleanupHandlers.eventHandlers.set(".size-option", sizeOptionKeydownHandler);
   }
 
-  // Hide tap indicator for products without size options
+  // Hide tap indicator for products without size options - optimized
   function initTapIndicators() {
-    $(".woocommerce ul.products li.product").each(function () {
-      var $product = $(this);
-      var $sizeOptions = $product.find(".product-size-options");
+    const $products = $(".woocommerce ul.products li.product");
+
+    for (const element of $products) {
+      const $product = $(element);
+      const $sizeOptions = $product.find(".product-size-options");
 
       if ($sizeOptions.length === 0) {
         $product.addClass("no-size-options");
       }
-    });
+    }
   }
 
   // Shop Filter Bar functionality
