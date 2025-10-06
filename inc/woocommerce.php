@@ -906,7 +906,13 @@ function primefit_wc_remove_cart_item() {
         WC()->session->save_data();
     }
 
-    $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
+	// If cart is now empty, clear any applied coupons so they don't auto-apply on the next add-to-cart
+	if ( WC()->cart->is_empty() ) {
+		WC()->cart->remove_coupons();
+		WC()->cart->calculate_totals();
+	}
+
+	$fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
 
     // Check if we're on checkout page and cart is now empty
     $is_checkout_page = is_checkout();
@@ -975,6 +981,12 @@ function primefit_redirect_empty_checkout() {
  */
 add_action( 'woocommerce_cart_item_removed', 'primefit_handle_cart_item_removed', 10, 2 );
 function primefit_handle_cart_item_removed( $cart_item_key, $cart ) {
+	// If the cart has become empty, clear any applied coupons to avoid persistence into the next session
+	if ( $cart->is_empty() ) {
+		$cart->remove_coupons();
+		$cart->calculate_totals();
+	}
+
 	// Check if we're on checkout page and cart is now empty
 	if ( is_checkout() && $cart->is_empty() ) {
 		// Set a transient to indicate we should redirect
@@ -1003,6 +1015,17 @@ function primefit_auto_open_mini_cart() {
 		});
 		</script>
 		<?php
+	}
+}
+
+/**
+ * Ensure coupons are cleared any time the cart is explicitly emptied
+ */
+add_action( 'woocommerce_cart_emptied', 'primefit_clear_coupons_on_empty_cart' );
+function primefit_clear_coupons_on_empty_cart() {
+	if ( WC()->cart ) {
+		WC()->cart->remove_coupons();
+		WC()->cart->calculate_totals();
 	}
 }
 
