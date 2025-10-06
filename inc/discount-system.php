@@ -26,6 +26,36 @@ function primefit_initialize_discount_system() {
 
 	// Update table structure and create new tables if needed
 	primefit_update_discount_tracking_table();
+
+	// Schedule Action Scheduler cleanup to run after initialization
+	add_action( 'init', 'primefit_schedule_action_scheduler_cleanup', 20 );
+}
+
+/**
+ * Schedule Action Scheduler cleanup to run after WordPress is fully initialized
+ */
+function primefit_schedule_action_scheduler_cleanup() {
+	// Only run this if we have admin capabilities or if it's been more than 24 hours since last cleanup
+	$last_cleanup = get_option( 'primefit_last_action_scheduler_cleanup', 0 );
+	$current_time = time();
+
+	if ( $current_time - $last_cleanup > 24 * 60 * 60 ) { // 24 hours
+		// Use a delayed execution to ensure Action Scheduler is ready
+		wp_schedule_single_event( time() + 30, 'primefit_action_scheduler_cleanup' );
+	}
+}
+
+/**
+ * Execute Action Scheduler cleanup (scheduled as single event)
+ */
+add_action( 'primefit_action_scheduler_cleanup', 'primefit_execute_action_scheduler_cleanup' );
+function primefit_execute_action_scheduler_cleanup() {
+	$cleanup_count = primefit_cleanup_action_scheduler();
+	update_option( 'primefit_last_action_scheduler_cleanup', time() );
+
+	if ( $cleanup_count > 0 ) {
+		error_log( sprintf( '[PrimeFit] Action Scheduler cleanup completed, removed %d past-due actions', $cleanup_count ) );
+	}
 }
 
 /**
@@ -631,6 +661,128 @@ function primefit_cleanup_old_discount_data( $days_to_keep = 365 ) {
 }
 
 /**
+ * Clean up old Action Scheduler actions and reschedule properly
+ */
+function primefit_cleanup_action_scheduler() {
+	// Only run this function if Action Scheduler is properly initialized
+	if ( ! primefit_is_action_scheduler_ready() ) {
+		error_log( '[PrimeFit] Action Scheduler not ready, skipping cleanup' );
+		return 0;
+	}
+
+	try {
+		// Get all past-due actions for our specific hook
+		$past_due_actions = as_get_scheduled_actions( array(
+			'hook' => 'primefit_weekly_coupon_report',
+			'status' => 'pending',
+			'date' => gmdate( 'Y-m-d H:i:s', time() - 24 * 60 * 60 ), // More than 1 day old
+			'per_page' => -1
+		) );
+
+		$cleanup_count = 0;
+
+		if ( ! empty( $past_due_actions ) ) {
+			foreach ( $past_due_actions as $action_id => $action ) {
+				// Cancel old past-due actions
+				as_unschedule_action( $action_id );
+				$cleanup_count++;
+			}
+
+			error_log( sprintf( '[PrimeFit] Cleaned up %d past-due coupon report actions', $cleanup_count ) );
+		}
+
+		// Reschedule the event properly if it's missing or corrupted
+		$next_scheduled = wp_next_scheduled( 'primefit_weekly_coupon_report' );
+
+		if ( ! $next_scheduled || $next_scheduled < time() ) {
+			$timestamp = primefit_get_next_monday_9am();
+			wp_schedule_event( $timestamp, 'weekly', 'primefit_weekly_coupon_report' );
+			error_log( sprintf( '[PrimeFit] Rescheduled weekly coupon report for %s', date( 'Y-m-d H:i:s', $timestamp ) ) );
+		}
+
+		return $cleanup_count;
+
+	} catch ( Exception $e ) {
+		error_log( '[PrimeFit] Error cleaning up Action Scheduler: ' . $e->getMessage() );
+		return 0;
+	}
+}
+
+/**
+ * Check if Action Scheduler is properly initialized and ready
+ */
+function primefit_is_action_scheduler_ready() {
+	// Check if the function exists
+	if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
+		return false;
+	}
+
+	// Check if the data store is initialized by trying to access it
+	try {
+		// Try to get the data store instance using the global function
+		if ( function_exists( 'ActionScheduler_Store' ) ) {
+			$data_store = ActionScheduler_Store::instance();
+			return $data_store !== null;
+		}
+
+		// Fallback: check if we can call the function without errors
+		$test_actions = as_get_scheduled_actions( array(
+			'per_page' => 1,
+			'status' => 'pending'
+		) );
+
+		// If we get here without exception, Action Scheduler is ready
+		return true;
+
+	} catch ( Exception $e ) {
+		// If there's an exception, the data store isn't ready
+		return false;
+	}
+}
+
+/**
+ * Admin function to manually trigger Action Scheduler cleanup
+ */
+function primefit_admin_cleanup_action_scheduler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( __( 'You do not have sufficient permissions to access this page.', 'primefit' ) );
+	}
+
+	// Check if Action Scheduler is ready before running cleanup
+	if ( ! primefit_is_action_scheduler_ready() ) {
+		echo '<div class="wrap">';
+		echo '<h1>' . __( 'Action Scheduler Cleanup', 'primefit' ) . '</h1>';
+		echo '<div class="notice notice-warning"><p>' . __( 'Action Scheduler is not ready. Please try again in a few moments.', 'primefit' ) . '</p></div>';
+		echo '<p><a href="' . admin_url( 'admin.php?page=tools.php' ) . '" class="button">' . __( 'Back to Tools', 'primefit' ) . '</a></p>';
+		echo '</div>';
+		return;
+	}
+
+	$cleanup_count = primefit_cleanup_action_scheduler();
+
+	echo '<div class="wrap">';
+	echo '<h1>' . __( 'Action Scheduler Cleanup', 'primefit' ) . '</h1>';
+	echo '<p>' . sprintf( __( 'Cleaned up %d past-due actions.', 'primefit' ), $cleanup_count ) . '</p>';
+	echo '<p><a href="' . admin_url( 'admin.php?page=tools.php' ) . '" class="button">' . __( 'Back to Tools', 'primefit' ) . '</a></p>';
+	echo '</div>';
+}
+
+/**
+ * Add cleanup option to admin menu
+ */
+add_action( 'admin_menu', 'primefit_add_cleanup_admin_menu' );
+function primefit_add_cleanup_admin_menu() {
+	add_submenu_page(
+		'tools.php',
+		__( 'Action Scheduler Cleanup', 'primefit' ),
+		__( 'Action Scheduler Cleanup', 'primefit' ),
+		'manage_options',
+		'primefit-action-scheduler-cleanup',
+		'primefit_admin_cleanup_action_scheduler'
+	);
+}
+
+/**
  * Validate coupon usage based on email restrictions
  */
 function primefit_validate_coupon_email( $coupon_code, $email ) {
@@ -875,72 +1027,190 @@ function primefit_coupon_has_email_restrictions( $coupon_code ) {
 }
 
 /**
- * Schedule weekly coupon report email
+ * Schedule weekly coupon report email with improved error handling
  */
 add_action( 'init', 'primefit_schedule_weekly_coupon_reports' );
 function primefit_schedule_weekly_coupon_reports() {
-	if ( ! wp_next_scheduled( 'primefit_weekly_coupon_report' ) ) {
-		wp_schedule_event( time(), 'weekly', 'primefit_weekly_coupon_report' );
+	try {
+		// Check if Action Scheduler is available
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_schedule_event' ) ) {
+			error_log( '[PrimeFit] WP Cron functions not available for scheduling weekly reports' );
+			return;
+		}
+
+		$next_scheduled = wp_next_scheduled( 'primefit_weekly_coupon_report' );
+
+		if ( ! $next_scheduled ) {
+			// Schedule for next Monday at 9 AM to avoid weekend scheduling issues
+			$timestamp = primefit_get_next_monday_9am();
+
+			$scheduled = wp_schedule_event( $timestamp, 'weekly', 'primefit_weekly_coupon_report' );
+
+			if ( $scheduled ) {
+				error_log( sprintf( '[PrimeFit] Weekly coupon report scheduled for %s', date( 'Y-m-d H:i:s', $timestamp ) ) );
+			} else {
+				error_log( '[PrimeFit] Failed to schedule weekly coupon report' );
+			}
+		} else {
+			// Log if there's already a scheduled event (debugging info)
+			error_log( sprintf( '[PrimeFit] Weekly coupon report already scheduled for %s', date( 'Y-m-d H:i:s', $next_scheduled ) ) );
+		}
+
+	} catch ( Exception $e ) {
+		error_log( '[PrimeFit] Error scheduling weekly coupon reports: ' . $e->getMessage() );
 	}
 }
 
 /**
- * Send weekly coupon usage report
+ * Get the next Monday at 9 AM timestamp
+ */
+function primefit_get_next_monday_9am() {
+	$now = current_time( 'timestamp' );
+	$day_of_week = date( 'w', $now ); // 0 = Sunday, 1 = Monday, etc.
+
+	// Calculate days until next Monday (0 = Sunday, so we want 1)
+	$days_until_monday = (1 - $day_of_week + 7) % 7;
+
+	// If today is Monday, schedule for next Monday
+	if ( $days_until_monday === 0 ) {
+		$days_until_monday = 7;
+	}
+
+	$next_monday = $now + ( $days_until_monday * 24 * 60 * 60 );
+
+	// Set time to 9 AM
+	$next_monday_9am = strtotime( date( 'Y-m-d', $next_monday ) . ' 09:00:00' );
+
+	// Ensure we're not scheduling in the past
+	if ( $next_monday_9am <= $now ) {
+		$next_monday_9am += 7 * 24 * 60 * 60; // Add another week
+	}
+
+	return $next_monday_9am;
+}
+
+/**
+ * Send weekly coupon usage report with improved error handling
  */
 add_action( 'primefit_weekly_coupon_report', 'primefit_send_weekly_coupon_report' );
 function primefit_send_weekly_coupon_report() {
-	// Ensure WooCommerce is loaded and available
-	if ( ! class_exists( 'WooCommerce' ) ) {
-		return;
-	}
+	try {
+		// Log the start of the weekly report process
+		error_log( '[PrimeFit] Starting weekly coupon report generation' );
 
-	// Get last week's date range
-	$end_date = current_time( 'Y-m-d' );
-	$start_date = date( 'Y-m-d', strtotime( '-7 days', strtotime( $end_date ) ) );
+		// Ensure WooCommerce is loaded and available
+		if ( ! class_exists( 'WooCommerce' ) ) {
+			error_log( '[PrimeFit] WooCommerce not available for weekly report' );
+			return;
+		}
 
-	// Get all coupon usage stats for the past week
-	$weekly_stats = primefit_get_discount_stats( null, null, $start_date, $end_date );
+		// Get last week's date range with validation
+		$end_date = current_time( 'Y-m-d' );
+		$start_date = date( 'Y-m-d', strtotime( '-7 days', strtotime( $end_date ) ) );
 
-	// Get coupon-specific stats
-	$coupons = get_posts( array(
-		'post_type' => 'shop_coupon',
-		'posts_per_page' => -1,
-		'post_status' => 'publish'
-	) );
-	$coupon_stats = array();
+		if ( ! $start_date || ! $end_date ) {
+			error_log( '[PrimeFit] Invalid date range for weekly report' );
+			return;
+		}
 
-	foreach ( $coupons as $coupon_post ) {
-		$coupon = new WC_Coupon( $coupon_post->ID );
-		$coupon_stats[] = array(
-			'code' => $coupon->get_code(),
-			'stats' => primefit_get_discount_stats( $coupon->get_code(), null, $start_date, $end_date )
+		// Get all coupon usage stats for the past week
+		$weekly_stats = primefit_get_discount_stats( null, null, $start_date, $end_date );
+
+		if ( $weekly_stats === false ) {
+			error_log( '[PrimeFit] Failed to get weekly stats for coupon report' );
+			return;
+		}
+
+		// Get coupon-specific stats with error handling
+		$coupons = get_posts( array(
+			'post_type' => 'shop_coupon',
+			'posts_per_page' => -1,
+			'post_status' => 'publish',
+			'timeout' => 30 // Prevent long-running queries
+		) );
+
+		if ( $coupons === false ) {
+			error_log( '[PrimeFit] Failed to get coupons for weekly report' );
+			return;
+		}
+
+		$coupon_stats = array();
+
+		foreach ( $coupons as $coupon_post ) {
+			try {
+				$coupon = new WC_Coupon( $coupon_post->ID );
+
+				// Validate coupon object
+				if ( ! $coupon || ! $coupon->get_id() || ! $coupon->get_code() ) {
+					continue;
+				}
+
+				$coupon_stats[] = array(
+					'code' => $coupon->get_code(),
+					'stats' => primefit_get_discount_stats( $coupon->get_code(), null, $start_date, $end_date )
+				);
+
+				// Prevent memory issues with large coupon lists
+				if ( count( $coupon_stats ) > 100 ) {
+					error_log( '[PrimeFit] Too many coupons for weekly report, limiting to 100' );
+					break;
+				}
+
+			} catch ( Exception $e ) {
+				error_log( '[PrimeFit] Error processing coupon ' . $coupon_post->ID . ': ' . $e->getMessage() );
+				continue;
+			}
+		}
+
+		// Get top performing coupons
+		usort( $coupon_stats, function( $a, $b ) {
+			return $b['stats']['total_savings'] <=> $a['stats']['total_savings'];
+		} );
+		$top_coupons = array_slice( $coupon_stats, 0, 10 );
+
+		// Get email recipients for weekly reports
+		$recipients = primefit_get_weekly_report_recipients();
+
+		if ( empty( $recipients ) ) {
+			error_log( '[PrimeFit] No recipients configured for weekly coupon report' );
+			return; // No recipients configured
+		}
+
+		$subject = sprintf( __( 'Weekly Coupon Usage Report - %s', 'primefit' ), $start_date . ' to ' . $end_date );
+
+		$message = primefit_generate_weekly_report_html( $weekly_stats, $coupon_stats, $top_coupons, $start_date, $end_date );
+
+		if ( empty( $message ) ) {
+			error_log( '[PrimeFit] Failed to generate weekly report HTML' );
+			return;
+		}
+
+		$headers = array(
+			'Content-Type: text/html; charset=UTF-8',
+			'From: ' . get_bloginfo( 'name' ) . ' <' . get_option( 'admin_email' ) . '>'
 		);
-	}
 
-	// Get top performing coupons
-	usort( $coupon_stats, function( $a, $b ) {
-		return $b['stats']['total_savings'] <=> $a['stats']['total_savings'];
-	} );
-	$top_coupons = array_slice( $coupon_stats, 0, 10 );
+		$sent_count = 0;
+		foreach ( $recipients as $recipient ) {
+			$recipient = sanitize_email( $recipient );
+			if ( ! is_email( $recipient ) ) {
+				error_log( '[PrimeFit] Invalid email address for weekly report: ' . $recipient );
+				continue;
+			}
 
-	// Get email recipients for weekly reports
-	$recipients = primefit_get_weekly_report_recipients();
+			$mail_result = wp_mail( $recipient, $subject, $message, $headers );
+			if ( $mail_result ) {
+				$sent_count++;
+			} else {
+				error_log( '[PrimeFit] Failed to send weekly report to: ' . $recipient );
+			}
+		}
 
-	if ( empty( $recipients ) ) {
-		return; // No recipients configured
-	}
+		error_log( sprintf( '[PrimeFit] Weekly coupon report completed successfully. Sent to %d recipients', $sent_count ) );
 
-	$subject = sprintf( __( 'Weekly Coupon Usage Report - %s', 'primefit' ), $start_date . ' to ' . $end_date );
-
-	$message = primefit_generate_weekly_report_html( $weekly_stats, $coupon_stats, $top_coupons, $start_date, $end_date );
-
-	$headers = array(
-		'Content-Type: text/html; charset=UTF-8',
-		'From: ' . get_bloginfo( 'name' ) . ' <' . get_option( 'admin_email' ) . '>'
-	);
-
-	foreach ( $recipients as $recipient ) {
-		wp_mail( $recipient, $subject, $message, $headers );
+	} catch ( Exception $e ) {
+		error_log( '[PrimeFit] Critical error in weekly coupon report: ' . $e->getMessage() );
+		// Don't re-throw to prevent Action Scheduler from retrying indefinitely
 	}
 }
 
