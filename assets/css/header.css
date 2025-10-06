@@ -270,13 +270,12 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 20px;
 }
 
 .mobile-menu a {
   color: var(--text);
   text-decoration: none;
-  padding: 15px 0;
   display: block;
   font-size: 16px;
   letter-spacing: 0.06em;
@@ -304,7 +303,7 @@
 /* Mobile menu dropdown styles */
 .mobile-menu .menu-item-has-children > a {
   position: relative;
-  padding-right: 40px;
+  padding-right: 25px;
 }
 
 .mobile-menu .menu-item-has-children > a::after {
@@ -339,7 +338,7 @@
 }
 
 .mobile-menu .sub-menu a {
-  padding: 12px 0 12px 20px;
+  padding: 20px 0 0px 10px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
