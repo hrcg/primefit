@@ -652,6 +652,10 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
   padding-top: 95px; /* Original padding when promo bar is present */
 }
 
+#menu-account {
+  margin-bottom: 3px;
+}
+
 /* Mega Menu Styles */
 .mega-menu {
   position: absolute;
