@@ -62,10 +62,10 @@
 		<div class="connect-header">
 			<h3 class="footer-heading">CONNECT</h3>
 			<div class="social-icons">
-				<a href="#" class="social-icon" aria-label="Instagram">
+				<a href="https://www.instagram.com/primefit.eu/" class="social-icon" aria-label="Instagram">
 				<img src="<?php echo get_template_directory_uri(); ?>/assets/images/instagram.svg" alt="Instagram" loading="lazy" />
 				</a>
-				<a href="#" class="social-icon" aria-label="TikTok">
+				<a href="https://www.tiktok.com/@primefit.eu" class="social-icon" aria-label="TikTok">
 					<img src="<?php echo get_template_directory_uri(); ?>/assets/images/tiktok.svg" alt="TikTok" loading="lazy" />
 				</a>
 			</div>

@@ -228,6 +228,7 @@
 
 .join-link {
   text-decoration: none;
+  width: fit-content;
 }
 
 /* Hide toggles on desktop */
