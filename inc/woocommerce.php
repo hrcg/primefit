@@ -122,16 +122,21 @@ function primefit_validate_stock_on_add_to_cart( $valid, $product_id, $quantity,
 	
 	// For variable products, ensure variation is selected and valid
 	if ( $product->is_type( 'variable' ) ) {
-		// Only validate on single product pages during direct add-to-cart attempts
-		$is_product_page = is_product() && ! wp_doing_ajax() && ! is_admin() && ! (defined('REST_REQUEST') && REST_REQUEST);
+		// Skip our custom validation for AJAX requests - let WooCommerce handle it
+		if ( wp_doing_ajax() ) {
+			return $valid;
+		}
 		
-		// Skip all validation except for direct product page interactions
+		// Only validate on single product pages during direct add-to-cart attempts
+		$is_product_page = is_product() && ! is_admin() && ! (defined('REST_REQUEST') && REST_REQUEST);
+		
+		// Skip all validation if not on product page
 		if ( ! $is_product_page ) {
 			return $valid; // Let WooCommerce handle validation in other contexts
 		}
 		
 		if ( ! $variation_id || $variation_id <= 0 ) {
-			wc_add_notice( __( 'Please choose product options by visiting the product page.', 'primefit' ), 'error' );
+			wc_add_notice( __( 'Please select product options before adding to cart.', 'primefit' ), 'error' );
 			return false;
 		}
 		
@@ -910,6 +915,9 @@ function primefit_wc_remove_cart_item() {
 	if ( WC()->cart->is_empty() ) {
 		WC()->cart->remove_coupons();
 		WC()->cart->calculate_totals();
+		
+		// Also clear the pending coupon cookie to prevent auto-reapplication
+		primefit_clear_pending_coupon_cookie();
 	}
 
 	$fragments = apply_filters( 'woocommerce_add_to_cart_fragments', array() );
@@ -981,12 +989,6 @@ function primefit_redirect_empty_checkout() {
  */
 add_action( 'woocommerce_cart_item_removed', 'primefit_handle_cart_item_removed', 10, 2 );
 function primefit_handle_cart_item_removed( $cart_item_key, $cart ) {
-	// If the cart has become empty, clear any applied coupons to avoid persistence into the next session
-	if ( $cart->is_empty() ) {
-		$cart->remove_coupons();
-		$cart->calculate_totals();
-	}
-
 	// Check if we're on checkout page and cart is now empty
 	if ( is_checkout() && $cart->is_empty() ) {
 		// Set a transient to indicate we should redirect
@@ -1026,6 +1028,37 @@ function primefit_clear_coupons_on_empty_cart() {
 	if ( WC()->cart ) {
 		WC()->cart->remove_coupons();
 		WC()->cart->calculate_totals();
+		
+		// Also clear the pending coupon cookie to prevent auto-reapplication
+		primefit_clear_pending_coupon_cookie();
+	}
+}
+
+/**
+ * Clear pending coupon cookie whenever a coupon is successfully applied
+ * This prevents the URL-based coupon cookie from persisting and auto-applying repeatedly
+ */
+add_action( 'woocommerce_applied_coupon', 'primefit_clear_pending_cookie_on_apply', 10, 1 );
+function primefit_clear_pending_cookie_on_apply( $coupon_code ) {
+	primefit_clear_pending_coupon_cookie();
+}
+
+/**
+ * Clear pending coupon cookie whenever a coupon is removed
+ */
+add_action( 'woocommerce_removed_coupon', 'primefit_clear_pending_cookie_on_remove', 10, 1 );
+function primefit_clear_pending_cookie_on_remove( $coupon_code ) {
+	primefit_clear_pending_coupon_cookie();
+}
+
+/**
+ * Helper function to clear the pending coupon cookie
+ */
+function primefit_clear_pending_coupon_cookie() {
+	if ( isset( $_COOKIE['primefit_pending_coupon'] ) ) {
+		setcookie( 'primefit_pending_coupon', '', [ 'expires' => time() - HOUR_IN_SECONDS, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' ] );
+		// Also unset from current request
+		unset( $_COOKIE['primefit_pending_coupon'] );
 	}
 }
 
@@ -1798,6 +1831,9 @@ function primefit_handle_apply_coupon() {
 		wp_send_json_error( __( 'Please enter a coupon code', 'primefit' ) );
 	}
 	
+	// Clear any existing notices before applying coupon to avoid picking up old errors
+	wc_clear_notices();
+	
 	// Apply the coupon
 	$result = WC()->cart->apply_coupon( $coupon_code );
 	
@@ -1814,7 +1850,7 @@ function primefit_handle_apply_coupon() {
 		) );
 	} else {
 		$error_messages = wc_get_notices( 'error' );
-		$error_message = ! empty( $error_messages ) ? $error_messages[0]['notice'] : __( 'Invalid coupon code', 'primefit' );
+		$error_message = ! empty( $error_messages ) ? wp_strip_all_tags( html_entity_decode( $error_messages[0]['notice'], ENT_QUOTES, 'UTF-8' ) ) : __( 'Invalid coupon code', 'primefit' );
 		wc_clear_notices(); // Clear notices to prevent showing them elsewhere
 		wp_send_json_error( $error_message );
 	}

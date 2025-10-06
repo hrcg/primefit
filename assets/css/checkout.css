@@ -1152,7 +1152,7 @@
 .payment-method-icon {
   width: 24px;
   height: 24px;
-  background: var(--checkout-border);
+  background: transparent;
   border-radius: 4px;
   display: flex;
   align-items: center;
