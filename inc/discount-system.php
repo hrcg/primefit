@@ -259,6 +259,23 @@ function primefit_track_discount_usage( $order_id ) {
 	} catch ( Exception $e ) {
 		// Rollback transaction on error
 		$wpdb->query( 'ROLLBACK' );
+		
+		// CRITICAL: Log error for debugging - silent failures are dangerous
+		error_log( sprintf(
+			'[PrimeFit Discount System] Failed to track discount usage for order #%d: %s',
+			$order_id,
+			$e->getMessage()
+		) );
+		
+		// Also log to WooCommerce logs if available
+		if ( function_exists( 'wc_get_logger' ) ) {
+			$logger = wc_get_logger();
+			$logger->error( sprintf(
+				'Discount tracking failed for order #%d: %s',
+				$order_id,
+				$e->getMessage()
+			), array( 'source' => 'primefit-discount-system' ) );
+		}
 	}
 }
 
@@ -353,6 +370,24 @@ function primefit_reset_coupon_stats( $coupon_code ) {
 	} catch ( Exception $e ) {
 		// Rollback on error
 		$wpdb->query( 'ROLLBACK' );
+		
+		// CRITICAL: Log error for debugging
+		error_log( sprintf(
+			'[PrimeFit Discount System] Failed to reset coupon stats for "%s": %s',
+			$coupon_code,
+			$e->getMessage()
+		) );
+		
+		// Also log to WooCommerce logs if available
+		if ( function_exists( 'wc_get_logger' ) ) {
+			$logger = wc_get_logger();
+			$logger->error( sprintf(
+				'Coupon reset failed for "%s": %s',
+				$coupon_code,
+				$e->getMessage()
+			), array( 'source' => 'primefit-discount-system' ) );
+		}
+		
 		return new WP_Error( 'reset_failed', $e->getMessage() );
 	}
 }
@@ -670,6 +705,7 @@ function primefit_cleanup_old_discount_data( $days_to_keep = 365 ) {
 
 /**
  * Clean up old Action Scheduler actions and reschedule properly
+ * OPTIMIZED: Added monitoring for stuck "in-progress" actions and improved watchdog logic
  */
 function primefit_cleanup_action_scheduler() {
 	// Only run this function if Action Scheduler is properly initialized
@@ -679,36 +715,87 @@ function primefit_cleanup_action_scheduler() {
 	}
 
 	try {
-		// Get all past-due actions for our specific hook
+		$cleanup_count = 0;
+		
+		// 1. Clean up past-due pending actions (more than 1 day overdue)
 		$past_due_actions = as_get_scheduled_actions( array(
 			'hook' => 'primefit_weekly_coupon_report',
 			'status' => 'pending',
-			'date' => gmdate( 'Y-m-d H:i:s', time() - 24 * 60 * 60 ), // More than 1 day old
-			'per_page' => -1
-		) );
-
-		$cleanup_count = 0;
+			'date' => gmdate( 'Y-m-d H:i:s', time() - 24 * HOUR_IN_SECONDS ),
+			'per_page' => 50 // Limit to prevent memory issues
+		), 'ids' );
 
 		if ( ! empty( $past_due_actions ) ) {
-			foreach ( $past_due_actions as $action_id => $action ) {
-				// Cancel old past-due actions
-				as_unschedule_action( $action_id );
+			foreach ( $past_due_actions as $action_id ) {
+				// Cancel using the proper hook-based method
+				as_unschedule_action( 'primefit_weekly_coupon_report', array(), '' );
 				$cleanup_count++;
 			}
-
-			// Only log if we actually cleaned up actions
+			
 			if ( $cleanup_count > 0 ) {
-				error_log( sprintf( '[PrimeFit] Cleaned up %d past-due coupon report actions', $cleanup_count ) );
+				error_log( sprintf( '[PrimeFit] Cleaned up %d past-due pending actions', $cleanup_count ) );
 			}
 		}
 
-		// Reschedule the event properly if it's missing or corrupted
-		$next_scheduled = wp_next_scheduled( 'primefit_weekly_coupon_report' );
+		// 2. WATCHDOG: Check for stuck "in-progress" actions (running > 1 hour)
+		$stuck_actions = as_get_scheduled_actions( array(
+			'hook' => 'primefit_weekly_coupon_report',
+			'status' => 'in-progress',
+			'date' => gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ),
+			'per_page' => 10
+		), 'ids' );
 
-		if ( ! $next_scheduled || $next_scheduled < time() ) {
-			$timestamp = primefit_get_next_monday_9am();
-			wp_schedule_event( $timestamp, 'weekly', 'primefit_weekly_coupon_report' );
-			error_log( sprintf( '[PrimeFit] Rescheduled weekly coupon report for %s', date( 'Y-m-d H:i:s', $timestamp ) ) );
+		if ( ! empty( $stuck_actions ) ) {
+			$stuck_count = is_array( $stuck_actions ) ? count( $stuck_actions ) : 0;
+			error_log( sprintf( 
+				'[PrimeFit] WARNING: Found %d stuck in-progress actions (running > 1 hour) - check Action Scheduler UI',
+				$stuck_count
+			) );
+			// Log but don't auto-cancel - might be legitimately long-running
+		}
+
+		// 3. Clean up old failed actions (more than 7 days old)
+		$old_failed_actions = as_get_scheduled_actions( array(
+			'hook' => 'primefit_weekly_coupon_report',
+			'status' => 'failed',
+			'date' => gmdate( 'Y-m-d H:i:s', time() - 7 * DAY_IN_SECONDS ),
+			'per_page' => 50
+		), 'ids' );
+
+		if ( ! empty( $old_failed_actions ) && is_array( $old_failed_actions ) ) {
+			$failed_count = count( $old_failed_actions );
+			foreach ( $old_failed_actions as $action_id ) {
+				// These are already failed, safe to clean up
+				as_unschedule_action( 'primefit_weekly_coupon_report', array(), '' );
+			}
+			error_log( sprintf( '[PrimeFit] Cleaned up %d old failed actions (>7 days)', $failed_count ) );
+		}
+
+		// 4. Ensure recurring schedule exists (prefer Action Scheduler over WP-Cron)
+		if ( function_exists( 'as_next_scheduled_action' ) ) {
+			$next_scheduled = as_next_scheduled_action( 'primefit_weekly_coupon_report' );
+			
+			if ( ! $next_scheduled ) {
+				// No schedule exists, create it
+				$timestamp = primefit_get_next_monday_9am();
+				if ( function_exists( 'as_schedule_recurring_action' ) ) {
+					as_schedule_recurring_action( $timestamp, WEEK_IN_SECONDS, 'primefit_weekly_coupon_report', array(), '' );
+					error_log( sprintf( '[PrimeFit] Rescheduled weekly coupon report for %s', gmdate( 'Y-m-d H:i:s', $timestamp ) ) );
+				}
+			} elseif ( $next_scheduled < time() - 2 * DAY_IN_SECONDS ) {
+				// Scheduled time is more than 2 days in the past - something is wrong
+				$days_overdue = round( ( time() - $next_scheduled ) / DAY_IN_SECONDS, 1 );
+				error_log( sprintf( 
+					'[PrimeFit] CRITICAL: Next scheduled action is %.1f days overdue - investigate Action Scheduler',
+					$days_overdue
+				) );
+				
+				// Trigger immediate execution to catch up
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action( time() + 60, 'primefit_weekly_coupon_report', array(), '' );
+					error_log( '[PrimeFit] Watchdog scheduled immediate catch-up execution' );
+				}
+			}
 		}
 
 		return $cleanup_count;

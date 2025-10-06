@@ -608,22 +608,28 @@ function primefit_add_cache_headers() {
 	// Check if the request is for a static asset
 	foreach ( $cache_durations as $extension => $duration ) {
 		if ( substr( $request_uri, -strlen( $extension ) ) === $extension ) {
+			// Validate file exists before processing
+			$file_path = ABSPATH . $request_uri;
+			if ( ! file_exists( $file_path ) ) {
+				return; // Skip cache headers if file doesn't exist
+			}
+
 			// Set cache headers for static assets
 			header( 'Cache-Control: public, max-age=' . $duration . ', immutable' );
 			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + $duration ) . ' GMT' );
 			header( 'Pragma: cache' );
 
-			// Set ETag for better caching
-			$etag = '"' . md5( $request_uri . filemtime( ABSPATH . $request_uri ) ) . '"';
+			// Set ETag for better caching (now safe to call filemtime)
+			$file_modified_time = filemtime( $file_path );
+			$etag = '"' . md5( $request_uri . $file_modified_time ) . '"';
 			header( 'ETag: ' . $etag );
 
 			// Set Last-Modified header
-			header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s', filemtime( ABSPATH . $request_uri ) ) . ' GMT' );
+			header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s', $file_modified_time ) . ' GMT' );
 
 			// Handle conditional requests
 			if ( isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ) {
 				$if_modified_since = strtotime( $_SERVER['HTTP_IF_MODIFIED_SINCE'] );
-				$file_modified_time = filemtime( ABSPATH . $request_uri );
 				if ( $if_modified_since >= $file_modified_time ) {
 					header( 'HTTP/1.1 304 Not Modified' );
 					exit;

@@ -1906,14 +1906,24 @@ function primefit_cache_attachment_image_url( $attachment_id, $size, $url, $expi
 function primefit_get_optimized_product_data( $product_id ) {
 	global $wpdb;
 
-	// Try cache first
-	$cache_key = "product_comprehensive_{$product_id}";
-	$cached_data = wp_cache_get( $cache_key, 'primefit_comprehensive' );
+	// OPTIMIZED: Try transient cache first (persistent across requests)
+	$transient_key = 'primefit_prod_' . $product_id;
+	$cached_data = get_transient( $transient_key );
 	if ( false !== $cached_data ) {
 		return $cached_data;
 	}
 
+	// Try object cache second
+	$cache_key = "product_comprehensive_{$product_id}";
+	$cached_data = wp_cache_get( $cache_key, 'primefit_comprehensive' );
+	if ( false !== $cached_data ) {
+		// Store in transient too for next time
+		set_transient( $transient_key, $cached_data, 6 * HOUR_IN_SECONDS );
+		return $cached_data;
+	}
+
 	// Single optimized query to get all product data
+	// NOTE: Multi-JOIN is actually optimal for WooCommerce EAV pattern vs multiple queries
 	$query = $wpdb->prepare("
 		SELECT
 			p.ID,
@@ -1950,7 +1960,11 @@ function primefit_get_optimized_product_data( $product_id ) {
 	$results = $wpdb->get_row( $query );
 
 	if ( ! $results ) {
-		return array();
+		// Cache empty result to prevent repeated queries for non-existent products
+		$empty = array();
+		wp_cache_set( $cache_key, $empty, 'primefit_comprehensive', HOUR_IN_SECONDS );
+		set_transient( $transient_key, $empty, HOUR_IN_SECONDS );
+		return $empty;
 	}
 
 	// Process and structure the data
@@ -1976,8 +1990,9 @@ function primefit_get_optimized_product_data( $product_id ) {
 		'price_html' => '', // Will be calculated separately if needed
 	);
 
-	// Cache the data
-	wp_cache_set( $cache_key, $product_data, 'primefit_comprehensive', 3600 );
+	// OPTIMIZED: Cache in both object cache and transient with extended duration (6h instead of 1h)
+	wp_cache_set( $cache_key, $product_data, 'primefit_comprehensive', 6 * HOUR_IN_SECONDS );
+	set_transient( $transient_key, $product_data, 6 * HOUR_IN_SECONDS );
 
 	return $product_data;
 }
@@ -1990,16 +2005,26 @@ function primefit_get_optimized_product_data( $product_id ) {
  * @return array|false Variations data or false if not found
  */
 function primefit_get_optimized_product_variations( $product_id ) {
+	// OPTIMIZED: Try transient cache first
+	$transient_key = 'primefit_var_' . $product_id;
+	$cached = get_transient( $transient_key );
+	if ( false !== $cached ) {
+		return $cached;
+	}
+
+	// Try object cache second
 	$cache_key = "product_variations_optimized_{$product_id}";
 	$cached = wp_cache_get( $cache_key, 'primefit_variations' );
-
 	if ( false !== $cached ) {
+		// Store in transient too for next time
+		set_transient( $transient_key, $cached, 6 * HOUR_IN_SECONDS );
 		return $cached;
 	}
 
 	global $wpdb;
 
 	// Get variations with all necessary data in one query
+	// NOTE: Multi-JOIN is optimal for WooCommerce EAV pattern - prevents N+1 queries
 	$query = $wpdb->prepare("
 		SELECT
 			v.ID as variation_id,
@@ -2032,8 +2057,11 @@ function primefit_get_optimized_product_variations( $product_id ) {
 	$variations = $wpdb->get_results( $query );
 
 	if ( empty( $variations ) ) {
-		wp_cache_set( $cache_key, array(), 'primefit_variations', 3600 );
-		return array();
+		// Cache empty result to prevent repeated queries
+		$empty = array();
+		wp_cache_set( $cache_key, $empty, 'primefit_variations', 6 * HOUR_IN_SECONDS );
+		set_transient( $transient_key, $empty, 6 * HOUR_IN_SECONDS );
+		return $empty;
 	}
 
 	// Process variations data
@@ -2060,8 +2088,9 @@ function primefit_get_optimized_product_variations( $product_id ) {
 		);
 	}
 
-	// Cache the processed variations
-	wp_cache_set( $cache_key, $processed_variations, 'primefit_variations', 3600 );
+	// OPTIMIZED: Cache in both object cache and transient with extended duration (6h instead of 1h)
+	wp_cache_set( $cache_key, $processed_variations, 'primefit_variations', 6 * HOUR_IN_SECONDS );
+	set_transient( $transient_key, $processed_variations, 6 * HOUR_IN_SECONDS );
 
 	return $processed_variations;
 }

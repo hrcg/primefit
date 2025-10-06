@@ -128,16 +128,27 @@ function primefit_performance_optimizations() {
  * - Adds composite indexes on postmeta for faster JOINs and lookups
  * - Runs once per environment, guarded by an option flag
  * - Uses dynamic table prefix via $wpdb
+ * - OPTIMIZED: Uses static variable to avoid repeated option checks
  */
 add_action( 'admin_init', 'primefit_ensure_postmeta_indexes' );
 function primefit_ensure_postmeta_indexes() {
+	// Use static variable to check only once per request
+	static $checked = false;
+	if ( $checked ) {
+		return;
+	}
+	$checked = true;
+
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
+
+	// Check if already completed - use autoload:false to avoid loading on every request
 	$flag = get_option( 'primefit_postmeta_indexes_added', false );
 	if ( $flag ) {
 		return;
 	}
+
 	global $wpdb;
 	$table = $wpdb->postmeta;
 
@@ -154,8 +165,16 @@ function primefit_ensure_postmeta_indexes() {
 
 	if ( ! empty( $queries ) ) {
 		foreach ( $queries as $sql ) {
-			$wpdb->query( $sql );
+			$result = $wpdb->query( $sql );
+			// Log any errors for debugging
+			if ( $result === false ) {
+				error_log( 'PrimeFit: Failed to create postmeta index - ' . $wpdb->last_error );
+			}
 		}
+		// Set flag to prevent future runs (autoload:false for performance)
+		update_option( 'primefit_postmeta_indexes_added', true, false );
+	} else {
+		// Indexes already exist, set flag to prevent future checks
 		update_option( 'primefit_postmeta_indexes_added', true, false );
 	}
 }

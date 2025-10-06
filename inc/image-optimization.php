@@ -480,13 +480,36 @@ function primefit_add_image_optimization_menu() {
 function primefit_image_optimization_page() {
 	if ( isset( $_POST['optimize_images'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'primefit_optimize_images' ) ) {
 		$processed_count = primefit_optimize_all_images();
-		update_option( 'primefit_images_optimized', $processed_count );
-		echo '<div class="notice notice-success"><p>' . sprintf( __( 'Successfully generated WebP versions for %d images.', 'primefit' ), $processed_count ) . '</p></div>';
+		$current_total = get_option( 'primefit_images_optimized', 0 );
+		update_option( 'primefit_images_optimized', $current_total + $processed_count );
+		
+		// Check if there are more images to process
+		$batch_offset = get_option( 'primefit_image_optimization_offset', 0 );
+		if ( $batch_offset > 0 ) {
+			echo '<div class="notice notice-info"><p>' . sprintf( 
+				__( 'Batch processed %d images. Click again to continue optimization (offset: %d).', 'primefit' ), 
+				$processed_count,
+				$batch_offset
+			) . '</p></div>';
+		} else {
+			echo '<div class="notice notice-success"><p>' . sprintf( 
+				__( 'Optimization complete! Processed %d images in this batch.', 'primefit' ), 
+				$processed_count 
+			) . '</p></div>';
+		}
+	}
+	
+	// Handle reset offset
+	if ( isset( $_POST['reset_offset'] ) && wp_verify_nonce( $_POST['_wpnonce'], 'primefit_reset_offset' ) ) {
+		delete_option( 'primefit_image_optimization_offset' );
+		echo '<div class="notice notice-success"><p>' . __( 'Batch offset reset. You can now start optimization from the beginning.', 'primefit' ) . '</p></div>';
 	}
 	
 	$webp_supported = primefit_webp_supported();
 	$total_images = wp_count_posts( 'attachment' )->inherit;
 	$optimized_count = get_option( 'primefit_images_optimized', 0 );
+	$batch_offset = get_option( 'primefit_image_optimization_offset', 0 );
+	$batch_size = 20; // Match the batch size in primefit_optimize_all_images()
 	?>
 	<div class="wrap">
 		<h1><?php _e( 'WebP Image Generation', 'primefit' ); ?></h1>
@@ -500,21 +523,32 @@ function primefit_image_optimization_page() {
 			<div class="notice notice-info">
 				<p><strong><?php _e( 'WebP Support Available', 'primefit' ); ?></strong></p>
 				<p><?php _e( 'Your server supports WebP generation. This will create smaller, faster-loading images.', 'primefit' ); ?></p>
+				<p><em><?php _e( 'Images are processed in batches of 20 to prevent timeouts and memory issues.', 'primefit' ); ?></em></p>
 			</div>
 			
 			<div class="card">
 				<h2><?php _e( 'Image Statistics', 'primefit' ); ?></h2>
 				<p><strong><?php _e( 'Total Images:', 'primefit' ); ?></strong> <?php echo $total_images; ?></p>
 				<p><strong><?php _e( 'WebP Versions Generated:', 'primefit' ); ?></strong> <?php echo $optimized_count; ?></p>
-				<p><strong><?php _e( 'Remaining:', 'primefit' ); ?></strong> <?php echo max( 0, $total_images - $optimized_count ); ?></p>
+				<p><strong><?php _e( 'Current Batch Offset:', 'primefit' ); ?></strong> <?php echo $batch_offset; ?></p>
+				<p><strong><?php _e( 'Progress:', 'primefit' ); ?></strong> <?php echo min( 100, round( ( $batch_offset / max( 1, $total_images ) ) * 100, 1 ) ); ?>%</p>
 			</div>
 			
 			<form method="post">
 				<?php wp_nonce_field( 'primefit_optimize_images' ); ?>
 				<p>
-					<input type="submit" name="optimize_images" class="button button-primary" value="<?php _e( 'Generate WebP Versions for All Images', 'primefit' ); ?>" />
+					<input type="submit" name="optimize_images" class="button button-primary" value="<?php echo $batch_offset > 0 ? __( 'Continue Optimization (Next Batch)', 'primefit' ) : __( 'Start WebP Generation', 'primefit' ); ?>" />
 				</p>
 			</form>
+			
+			<?php if ( $batch_offset > 0 ) : ?>
+				<form method="post" style="margin-top: 10px;">
+					<?php wp_nonce_field( 'primefit_reset_offset' ); ?>
+					<p>
+						<input type="submit" name="reset_offset" class="button" value="<?php _e( 'Reset Progress & Start Over', 'primefit' ); ?>" onclick="return confirm('<?php _e( 'Are you sure you want to reset the batch progress?', 'primefit' ); ?>')" />
+					</p>
+				</form>
+			<?php endif; ?>
 			
 			<div class="card">
 				<h3><?php _e( 'Benefits of WebP', 'primefit' ); ?></h3>
@@ -532,30 +566,132 @@ function primefit_image_optimization_page() {
 
 /**
  * Optimize all images by generating WebP versions
+ * OPTIMIZED: Added batch processing, memory checks, and time limits
  */
 function primefit_optimize_all_images() {
+	// Set execution limits for batch processing
+	$max_execution_time = 30; // seconds
+	$memory_limit_threshold = 0.8; // 80% of memory limit
+	$batch_size = 20; // Process 20 images at a time
+	
+	// Increase time limit for batch processing (but not infinite)
+	set_time_limit( 60 );
+	
+	// Get starting time and memory
+	$start_time = time();
+	$memory_limit = ini_get( 'memory_limit' );
+	$memory_limit_bytes = primefit_convert_to_bytes( $memory_limit );
+	
+	// Get batch offset from option (for resumable processing)
+	$batch_offset = get_option( 'primefit_image_optimization_offset', 0 );
+	
 	$args = [
 		'post_type' => 'attachment',
 		'post_mime_type' => 'image',
-		'posts_per_page' => -1,
-		'post_status' => 'inherit'
+		'posts_per_page' => $batch_size, // FIXED: Batch processing instead of -1
+		'post_status' => 'inherit',
+		'offset' => $batch_offset,
+		'orderby' => 'ID',
+		'order' => 'ASC'
 	];
 	
 	$attachments = get_posts( $args );
 	$processed_count = 0;
+	$error_count = 0;
+	
+	if ( empty( $attachments ) ) {
+		// No more images to process, reset offset
+		delete_option( 'primefit_image_optimization_offset' );
+		return $processed_count;
+	}
 	
 	foreach ( $attachments as $attachment ) {
+		// Check memory usage - stop if approaching limit
+		$current_memory = memory_get_usage( true );
+		if ( $current_memory > ( $memory_limit_bytes * $memory_limit_threshold ) ) {
+			error_log( sprintf(
+				'[PrimeFit] Image optimization stopped: Memory limit approaching (%.2f%% used)',
+				( $current_memory / $memory_limit_bytes ) * 100
+			) );
+			break;
+		}
+		
+		// Check execution time - stop if approaching limit
+		$elapsed_time = time() - $start_time;
+		if ( $elapsed_time > $max_execution_time ) {
+			error_log( sprintf(
+				'[PrimeFit] Image optimization stopped: Time limit reached (%d seconds)',
+				$elapsed_time
+			) );
+			break;
+		}
+		
 		$file_path = get_attached_file( $attachment->ID );
 		
 		if ( $file_path && file_exists( $file_path ) ) {
-			// Generate WebP version
-			primefit_generate_webp_version( $file_path );
-
-			$processed_count++;
+			// Generate WebP version with error handling
+			try {
+				$result = primefit_generate_webp_version( $file_path );
+				if ( $result ) {
+					$processed_count++;
+				} else {
+					$error_count++;
+					error_log( sprintf(
+						'[PrimeFit] Failed to generate WebP for attachment #%d: %s',
+						$attachment->ID,
+						$file_path
+					) );
+				}
+			} catch ( Exception $e ) {
+				$error_count++;
+				error_log( sprintf(
+					'[PrimeFit] Exception generating WebP for attachment #%d: %s',
+					$attachment->ID,
+					$e->getMessage()
+				) );
+			}
 		}
+		
+		// Free memory
+		wp_cache_delete( $attachment->ID, 'posts' );
+		wp_cache_delete( $attachment->ID, 'post_meta' );
 	}
 	
+	// Update offset for next batch
+	update_option( 'primefit_image_optimization_offset', $batch_offset + $batch_size, false );
+	
+	// Log batch completion
+	error_log( sprintf(
+		'[PrimeFit] Image optimization batch completed: %d processed, %d errors, offset now at %d',
+		$processed_count,
+		$error_count,
+		$batch_offset + $batch_size
+	) );
+	
 	return $processed_count;
+}
+
+/**
+ * Convert PHP memory limit string to bytes
+ * 
+ * @param string $size Memory size (e.g., "256M", "1G")
+ * @return int Size in bytes
+ */
+function primefit_convert_to_bytes( $size ) {
+	$size = trim( $size );
+	$last = strtolower( $size[ strlen( $size ) - 1 ] );
+	$size = (int) $size;
+	
+	switch ( $last ) {
+		case 'g':
+			$size *= 1024;
+		case 'm':
+			$size *= 1024;
+		case 'k':
+			$size *= 1024;
+	}
+	
+	return $size;
 }
 
 /**

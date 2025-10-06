@@ -158,19 +158,26 @@ function primefit_add_product_status_tag() {
 	}
 	
 	// Check for LIMITED STOCK on variable products with mixed stock availability
+	// OPTIMIZED: Use variation data directly to avoid N+1 queries
 	if ( $product->is_type( 'variable' ) && $product->is_in_stock() ) {
 		$variations = $product->get_available_variations();
 		$has_out_of_stock_variations = false;
 		$has_in_stock_variations = false;
 		
+		// Use variation data directly instead of fetching each product (prevents N+1 queries)
 		foreach ( $variations as $variation_data ) {
-			$variation = wc_get_product( $variation_data['variation_id'] );
-			if ( $variation ) {
-				if ( $variation->is_in_stock() ) {
+			// Stock status is already available in variation data
+			if ( isset( $variation_data['is_in_stock'] ) ) {
+				if ( $variation_data['is_in_stock'] ) {
 					$has_in_stock_variations = true;
 				} else {
 					$has_out_of_stock_variations = true;
 				}
+			}
+			
+			// Early exit optimization: if we found both states, no need to continue
+			if ( $has_in_stock_variations && $has_out_of_stock_variations ) {
+				break;
 			}
 		}
 		

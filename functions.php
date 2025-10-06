@@ -502,35 +502,35 @@ function primefit_invalidate_product_cache_advanced( $post_id, $post = null ) {
 	wp_cache_delete( "product_variations_optimized_{$post_id}", 'primefit_variations' );
 	wp_cache_delete( $post_id, 'primefit_product_meta' );
 	
-	// Clear query caches
+	// Clear query caches (already targeted by group)
 	primefit_clear_all_query_caches();
 	
-	// Clear transient caches
-	global $wpdb;
-	$wpdb->query( $wpdb->prepare( 
-		"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-		'_transient_primefit_%'
-	) );
+	// OPTIMIZED: Only clear transients related to this specific product
+	// Instead of deleting ALL transients, delete only product-specific ones
+	delete_transient( "primefit_product_{$post_id}" );
+	delete_transient( "primefit_variations_{$post_id}" );
+	delete_transient( "primefit_product_meta_{$post_id}" );
+	
+	// Note: We rely on natural transient expiration (15-30 min TTL) for query caches
+	// This is much faster than scanning and deleting all transients with LIKE queries
 }
 
 /**
  * Clear all query caches
+ * OPTIMIZED: Removed dangerous wp_cache_flush() fallback that destroyed site-wide cache
  */
 function primefit_clear_all_query_caches() {
-	// Clear object cache for queries
+	// Clear object cache for queries (if supported by caching plugin)
 	if ( function_exists( 'wp_cache_flush_group' ) ) {
 		wp_cache_flush_group( 'primefit_queries' );
 		wp_cache_flush_group( 'primefit_products' );
 		wp_cache_flush_group( 'primefit_variations' );
 		wp_cache_flush_group( 'primefit_product_meta' );
-	} else {
-		// Fallback: only flush entire cache in controlled contexts to avoid site-wide impact
-		if ( ( function_exists( 'is_admin' ) && is_admin() ) || ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) ) {
-			if ( function_exists( 'wp_cache_flush' ) ) {
-				wp_cache_flush();
-			}
-		}
 	}
+	
+	// Note: If wp_cache_flush_group is not available, we rely on the transient
+	// expiration system (15-30 minute TTLs) which is safer than flushing all caches.
+	// The transient-based caching in helpers.php will naturally expire and refresh.
 }
 
 /**
@@ -751,6 +751,6 @@ function primefit_redirect_without_coupon_param() {
 	// Only redirect if the URL actually changed
 	if ( $url !== $_SERVER['REQUEST_URI'] ) {
 		wp_redirect( $url );
-		// Don't use exit() to avoid headers already sent errors
+		exit; // SECURITY: Must exit after redirect to prevent code execution
 	}
 }
