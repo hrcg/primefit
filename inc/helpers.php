@@ -417,18 +417,6 @@ function primefit_get_shop_hero_config() {
 		// Get category hero image (with automatic fallback)
 		$hero_image = primefit_get_category_hero_image( $category );
 		
-		// Generate subheading with fallback
-		$subheading = '';
-		if ( !empty( $category->description ) ) {
-			$subheading = wp_strip_all_tags( $category->description );
-			// Limit description length for hero display
-			if ( strlen( $subheading ) > 80 ) {
-				$subheading = wp_trim_words( $subheading, 12, '...' );
-			}
-			$subheading = strtoupper( $subheading );
-		} else {
-			$subheading = 'EXPLORE OUR ' . strtoupper( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ) . ' COLLECTION';
-		}
 		
 		$hero_args = array(
 			'image_desktop' => $hero_image,
@@ -714,13 +702,6 @@ function primefit_get_shop_categories( $args = array() ) {
 		// Get product count
 		$product_count = $category->count;
 		
-		// Build category description
-		$description = ! empty( $category->description ) 
-			? wp_trim_words( wp_strip_all_tags( $category->description ), 12, '...' )
-			: sprintf( __( 'Explore our %s collection with %d products', 'primefit' ), 
-					  strtolower( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) ), 
-					  $product_count );
-		
 		// Check if this is a subcategory
 		$is_subcategory = $category->parent > 0;
 		$parent_category = null;
@@ -733,7 +714,6 @@ function primefit_get_shop_categories( $args = array() ) {
 			'id' => $category->term_id,
 			'name' => html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ),
 			'slug' => $category->slug,
-			'description' => $description,
 			'image' => $image_url,
 			'url' => get_term_link( $category ),
 			'count' => $product_count,
