@@ -479,7 +479,6 @@
 
 /* Shipping Progress Bar */
 .mini-cart-shipping-progress {
-  background: #f8f9fa;
   padding: 20px;
   margin: 0 -20px 20px -20px;
   border-bottom: 1px solid #e9ecef;
@@ -496,6 +495,7 @@
 .shipping-progress-text.shipping-qualified {
   color: #28a745;
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .shipping-progress-bar {

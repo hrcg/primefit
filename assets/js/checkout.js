@@ -53,6 +53,7 @@
         this.initHelpTooltips();
         this.initFieldSpecificErrors();
         this.initCountryBasedFieldHiding();
+        this.initCheckoutTotalsAutoUpdate();
 
         // Initialize payment methods with proper timing
         this.initPaymentMethodEnhancements();
@@ -63,6 +64,90 @@
 
         this.isInitialized = true;
       });
+    },
+
+    /**
+     * Ensure shipping methods and totals refresh when address fields change
+     * Adds WooCommerce-recognized classes and debounced update triggers
+     */
+    initCheckoutTotalsAutoUpdate: function () {
+      const $form = $("form.checkout");
+      if (!$form.length) return;
+
+      const fieldSelectors = [
+        "#billing_country",
+        "#billing_state",
+        "#billing_postcode",
+        "#billing_city",
+        "#billing_address_1",
+        "#billing_address_2",
+      ].join(", ");
+
+      const markWooClasses = function () {
+        $(fieldSelectors).addClass("update_totals_on_change address-field");
+        $("#billing_country").addClass("country_to_state");
+        $("#billing_state").addClass("state_select");
+      };
+
+      markWooClasses();
+
+      let updateTimeout = null;
+      const debouncedUpdate = function () {
+        if (updateTimeout) clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(function () {
+          $(document.body).trigger("update_checkout");
+        }, 120);
+      };
+
+      $(document).on("change", fieldSelectors, debouncedUpdate);
+      $(document).on(
+        "input",
+        "#billing_postcode, #billing_city, #billing_address_1, #billing_address_2",
+        debouncedUpdate
+      );
+
+      $(document.body).on("updated_checkout", function () {
+        markWooClasses();
+        // Sync our visible totals from Woo's review table
+        try {
+          CheckoutManager.syncOrderTotalsFromReview();
+        } catch (e) {}
+      });
+
+      // Important: Do NOT trigger update_checkout on wc_fragments_refreshed,
+      // it creates a loop with global listeners that refresh fragments after checkout updates.
+
+      // Don't auto-trigger periodic updates; only initialize classes once
+    },
+
+    /**
+     * Copy totals from Woo review order table into our custom summary blocks
+     */
+    syncOrderTotalsFromReview: function () {
+      const $review = $(".woocommerce-checkout-review-order, #order_review");
+      if (!$review.length) return;
+
+      const $subtotal = $review.find(
+        ".woocommerce-checkout-review-order-table tr.cart-subtotal td, .woocommerce-checkout-review-order-table tr.cart-subtotal .amount"
+      );
+      const $total = $review.find(
+        ".woocommerce-checkout-review-order-table tr.order-total td, .woocommerce-checkout-review-order-table tr.order-total .amount"
+      );
+
+      // Prefer the last .amount inside each cell if multiple
+      const subtotalHtml = $subtotal.find(".amount").last().html() || $subtotal.last().html();
+      const totalHtml = $total.find(".amount").last().html() || $total.last().html();
+
+      if (subtotalHtml) {
+        $(".order-totals .total-line:contains('Subtotal') .total-value").html(
+          subtotalHtml
+        );
+      }
+
+      if (totalHtml) {
+        $(".order-totals .final-total .total-value").html(totalHtml);
+        $(".summary-total-mobile").html(totalHtml);
+      }
     },
 
     /**

@@ -588,6 +588,14 @@ function primefit_add_cache_headers() {
 		return;
 	}
 
+	// Never cache WooCommerce transactional pages (cart, checkout, account)
+	if ( function_exists( 'is_checkout' ) && ( is_cart() || is_checkout() || is_account_page() ) ) {
+		header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+		return;
+	}
+
 	// Get the request URI
 	$request_uri = $_SERVER['REQUEST_URI'];
 
@@ -640,7 +648,7 @@ function primefit_add_cache_headers() {
 		}
 	}
 
-	// Handle HTML pages with optimized cache duration
+	// Handle HTML pages with optimized cache duration (exclude WooCommerce critical pages above)
 	if ( is_front_page() || is_home() || is_page() || is_single() ) {
 		// Increased cache duration for better performance (30 minutes instead of 15)
 		// This works well with our product loop caching (15 minutes)
