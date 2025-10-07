@@ -417,13 +417,8 @@ function primefit_get_shop_hero_config() {
 		// Get category hero image (with automatic fallback)
 		$hero_image = primefit_get_category_hero_image( $category );
 
-		// Set subheading based on category description or fallback
+		// Set subheading to empty to remove it from product category pages
 		$subheading = '';
-		if ( ! empty( $category->description ) ) {
-			$subheading = html_entity_decode( $category->description, ENT_QUOTES, 'UTF-8' );
-		} else {
-			$subheading = sprintf( 'DISCOVER OUR %s COLLECTION', strtoupper( $category->name ) );
-		}
 
 		$hero_args = array(
 			'image_desktop' => $hero_image,
@@ -1088,7 +1083,7 @@ function primefit_render_product_loop( $args = array() ) {
 		'best_selling' => false,
 		'show_view_all' => true,
 		'view_all_text' => 'VIEW ALL',
-		'view_all_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+		'view_all_link' => '', // Will be set to shop page if empty
 		'section_class' => 'product-section',
 		'header_alignment' => 'center',
 		'layout' => 'grid', // 'grid', 'carousel', 'list'
@@ -1097,6 +1092,16 @@ function primefit_render_product_loop( $args = array() ) {
 	);
 
 	$section = wp_parse_args( $args, $defaults );
+	
+	// Handle button_link if provided (takes precedence over view_all_link for backwards compatibility)
+	if ( isset( $args['button_link'] ) ) {
+		$section['view_all_link'] = $args['button_link'];
+	}
+	
+	// Set fallback for view_all_link if still empty
+	if ( empty( $section['view_all_link'] ) ) {
+		$section['view_all_link'] = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#';
+	}
 
 	// Generate cache key based on all relevant parameters
 	$cache_key = primefit_get_product_loop_cache_key( $section );

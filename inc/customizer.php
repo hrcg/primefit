@@ -1523,11 +1523,8 @@ function primefit_get_featured_products_config() {
 		$category_slug = $category ? $category->slug : '';
 	}
 
-	// Get button link with fallback
+	// Get button link - don't apply fallback here, let the render function handle it
 	$button_link = get_theme_mod( 'primefit_featured_products_button_link', '' );
-	if ( empty( $button_link ) && function_exists( 'wc_get_page_permalink' ) ) {
-		$button_link = wc_get_page_permalink( 'shop' );
-	}
 
 	return array(
 		'enabled' => get_theme_mod( 'primefit_featured_products_enabled', true ),
@@ -1556,11 +1553,8 @@ function primefit_get_product_showcase_config() {
 		$category_slug = $category ? $category->slug : '';
 	}
 
-	// Get button link with fallback
+	// Get button link - don't apply fallback here, let the render function handle it
 	$button_link = get_theme_mod( 'primefit_product_showcase_button_link', '' );
-	if ( empty( $button_link ) && function_exists( 'wc_get_page_permalink' ) ) {
-		$button_link = wc_get_page_permalink( 'shop' );
-	}
 
 	return array(
 		'enabled' => get_theme_mod( 'primefit_product_showcase_enabled', true ),

@@ -19,7 +19,7 @@ $defaults = array(
 	'category' => '',
 	'show_view_all' => true,
 	'view_all_text' => 'VIEW ALL',
-	'view_all_link' => function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '#',
+	'view_all_link' => '', // Will be handled by wp_parse_args with custom args
 	'section_class' => 'featured-products'
 );
 
