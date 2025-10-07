@@ -696,6 +696,10 @@ function primefit_header_cart_fragment( $fragments ) {
 
 	// Add mini cart content fragment - only if cart has items
 	if ( ! WC()->cart->is_empty() ) {
+		// Force shipping calculation to ensure accurate rates for customer's location
+		// This is critical for the shipping progress bar to show/hide correctly
+		WC()->cart->calculate_shipping();
+		
 		ob_start();
 		?>
 		<div class="widget_shopping_cart_content">
@@ -1480,6 +1484,21 @@ function primefit_mini_cart_shipping_progress() {
 		return;
 	}
 	
+	// Check if default shipping method for this country is already free
+	$packages = WC()->shipping->get_packages();
+	if ( ! empty( $packages ) ) {
+		foreach ( $packages as $package ) {
+			if ( isset( $package['rates'] ) && ! empty( $package['rates'] ) ) {
+				// Get the first/default shipping method cost
+				$first_method = reset( $package['rates'] );
+				if ( $first_method && $first_method->cost == 0 ) {
+					// Default shipping is already free for this country, don't show progress bar
+					return;
+				}
+			}
+		}
+	}
+	
 	// Get free shipping methods
 	$free_shipping_methods = primefit_get_free_shipping_methods();
 	if ( empty( $free_shipping_methods ) ) {
@@ -1574,6 +1593,100 @@ function primefit_get_free_shipping_minimum() {
 	}
 	
 	return $min_amount;
+}
+
+/**
+ * Check if user qualifies for free shipping
+ */
+function primefit_user_qualifies_for_free_shipping() {
+	if ( ! WC()->cart || WC()->cart->is_empty() ) {
+		return false;
+	}
+	
+	$free_shipping_min_amount = primefit_get_free_shipping_minimum();
+	if ( ! $free_shipping_min_amount ) {
+		return false;
+	}
+	
+	$cart_total = WC()->cart->get_displayed_subtotal();
+	return $cart_total >= $free_shipping_min_amount;
+}
+
+/**
+ * Filter shipping methods to prioritize free shipping
+ * Hide paid shipping methods when free shipping is available
+ */
+add_filter( 'woocommerce_package_rates', 'primefit_prioritize_free_shipping', 10, 2 );
+function primefit_prioritize_free_shipping( $rates, $package ) {
+	// Only apply on frontend checkout/cart
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return $rates;
+	}
+	
+	// Check if user qualifies for free shipping
+	if ( ! primefit_user_qualifies_for_free_shipping() ) {
+		return $rates;
+	}
+	
+	// Find free shipping methods
+	$free_shipping_rates = array();
+	$paid_shipping_rates = array();
+	
+	foreach ( $rates as $rate_id => $rate ) {
+		if ( $rate->method_id === 'free_shipping' ) {
+			$free_shipping_rates[ $rate_id ] = $rate;
+		} else {
+			$paid_shipping_rates[ $rate_id ] = $rate;
+		}
+	}
+	
+	// If we have free shipping available, only show free shipping methods
+	if ( ! empty( $free_shipping_rates ) ) {
+		return $free_shipping_rates;
+	}
+	
+	// If no free shipping available, return all rates
+	return $rates;
+}
+
+/**
+ * Automatically select free shipping method when available
+ */
+add_action( 'woocommerce_checkout_update_order_review', 'primefit_auto_select_free_shipping', 10, 1 );
+add_action( 'woocommerce_cart_calculate_fees', 'primefit_auto_select_free_shipping', 5 );
+function primefit_auto_select_free_shipping( $post_data = null ) {
+	// Only apply on frontend checkout/cart
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return;
+	}
+	
+	// Check if user qualifies for free shipping
+	if ( ! primefit_user_qualifies_for_free_shipping() ) {
+		return;
+	}
+	
+	// Get current shipping packages
+	$packages = WC()->shipping->get_packages();
+	
+	foreach ( $packages as $package_key => $package ) {
+		if ( isset( $package['rates'] ) && ! empty( $package['rates'] ) ) {
+			// Find free shipping method in this package
+			$free_shipping_method = null;
+			foreach ( $package['rates'] as $rate_id => $rate ) {
+				if ( $rate->method_id === 'free_shipping' ) {
+					$free_shipping_method = $rate_id;
+					break;
+				}
+			}
+			
+			// If free shipping is available, select it
+			if ( $free_shipping_method ) {
+				$chosen_methods = WC()->session->get( 'chosen_shipping_methods', array() );
+				$chosen_methods[ $package_key ] = $free_shipping_method;
+				WC()->session->set( 'chosen_shipping_methods', $chosen_methods );
+			}
+		}
+	}
 }
 
 /**
@@ -1804,35 +1917,56 @@ function primefit_mini_cart_order_summary() {
 			<span class="line-value"><?php echo WC()->cart->get_cart_subtotal(); ?></span>
 		</div>
 		
-		<?php if ( WC()->cart->needs_shipping() && WC()->cart->show_shipping() ) : ?>
-			<?php $packages = WC()->shipping->get_packages(); ?>
-			<?php if ( ! empty( $packages ) ) : ?>
-				<div class="order-summary-line">
-					<span class="line-label"><?php _e( 'Estimated Shipping', 'primefit' ); ?></span>
-					<span class="line-value">
-						<?php
-						$chosen_methods = WC()->session->get( 'chosen_shipping_methods' );
-						$shipping_total = 0;
-						foreach ( $packages as $package ) {
-							if ( isset( $package['rates'] ) ) {
-								foreach ( $package['rates'] as $method ) {
-									if ( in_array( $method->id, $chosen_methods ) ) {
-										$shipping_total += $method->cost;
-										break;
-									}
-								}
-							}
-						}
-						if ( $shipping_total > 0 ) {
-							echo wc_price( $shipping_total );
-						} else {
-							echo wc_price( 5 ); // Default shipping estimate
-						}
-						?>
-					</span>
-				</div>
-			<?php endif; ?>
-		<?php endif; ?>
+	<?php if ( WC()->cart->needs_shipping() && WC()->cart->show_shipping() ) : ?>
+		<?php 
+		// Get actual shipping cost from the chosen shipping method
+		$shipping_total = 0;
+		$shipping_label = __( 'Shipping', 'primefit' );
+		
+		// Try to get the actual shipping method label and cost from packages
+		$packages = WC()->shipping->get_packages();
+		if ( ! empty( $packages ) ) {
+			$chosen_methods = WC()->session->get( 'chosen_shipping_methods', array() );
+			foreach ( $packages as $package_key => $package ) {
+				if ( isset( $package['rates'] ) ) {
+					$chosen_method_id = isset( $chosen_methods[ $package_key ] ) ? $chosen_methods[ $package_key ] : null;
+					
+					if ( $chosen_method_id && isset( $package['rates'][ $chosen_method_id ] ) ) {
+						$chosen_rate = $package['rates'][ $chosen_method_id ];
+						$shipping_label = $chosen_rate->label;
+						$shipping_total = $chosen_rate->cost;
+						break;
+					} elseif ( ! empty( $package['rates'] ) ) {
+						// Use first available method if none chosen
+						$first_method = reset( $package['rates'] );
+						$shipping_label = $first_method->label;
+						$shipping_total = $first_method->cost;
+						break;
+					}
+				}
+			}
+		}
+		
+		// Fallback to WooCommerce's cart shipping total if no rate found
+		if ( $shipping_total === 0 ) {
+			$shipping_total = WC()->cart->get_shipping_total();
+		}
+		?>
+		<div class="order-summary-line">
+			<span class="line-label"><?php echo esc_html( $shipping_label ); ?></span>
+			<span class="line-value">
+				<?php
+				// Check if user qualifies for free shipping first OR if shipping cost is 0
+				if ( primefit_user_qualifies_for_free_shipping() || $shipping_total == 0 ) {
+					echo '<span class="free-shipping">' . __( 'FREE', 'primefit' ) . '</span>';
+				} else {
+					// Display the actual shipping cost from the chosen method
+					echo wc_price( $shipping_total );
+				}
+				?>
+			</span>
+		</div>
+	<?php endif; ?>
 		
 		<div class="order-summary-line total-line">
 			<span class="line-label"><?php _e( 'Total', 'primefit' ); ?></span>

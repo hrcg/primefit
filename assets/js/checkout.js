@@ -112,6 +112,15 @@
         try {
           CheckoutManager.syncOrderTotalsFromReview();
         } catch (e) {}
+        
+        // Trigger cart fragments refresh to update mini cart (especially shipping progress bar)
+        // when shipping costs change due to country/address updates
+        if (typeof CartManager !== "undefined" && CartManager.queueRefresh) {
+          CartManager.queueRefresh("wc_fragment_refresh");
+        } else {
+          // Fallback if CartManager is not available
+          $(document.body).trigger("wc_fragment_refresh");
+        }
       });
 
       // Important: Do NOT trigger update_checkout on wc_fragments_refreshed,
