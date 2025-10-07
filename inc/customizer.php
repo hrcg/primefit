@@ -765,10 +765,40 @@ function primefit_customize_register( $wp_customize ) {
 		'section' => 'primefit_navigation_badge',
 	) ) );
 
+	// Shop Category Ordering Section Panel
+	$wp_customize->add_section( 'primefit_shop_categories', array(
+		'title'    => __( 'Shop Categories', 'primefit' ),
+		'priority' => 42,
+	) );
+
+	// Category Manual Ordering Enable/Disable
+	$wp_customize->add_setting( 'primefit_category_manual_ordering', array(
+		'default'           => false,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_category_manual_ordering', array(
+		'label'   => __( 'Enable Manual Category Ordering', 'primefit' ),
+		'section' => 'primefit_shop_categories',
+		'type'    => 'checkbox',
+		'description' => __( 'Enable manual ordering of categories in the shop page. When enabled, you can drag and drop categories below to set their display order.', 'primefit' ),
+	) );
+
+	// Category Ordering
+	$wp_customize->add_setting( 'primefit_category_order', array(
+		'default'           => '',
+		'sanitize_callback' => 'primefit_sanitize_category_order',
+	) );
+	$wp_customize->add_control( new PrimeFit_Category_Order_Control( $wp_customize, 'primefit_category_order', array(
+		'label'       => __( 'Category Order', 'primefit' ),
+		'section'     => 'primefit_shop_categories',
+		'description' => __( 'Drag and drop categories to reorder them. Only enabled when "Enable Manual Category Ordering" is checked above.', 'primefit' ),
+		'choices'     => primefit_get_product_categories_choices(),
+	) ) );
+
 	// Homepage Product Loops Section Panel
 	$wp_customize->add_section( 'primefit_homepage_product_loops', array(
 		'title'    => __( 'Homepage Product Loops', 'primefit' ),
-		'priority' => 42,
+		'priority' => 43,
 	) );
 
 	// Featured Products Section
@@ -1218,6 +1248,266 @@ function primefit_get_product_categories_choices() {
 	}
 
 	return $choices;
+}
+
+/**
+ * Sanitize category order input
+ */
+function primefit_sanitize_category_order( $input ) {
+	if ( ! is_string( $input ) ) {
+		return '';
+	}
+
+	// Remove any non-numeric characters except commas and dashes
+	$sanitized = preg_replace( '/[^0-9,-]/', '', $input );
+
+	return $sanitized;
+}
+
+/**
+ * Get custom category order from theme options
+ */
+function primefit_get_category_order() {
+	$manual_ordering_enabled = get_theme_mod( 'primefit_category_manual_ordering', false );
+	$category_order = get_theme_mod( 'primefit_category_order', '' );
+
+	if ( ! $manual_ordering_enabled || empty( $category_order ) ) {
+		return array();
+	}
+
+	// Convert string like "1,3,5,2,4" to array
+	$order_array = array_map( 'intval', explode( ',', $category_order ) );
+
+	// Filter out any invalid category IDs
+	$valid_categories = array();
+	foreach ( $order_array as $category_id ) {
+		if ( term_exists( $category_id, 'product_cat' ) ) {
+			$valid_categories[] = $category_id;
+		}
+	}
+
+	return $valid_categories;
+}
+
+/**
+ * Custom sortable category order control
+ */
+if ( class_exists( 'WP_Customize_Control' ) ) {
+	class PrimeFit_Category_Order_Control extends WP_Customize_Control {
+		public $type = 'category_order';
+
+	public function render_content() {
+		$manual_ordering = get_theme_mod( 'primefit_category_manual_ordering', false );
+		$current_order = get_theme_mod( 'primefit_category_order', '' );
+
+		if ( ! $manual_ordering ) {
+			echo '<p>' . esc_html__( 'Enable Manual Category Ordering above to use this control.', 'primefit' ) . '</p>';
+			return;
+		}
+
+		$categories = primefit_get_product_categories_choices();
+		unset( $categories[''] ); // Remove "All Products" option
+
+		// Get current order array
+		$current_order_array = ! empty( $current_order ) ? explode( ',', $current_order ) : array();
+
+		?>
+		<label>
+			<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+			<?php if ( ! empty( $this->description ) ) : ?>
+				<span class="description customize-control-description"><?php echo $this->description; ?></span>
+			<?php endif; ?>
+		</label>
+
+		<div class="category-order-control">
+			<ul class="category-order-list sortable-list">
+				<?php if ( ! empty( $current_order_array ) ) : ?>
+					<?php foreach ( $current_order_array as $category_id ) : ?>
+						<?php
+						$category = get_term( $category_id, 'product_cat' );
+						if ( $category && ! is_wp_error( $category ) ) :
+						?>
+							<li class="category-order-item" data-category-id="<?php echo esc_attr( $category_id ); ?>">
+								<span class="category-name"><?php echo esc_html( $category->name ); ?></span>
+								<button type="button" class="remove-category" title="<?php esc_attr_e( 'Remove from order', 'primefit' ); ?>">×</button>
+							</li>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				<?php endif; ?>
+
+				<?php
+				// Show remaining categories that aren't in the current order
+				foreach ( $categories as $category_id => $category_name ) :
+					if ( ! in_array( $category_id, $current_order_array ) ) :
+					?>
+					<li class="category-order-item available-category" data-category-id="<?php echo esc_attr( $category_id ); ?>">
+						<span class="category-name"><?php echo esc_html( $category_name ); ?></span>
+						<button type="button" class="add-category" title="<?php esc_attr_e( 'Add to order', 'primefit' ); ?>">+</button>
+					</li>
+				<?php endif; endforeach; ?>
+			</ul>
+
+			<input type="hidden" <?php $this->link(); ?> value="<?php echo esc_attr( $current_order ); ?>" />
+			<p class="description">
+				<?php esc_html_e( 'Drag items to reorder. Use the + and × buttons to add/remove categories from your custom order.', 'primefit' ); ?>
+			</p>
+		</div>
+
+		<script>
+		(function($) {
+			'use strict';
+
+			$(document).ready(function() {
+				// Initialize sortable functionality for this control
+				var $control = $('.category-order-control').last();
+				var $list = $control.find('.category-order-list');
+				var $hiddenInput = $control.find('input[type="hidden"]');
+
+				// Make the list sortable if jQuery UI is available
+				if (typeof $.fn.sortable !== 'undefined') {
+					$list.sortable({
+						placeholder: 'category-order-item sortable-placeholder',
+						axis: 'y',
+						handle: '.category-name',
+						update: function(event, ui) {
+							updateCategoryOrder();
+						}
+					});
+				}
+
+				// Handle add/remove buttons
+				$control.on('click', '.add-category', function(e) {
+					e.preventDefault();
+					var $item = $(this).closest('.category-order-item');
+					$item.removeClass('available-category');
+					$(this).removeClass('add-category').addClass('remove-category');
+					$(this).attr('title', '<?php esc_attr_e( 'Remove from order', 'primefit' ); ?>');
+					$(this).html('×');
+					updateCategoryOrder();
+				});
+
+				$control.on('click', '.remove-category', function(e) {
+					e.preventDefault();
+					var $item = $(this).closest('.category-order-item');
+					$item.addClass('available-category');
+					$(this).removeClass('remove-category').addClass('add-category');
+					$(this).attr('title', '<?php esc_attr_e( 'Add to order', 'primefit' ); ?>');
+					$(this).html('+');
+					updateCategoryOrder();
+				});
+
+				function updateCategoryOrder() {
+					var order = [];
+
+					// Get all ordered items (not available-category)
+					$control.find('.category-order-item:not(.available-category)').each(function() {
+						var categoryId = $(this).data('category-id');
+						if (categoryId) {
+							order.push(categoryId);
+						}
+					});
+
+					// Update the hidden input
+					$hiddenInput.val(order.join(',')).trigger('change');
+				}
+			});
+		})(jQuery);
+		</script>
+
+		<style>
+		.category-order-control {
+			margin-top: 10px;
+		}
+		.category-order-list {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			background: #fff;
+			min-height: 200px;
+			max-height: 400px;
+			overflow-y: auto;
+		}
+		.category-order-item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 8px 12px;
+			border-bottom: 1px solid #eee;
+			background: #f9f9f9;
+			cursor: move;
+			transition: background-color 0.2s;
+		}
+		.category-order-item:last-child {
+			border-bottom: none;
+		}
+		.category-order-item:hover {
+			background: #f0f0f0;
+		}
+		.category-order-item.available-category {
+			background: #fff;
+			opacity: 0.7;
+		}
+		.category-order-item.available-category:hover {
+			background: #f8f8f8;
+			opacity: 1;
+		}
+		.category-name {
+			flex-grow: 1;
+			font-size: 13px;
+			color: #333;
+		}
+		.category-order-item button {
+			background: none;
+			border: none;
+			color: #666;
+			cursor: pointer;
+			font-size: 16px;
+			padding: 2px 6px;
+			border-radius: 3px;
+			transition: all 0.2s;
+		}
+		.category-order-item button:hover {
+			background: #e0e0e0;
+			color: #333;
+		}
+		.category-order-item .add-category {
+			color: #28a745;
+		}
+		.category-order-item .remove-category {
+			color: #dc3545;
+		}
+		.category-order-item.sortable-placeholder {
+			background: #fff3cd;
+			border: 2px dashed #ffc107;
+			visibility: visible !important;
+		}
+		.category-order-control .description {
+			margin-top: 8px;
+			font-style: italic;
+			color: #666;
+			font-size: 12px;
+		}
+		.category-order-list .ui-sortable-helper {
+			background: #007cba;
+			color: white;
+			border: none;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		}
+		.category-order-list .ui-sortable-helper .category-name {
+			color: white;
+		}
+		.category-order-list .ui-sortable-helper button {
+			color: white;
+		}
+		.category-order-list .ui-sortable-helper button:hover {
+			background: rgba(255, 255, 255, 0.2);
+		}
+		</style>
+		<?php
+	}
+	}
 }
 
 /**

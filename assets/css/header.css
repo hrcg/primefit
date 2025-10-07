@@ -6,8 +6,7 @@
   background: var(--headerBackground);
   z-index: var(--z-dropdown);
   padding: 12px 0;
-  border-bottom: 1px solid transparent;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .header-inner {
@@ -243,7 +242,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid var(--border);
 }
 
 .mobile-nav-title {
@@ -353,7 +351,6 @@
 
 /* Tertiary menu in mobile panel - same style as primary menu */
 .mobile-nav--tertiary {
-  border-top: 1px solid var(--border);
   margin-top: 8px;
   padding-top: 8px;
 }
@@ -545,7 +542,6 @@
 .site-header.is-scrolled,
 .has-hero-header .site-header.is-scrolled {
   background: var(--headerBackground) !important;
-  border-bottom-color: var(--border);
 }
 
 /* Scroll Prevention Styles */
@@ -662,7 +658,6 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
   left: 0;
   width: 100%;
   background: var(--background);
-  border-top: 1px solid var(--border);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
@@ -699,7 +694,6 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
   color: var(--text);
   margin: 0 0 20px 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
 }
 
 .mega-menu-links {

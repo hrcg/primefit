@@ -1388,9 +1388,8 @@
 
     submitToCartAjax(formData, $button) {
       const ajaxUrl =
+        (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
-        (window.wc_add_to_cart_params &&
-          window.wc_add_to_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
       // Use requestAnimationFrame for smoother UI updates

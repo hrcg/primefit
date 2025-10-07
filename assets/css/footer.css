@@ -3,7 +3,6 @@
   background-color: #131313;
   color: #b8b8b8;
   padding: 0;
-  border-top: 1px solid var(--border);
 }
 
 .footer-top {
@@ -165,7 +164,6 @@
 
 /* Footer Bottom */
 .footer-bottom {
-  border-top: 1px solid #1a1a1a;
   padding: 20px 0;
   text-align: center;
 }

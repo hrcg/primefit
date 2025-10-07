@@ -706,76 +706,21 @@
           $(key).replaceWith(value);
         });
 
-        // Force a more aggressive quantity sync after adding to cart
-        setTimeout(function () {
-          // First, try to get fresh cart fragments to ensure we have the latest data
-          if (
-            window.primefit_cart_params &&
-            window.primefit_cart_params.ajax_url
-          ) {
-            $.ajax({
-              type: "POST",
-              url: window.primefit_cart_params.ajax_url,
-              data: {
-                action: "woocommerce_get_refreshed_fragments",
-              },
-              success: function (response) {
-                if (response && response.fragments) {
-                  // Update fragments with fresh data
-                  $.each(response.fragments, function (key, value) {
-                    $(key).replaceWith(value);
-                  });
+      // Sync all quantity inputs after fragments update (no extra network request)
+      setTimeout(function () {
+        $(
+          ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+        ).each(function () {
+          const $input = $(this);
+          const cartItemKey = $input.data("cart-item-key");
+          const currentVal = parseInt($input.val()) || 1;
 
-                  // Now sync all quantity inputs with the fresh data
-                  setTimeout(function () {
-                    $(
-                      ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-                    ).each(function () {
-                      const $input = $(this);
-                      const cartItemKey = $input.data("cart-item-key");
-                      const currentVal = parseInt($input.val()) || 1;
-
-                      // Update both the input value and the data attribute
-                      if (currentVal && cartItemKey) {
-                        $input.val(currentVal);
-                        $input.attr("data-original-value", currentVal);
-                      }
-                    });
-                  }, 50);
-                }
-              },
-              error: function () {
-                // Fallback: sync with current values if AJAX fails
-                $(
-                  ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-                ).each(function () {
-                  const $input = $(this);
-                  const cartItemKey = $input.data("cart-item-key");
-                  const currentVal = parseInt($input.val()) || 1;
-
-                  if (currentVal && cartItemKey) {
-                    $input.val(currentVal);
-                    $input.attr("data-original-value", currentVal);
-                  }
-                });
-              },
-            });
-          } else {
-            // Fallback if no AJAX params available
-            $(
-              ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-            ).each(function () {
-              const $input = $(this);
-              const cartItemKey = $input.data("cart-item-key");
-              const currentVal = parseInt($input.val()) || 1;
-
-              if (currentVal && cartItemKey) {
-                $input.val(currentVal);
-                $input.attr("data-original-value", currentVal);
-              }
-            });
+          if (currentVal && cartItemKey) {
+            $input.val(currentVal);
+            $input.attr("data-original-value", currentVal);
           }
-        }, 150);
+        });
+      }, 150);
       }
 
       // Check cart state and hide empty message if needed

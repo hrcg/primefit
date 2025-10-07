@@ -50,7 +50,7 @@
   --bg: #fcfcfc;
   --text: #0b0b0b;
   --muted: #6a6a6a;
-  --border: #5b5b5b;
+  --border: #e7e7e7;
   --accent: #ff4444;
 
   /* Derived colors automatically update via CSS variables */
@@ -59,20 +59,6 @@
   --card-background: #f8f8f8;
 }
 
-/* Auto theme based on system preference - Optimized */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    --bg: #ffffff;
-    --text: #0b0b0b;
-    --muted: #6a6a6a;
-    --border: #5b5b5b;
-    --accent: #ff4444;
-
-    /* Derived colors automatically update */
-    --background: var(--bg);
-    --card-background: #f8f8f8;
-  }
-}
 
 html,
 body {
@@ -276,7 +262,7 @@ body.nav-open {
     --background: #ffffff;
     --text: #0b0b0b;
     --muted: #606060;
-    --border: #272727;
+    --border: #e7e7e7;
     --accent: #ff4444;
     --card-background: #f8f8f8;
     --white: #ffffff;

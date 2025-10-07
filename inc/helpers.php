@@ -668,21 +668,56 @@ function primefit_get_shop_categories( $args = array() ) {
 		'number' => 12, // Limit number of categories
 		'include_subcategories' => false // New parameter
 	);
-	
+
 	$args = wp_parse_args( $args, $defaults );
-	
+
 	// If including subcategories, remove parent restriction
 	if ( $args['include_subcategories'] ) {
 		unset( $args['parent'] );
 	}
-	
-	// Get categories
+
+	// Get categories first (always get all categories)
 	$categories = get_terms( $args );
-	
+
 	if ( is_wp_error( $categories ) || empty( $categories ) ) {
 		return array();
 	}
-	
+
+	// Check if manual category ordering is enabled and apply custom order
+	$manual_ordering_enabled = get_theme_mod( 'primefit_category_manual_ordering', false );
+
+	if ( $manual_ordering_enabled ) {
+		// Get custom category order
+		$custom_order = primefit_get_category_order();
+
+		if ( ! empty( $custom_order ) ) {
+			// Create a mapping of category ID to its position in custom order
+			$order_map = array_flip( $custom_order );
+
+			// Sort categories based on custom order
+			usort( $categories, function( $a, $b ) use ( $order_map ) {
+				$a_pos = isset( $order_map[ $a->term_id ] ) ? $order_map[ $a->term_id ] : PHP_INT_MAX;
+				$b_pos = isset( $order_map[ $b->term_id ] ) ? $order_map[ $b->term_id ] : PHP_INT_MAX;
+
+				// If both categories are in custom order, sort by their position
+				if ( $a_pos !== PHP_INT_MAX && $b_pos !== PHP_INT_MAX ) {
+					return $a_pos <=> $b_pos;
+				}
+
+				// If only one is in custom order, prioritize it
+				if ( $a_pos !== PHP_INT_MAX ) {
+					return -1;
+				}
+				if ( $b_pos !== PHP_INT_MAX ) {
+					return 1;
+				}
+
+				// If neither is in custom order, maintain original order
+				return 0;
+			});
+		}
+	}
+
 	$category_data = array();
 	
 	foreach ( $categories as $category ) {
