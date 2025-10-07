@@ -305,13 +305,17 @@
 }
 
 .mobile-menu .menu-item-has-children > a::after {
-  content: "›";
+  content: "";
   position: absolute;
   right: 0;
-  top: 43%;
+  top: 50%;
   transform: translateY(-50%);
-  font-size: 32px;
-  font-weight: 400;
+  width: 16px;
+  height: 16px;
+  background-image: url('../images/chevron-right.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
   transition: transform 0.2s ease;
 }
 
@@ -336,7 +340,8 @@
 }
 
 .mobile-menu .sub-menu a {
-  padding: 20px 0 0px 10px;
+  margin: 10px 0 0 5px;
+  padding: 10px 0 0 5px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -358,7 +363,7 @@
 .mobile-menu--tertiary a {
   color: var(--text);
   text-decoration: none;
-  padding: 16px 0;
+  padding: 0;
   display: block;
   font-size: 16px;
   letter-spacing: 0.06em;
@@ -377,13 +382,17 @@
 }
 
 .mobile-menu--tertiary .menu-item-has-children > a::after {
-  content: "›";
+  content: "";
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 18px;
-  font-weight: 400;
+  width: 16px;
+  height: 16px;
+  background-image: url('../images/chevron-right.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
   transition: transform 0.2s ease;
 }
 
