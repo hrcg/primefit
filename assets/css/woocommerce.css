@@ -671,6 +671,11 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  /* iOS Safari scrolling optimizations */
+  -webkit-overflow-scrolling: touch;
+  /* Force hardware acceleration for smoother scrolling */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
 }
 
 /* Override WooCommerce default width and float styling */
@@ -709,8 +714,12 @@
   padding: 0;
   margin: 0;
   width: 100%;
-  transition: transform 0.2s ease;
   margin-bottom: 16px;
+  /* Force hardware acceleration without transform transition to prevent iOS flicker */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Product Link - entire product is now clickable */
@@ -744,7 +753,14 @@
   display: block;
   aspect-ratio: 4/5;
   object-fit: cover;
-  transition: opacity 0.3s ease;
+  /* Optimize opacity transition for iOS Safari */
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Hardware acceleration for smoother performance */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: opacity;
 }
 
 /* Second Image Hover Effect - styles moved above */
@@ -758,11 +774,25 @@
   aspect-ratio: 4/5;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  /* Start scaled down like category pages */
+  transform: scale(0.95);
+  /* Optimize for iOS Safari - use will-change for better performance */
+  will-change: opacity, transform;
+  /* Use hardware acceleration */
+  -webkit-transform: translateZ(0) scale(0.95);
+  transform: translateZ(0) scale(0.95);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Use a more performant transition for iOS */
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .woocommerce ul.products li.product:hover .product-second-image {
   opacity: 1;
+  /* Scale up to match category page animation */
+  transform: scale(1.05);
+  -webkit-transform: translateZ(0) scale(1.05);
+  transform: translateZ(0) scale(1.05);
 }
 
 /* Prevent hover effects when color swatch is active */
@@ -1577,11 +1607,18 @@ body.woocommerce .hero {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  /* Use opacity instead of transform for smoother mobile performance */
 }
 
-.woocommerce-page ul.products li.product:hover .product-image-container img {
-  transform: scale(1.05);
+/* Disable hover effects on touch devices to prevent iOS flicker */
+@media (hover: hover) and (pointer: fine) {
+  .woocommerce-page ul.products li.product .product-image-container img {
+    transition: transform 0.3s ease;
+  }
+  
+  .woocommerce-page ul.products li.product:hover .product-image-container img {
+    transform: scale(1.05);
+  }
 }
 
 /* Enhanced Product status badges for shop pages */
