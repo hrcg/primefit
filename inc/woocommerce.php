@@ -722,6 +722,56 @@ function primefit_header_cart_fragment( $fragments ) {
 		wc_cart_totals_order_total_html();
 		$order_total_html = ob_get_clean();
 		$fragments['.order-totals .final-total .total-value'] = '<span class="total-value">' . $order_total_html . '</span>';
+		
+		// Add subtotal for checkout page
+		ob_start();
+		wc_cart_totals_subtotal_html();
+		$subtotal_html = ob_get_clean();
+		$fragments['.order-totals .total-line:not(.final-total) .total-value'] = '<span class="total-value">' . $subtotal_html . '</span>';
+		
+		// Add order items fragment for checkout page (always generate for AJAX compatibility)
+		ob_start();
+		?>
+		<div class="order-items">
+			<?php
+			foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
+				$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
+				$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
+				
+				if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_checkout_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
+					?>
+					<div class="order-item">
+						<div class="item-image">
+							<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_thumbnail', $_product->get_image(), $cart_item, $cart_item_key ) ); ?>
+							<span class="item-quantity"><?php echo esc_html( $cart_item['quantity'] ); ?></span>
+						</div>
+						<div class="item-details">
+							<h4 class="item-name"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key ) ); ?></h4>
+							<div class="item-price"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key ) ); ?></div>
+							<?php
+							// Display product attributes
+							if ( $_product->is_type( 'variable' ) ) {
+								$variation_data = $cart_item['variation'];
+								foreach ( $variation_data as $name => $value ) {
+									if ( ! empty( $value ) ) {
+										$attribute_name = wc_attribute_label( str_replace( 'attribute_', '', $name ) );
+										echo '<div class="item-attribute">' . esc_html( $attribute_name ) . ': ' . esc_html( $value ) . '</div>';
+									}
+								}
+							}
+							?>
+						</div>
+						<div class="item-total">
+							<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_subtotal', WC()->cart->get_product_subtotal( $_product, $cart_item['quantity'] ), $cart_item, $cart_item_key ) ); ?>
+						</div>
+					</div>
+					<?php
+				}
+			}
+			?>
+		</div>
+		<?php
+		$fragments['.order-items'] = ob_get_clean();
 	}
 
 	return $fragments;
