@@ -808,6 +808,9 @@ add_action( 'wp_ajax_nopriv_primefit_notify_availability', 'primefit_handle_noti
  */
 add_action( 'wp_ajax_wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
 add_action( 'wp_ajax_nopriv_wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
+// Also register native WooCommerce wc-ajax endpoints for performance
+add_action( 'wc_ajax_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
+add_action( 'wc_ajax_nopriv_update_cart_item_quantity', 'primefit_wc_update_cart_item_quantity' );
 function primefit_wc_update_cart_item_quantity() {
     // Ensure clean output buffer for JSON response
     if ( ob_get_level() ) {
@@ -866,6 +869,9 @@ function primefit_wc_update_cart_item_quantity() {
  */
 add_action( 'wp_ajax_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
 add_action( 'wp_ajax_nopriv_wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
+// Also register native WooCommerce wc-ajax endpoints
+add_action( 'wc_ajax_remove_cart_item', 'primefit_wc_remove_cart_item' );
+add_action( 'wc_ajax_nopriv_remove_cart_item', 'primefit_wc_remove_cart_item' );
 function primefit_wc_remove_cart_item() {
     // Ensure clean output buffer for JSON response
     if ( ob_get_level() ) {

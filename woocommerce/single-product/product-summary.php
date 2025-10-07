@@ -356,8 +356,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 			$size_guide_image = primefit_get_size_guide_image( $product->get_id() );
 			if ( $size_guide_image ) : ?>
 				<a href="#" class="size-guide-link" data-size-guide-image="<?php echo esc_url( $size_guide_image ); ?>"><?php esc_html_e( 'SIZE GUIDE', 'primefit' ); ?></a>
-			<?php else : ?>
-				<a href="#" class="size-guide-link"><?php esc_html_e( 'SIZE GUIDE', 'primefit' ); ?></a>
 			<?php endif; ?>
 		</div>
 	<?php endif; ?>

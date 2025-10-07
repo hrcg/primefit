@@ -1364,8 +1364,11 @@
           $form.find('input[name="product_id"]').val();
       }
 
-      // Set default quantity if not provided
-      if (!formData.quantity) {
+      // Force quantity from the current form input to ensure correct value is sent
+      const qtyFromInputA = parseInt($form.find('input[name="quantity"]').val(), 10);
+      if (!isNaN(qtyFromInputA) && qtyFromInputA > 0) {
+        formData.quantity = qtyFromInputA;
+      } else if (!formData.quantity) {
         formData.quantity = 1;
       }
 
@@ -1590,12 +1593,18 @@
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
+      const wcAjaxBase =
+        window.wc_cart_fragments_params &&
+        window.wc_cart_fragments_params.wc_ajax_url;
+      const fragUrl = wcAjaxBase
+        ? wcAjaxBase.replace("%%endpoint%%", "get_refreshed_fragments")
+        : ajaxUrl;
+      const fragData = wcAjaxBase ? {} : { action: "woocommerce_get_refreshed_fragments" };
+
       $.ajax({
         type: "POST",
-        url: ajaxUrl,
-        data: {
-          action: "woocommerce_get_refreshed_fragments",
-        },
+        url: fragUrl,
+        data: fragData,
         success: function (response) {
           if (response && response.fragments) {
             // Update fragments - this will show the new cart count if product was added
@@ -1606,9 +1615,7 @@
             // Reset quantity inputs to 1 after successful auto-add
             this.resetQuantityInputs();
 
-            // Trigger WooCommerce events
-            $(document.body).trigger("update_checkout");
-            $(document.body).trigger("wc_fragment_refresh");
+            // Trigger WooCommerce event
             $(document.body).trigger("added_to_cart", [
               response.fragments,
               response.cart_hash,
@@ -1637,8 +1644,8 @@
     }
 
     resetQuantityInputs() {
-      // Reset main quantity input to 1
-      const $mainQuantityInput = $(".quantity input[type='number']");
+      // Reset main product page quantity input to 1 (do not affect mini-cart)
+      const $mainQuantityInput = $(".product-actions .quantity input[type='number']");
       if ($mainQuantityInput.length) {
         $mainQuantityInput.val(1);
       }
@@ -2465,8 +2472,11 @@
           $form.find('input[name="product_id"]').val();
       }
 
-      // Set default quantity if not provided
-      if (!formData.quantity) {
+      // Force quantity from the current form input to ensure correct value is sent
+      const qtyFromInput = parseInt($form.find('input[name="quantity"]').val(), 10);
+      if (!isNaN(qtyFromInput) && qtyFromInput > 0) {
+        formData.quantity = qtyFromInput;
+      } else if (!formData.quantity) {
         formData.quantity = 1;
       }
 
@@ -2589,9 +2599,8 @@
 
     submitToCart(formData, $button, retryCount = 0) {
       const ajaxUrl =
+        (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
-        (window.wc_add_to_cart_params &&
-          window.wc_add_to_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
       // Set a shorter timeout for better user experience
@@ -2816,12 +2825,18 @@
           window.wc_add_to_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
+      const wcAjaxBase =
+        window.wc_cart_fragments_params &&
+        window.wc_cart_fragments_params.wc_ajax_url;
+      const fragUrl = wcAjaxBase
+        ? wcAjaxBase.replace("%%endpoint%%", "get_refreshed_fragments")
+        : ajaxUrl;
+      const fragData = wcAjaxBase ? {} : { action: "woocommerce_get_refreshed_fragments" };
+
       $.ajax({
         type: "POST",
-        url: ajaxUrl,
-        data: {
-          action: "woocommerce_get_refreshed_fragments",
-        },
+        url: fragUrl,
+        data: fragData,
         success: function (response) {
           if (response && response.fragments) {
             // Update fragments - this will show the new cart count if product was added
@@ -2829,9 +2844,7 @@
               $(key).replaceWith(value);
             });
 
-            // Trigger WooCommerce events first
-            $(document.body).trigger("update_checkout");
-            $(document.body).trigger("wc_fragment_refresh");
+            // Trigger WooCommerce event
             $(document.body).trigger("added_to_cart", [
               response.fragments,
               response.cart_hash,
@@ -3928,8 +3941,10 @@
     // Initialize product variations
     new ProductVariations();
 
-    // Initialize size guide modal
-    new SizeGuideModal();
+    // Initialize size guide modal only if it exists on the page
+    if (document.getElementById("size-guide-modal")) {
+      new SizeGuideModal();
+    }
 
     // Initialize memory leak manager cleanup on page unload
     window.addEventListener("beforeunload", () => {

@@ -413,11 +413,18 @@ function primefit_get_shop_hero_config() {
 		);
 	} elseif ( is_product_category() ) {
 		$category = get_queried_object();
-		
+
 		// Get category hero image (with automatic fallback)
 		$hero_image = primefit_get_category_hero_image( $category );
-		
-		
+
+		// Set subheading based on category description or fallback
+		$subheading = '';
+		if ( ! empty( $category->description ) ) {
+			$subheading = html_entity_decode( $category->description, ENT_QUOTES, 'UTF-8' );
+		} else {
+			$subheading = sprintf( 'DISCOVER OUR %s COLLECTION', strtoupper( $category->name ) );
+		}
+
 		$hero_args = array(
 			'image_desktop' => $hero_image,
 			'image_mobile' => $hero_image,

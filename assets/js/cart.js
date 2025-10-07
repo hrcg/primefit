@@ -129,12 +129,22 @@
     ) {
       // Refresh fragments in background after cart is already open
       requestAnimationFrame(() => {
+        // Prefer WooCommerce wc-ajax endpoint for fragments refresh when available
+        const wcAjaxBase =
+          window.wc_cart_fragments_params &&
+          window.wc_cart_fragments_params.wc_ajax_url;
+        const fragUrl = wcAjaxBase
+          ? wcAjaxBase.replace("%%endpoint%%", "get_refreshed_fragments")
+          : (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
+            "/wp-admin/admin-ajax.php";
+        const fragData = wcAjaxBase
+          ? {}
+          : { action: "woocommerce_get_refreshed_fragments" };
+
         $.ajax({
           type: "POST",
-          url: window.primefit_cart_params.ajax_url,
-          data: {
-            action: "woocommerce_get_refreshed_fragments",
-          },
+          url: fragUrl,
+          data: fragData,
           success: function (response) {
             if (response && response.fragments) {
               // Update fragments with fresh data
@@ -175,11 +185,19 @@
         function () {
           const $input = $(this);
           const cartItemKey = $input.data("cart-item-key");
-          const currentVal = parseInt($input.val()) || 1;
+          
+          // Get the value from the HTML attribute (set by server)
+          const valueFromAttr = parseInt($input.attr("value")) || 1;
+          const currentInputVal = parseInt($input.val()) || 1;
 
-          if (currentVal && cartItemKey) {
-            $input.val(currentVal);
-            $input.attr("data-original-value", currentVal);
+          // If the attribute value doesn't match the input value, sync them
+          if (valueFromAttr !== currentInputVal) {
+            $input.val(valueFromAttr);
+          }
+          
+          // Update the data attribute to match
+          if (cartItemKey) {
+            $input.attr("data-original-value", valueFromAttr);
           }
         }
       );
@@ -406,15 +424,25 @@
       return;
     }
 
+    const wcAjaxBase =
+      window.wc_cart_fragments_params &&
+      window.wc_cart_fragments_params.wc_ajax_url;
+    const updateUrl = wcAjaxBase
+      ? wcAjaxBase.replace("%%endpoint%%", "update_cart_item_quantity")
+      : primefit_cart_params.ajax_url;
+    const updateData = wcAjaxBase
+      ? { cart_item_key: cartItemKey, quantity: quantity, security: primefit_cart_params.update_cart_nonce }
+      : {
+          action: "wc_ajax_update_cart_item_quantity",
+          cart_item_key: cartItemKey,
+          quantity: quantity,
+          security: primefit_cart_params.update_cart_nonce,
+        };
+
     $.ajax({
       type: "POST",
-      url: primefit_cart_params.ajax_url,
-      data: {
-        action: "wc_ajax_update_cart_item_quantity",
-        cart_item_key: cartItemKey,
-        quantity: quantity,
-        security: primefit_cart_params.update_cart_nonce,
-      },
+      url: updateUrl,
+      data: updateData,
       success: function (response) {
         if (response.success) {
           // Update cart fragments
@@ -423,30 +451,27 @@
               $(key).replaceWith(value);
             });
 
-            // After fragments are updated, ensure all quantity inputs have proper data attributes
-            // Use a longer timeout to ensure DOM is fully updated
+            // After fragments are updated, ensure all quantity inputs have proper values
+            // Fragments contain the correct HTML, but we need to ensure the input value matches
             setTimeout(function () {
               $(
                 ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
               ).each(function () {
                 const $input = $(this);
                 const cartItemKey = $input.data("cart-item-key");
+                
+                // Get the value from the HTML attribute (set by server in fragment)
+                const valueFromAttr = parseInt($input.attr("value")) || 1;
+                const currentInputVal = parseInt($input.val()) || 1;
 
-                // Get the actual quantity from the server response or cart data
-                let actualQuantity = response.data.updated_quantity;
-
-                // If this is the item we just updated, use the updated quantity
-                if (cartItemKey === response.data.cart_item_key) {
-                  actualQuantity = response.data.updated_quantity;
-                } else {
-                  // For other items, try to get quantity from the input value
-                  actualQuantity = parseInt($input.val()) || 1;
+                // If the attribute value doesn't match the input value, sync them
+                if (valueFromAttr !== currentInputVal) {
+                  $input.val(valueFromAttr);
                 }
-
-                // Update both the input value and the data attribute
-                if (actualQuantity && cartItemKey) {
-                  $input.val(actualQuantity);
-                  $input.attr("data-original-value", actualQuantity);
+                
+                // Update the data attribute to match
+                if (cartItemKey) {
+                  $input.attr("data-original-value", valueFromAttr);
                 }
               });
             }, 100);
@@ -513,15 +538,23 @@
       return;
     }
 
-    const ajaxData = {
-      action: "wc_ajax_remove_cart_item",
-      cart_item_key: cartItemKey,
-      security: primefit_cart_params.remove_cart_nonce,
-    };
+    const wcAjaxBase =
+      window.wc_cart_fragments_params &&
+      window.wc_cart_fragments_params.wc_ajax_url;
+    const removeUrl = wcAjaxBase
+      ? wcAjaxBase.replace("%%endpoint%%", "remove_cart_item")
+      : primefit_cart_params.ajax_url;
+    const ajaxData = wcAjaxBase
+      ? { cart_item_key: cartItemKey, security: primefit_cart_params.remove_cart_nonce }
+      : {
+          action: "wc_ajax_remove_cart_item",
+          cart_item_key: cartItemKey,
+          security: primefit_cart_params.remove_cart_nonce,
+        };
 
     $.ajax({
       type: "POST",
-      url: primefit_cart_params.ajax_url,
+      url: removeUrl,
       data: ajaxData,
       success: function (response) {
         if (response.success) {
@@ -536,19 +569,26 @@
               $(key).replaceWith(value);
             });
 
-            // After fragments are updated, ensure all quantity inputs have proper data attributes
+            // After fragments are updated, ensure all quantity inputs have proper values
             setTimeout(function () {
               $(
                 ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
               ).each(function () {
                 const $input = $(this);
                 const cartItemKey = $input.data("cart-item-key");
-                const currentVal = parseInt($input.val()) || 1;
+                
+                // Get the value from the HTML attribute (set by server in fragment)
+                const valueFromAttr = parseInt($input.attr("value")) || 1;
+                const currentInputVal = parseInt($input.val()) || 1;
 
-                // Update both the input value and the data attribute
-                if (currentVal && cartItemKey) {
-                  $input.val(currentVal);
-                  $input.attr("data-original-value", currentVal);
+                // If the attribute value doesn't match the input value, sync them
+                if (valueFromAttr !== currentInputVal) {
+                  $input.val(valueFromAttr);
+                }
+                
+                // Update the data attribute to match
+                if (cartItemKey) {
+                  $input.attr("data-original-value", valueFromAttr);
                 }
               });
             }, 100);
@@ -713,11 +753,19 @@
         ).each(function () {
           const $input = $(this);
           const cartItemKey = $input.data("cart-item-key");
-          const currentVal = parseInt($input.val()) || 1;
+          
+          // Get the value from the HTML attribute (set by server in fragment)
+          const valueFromAttr = parseInt($input.attr("value")) || 1;
+          const currentInputVal = parseInt($input.val()) || 1;
 
-          if (currentVal && cartItemKey) {
-            $input.val(currentVal);
-            $input.attr("data-original-value", currentVal);
+          // If the attribute value doesn't match the input value, sync them
+          if (valueFromAttr !== currentInputVal) {
+            $input.val(valueFromAttr);
+          }
+          
+          // Update the data attribute to match
+          if (cartItemKey) {
+            $input.attr("data-original-value", valueFromAttr);
           }
         });
       }, 150);
