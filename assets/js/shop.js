@@ -806,8 +806,8 @@
 
     // Get AJAX URL
     const ajaxUrl =
-      (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
       (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
+      (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
       "/wp-admin/admin-ajax.php";
 
     // Make AJAX request using WooCommerce's standard approach

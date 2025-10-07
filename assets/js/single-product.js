@@ -1520,9 +1520,7 @@
       // Reset quantity inputs to 1 after successful auto-add
       this.resetQuantityInputs();
 
-      // Trigger WooCommerce events
-      $(document.body).trigger("update_checkout");
-      $(document.body).trigger("wc_fragment_refresh");
+      // Trigger WooCommerce event for listeners that open cart / UI hooks
       $(document.body).trigger("added_to_cart", [
         response.fragments,
         response.cart_hash,
@@ -1588,9 +1586,8 @@
     checkCartAfterAutoAdd($button) {
       // Force refresh cart fragments to check if product was actually added
       const ajaxUrl =
+        (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
-        (window.wc_add_to_cart_params &&
-          window.wc_add_to_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
       $.ajax({
