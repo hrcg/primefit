@@ -105,8 +105,8 @@ body.nav-open {
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.3) 100%
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 100%
   );
   z-index: var(--z-content);
 }
@@ -161,7 +161,7 @@ body.nav-open {
   text-decoration: none;
   border: 2px solid transparent;
   transition: all 0.2s ease;
-  min-width: 160px;
+  max-width: fit-content;
 }
 
 .training-division-button.button--primary {
@@ -209,7 +209,6 @@ body.nav-open {
 
   .training-division-button {
     flex: 1;
-    min-width: 140px;
   }
 }
 
@@ -314,11 +313,6 @@ body.nav-open {
   /* Tiles label visibility remains white over images */
   .tiles-3 .tile .tile-label {
     color: #fff;
-  }
-
-  /* Footer and borders */
-  .site-footer {
-    border-top: 1px solid #e7e7e7;
   }
 }
 
@@ -1232,7 +1226,7 @@ article {
   }
 
   .category-tile-inner {
-    height: 350px;
+    height: 400px;
   }
 }
 
@@ -1271,7 +1265,7 @@ article {
   }
 
   .category-tile-inner {
-    height: 380px;
+    height: 400px;
   }
 
   .category-tile-title {
@@ -1310,7 +1304,7 @@ article {
   }
 
   .category-tile-inner {
-    height: 500px;
+    height: 600px;
   }
 }
 

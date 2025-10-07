@@ -771,9 +771,10 @@
       }, 150);
       }
 
-      // Check cart state and hide empty message if needed
+      // Since we just added a product, the cart is NOT empty
+      // Force hide empty state and show cart content
       setTimeout(function () {
-        checkAndShowEmptyCartState();
+        hideEmptyCartState();
       }, 100);
 
       // Open cart immediately
