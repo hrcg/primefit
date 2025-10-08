@@ -59,7 +59,6 @@
   --card-background: #f8f8f8;
 }
 
-
 html,
 body {
   background: var(--bg);
@@ -659,11 +658,7 @@ article {
   left: 0;
   width: 100%;
   height: 120px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    var(--headerBackground) 100%
-  );
+  background: linear-gradient(to bottom, transparent 0%, var(--bg) 100%);
   z-index: var(--z-base);
   pointer-events: none;
 }

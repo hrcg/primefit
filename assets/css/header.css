@@ -19,12 +19,18 @@
   :root:not([data-theme="dark"]) {
     --chevron-color: #0d0d0d; /* Black for light theme */
   }
-  
-  :root:not([data-theme="dark"]) .mobile-menu .menu-item-has-children > a::after {
+
+  :root:not([data-theme="dark"])
+    .mobile-menu
+    .menu-item-has-children
+    > a::after {
     content: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 3L7.5 6L4.5 9' stroke='%230d0d0d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
-  
-  :root:not([data-theme="dark"]) .mobile-menu--tertiary .menu-item-has-children > a::after {
+
+  :root:not([data-theme="dark"])
+    .mobile-menu--tertiary
+    .menu-item-has-children
+    > a::after {
     content: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 3L7.5 6L4.5 9' stroke='%230d0d0d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
 }
@@ -368,7 +374,7 @@
 
 .mobile-menu .sub-menu a {
   margin: 10px 0 0 5px;
-  padding: 10px 0 0 5px;
+  padding: 10px 0 10px 10px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text);

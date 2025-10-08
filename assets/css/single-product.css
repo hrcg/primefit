@@ -1209,10 +1209,12 @@ body.single-product .single-product-page {
 
   .product-thumbnails {
     flex-direction: row;
+    flex-wrap: wrap;
     width: 100%;
-    overflow-x: auto;
     gap: 10px;
     order: 2;
+    justify-content: flex-start;
+    overflow: visible;
   }
 
   .product-main-image {
@@ -1265,6 +1267,11 @@ body.single-product .single-product-page {
     width: 80px;
     height: 80px;
     flex-shrink: 0;
+  }
+
+  /* Mobile thumbnail wrapping - ensure proper layout for multiple rows */
+  .product-thumbnails .thumbnail-item {
+    flex: 0 0 auto;
   }
 
   .color-options {
