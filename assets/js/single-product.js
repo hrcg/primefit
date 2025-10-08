@@ -1003,11 +1003,18 @@
       const $selectedColor = this.$colorOptions.filter(".active");
       const $selectedSize = this.$sizeOptions.filter(".selected");
 
-      if ($selectedColor.length && $selectedSize.length) {
+      // Check if we have size options available
+      const hasSizeOptions = this.$sizeOptions.length > 0;
+
+      // Enable button if color is selected AND (size is selected OR no size options exist)
+      const canAddToCart =
+        $selectedColor.length && (!hasSizeOptions || $selectedSize.length);
+
+      if (canAddToCart) {
         this.$addToCartButton.prop("disabled", false).text("ADD TO CART");
-        // Ensure variation_id is set when both options selected
+        // Ensure variation_id is set when valid options are selected
         const colorValue = $selectedColor.data("color");
-        const sizeValue = $selectedSize.data("size");
+        const sizeValue = hasSizeOptions ? $selectedSize.data("size") : null;
         const variationId = this.findVariationId(colorValue, sizeValue);
         if (variationId) {
           $(".variation_id").val(variationId);
@@ -1134,16 +1141,26 @@
       const $form = $(e.currentTarget);
       const $selectedColor = $(".color-option.active");
       const $selectedSize = $(".size-option.selected");
+      const hasSizeOptions = $(".size-option").length > 0;
 
-      if (!$selectedColor.length || !$selectedSize.length) {
+      // Check if we have the required selections
+      const hasRequiredSelections =
+        $selectedColor.length && (!hasSizeOptions || $selectedSize.length);
+
+      if (!hasRequiredSelections) {
         e.preventDefault();
+
+        // Show appropriate error message
+        const errorMessage = hasSizeOptions
+          ? "Please select both color and size options."
+          : "Please select a color option.";
 
         // Show toast notification instead of browser alert
         if (window.ToastNotification) {
-          ToastNotification.error("Please select both color and size options.");
+          ToastNotification.error(errorMessage);
         } else {
           // Fallback to alert if ToastNotification is not available
-          alert("Please select both color and size options.");
+          alert(errorMessage);
         }
 
         return false;
@@ -1151,7 +1168,7 @@
 
       // Add variation attributes to form
       const colorValue = $selectedColor.data("color");
-      const sizeValue = $selectedSize.data("size");
+      const sizeValue = hasSizeOptions ? $selectedSize.data("size") : null;
 
       // Find the correct variation ID
       const variationId = this.findVariationId(colorValue, sizeValue);
@@ -1170,6 +1187,7 @@
           const variation = variations[i];
           let hasColor = false;
           let hasSize = false;
+          let hasSizeAttribute = false; // Track if variation has any size attribute
 
           for (const attrName in variation.attributes) {
             const attrValue = variation.attributes[attrName];
@@ -1186,16 +1204,20 @@
 
             // Check for size match (more flexible matching)
             if (
-              (attrName.toLowerCase().includes("size") ||
-                attrName.includes("pa_size") ||
-                attrName.includes("attribute_pa_size")) &&
-              attrValue === size
+              attrName.toLowerCase().includes("size") ||
+              attrName.includes("pa_size") ||
+              attrName.includes("attribute_pa_size")
             ) {
-              hasSize = true;
+              hasSizeAttribute = true;
+              if (attrValue === size) {
+                hasSize = true;
+              }
             }
           }
 
-          if (hasColor && hasSize) {
+          // If variation has size attributes, both color and size must match
+          // If variation has no size attributes, only color needs to match
+          if (hasColor && (!hasSizeAttribute || hasSize)) {
             return variation.variation_id;
           }
         }
@@ -1365,7 +1387,10 @@
       }
 
       // Force quantity from the current form input to ensure correct value is sent
-      const qtyFromInputA = parseInt($form.find('input[name="quantity"]').val(), 10);
+      const qtyFromInputA = parseInt(
+        $form.find('input[name="quantity"]').val(),
+        10
+      );
       if (!isNaN(qtyFromInputA) && qtyFromInputA > 0) {
         formData.quantity = qtyFromInputA;
       } else if (!formData.quantity) {
@@ -1391,7 +1416,8 @@
 
     submitToCartAjax(formData, $button) {
       const ajaxUrl =
-        (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
+        (window.wc_add_to_cart_params &&
+          window.wc_add_to_cart_params.ajax_url) ||
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
@@ -1589,7 +1615,8 @@
     checkCartAfterAutoAdd($button) {
       // Force refresh cart fragments to check if product was actually added
       const ajaxUrl =
-        (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
+        (window.wc_add_to_cart_params &&
+          window.wc_add_to_cart_params.ajax_url) ||
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
@@ -1599,7 +1626,9 @@
       const fragUrl = wcAjaxBase
         ? wcAjaxBase.replace("%%endpoint%%", "get_refreshed_fragments")
         : ajaxUrl;
-      const fragData = wcAjaxBase ? {} : { action: "woocommerce_get_refreshed_fragments" };
+      const fragData = wcAjaxBase
+        ? {}
+        : { action: "woocommerce_get_refreshed_fragments" };
 
       $.ajax({
         type: "POST",
@@ -1645,7 +1674,9 @@
 
     resetQuantityInputs() {
       // Reset main product page quantity input to 1 (do not affect mini-cart)
-      const $mainQuantityInput = $(".product-actions .quantity input[type='number']");
+      const $mainQuantityInput = $(
+        ".product-actions .quantity input[type='number']"
+      );
       if ($mainQuantityInput.length) {
         $mainQuantityInput.val(1);
       }
@@ -2473,7 +2504,10 @@
       }
 
       // Force quantity from the current form input to ensure correct value is sent
-      const qtyFromInput = parseInt($form.find('input[name="quantity"]').val(), 10);
+      const qtyFromInput = parseInt(
+        $form.find('input[name="quantity"]').val(),
+        10
+      );
       if (!isNaN(qtyFromInput) && qtyFromInput > 0) {
         formData.quantity = qtyFromInput;
       } else if (!formData.quantity) {
@@ -2599,7 +2633,8 @@
 
     submitToCart(formData, $button, retryCount = 0) {
       const ajaxUrl =
-        (window.wc_add_to_cart_params && window.wc_add_to_cart_params.ajax_url) ||
+        (window.wc_add_to_cart_params &&
+          window.wc_add_to_cart_params.ajax_url) ||
         (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
         "/wp-admin/admin-ajax.php";
 
@@ -2831,7 +2866,9 @@
       const fragUrl = wcAjaxBase
         ? wcAjaxBase.replace("%%endpoint%%", "get_refreshed_fragments")
         : ajaxUrl;
-      const fragData = wcAjaxBase ? {} : { action: "woocommerce_get_refreshed_fragments" };
+      const fragData = wcAjaxBase
+        ? {}
+        : { action: "woocommerce_get_refreshed_fragments" };
 
       $.ajax({
         type: "POST",

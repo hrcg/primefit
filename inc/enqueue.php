@@ -693,6 +693,8 @@ function primefit_optimize_product_image_attributes( $attr, $attachment, $size )
 
 /**
  * Preload critical resources for single product pages
+ * Optimized to only preload images that are likely to be used immediately
+ * to prevent "preloaded but not used" warnings
  */
 add_action( 'wp_head', 'primefit_preload_product_resources', 1 );
 function primefit_preload_product_resources() {
@@ -728,29 +730,32 @@ function primefit_preload_product_resources() {
 		}
 	}
 
-	// Preload first few gallery images
-	$preload_count = 0;
-	foreach ( $gallery_ids as $gallery_id ) {
-		if ( $preload_count >= 3 ) break; // Limit to 3 gallery images
-
-		$gallery_src = wp_get_attachment_image_url( $gallery_id, 'woocommerce_single' );
-		if ( $gallery_src ) {
-			echo '<link rel="preload" href="' . esc_url( $gallery_src ) . '" as="image">';
-			$preload_count++;
+	// Preload only the first gallery image (next image after main)
+	// This reduces unnecessary preloading while still improving UX
+	if ( ! empty( $gallery_ids ) ) {
+		$first_gallery_src = wp_get_attachment_image_url( $gallery_ids[0], 'woocommerce_single' );
+		if ( $first_gallery_src ) {
+			echo '<link rel="preload" href="' . esc_url( $first_gallery_src ) . '" as="image">';
 		}
 	}
 
-	// Preload variation images if available
+	// Preload variation images only if they have a default selection
+	// This prevents preloading unused variation images
 	if ( $product->is_type( 'variable' ) ) {
-		$variations = $product->get_available_variations();
-
-		foreach ( $variations as $variation ) {
-			if ( isset( $variation['image_id'] ) && $variation['image_id'] ) {
-				$variation_src = wp_get_attachment_image_url( $variation['image_id'], 'woocommerce_single' );
-				if ( $variation_src ) {
-					echo '<link rel="preload" href="' . esc_url( $variation_src ) . '" as="image">';
+		$default_attributes = $product->get_default_attributes();
+		
+		// Only preload if there are default attributes set
+		if ( ! empty( $default_attributes ) ) {
+			$variations = $product->get_available_variations();
+			
+			foreach ( $variations as $variation ) {
+				if ( isset( $variation['image_id'] ) && $variation['image_id'] ) {
+					$variation_src = wp_get_attachment_image_url( $variation['image_id'], 'woocommerce_single' );
+					if ( $variation_src ) {
+						echo '<link rel="preload" href="' . esc_url( $variation_src ) . '" as="image">';
+					}
+					break; // Only preload first matching variation image
 				}
-				break; // Only preload first variation image
 			}
 		}
 	}

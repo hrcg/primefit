@@ -267,7 +267,7 @@ function primefit_advanced_product_query_optimization( $query ) {
 	}
 	
 	// Optimize query parameters
-	$query->set( 'posts_per_page', 12 ); // Increased for better UX
+	$query->set( 'posts_per_page', 16 ); // Set to 16 products per page
 	$query->set( 'update_post_meta_cache', true );
 	$query->set( 'update_post_term_cache', true );
 	$query->set( 'no_found_rows', false );

@@ -275,6 +275,7 @@
     ".woocommerce-mini-cart__item-quantity .plus",
     function (e) {
       e.preventDefault();
+      e.stopPropagation();
       const cartItemKey = $(this).data("cart-item-key");
       if (!cartItemKey) {
         return; // Exit early if this isn't a cart item quantity button
@@ -298,6 +299,7 @@
     ".woocommerce-mini-cart__item-quantity .minus",
     function (e) {
       e.preventDefault();
+      e.stopPropagation();
       const cartItemKey = $(this).data("cart-item-key");
       if (!cartItemKey) {
         return; // Exit early if this isn't a cart item quantity button

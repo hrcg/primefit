@@ -118,13 +118,11 @@ function primefit_generate_responsive_sources( $attachment_id, $size, $args ) {
 		'fallback' => []
 	];
 	
-	// Define responsive breakpoints
+	// Define responsive breakpoints - using standard WordPress sizes for full resolution
 	$breakpoints = [
-		'primefit-product-loop-small' => '200w',
-		'primefit-product-loop' => '400w',
-		'primefit-product-loop-2x' => '800w',
-		'large' => '1200w',
-		'full' => '1920w'
+		'medium' => '768w',
+		'large' => '1024w',
+		'full' => '100vw'
 	];
 	
 	foreach ( $breakpoints as $breakpoint_size => $width ) {
@@ -397,13 +395,19 @@ function primefit_optimize_product_loop_images( $image, $product ) {
 	$image_id = $product->get_image_id();
 
 	if ( $image_id ) {
-	$responsive_html = primefit_get_responsive_image( $image_id, 'primefit-product-loop', [
-		'class' => 'attachment-woocommerce_thumbnail',
-		'loading' => 'lazy',
-		'webp' => true
-	] );
+		// Use full-size images for product loops - bypass responsive generation
+		$full_image_url = wp_get_attachment_image_url( $image_id, 'full' );
+		if ( $full_image_url ) {
+			$alt_text = get_post_meta( $image_id, '_wp_attachment_image_alt', true ) ?: $product->get_name();
+			
+			$responsive_html = sprintf(
+				'<img src="%s" alt="%s" class="attachment-woocommerce_thumbnail" loading="lazy" decoding="async" width="auto" height="auto">',
+				esc_url( $full_image_url ),
+				esc_attr( $alt_text )
+			);
 
-		return $responsive_html ?: $image;
+			return $responsive_html ?: $image;
+		}
 	}
 
 	return $image;

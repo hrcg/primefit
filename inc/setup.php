@@ -53,10 +53,10 @@ function primefit_setup_theme() {
 	add_theme_support( 'wc-product-gallery-lightbox' );
 	add_theme_support( 'wc-product-gallery-slider' );
 	
-	// Add optimized image sizes for product loops
-	add_image_size( 'primefit-product-loop', 400, 500, true ); // 4:5 aspect ratio for product loops
-	add_image_size( 'primefit-product-loop-2x', 800, 1000, true ); // Retina version
-	add_image_size( 'primefit-product-loop-small', 200, 250, true ); // Mobile/small screens
+	// Use full resolution images for product loops (custom sizes removed for better quality)
+	// add_image_size( 'primefit-product-loop', 400, 500, true ); // Removed - using full size
+	// add_image_size( 'primefit-product-loop-2x', 800, 1000, true ); // Removed - using full size
+	// add_image_size( 'primefit-product-loop-small', 200, 250, true ); // Removed - using full size
 	
 	// Register navigation menus
 	register_nav_menus( [
@@ -180,21 +180,24 @@ function primefit_ensure_postmeta_indexes() {
 }
 
 /**
- * Enable WebP image upload support
+ * Enable WebP and AVIF image upload support
  */
-add_filter( 'upload_mimes', 'primefit_add_webp_mime_types' );
-function primefit_add_webp_mime_types( $mime_types ) {
+add_filter( 'upload_mimes', 'primefit_add_modern_image_mime_types' );
+function primefit_add_modern_image_mime_types( $mime_types ) {
 	// Add WebP support
 	$mime_types['webp'] = 'image/webp';
+	
+	// Add AVIF support
+	$mime_types['avif'] = 'image/avif';
 
 	return $mime_types;
 }
 
 /**
- * Add WebP to allowed file extensions
+ * Add WebP and AVIF to allowed file extensions
  */
-add_filter( 'wp_check_filetype_and_ext', 'primefit_check_webp_filetype', 10, 4 );
-function primefit_check_webp_filetype( $data, $file, $filename, $mimes ) {
+add_filter( 'wp_check_filetype_and_ext', 'primefit_check_modern_image_filetype', 10, 4 );
+function primefit_check_modern_image_filetype( $data, $file, $filename, $mimes ) {
 	$filetype = wp_check_filetype( $filename, $mimes );
 	
 	if ( $filetype['ext'] ) {
@@ -207,15 +210,20 @@ function primefit_check_webp_filetype( $data, $file, $filename, $mimes ) {
 		$data['type'] = 'image/webp';
 	}
 	
+	// Check for AVIF
+	if ( preg_match( '/\.avif$/i', $filename ) ) {
+		$data['ext'] = 'avif';
+		$data['type'] = 'image/avif';
+	}
 	
 	return $data;
 }
 
 /**
- * Enable WebP preview in media library
+ * Enable WebP and AVIF preview in media library
  */
-add_filter( 'wp_generate_attachment_metadata', 'primefit_handle_webp_metadata', 10, 2 );
-function primefit_handle_webp_metadata( $metadata, $attachment_id ) {
+add_filter( 'wp_generate_attachment_metadata', 'primefit_handle_modern_image_metadata', 10, 2 );
+function primefit_handle_modern_image_metadata( $metadata, $attachment_id ) {
 	$mime_type = get_post_mime_type( $attachment_id );
 
 	// Handle WebP files
@@ -232,41 +240,51 @@ function primefit_handle_webp_metadata( $metadata, $attachment_id ) {
 		}
 	}
 	
+	// Handle AVIF files
+	if ( in_array( $mime_type, [ 'image/avif' ], true ) ) {
+		$file = get_attached_file( $attachment_id );
+		
+		if ( $file && file_exists( $file ) ) {
+			// Get basic image info
+			$image_size = getimagesize( $file );
+			if ( $image_size ) {
+				$metadata['width'] = $image_size[0];
+				$metadata['height'] = $image_size[1];
+			}
+		}
+	}
+
 	return $metadata;
 }
 
 /**
  * Add custom image sizes to admin media library
+ * Commented out - now using full resolution images for better quality
  */
-add_filter( 'image_size_names_choose', 'primefit_custom_image_sizes' );
-function primefit_custom_image_sizes( $sizes ) {
-	return array_merge( $sizes, array(
-		'primefit-product-loop' => __( 'Product Loop (400x500)', 'primefit' ),
-		'primefit-product-loop-2x' => __( 'Product Loop Retina (800x1000)', 'primefit' ),
-		'primefit-product-loop-small' => __( 'Product Loop Mobile (200x250)', 'primefit' ),
-	) );
-}
+// add_filter( 'image_size_names_choose', 'primefit_custom_image_sizes' );
+// function primefit_custom_image_sizes( $sizes ) {
+// 	return array_merge( $sizes, array(
+// 		'primefit-product-loop' => __( 'Product Loop (400x500)', 'primefit' ),
+// 		'primefit-product-loop-2x' => __( 'Product Loop Retina (800x1000)', 'primefit' ),
+// 		'primefit-product-loop-small' => __( 'Product Loop Mobile (200x250)', 'primefit' ),
+// 	) );
+// }
 
 /**
  * Add performance optimization for image loading
+ * Updated to use dynamic sizing for full resolution images
  */
 add_action( 'wp_head', 'primefit_image_loading_optimizations' );
 function primefit_image_loading_optimizations() {
 	?>
 	<style>
-		/* Optimize image loading performance */
+		/* Optimize image loading performance with dynamic sizing for full resolution */
 		.attachment-woocommerce_thumbnail,
 		.product-second-image {
 			content-visibility: auto;
-			contain-intrinsic-size: 400px 500px;
-		}
-		
-		/* Mobile optimizations */
-		@media (max-width: 768px) {
-			.attachment-woocommerce_thumbnail,
-			.product-second-image {
-				contain-intrinsic-size: 200px 250px;
-			}
+			/* Let images use natural dimensions for full resolution display */
+			width: 100%;
+			height: auto;
 		}
 	</style>
 	<?php

@@ -805,6 +805,7 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_featured_products_enabled', array(
 		'default'           => true,
 		'sanitize_callback' => 'wp_validate_boolean',
+		'transport'         => 'refresh',
 	) );
 	$wp_customize->add_control( 'primefit_featured_products_enabled', array(
 		'label'   => __( 'Enable Featured Products Section', 'primefit' ),
@@ -815,7 +816,8 @@ function primefit_customize_register( $wp_customize ) {
 	// Featured Products Category
 	$wp_customize->add_setting( 'primefit_featured_products_category', array(
 		'default'           => '',
-		'sanitize_callback' => 'absint',
+		'sanitize_callback' => 'primefit_sanitize_select',
+		'transport'         => 'refresh',
 	) );
 	$wp_customize->add_control( 'primefit_featured_products_category', array(
 		'label'       => __( 'Featured Products Category', 'primefit' ),
@@ -829,6 +831,7 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_featured_products_title', array(
 		'default'           => 'END OF SEASON SALE',
 		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
 	) );
 	$wp_customize->add_control( 'primefit_featured_products_title', array(
 		'label'   => __( 'Featured Products Title', 'primefit' ),
@@ -840,6 +843,7 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_featured_products_button_text', array(
 		'default'           => 'VIEW ALL',
 		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
 	) );
 	$wp_customize->add_control( 'primefit_featured_products_button_text', array(
 		'label'   => __( 'Featured Products Button Text', 'primefit' ),
@@ -851,6 +855,7 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_featured_products_button_link', array(
 		'default'           => '',
 		'sanitize_callback' => 'esc_url_raw',
+		'transport'         => 'refresh',
 	) );
 	$wp_customize->add_control( 'primefit_featured_products_button_link', array(
 		'label'   => __( 'Featured Products Button Link', 'primefit' ),
@@ -862,6 +867,7 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_featured_products_limit', array(
 		'default'           => 12,
 		'sanitize_callback' => 'absint',
+		'transport'         => 'refresh',
 	) );
 	$wp_customize->add_control( 'primefit_featured_products_limit', array(
 		'label'   => __( 'Featured Products Limit', 'primefit' ),
@@ -878,6 +884,9 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_product_showcase_enabled', array(
 		'default'           => true,
 		'sanitize_callback' => 'wp_validate_boolean',
+		'transport'         => 'refresh',
+		'capability'        => 'edit_theme_options',
+		'type'              => 'theme_mod',
 	) );
 	$wp_customize->add_control( 'primefit_product_showcase_enabled', array(
 		'label'   => __( 'Enable Product Showcase Section', 'primefit' ),
@@ -888,7 +897,10 @@ function primefit_customize_register( $wp_customize ) {
 	// Product Showcase Category
 	$wp_customize->add_setting( 'primefit_product_showcase_category', array(
 		'default'           => '',
-		'sanitize_callback' => 'absint',
+		'sanitize_callback' => 'primefit_sanitize_select',
+		'transport'         => 'refresh',
+		'capability'        => 'edit_theme_options',
+		'type'              => 'theme_mod',
 	) );
 	$wp_customize->add_control( 'primefit_product_showcase_category', array(
 		'label'       => __( 'Product Showcase Category', 'primefit' ),
@@ -902,6 +914,9 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_product_showcase_title', array(
 		'default'           => 'NEW ARRIVALS',
 		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
+		'capability'        => 'edit_theme_options',
+		'type'              => 'theme_mod',
 	) );
 	$wp_customize->add_control( 'primefit_product_showcase_title', array(
 		'label'   => __( 'Product Showcase Title', 'primefit' ),
@@ -913,6 +928,9 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_product_showcase_button_text', array(
 		'default'           => 'SHOP ALL',
 		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
+		'capability'        => 'edit_theme_options',
+		'type'              => 'theme_mod',
 	) );
 	$wp_customize->add_control( 'primefit_product_showcase_button_text', array(
 		'label'   => __( 'Product Showcase Button Text', 'primefit' ),
@@ -924,6 +942,9 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_product_showcase_button_link', array(
 		'default'           => '',
 		'sanitize_callback' => 'esc_url_raw',
+		'transport'         => 'refresh',
+		'capability'        => 'edit_theme_options',
+		'type'              => 'theme_mod',
 	) );
 	$wp_customize->add_control( 'primefit_product_showcase_button_link', array(
 		'label'   => __( 'Product Showcase Button Link', 'primefit' ),
@@ -935,9 +956,91 @@ function primefit_customize_register( $wp_customize ) {
 	$wp_customize->add_setting( 'primefit_product_showcase_limit', array(
 		'default'           => 8,
 		'sanitize_callback' => 'absint',
+		'transport'         => 'refresh',
+		'capability'        => 'edit_theme_options',
+		'type'              => 'theme_mod',
 	) );
 	$wp_customize->add_control( 'primefit_product_showcase_limit', array(
 		'label'   => __( 'Product Showcase Limit', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'number',
+		'input_attrs' => array(
+			'min' => 1,
+			'max' => 50,
+		),
+		'description' => __( 'Number of products to display (1-50)', 'primefit' ),
+	) );
+
+	// Third Product Loop Section
+	$wp_customize->add_setting( 'primefit_third_product_loop_enabled', array(
+		'default'           => false,
+		'sanitize_callback' => 'wp_validate_boolean',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_third_product_loop_enabled', array(
+		'label'   => __( 'Enable Third Product Loop Section', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'checkbox',
+	) );
+
+	// Third Product Loop Category
+	$wp_customize->add_setting( 'primefit_third_product_loop_category', array(
+		'default'           => '',
+		'sanitize_callback' => 'primefit_sanitize_select',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_third_product_loop_category', array(
+		'label'       => __( 'Third Product Loop Category', 'primefit' ),
+		'section'     => 'primefit_homepage_product_loops',
+		'type'        => 'select',
+		'choices'     => primefit_get_product_categories_choices(),
+		'description' => __( 'Leave empty to show all products, or select a specific category to filter by.', 'primefit' ),
+	) );
+
+	// Third Product Loop Title
+	$wp_customize->add_setting( 'primefit_third_product_loop_title', array(
+		'default'           => 'FEATURED COLLECTION',
+		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_third_product_loop_title', array(
+		'label'   => __( 'Third Product Loop Title', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Third Product Loop Button Text
+	$wp_customize->add_setting( 'primefit_third_product_loop_button_text', array(
+		'default'           => 'EXPLORE MORE',
+		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_third_product_loop_button_text', array(
+		'label'   => __( 'Third Product Loop Button Text', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Third Product Loop Button Link
+	$wp_customize->add_setting( 'primefit_third_product_loop_button_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_third_product_loop_button_link', array(
+		'label'   => __( 'Third Product Loop Button Link', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'url',
+	) );
+
+	// Third Product Loop Limit
+	$wp_customize->add_setting( 'primefit_third_product_loop_limit', array(
+		'default'           => 6,
+		'sanitize_callback' => 'absint',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_third_product_loop_limit', array(
+		'label'   => __( 'Third Product Loop Limit', 'primefit' ),
 		'section' => 'primefit_homepage_product_loops',
 		'type'    => 'number',
 		'input_attrs' => array(
@@ -1234,6 +1337,11 @@ function primefit_get_product_categories_choices() {
 		'' => __( 'All Products', 'primefit' ),
 	);
 
+	// Check if WooCommerce is active
+	if ( ! class_exists( 'WooCommerce' ) ) {
+		return $choices;
+	}
+
 	$categories = get_terms( array(
 		'taxonomy'   => 'product_cat',
 		'hide_empty' => false,
@@ -1520,7 +1628,7 @@ function primefit_get_featured_products_config() {
 
 	if ( ! empty( $category_id ) ) {
 		$category = get_term( $category_id, 'product_cat' );
-		$category_slug = $category ? $category->slug : '';
+		$category_slug = $category && ! is_wp_error( $category ) ? $category->slug : '';
 	}
 
 	// Get button link - don't apply fallback here, let the render function handle it
@@ -1534,7 +1642,7 @@ function primefit_get_featured_products_config() {
 		'button_link' => $button_link,
 		'limit' => get_theme_mod( 'primefit_featured_products_limit', 12 ),
 		'columns' => 4,
-		'on_sale' => true,
+		'on_sale' => false, // Changed from true - let category filter work properly
 		'show_view_all' => true,
 		'section_class' => 'featured-products'
 	);
@@ -1550,7 +1658,7 @@ function primefit_get_product_showcase_config() {
 
 	if ( ! empty( $category_id ) ) {
 		$category = get_term( $category_id, 'product_cat' );
-		$category_slug = $category ? $category->slug : '';
+		$category_slug = $category && ! is_wp_error( $category ) ? $category->slug : '';
 	}
 
 	// Get button link - don't apply fallback here, let the render function handle it
@@ -1567,4 +1675,64 @@ function primefit_get_product_showcase_config() {
 		'show_view_all' => true,
 		'section_class' => 'product-showcase'
 	);
+}
+
+/**
+ * Helper function to get third product loop configuration from customizer
+ */
+function primefit_get_third_product_loop_config() {
+	// Get category slug from ID
+	$category_id = get_theme_mod( 'primefit_third_product_loop_category', '' );
+	$category_slug = '';
+
+	if ( ! empty( $category_id ) ) {
+		$category = get_term( $category_id, 'product_cat' );
+		$category_slug = $category && ! is_wp_error( $category ) ? $category->slug : '';
+	}
+
+	// Get button link - don't apply fallback here, let the render function handle it
+	$button_link = get_theme_mod( 'primefit_third_product_loop_button_link', '' );
+
+	return array(
+		'enabled' => get_theme_mod( 'primefit_third_product_loop_enabled', false ),
+		'category' => $category_slug,
+		'title' => get_theme_mod( 'primefit_third_product_loop_title', 'FEATURED COLLECTION' ),
+		'button_text' => get_theme_mod( 'primefit_third_product_loop_button_text', 'EXPLORE MORE' ),
+		'button_link' => $button_link,
+		'limit' => get_theme_mod( 'primefit_third_product_loop_limit', 6 ),
+		'columns' => 3, // Different layout for variety
+		'show_view_all' => true,
+		'section_class' => 'third-product-loop'
+	);
+}
+
+/**
+ * Sanitize select/dropdown values
+ */
+function primefit_sanitize_select( $input, $setting ) {
+	// If empty string, return it
+	if ( $input === '' || $input === '0' ) {
+		return $input;
+	}
+	
+	// Otherwise sanitize as integer
+	return absint( $input );
+}
+
+/**
+ * Clear homepage caches when customizer settings are saved
+ */
+add_action( 'customize_save_after', 'primefit_clear_customizer_caches' );
+function primefit_clear_customizer_caches( $wp_customize ) {
+	// Clear hero config cache
+	delete_transient( 'primefit_hero_config' );
+	
+	// Clear category tiles cache
+	delete_transient( 'primefit_category_tiles_config' );
+	
+	// Clear any product loop caches (they use dynamic cache keys)
+	// We'll use a wildcard delete approach
+	global $wpdb;
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_primefit_product_loop_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_primefit_product_loop_%'" );
 }

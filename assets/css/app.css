@@ -75,7 +75,7 @@ body.nav-open {
 
 .training-division {
   position: relative;
-  min-height: 85vh;
+  min-height: 100vh;
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -245,7 +245,7 @@ body.nav-open {
 .product-loop-actions {
   display: flex;
   justify-content: center;
-  margin-top: 60px;
+  margin: 60px 0 60px 0;
 }
 
 .product-loop-actions .button {
@@ -482,7 +482,7 @@ article {
 }
 
 .section-title {
-  margin: 0 0 8px 0;
+  margin: 24px 0 10px 0;
   font-weight: 600;
   font-size: 24px;
   letter-spacing: 0.02em;
@@ -686,13 +686,13 @@ article {
 
 /* Hero Text Positioning */
 .hero-text {
-  max-width: 600px;
+  max-width: 800px;
   margin-left: 0;
 }
 
 /* Hero Typography */
 .hero-heading {
-  margin: 0 0 0px 0;
+  margin: 0 0 10px 0;
   font-size: clamp(28px, 4vw, 48px);
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1341,6 +1341,20 @@ article {
   padding: 80px 0;
 }
 
+.product-showcase .section-header {
+  margin-bottom: 48px;
+}
+
+.product-showcase .section-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin: 0;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 @media (max-width: 768px) {
   .product-showcase {
     padding: 50px 0;
@@ -1391,6 +1405,80 @@ article {
   }
 
   .product-showcase .section-header {
+    margin-bottom: 20px;
+  }
+}
+
+/* Third Product Loop */
+.third-product-loop {
+  contain: layout style paint;
+  padding: 80px 0;
+}
+
+.third-product-loop .section-header {
+  margin-bottom: 48px;
+}
+
+.third-product-loop .section-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin: 0;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .third-product-loop {
+    padding: 50px 0;
+  }
+
+  .third-product-loop .container {
+    padding: 0 20px;
+  }
+
+  .third-product-loop .section-title {
+    font-size: 22px;
+  }
+
+  .third-product-loop .section-header {
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .third-product-loop {
+    padding: 32px 0;
+  }
+
+  .third-product-loop .container {
+    padding: 0 16px;
+  }
+
+  .third-product-loop .section-title {
+    font-size: 18px;
+  }
+
+  .third-product-loop .section-header {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 360px) {
+  .third-product-loop {
+    padding: 24px 0;
+  }
+
+  .third-product-loop .container {
+    padding: 0 12px;
+  }
+
+  .third-product-loop .section-title {
+    font-size: 16px;
+  }
+
+  .third-product-loop .section-header {
     margin-bottom: 20px;
   }
 }
