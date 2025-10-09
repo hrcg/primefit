@@ -3960,13 +3960,9 @@
    * Initialize all functionality when DOM is ready
    */
   $(document).ready(function () {
-    // Initialize product gallery
-    if (!window.productGallery) {
-      window.productGallery = new ProductGallery();
-    }
-
-    // Initialize product variations
-    new ProductVariations();
+    // Defer to native gallery and earlier initializations; avoid duplicate binds
+    // Product gallery and variations are initialized earlier on DOM ready
+    // See: initialization block above around the first $(document).ready
 
     // Initialize size guide modal only if it exists on the page
     if (document.getElementById("size-guide-modal")) {

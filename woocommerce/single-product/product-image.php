@@ -91,6 +91,12 @@ $gallery_data = array(
 	<!-- Main Image Display -->
 	<div class="product-main-image">
 		<div class="main-image-wrapper">
+			<!-- Back Button -->
+			<button class="gallery-back-button" aria-label="<?php esc_attr_e( 'Go back', 'primefit' ); ?>" data-home-url="<?php echo esc_url( home_url( '/' ) ); ?>">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</button>
 			<?php
 			$main_attachment_id = $attachment_ids[0];
 
@@ -187,9 +193,35 @@ document.addEventListener('DOMContentLoaded', function() {
 	if (!galleryContainer) return;
 
 	const mainImage = galleryContainer.querySelector('.main-product-image');
+	const mainImageWrapper = galleryContainer.querySelector('.main-image-wrapper');
 	const thumbnails = galleryContainer.querySelectorAll('.thumbnail-item');
 	const prevBtn = galleryContainer.querySelector('.image-nav-prev');
 	const nextBtn = galleryContainer.querySelector('.image-nav-next');
+	const backBtn = galleryContainer.querySelector('.gallery-back-button');
+
+	// Back button logic: if user came from a same-origin page, go back; else go home
+	if (backBtn) {
+		backBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			const homeUrl = backBtn.getAttribute('data-home-url') || '/';
+			const ref = document.referrer;
+			let isSameOriginReferrer = false;
+			if (ref) {
+				try {
+					const refUrl = new URL(ref);
+					isSameOriginReferrer = refUrl.origin === window.location.origin;
+				} catch (err) {
+					isSameOriginReferrer = false;
+				}
+			}
+
+			if (isSameOriginReferrer) {
+				window.history.back();
+			} else {
+				window.location.href = homeUrl;
+			}
+		});
+	}
 
 	// Gallery data from PHP
 	const galleryData = <?php echo json_encode( $gallery_data ); ?>;
@@ -200,12 +232,56 @@ document.addEventListener('DOMContentLoaded', function() {
 	let currentIndex = 0;
 	let currentColor = galleryData.current_color;
 
+	// Helpers to handle invalid image IDs in currentImages (zeros/null)
+	function isValidIndex(i) {
+		return (
+			numberIsInteger(i = Number(i)) &&
+			i >= 0 &&
+			i < currentImages.length &&
+			currentImages[i] &&
+			currentImages[i] !== 0 &&
+			!!galleryData.image_urls[currentImages[i]]
+		);
+	}
+
+	function numberIsInteger(n) {
+		return typeof n === 'number' && isFinite(n) && Math.floor(n) === n;
+	}
+
+	function getNextValidIndex(start) {
+		if (!currentImages || !currentImages.length) return 0;
+		let i = start;
+		for (let c = 0; c < currentImages.length; c++) {
+			i = (i + 1) % currentImages.length;
+			if (isValidIndex(i)) return i;
+		}
+		return start;
+	}
+
+	function getPrevValidIndex(start) {
+		if (!currentImages || !currentImages.length) return 0;
+		let i = start;
+		for (let c = 0; c < currentImages.length; c++) {
+			i = (i - 1 + currentImages.length) % currentImages.length;
+			if (isValidIndex(i)) return i;
+		}
+		return start;
+	}
+
+	function getFirstValidIndex() {
+		if (!currentImages || !currentImages.length) return 0;
+		for (let i = 0; i < currentImages.length; i++) {
+			if (isValidIndex(i)) return i;
+		}
+		return 0;
+	}
+
 	// Initialize gallery with current images
 	function initializeGallery() {
 
 		// Always start with default gallery
 		currentImages = galleryData.default;
-		currentIndex = 0;
+		currentIndex = getFirstValidIndex();
 		currentColor = '';
 
 		// Only switch to variation gallery if we have a selected color AND variation galleries exist
@@ -231,8 +307,17 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	function updateMainImage(index) {
-		if (!currentImages || !currentImages[index] || currentImages[index] === 0) {
-			return;
+		// Normalize target index to nearest valid image
+		if (!isValidIndex(index)) {
+			// Try forward to find the next valid image
+			const candidate = getNextValidIndex(Math.max(0, Number(index)) - 1);
+			if (isValidIndex(candidate)) {
+				index = candidate;
+			} else {
+				const firstValid = getFirstValidIndex();
+				if (!isValidIndex(firstValid)) return; // no valid images
+				index = firstValid;
+			}
 		}
 
 		const imageId = currentImages[index];
@@ -384,14 +469,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Navigation handlers
 		if (prevBtn) {
 			prevBtn.addEventListener('click', () => {
-				const newIndex = currentIndex > 0 ? currentIndex - 1 : currentImages.length - 1;
+				const newIndex = getPrevValidIndex(currentIndex);
 				updateMainImage(newIndex);
 			});
 		}
 
 		if (nextBtn) {
 			nextBtn.addEventListener('click', () => {
-				const newIndex = currentIndex < currentImages.length - 1 ? currentIndex + 1 : 0;
+				const newIndex = getNextValidIndex(currentIndex);
 				updateMainImage(newIndex);
 			});
 		}
@@ -460,12 +545,58 @@ document.addEventListener('DOMContentLoaded', function() {
 	bindGalleryEvents();
 	bindColorChangeEvents();
 
+	// Lightweight, self-contained swipe support
+	(function initSwipe() {
+		let startX = 0;
+		let startY = 0;
+		let startTime = 0;
+
+		function onTouchStart(e) {
+			if (!e.touches || !e.touches.length) return;
+			startX = e.touches[0].clientX;
+			startY = e.touches[0].clientY;
+			startTime = Date.now();
+		}
+
+		function onTouchEnd(e) {
+			if (!e.changedTouches || !e.changedTouches.length) return;
+			const endX = e.changedTouches[0].clientX;
+			const endY = e.changedTouches[0].clientY;
+			const deltaX = endX - startX;
+			const deltaY = endY - startY;
+			const elapsed = Date.now() - startTime;
+
+			const minDistance = 30; // px
+			const maxTime = 600; // ms
+
+			if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minDistance && elapsed < maxTime) {
+				if (!currentImages || currentImages.length <= 1) return;
+				if (deltaX < 0) {
+					const newIndex = getNextValidIndex(currentIndex);
+					updateMainImage(newIndex);
+				} else if (deltaX > 0) {
+					const newIndex = getPrevValidIndex(currentIndex);
+					updateMainImage(newIndex);
+				}
+			}
+		}
+
+		// Bind swipe handlers only once to avoid duplicate handling (skip/jump)
+		const swipeTarget = mainImageWrapper || mainImage;
+		if (swipeTarget) {
+			swipeTarget.addEventListener('touchstart', onTouchStart, { passive: true });
+			swipeTarget.addEventListener('touchend', onTouchEnd, { passive: true });
+		}
+	})();
+
 	// Keyboard navigation
 	document.addEventListener('keydown', (e) => {
-		if (e.key === 'ArrowLeft' && prevBtn) {
-			prevBtn.click();
-		} else if (e.key === 'ArrowRight' && nextBtn) {
-			nextBtn.click();
+		if (e.key === 'ArrowLeft') {
+			const newIndex = getPrevValidIndex(currentIndex);
+			updateMainImage(newIndex);
+		} else if (e.key === 'ArrowRight') {
+			const newIndex = getNextValidIndex(currentIndex);
+			updateMainImage(newIndex);
 		}
 	});
 
@@ -476,5 +607,264 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Expose the switchColorGallery function globally for external use
 	window.switchProductGallery = switchColorGallery;
+
+	// Mobile Lightbox Implementation
+	function initMobileLightbox() {
+		// Only initialize on mobile devices
+		if (window.innerWidth > 768) return;
+
+		const lightbox = createLightboxElement();
+		let currentLightboxIndex = 0;
+
+		// Add click handler to main image for mobile lightbox
+		mainImage.addEventListener('click', function(e) {
+			if (window.innerWidth <= 768) {
+				e.preventDefault();
+				e.stopPropagation();
+				openLightbox(currentIndex);
+			}
+		});
+
+		// Override existing thumbnail click handler for mobile lightbox
+		const originalHandleThumbnailClick = handleThumbnailClick;
+		handleThumbnailClick = function(e) {
+			if (window.innerWidth <= 768 && e.target.closest('.thumbnail-item')) {
+				e.preventDefault();
+				e.stopPropagation();
+				const index = parseInt(e.target.closest('.thumbnail-item').dataset.imageIndex);
+				if (!isNaN(index)) {
+					openLightbox(index);
+				}
+			} else {
+				// Call original handler for desktop
+				originalHandleThumbnailClick.call(this, e);
+			}
+		};
+
+		function createLightboxElement() {
+			const lightbox = document.createElement('div');
+			lightbox.className = 'mobile-lightbox';
+			lightbox.innerHTML = `
+				<div class="lightbox-overlay"></div>
+				<div class="lightbox-content">
+					<button class="lightbox-close" aria-label="Close lightbox">
+						<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					</button>
+					<div class="lightbox-image-container">
+						<img class="lightbox-image" src="" alt="" />
+					</div>
+					<div class="lightbox-counter">
+						<span class="lightbox-current">1</span> / <span class="lightbox-total">1</span>
+					</div>
+				</div>
+			`;
+			document.body.appendChild(lightbox);
+			return lightbox;
+		}
+
+		function openLightbox(index) {
+			if (!currentImages || !currentImages[index]) return;
+
+			const imageId = currentImages[index];
+			const imageUrl = galleryData.image_urls[imageId];
+			const imageAlt = `Product image ${index + 1}`;
+
+			if (!imageUrl) return;
+
+			currentLightboxIndex = index;
+			const lightboxImage = lightbox.querySelector('.lightbox-image');
+			const lightboxCurrent = lightbox.querySelector('.lightbox-current');
+			const lightboxTotal = lightbox.querySelector('.lightbox-total');
+
+			// Reset zoom state when opening new image
+			resetZoom();
+
+			// Set image and counter
+			lightboxImage.src = imageUrl;
+			lightboxImage.alt = imageAlt;
+			lightboxCurrent.textContent = index + 1;
+			lightboxTotal.textContent = currentImages.length;
+
+			// Show lightbox
+			lightbox.classList.add('active');
+			document.body.style.overflow = 'hidden';
+
+			// Focus management
+			lightbox.querySelector('.lightbox-close').focus();
+		}
+
+		function closeLightbox() {
+			lightbox.classList.remove('active');
+			document.body.style.overflow = '';
+		}
+
+		function navigateLightbox(direction) {
+			let newIndex;
+			if (direction === 'next') {
+				newIndex = currentLightboxIndex < currentImages.length - 1 ? currentLightboxIndex + 1 : 0;
+			} else {
+				newIndex = currentLightboxIndex > 0 ? currentLightboxIndex - 1 : currentImages.length - 1;
+			}
+			openLightbox(newIndex);
+		}
+
+		// Event listeners
+		lightbox.addEventListener('click', function(e) {
+			if (e.target.classList.contains('lightbox-overlay') || e.target.closest('.lightbox-close')) {
+				closeLightbox();
+			}
+		});
+
+		// Keyboard navigation
+		document.addEventListener('keydown', function(e) {
+			if (!lightbox.classList.contains('active')) return;
+
+			switch(e.key) {
+				case 'Escape':
+					closeLightbox();
+					break;
+				case 'ArrowLeft':
+					navigateLightbox('prev');
+					break;
+				case 'ArrowRight':
+					navigateLightbox('next');
+					break;
+			}
+		});
+
+		// Touch navigation and zoom for lightbox
+		let lightboxStartX = 0;
+		let lightboxStartY = 0;
+		let lastTapTime = 0;
+		let isZoomed = false;
+		let currentScale = 1;
+		let currentTranslateX = 0;
+		let currentTranslateY = 0;
+		let initialDistance = 0;
+		let initialScale = 1;
+
+		const lightboxImage = lightbox.querySelector('.lightbox-image');
+		const lightboxImageContainer = lightbox.querySelector('.lightbox-image-container');
+
+		// Double tap to zoom functionality
+		lightboxImage.addEventListener('touchend', function(e) {
+			const currentTime = new Date().getTime();
+			const tapLength = currentTime - lastTapTime;
+			
+			if (tapLength < 500 && tapLength > 0) {
+				// Double tap detected
+				e.preventDefault();
+				toggleZoom();
+			}
+			
+			lastTapTime = currentTime;
+		}, { passive: false });
+
+		function toggleZoom() {
+			if (isZoomed) {
+				// Zoom out
+				resetZoom();
+			} else {
+				// Zoom in
+				zoomIn();
+			}
+		}
+
+		function zoomIn() {
+			isZoomed = true;
+			currentScale = 2;
+			lightboxImage.style.transform = `scale(${currentScale})`;
+			lightboxImage.style.transition = 'transform 0.3s ease';
+			lightboxImageContainer.style.overflow = 'auto';
+		}
+
+		function resetZoom() {
+			isZoomed = false;
+			currentScale = 1;
+			currentTranslateX = 0;
+			currentTranslateY = 0;
+			lightboxImage.style.transform = 'scale(1) translate(0, 0)';
+			lightboxImage.style.transition = 'transform 0.3s ease';
+			lightboxImageContainer.style.overflow = 'hidden';
+		}
+
+		// Pan functionality when zoomed
+		let isPanning = false;
+		let startPanX = 0;
+		let startPanY = 0;
+
+		lightboxImage.addEventListener('touchstart', function(e) {
+			if (isZoomed && e.touches.length === 1) {
+				isPanning = true;
+				startPanX = e.touches[0].clientX - currentTranslateX;
+				startPanY = e.touches[0].clientY - currentTranslateY;
+				lightboxImage.style.transition = 'none';
+			}
+		}, { passive: true });
+
+		lightboxImage.addEventListener('touchmove', function(e) {
+			if (isZoomed && isPanning && e.touches.length === 1) {
+				e.preventDefault();
+				currentTranslateX = e.touches[0].clientX - startPanX;
+				currentTranslateY = e.touches[0].clientY - startPanY;
+				lightboxImage.style.transform = `scale(${currentScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`;
+			}
+		}, { passive: false });
+
+		lightboxImage.addEventListener('touchend', function(e) {
+			if (isPanning) {
+				isPanning = false;
+				lightboxImage.style.transition = 'transform 0.1s ease';
+			}
+		}, { passive: true });
+
+		// Swipe navigation (only when not zoomed)
+		lightbox.addEventListener('touchstart', function(e) {
+			if (!isZoomed) {
+				lightboxStartX = e.touches[0].clientX;
+				lightboxStartY = e.touches[0].clientY;
+			}
+		}, { passive: true });
+
+		lightbox.addEventListener('touchend', function(e) {
+			if (!isZoomed && e.changedTouches && e.changedTouches.length) {
+				const endX = e.changedTouches[0].clientX;
+				const endY = e.changedTouches[0].clientY;
+				const deltaX = endX - lightboxStartX;
+				const deltaY = endY - lightboxStartY;
+
+				// Only handle horizontal swipes when not zoomed
+				if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+					if (deltaX > 0) {
+						navigateLightbox('prev');
+					} else {
+						navigateLightbox('next');
+					}
+				}
+			}
+		}, { passive: true });
+
+		// Handle window resize to disable lightbox on desktop
+		window.addEventListener('resize', function() {
+			if (window.innerWidth > 768 && lightbox.classList.contains('active')) {
+				closeLightbox();
+			}
+		});
+
+		// Update lightbox when gallery changes (color switching)
+		const originalSwitchColorGallery = switchColorGallery;
+		window.switchColorGallery = function(color) {
+			originalSwitchColorGallery(color);
+			// Close lightbox if open when gallery changes
+			if (lightbox.classList.contains('active')) {
+				closeLightbox();
+			}
+		};
+	}
+
+	// Initialize mobile lightbox
+	initMobileLightbox();
 });
 </script>
