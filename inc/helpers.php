@@ -1583,6 +1583,7 @@ function primefit_quantity_input( $args = array(), $product = null, $echo = true
 			<?php if ( ! empty( $args['pattern'] ) ) : ?>
 				pattern="<?php echo esc_attr( $args['pattern'] ); ?>"
 			<?php endif; ?>
+			readonly
 		/>
 		<button type="button" class="plus" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>"></button>
 	</div>

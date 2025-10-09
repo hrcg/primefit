@@ -132,7 +132,7 @@
 
 .payment-summary-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 24px;
   margin-bottom: 48px;
 }
@@ -358,10 +358,8 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px;
+  padding: 10px;
   background: var(--account-nav-bg);
-  border-radius: 8px;
-  border: 1px solid var(--payment-summary-border);
 }
 
 .payment-method-icon {
@@ -406,10 +404,8 @@
 .shipping-address {
   display: flex;
   gap: 16px;
-  padding: 20px;
+  padding: 10px;
   background: var(--account-nav-bg);
-  border-radius: 8px;
-  border: 1px solid var(--payment-summary-border);
 }
 
 .address-icon {

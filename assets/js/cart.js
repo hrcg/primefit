@@ -274,23 +274,37 @@
     "click",
     ".woocommerce-mini-cart__item-quantity .plus",
     function (e) {
+      // Prevent any default behavior first
       e.preventDefault();
       e.stopPropagation();
-      const cartItemKey = $(this).data("cart-item-key");
+      e.stopImmediatePropagation(); // Prevent other handlers from running
+      
+      const $button = $(this);
+      const cartItemKey = $button.data("cart-item-key");
+      
+      // Validate cart item key exists
       if (!cartItemKey) {
-        return; // Exit early if this isn't a cart item quantity button
+        console.warn('Plus button clicked without cart-item-key:', $button);
+        return false; // Exit early if this isn't a cart item quantity button
       }
 
-      const $input = $(this).siblings("input");
-      const currentQty = parseInt($input.val());
-      const maxQty = parseInt($input.attr("max"));
+      // Check if already processing to prevent double-clicks
+      if ($button.hasClass("loading") || $button.prop("disabled")) {
+        return false;
+      }
+
+      const $input = $button.siblings("input.qty");
+      const currentQty = parseInt($input.val()) || 0;
+      const maxQty = parseInt($input.attr("max")) || 999;
 
       if (currentQty < maxQty) {
         // Add loading state
-        $(this).addClass("loading").prop("disabled", true);
+        $button.addClass("loading").prop("disabled", true);
         $input.prop("disabled", true);
-        updateCartQuantity(cartItemKey, currentQty + 1, $(this));
+        updateCartQuantity(cartItemKey, currentQty + 1, $button);
       }
+      
+      return false; // Extra safety to prevent any propagation
     }
   );
 
@@ -298,22 +312,36 @@
     "click",
     ".woocommerce-mini-cart__item-quantity .minus",
     function (e) {
+      // Prevent any default behavior first
       e.preventDefault();
       e.stopPropagation();
-      const cartItemKey = $(this).data("cart-item-key");
+      e.stopImmediatePropagation(); // Prevent other handlers from running
+      
+      const $button = $(this);
+      const cartItemKey = $button.data("cart-item-key");
+      
+      // Validate cart item key exists
       if (!cartItemKey) {
-        return; // Exit early if this isn't a cart item quantity button
+        console.warn('Minus button clicked without cart-item-key:', $button);
+        return false; // Exit early if this isn't a cart item quantity button
       }
 
-      const $input = $(this).siblings("input");
-      const currentQty = parseInt($input.val());
+      // Check if already processing to prevent double-clicks
+      if ($button.hasClass("loading") || $button.prop("disabled")) {
+        return false;
+      }
+
+      const $input = $button.siblings("input.qty");
+      const currentQty = parseInt($input.val()) || 0;
 
       if (currentQty > 1) {
         // Add loading state
-        $(this).addClass("loading").prop("disabled", true);
+        $button.addClass("loading").prop("disabled", true);
         $input.prop("disabled", true);
-        updateCartQuantity(cartItemKey, currentQty - 1, $(this));
+        updateCartQuantity(cartItemKey, currentQty - 1, $button);
       }
+      
+      return false; // Extra safety to prevent any propagation
     }
   );
 
@@ -345,10 +373,13 @@
 
   // Update cart quantity via AJAX
   function updateCartQuantity(cartItemKey, quantity, $element) {
-    // Validate parameters
-    if (!cartItemKey || !quantity || !window.primefit_cart_params) {
+    // Validate parameters - be more defensive
+    if (!cartItemKey || quantity === undefined || quantity === null || quantity < 1 || !window.primefit_cart_params) {
+      console.warn('Invalid parameters for updateCartQuantity:', { cartItemKey, quantity });
       if ($element) {
         $element.removeClass("loading").prop("disabled", false);
+        // Also re-enable the input
+        $element.siblings("input.qty").prop("disabled", false);
       }
       return;
     }
