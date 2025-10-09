@@ -1258,25 +1258,24 @@ body.single-product .single-product-page {
 
   .gallery-back-button {
     position: absolute;
-    top: 5px;
-    left: 8px;
-    background: #000000;
+    top: 10px;
+    left: 10px;
+    background: transparent;
     border: none;
-    width: 36px;
-    height: 36px;
     border-radius: 50%;
     display: flex;
+    padding: 0;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: white;
+    color: #0d0d0d;
     z-index: var(--z-elevated);
   }
 
   .gallery-back-button svg {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
   }
 
   .image-nav-prev {
@@ -1837,4 +1836,15 @@ input[type="search"] {
   .lightbox-image-container {
     max-height: calc(100% - 100px);
   }
+}
+
+/* ========================================
+   HIDE IMAGE NAVIGATION ELEMENTS
+   ======================================== */
+
+/* Hide image navigation arrows - keeping JS functionality intact */
+.image-nav,
+.image-nav-prev,
+.image-nav-next {
+  display: none !important;
 }
