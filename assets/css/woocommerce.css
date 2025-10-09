@@ -784,7 +784,8 @@
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   /* Use a more performant transition for iOS */
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .woocommerce ul.products li.product:hover .product-second-image {
@@ -928,9 +929,10 @@
   z-index: var(--z-content);
 }
 
+/* Color swatches disabled on product hover */
 .woocommerce ul.products li.product:hover .product-loop-color-swatches {
-  opacity: 1;
-  transform: translateY(0);
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 /* Ensure color swatches are always clickable */
@@ -996,6 +998,10 @@
 
 .woocommerce ul.products li.product .color-swatch-inner.color-blue {
   background-color: #0000ff;
+}
+
+.woocommerce ul.products li.product .color-swatch-inner.color-stone {
+  background-color: #e7e4de;
 }
 
 .woocommerce ul.products li.product .color-swatch-inner.color-green {
@@ -1615,7 +1621,7 @@ body.woocommerce .hero {
   .woocommerce-page ul.products li.product .product-image-container img {
     transition: transform 0.3s ease;
   }
-  
+
   .woocommerce-page ul.products li.product:hover .product-image-container img {
     transform: scale(1.05);
   }

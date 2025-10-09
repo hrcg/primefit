@@ -296,7 +296,7 @@ function primefit_optimize_woocommerce_queries( $query ) {
 	}
 	
 	// Reduce products per page for better performance
-	$query->set( 'posts_per_page', 8 );
+	$query->set( 'posts_per_page', 16 );
 	
 	// Optimize query by removing unnecessary fields
 	$query->set( 'no_found_rows', false ); // We need found_rows for pagination
@@ -440,28 +440,7 @@ function primefit_optimize_product_loop_start() {
 	wc_set_loop_prop( 'per_page', 8 );
 	
 	// Add performance optimizations
-	add_filter( 'woocommerce_product_get_image', 'primefit_optimize_loop_images', 10, 2 );
 	add_filter( 'woocommerce_loop_add_to_cart_args', 'primefit_optimize_add_to_cart_args', 10, 2 );
-}
-
-/**
- * Optimize product images in loop for better performance
- */
-function primefit_optimize_loop_images( $image, $product ) {
-	$image_id = $product->get_image_id();
-	
-	if ( $image_id ) {
-		// Use optimized image size for loop
-		$optimized_image = wp_get_attachment_image( $image_id, 'woocommerce_thumbnail', false, array(
-			'loading' => 'lazy',
-			'decoding' => 'async',
-			'class' => 'attachment-woocommerce_thumbnail size-woocommerce_thumbnail'
-		) );
-		
-		return $optimized_image ?: $image;
-	}
-	
-	return $image;
 }
 
 /**
@@ -507,7 +486,6 @@ function primefit_remove_unnecessary_woocommerce_hooks() {
  */
 function primefit_optimize_product_loop_end() {
 	// Remove performance optimizations
-	remove_filter( 'woocommerce_product_get_image', 'primefit_optimize_loop_images', 10 );
 	remove_filter( 'woocommerce_loop_add_to_cart_args', 'primefit_optimize_add_to_cart_args', 10 );
 }
 
@@ -563,9 +541,9 @@ function primefit_clear_registered_product_query_transients() {
  */
 add_action( 'init', 'primefit_set_optimized_woocommerce_settings', 5 );
 function primefit_set_optimized_woocommerce_settings() {
-	// Set products per page to 8 for better performance
+	// Set products per page to 16 for better UX
 	add_filter( 'loop_shop_per_page', function() {
-		return 8;
+		return 16;
 	}, 20 );
 	
 	// Set default catalog orderby to menu_order for better performance
@@ -573,14 +551,14 @@ function primefit_set_optimized_woocommerce_settings() {
 		return 'menu_order';
 	}, 20 );
 	
-	// Optimize WooCommerce image sizes
-	add_filter( 'woocommerce_get_image_size_woocommerce_thumbnail', function( $size ) {
-		return array(
-			'width'  => 300,
-			'height' => 300,
-			'crop'   => 1,
-		);
-	} );
+	// Allow full resolution images for WooCommerce thumbnails (removed size restrictions)
+	// add_filter( 'woocommerce_get_image_size_woocommerce_thumbnail', function( $size ) {
+	// 	return array(
+	// 		'width'  => 300,
+	// 		'height' => 300,
+	// 		'crop'   => 1,
+	// 	);
+	// } );
 }
 
 /**

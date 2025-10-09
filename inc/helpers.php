@@ -78,14 +78,14 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 	// For theme assets, check multiple fallback formats
 	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
 		// Try multiple fallback formats
-		$fallback_formats = ['webp', 'jpg', 'jpeg', 'png'];
+		$fallback_formats = ['avif', 'webp', 'jpg', 'jpeg', 'png'];
 
 		foreach ( $fallback_formats as $fallback_format ) {
 			if ( $fallback_format === $format ) {
 				continue; // Skip the requested format as we've already tried it
 			}
 
-			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp'], '.' . $fallback_format, $image_url );
+			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp', '.avif'], '.' . $fallback_format, $image_url );
 
 			if ( strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
 				$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $fallback_url );
@@ -132,14 +132,14 @@ function primefit_get_hero_optimized_image_url( $image_url, $format = 'webp' ) {
 	// For theme assets, check multiple fallback formats
 	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
 		// Try multiple fallback formats
-		$fallback_formats = ['webp', 'jpg', 'jpeg', 'png'];
+		$fallback_formats = ['avif', 'webp', 'jpg', 'jpeg', 'png'];
 
 		foreach ( $fallback_formats as $fallback_format ) {
 			if ( $fallback_format === $format ) {
 				continue; // Skip the requested format as we've already tried it
 			}
 
-			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp'], '.' . $fallback_format, $image_url );
+			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp', '.avif'], '.' . $fallback_format, $image_url );
 
 			if ( strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
 				$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $fallback_url );
@@ -302,11 +302,11 @@ function primefit_get_best_image_uri( $urls = [] ) {
  * Get hero image for WooCommerce category
  *
  * @param object $category WooCommerce category object
- * @param string $size Image size (default: 'large')
+ * @param string $size Image size (default: 'full')
  * @return string Hero image URL
  * @since 1.0.0
  */
-function primefit_get_category_hero_image( $category, $size = 'large' ) {
+function primefit_get_category_hero_image( $category, $size = 'full' ) {
 	$category_image_url = '';
 	
 	// Get category image from WooCommerce
@@ -370,7 +370,7 @@ function primefit_regenerate_product_thumbnails() {
 /**
  * Get optimized product image URL with fallback
  */
-function primefit_get_optimized_product_image_url( $image_id, $size = 'primefit-product-loop' ) {
+function primefit_get_optimized_product_image_url( $image_id, $size = 'full' ) {
 	if ( ! $image_id ) {
 		return '';
 	}
@@ -414,8 +414,8 @@ function primefit_get_shop_hero_config() {
 	} elseif ( is_product_category() ) {
 		$category = get_queried_object();
 
-		// Get category hero image (with automatic fallback)
-		$hero_image = primefit_get_category_hero_image( $category );
+		// Get category hero image (with automatic fallback) - using full resolution
+		$hero_image = primefit_get_category_hero_image( $category, 'full' );
 
 		// Set subheading to empty to remove it from product category pages
 		$subheading = '';
@@ -1220,6 +1220,17 @@ function primefit_get_product_loop_cache_key( $section ) {
 		'order_' . $section['order'],
 		'visibility_' . $section['visibility']
 	);
+
+	// Add title to cache key so title changes invalidate cache
+	if ( ! empty( $section['title'] ) ) {
+		$key_parts[] = 'title_' . sanitize_title( $section['title'] );
+	}
+
+	// Add button text to cache key
+	if ( ! empty( $section['button_text'] ) || ! empty( $section['view_all_text'] ) ) {
+		$button_text = ! empty( $section['button_text'] ) ? $section['button_text'] : $section['view_all_text'];
+		$key_parts[] = 'btn_' . sanitize_title( $button_text );
+	}
 
 	// Add conditional parameters only if they exist
 	if ( ! empty( $section['category'] ) ) {

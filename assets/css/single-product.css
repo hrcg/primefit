@@ -675,7 +675,7 @@ body.single-product .single-product-page {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'%3E%3C/line%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3C/svg%3E")
     no-repeat center;
   mask-size: contain;
-  background-color: #ddd;
+  background-color: transparent;
   background-image: none;
 }
 
@@ -1209,10 +1209,12 @@ body.single-product .single-product-page {
 
   .product-thumbnails {
     flex-direction: row;
+    flex-wrap: wrap;
     width: 100%;
-    overflow-x: auto;
     gap: 10px;
     order: 2;
+    justify-content: flex-start;
+    overflow: visible;
   }
 
   .product-main-image {
@@ -1265,6 +1267,11 @@ body.single-product .single-product-page {
     width: 80px;
     height: 80px;
     flex-shrink: 0;
+  }
+
+  /* Mobile thumbnail wrapping - ensure proper layout for multiple rows */
+  .product-thumbnails .thumbnail-item {
+    flex: 0 0 auto;
   }
 
   .color-options {

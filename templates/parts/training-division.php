@@ -35,25 +35,14 @@ $section_id = 'training-division-' . uniqid();
 
 <section class="training-division" id="<?php echo esc_attr($section_id); ?>">
 	<div class="training-division-media">
-		<picture>
-			<?php
-			$webp_image = primefit_get_optimized_image_url($section['image'], 'webp');
-			if ($webp_image !== $section['image']) {
-				echo '<source type="image/webp" srcset="' . esc_url($webp_image) . '">';
-			}
-			?>
-
-			<!-- Fallback image -->
-			<img
-				src="<?php echo esc_url($section['image']); ?>"
-				alt="<?php echo esc_attr($section['heading']); ?>"
-				loading="lazy"
-				decoding="async"
-				class="training-division-image"
-				width="1200"
-				height="600"
-			/>
-		</picture>
+		<!-- Use original high-quality image without compression -->
+		<img
+			src="<?php echo esc_url($section['image']); ?>"
+			alt="<?php echo esc_attr($section['heading']); ?>"
+			loading="lazy"
+			decoding="async"
+			class="training-division-image"
+		/>
 		<div class="training-division-overlay"></div>
 	</div>
 	

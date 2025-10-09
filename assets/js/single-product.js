@@ -1003,11 +1003,17 @@
       const $selectedColor = this.$colorOptions.filter(".active");
       const $selectedSize = this.$sizeOptions.filter(".selected");
 
-      if ($selectedColor.length && $selectedSize.length) {
+      // Check if we have size options available
+      const hasSizeOptions = this.$sizeOptions.length > 0;
+      
+      // Enable button if color is selected AND (size is selected OR no size options exist)
+      const canAddToCart = $selectedColor.length && (!hasSizeOptions || $selectedSize.length);
+
+      if (canAddToCart) {
         this.$addToCartButton.prop("disabled", false).text("ADD TO CART");
-        // Ensure variation_id is set when both options selected
+        // Ensure variation_id is set when valid options are selected
         const colorValue = $selectedColor.data("color");
-        const sizeValue = $selectedSize.data("size");
+        const sizeValue = hasSizeOptions ? $selectedSize.data("size") : null;
         const variationId = this.findVariationId(colorValue, sizeValue);
         if (variationId) {
           $(".variation_id").val(variationId);
@@ -1134,16 +1140,25 @@
       const $form = $(e.currentTarget);
       const $selectedColor = $(".color-option.active");
       const $selectedSize = $(".size-option.selected");
+      const hasSizeOptions = $(".size-option").length > 0;
 
-      if (!$selectedColor.length || !$selectedSize.length) {
+      // Check if we have the required selections
+      const hasRequiredSelections = $selectedColor.length && (!hasSizeOptions || $selectedSize.length);
+
+      if (!hasRequiredSelections) {
         e.preventDefault();
+
+        // Show appropriate error message
+        const errorMessage = hasSizeOptions 
+          ? "Please select both color and size options."
+          : "Please select a color option.";
 
         // Show toast notification instead of browser alert
         if (window.ToastNotification) {
-          ToastNotification.error("Please select both color and size options.");
+          ToastNotification.error(errorMessage);
         } else {
           // Fallback to alert if ToastNotification is not available
-          alert("Please select both color and size options.");
+          alert(errorMessage);
         }
 
         return false;
@@ -1151,7 +1166,7 @@
 
       // Add variation attributes to form
       const colorValue = $selectedColor.data("color");
-      const sizeValue = $selectedSize.data("size");
+      const sizeValue = hasSizeOptions ? $selectedSize.data("size") : null;
 
       // Find the correct variation ID
       const variationId = this.findVariationId(colorValue, sizeValue);
@@ -1170,6 +1185,7 @@
           const variation = variations[i];
           let hasColor = false;
           let hasSize = false;
+          let hasSizeAttribute = false; // Track if variation has any size attribute
 
           for (const attrName in variation.attributes) {
             const attrValue = variation.attributes[attrName];
@@ -1186,16 +1202,20 @@
 
             // Check for size match (more flexible matching)
             if (
-              (attrName.toLowerCase().includes("size") ||
-                attrName.includes("pa_size") ||
-                attrName.includes("attribute_pa_size")) &&
-              attrValue === size
+              attrName.toLowerCase().includes("size") ||
+              attrName.includes("pa_size") ||
+              attrName.includes("attribute_pa_size")
             ) {
-              hasSize = true;
+              hasSizeAttribute = true;
+              if (attrValue === size) {
+                hasSize = true;
+              }
             }
           }
 
-          if (hasColor && hasSize) {
+          // If variation has size attributes, both color and size must match
+          // If variation has no size attributes, only color needs to match
+          if (hasColor && (!hasSizeAttribute || hasSize)) {
             return variation.variation_id;
           }
         }
@@ -2029,7 +2049,7 @@
             <div class="sticky-quantity-wrapper">
               <div class="sticky-quantity">
                 <button class="minus" type="button">−</button>
-                <input type="number" value="${quantityValue}" min="${minValue}" max="${maxValue}" class="sticky-quantity-input">
+                <input type="number" value="${quantityValue}" min="${minValue}" max="${maxValue}" class="sticky-quantity-input" readonly>
                 <button class="plus" type="button">+</button>
               </div>
             </div>
@@ -2058,18 +2078,8 @@
         this.decreaseStickyQuantity();
       });
 
-      // Handle sticky quantity input changes
-      $(document).on("change", ".sticky-quantity-input", (e) => {
-        this.syncStickyQuantityToOriginal();
-      });
-
-      // Handle sticky quantity input keydown
-      $(document).on("keydown", ".sticky-quantity-input", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.syncStickyQuantityToOriginal();
-        }
-      });
+      // Direct input changes are disabled for sticky quantity input
+      // Only plus/minus buttons can change quantities now
     }
 
     increaseStickyQuantity() {

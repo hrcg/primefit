@@ -401,8 +401,7 @@
   position: absolute;
   top: -2px;
   right: -2px;
-  background: var(--checkout-button-bg);
-  color: var(--checkout-button-text);
+  color:  var(--checkout-button-bg);
   width: 20px;
   height: 20px;
   display: flex;

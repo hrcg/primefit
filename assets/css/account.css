@@ -536,7 +536,7 @@
   color: var(--account-text);
   cursor: pointer;
   padding: 8px;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   opacity: 0.8;

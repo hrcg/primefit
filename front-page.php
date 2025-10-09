@@ -15,15 +15,22 @@ if ( $featured_products_config['enabled'] ) {
 // Category Tiles Section
 get_template_part('templates/parts/category-tiles');
 
-
-// Training Division Section (uses customizer settings)
-get_template_part('templates/parts/training-division');
-
 // Product Showcase Section
 $product_showcase_config = primefit_get_product_showcase_config();
 if ( $product_showcase_config['enabled'] ) {
 	$product_showcase_args = primefit_get_product_loop_config('new', $product_showcase_config);
 	primefit_render_product_loop($product_showcase_args);
+}
+
+// Training Division Section (uses customizer settings)
+get_template_part('templates/parts/training-division');
+
+
+// Third Product Loop Section
+$third_product_loop_config = primefit_get_third_product_loop_config();
+if ( $third_product_loop_config['enabled'] ) {
+	$third_product_loop_args = primefit_get_product_loop_config('custom', $third_product_loop_config);
+	primefit_render_product_loop($third_product_loop_args);
 }
 
 // Second Training Division Section (uses customizer settings)

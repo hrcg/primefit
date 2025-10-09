@@ -275,6 +275,7 @@
     ".woocommerce-mini-cart__item-quantity .plus",
     function (e) {
       e.preventDefault();
+      e.stopPropagation();
       const cartItemKey = $(this).data("cart-item-key");
       if (!cartItemKey) {
         return; // Exit early if this isn't a cart item quantity button
@@ -298,6 +299,7 @@
     ".woocommerce-mini-cart__item-quantity .minus",
     function (e) {
       e.preventDefault();
+      e.stopPropagation();
       const cartItemKey = $(this).data("cart-item-key");
       if (!cartItemKey) {
         return; // Exit early if this isn't a cart item quantity button
@@ -315,81 +317,8 @@
     }
   );
 
-  $(document).on(
-    "change",
-    ".woocommerce-mini-cart__item-quantity input",
-    function (e) {
-      // Only handle cart quantity inputs that have cart-item-key data
-      const cartItemKey = $(this).data("cart-item-key");
-      if (!cartItemKey) {
-        return; // Exit early if this isn't a cart item quantity input
-      }
-
-      // Skip processing if this input is currently being updated via AJAX
-      if ($(this).hasClass("loading") || $(this).prop("disabled")) {
-        return;
-      }
-
-      const newQty = parseInt($(this).val());
-      const maxQty = parseInt($(this).attr("max"));
-      const originalValue = parseInt($(this).data("original-value"));
-
-      // Validate the new quantity
-      if (isNaN(newQty) || newQty < 1) {
-        $(this).val(originalValue || 1);
-        return;
-      }
-
-      if (newQty > maxQty) {
-        $(this).val(maxQty);
-        return;
-      }
-
-      // Only update if the quantity actually changed
-      if (newQty !== originalValue) {
-        // Add loading state to input
-        $(this).addClass("loading").prop("disabled", true);
-        updateCartQuantity(cartItemKey, newQty, $(this));
-      }
-    }
-  );
-
-  // Handle quantity input focus to store the current value
-  $(document).on(
-    "focus",
-    ".woocommerce-mini-cart__item-quantity input",
-    function (e) {
-      // Only handle cart quantity inputs that have cart-item-key data
-      const cartItemKey = $(this).data("cart-item-key");
-      if (!cartItemKey) {
-        return;
-      }
-
-      // Store the current value as the focus value for comparison later
-      $(this).data("focus-value", $(this).val());
-    }
-  );
-
-  // Handle quantity input blur to trigger update if value changed
-  $(document).on(
-    "blur",
-    ".woocommerce-mini-cart__item-quantity input",
-    function (e) {
-      // Only handle cart quantity inputs that have cart-item-key data
-      const cartItemKey = $(this).data("cart-item-key");
-      if (!cartItemKey) {
-        return;
-      }
-
-      const focusValue = parseInt($(this).data("focus-value")) || 1;
-      const currentValue = parseInt($(this).val()) || 1;
-
-      // If value changed during focus, trigger change event
-      if (focusValue !== currentValue) {
-        $(this).trigger("change");
-      }
-    }
-  );
+  // Direct input changes are disabled for mini cart quantity inputs
+  // Only plus/minus buttons can change quantities now
 
   // Remove item from cart: handle both WooCommerce core and custom handlers
   $(document).ready(function () {
