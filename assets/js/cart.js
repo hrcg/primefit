@@ -135,7 +135,8 @@
           window.wc_cart_fragments_params.wc_ajax_url;
         const fragUrl = wcAjaxBase
           ? wcAjaxBase.replace("%%endpoint%%", "get_refreshed_fragments")
-          : (window.primefit_cart_params && window.primefit_cart_params.ajax_url) ||
+          : (window.primefit_cart_params &&
+              window.primefit_cart_params.ajax_url) ||
             "/wp-admin/admin-ajax.php";
         const fragData = wcAjaxBase
           ? {}
@@ -185,7 +186,7 @@
         function () {
           const $input = $(this);
           const cartItemKey = $input.data("cart-item-key");
-          
+
           // Get the value from the HTML attribute (set by server)
           const valueFromAttr = parseInt($input.attr("value")) || 1;
           const currentInputVal = parseInt($input.val()) || 1;
@@ -194,7 +195,7 @@
           if (valueFromAttr !== currentInputVal) {
             $input.val(valueFromAttr);
           }
-          
+
           // Update the data attribute to match
           if (cartItemKey) {
             $input.attr("data-original-value", valueFromAttr);
@@ -274,23 +275,37 @@
     "click",
     ".woocommerce-mini-cart__item-quantity .plus",
     function (e) {
+      // Prevent any default behavior first
       e.preventDefault();
       e.stopPropagation();
-      const cartItemKey = $(this).data("cart-item-key");
+      e.stopImmediatePropagation(); // Prevent other handlers from running
+
+      const $button = $(this);
+      const cartItemKey = $button.data("cart-item-key");
+
+      // Validate cart item key exists
       if (!cartItemKey) {
-        return; // Exit early if this isn't a cart item quantity button
+        console.warn("Plus button clicked without cart-item-key:", $button);
+        return false; // Exit early if this isn't a cart item quantity button
       }
 
-      const $input = $(this).siblings("input");
-      const currentQty = parseInt($input.val());
-      const maxQty = parseInt($input.attr("max"));
+      // Check if already processing to prevent double-clicks
+      if ($button.hasClass("loading") || $button.prop("disabled")) {
+        return false;
+      }
+
+      const $input = $button.siblings("input.qty");
+      const currentQty = parseInt($input.val()) || 0;
+      const maxQty = parseInt($input.attr("max")) || 999;
 
       if (currentQty < maxQty) {
         // Add loading state
-        $(this).addClass("loading").prop("disabled", true);
+        $button.addClass("loading").prop("disabled", true);
         $input.prop("disabled", true);
-        updateCartQuantity(cartItemKey, currentQty + 1, $(this));
+        updateCartQuantity(cartItemKey, currentQty + 1, $button);
       }
+
+      return false; // Extra safety to prevent any propagation
     }
   );
 
@@ -298,100 +313,41 @@
     "click",
     ".woocommerce-mini-cart__item-quantity .minus",
     function (e) {
+      // Prevent any default behavior first
       e.preventDefault();
       e.stopPropagation();
-      const cartItemKey = $(this).data("cart-item-key");
+      e.stopImmediatePropagation(); // Prevent other handlers from running
+
+      const $button = $(this);
+      const cartItemKey = $button.data("cart-item-key");
+
+      // Validate cart item key exists
       if (!cartItemKey) {
-        return; // Exit early if this isn't a cart item quantity button
+        console.warn("Minus button clicked without cart-item-key:", $button);
+        return false; // Exit early if this isn't a cart item quantity button
       }
 
-      const $input = $(this).siblings("input");
-      const currentQty = parseInt($input.val());
+      // Check if already processing to prevent double-clicks
+      if ($button.hasClass("loading") || $button.prop("disabled")) {
+        return false;
+      }
+
+      const $input = $button.siblings("input.qty");
+      const currentQty = parseInt($input.val()) || 0;
 
       if (currentQty > 1) {
         // Add loading state
-        $(this).addClass("loading").prop("disabled", true);
+        $button.addClass("loading").prop("disabled", true);
         $input.prop("disabled", true);
-        updateCartQuantity(cartItemKey, currentQty - 1, $(this));
+        updateCartQuantity(cartItemKey, currentQty - 1, $button);
       }
+
+      return false; // Extra safety to prevent any propagation
     }
   );
 
-  $(document).on(
-    "change",
-    ".woocommerce-mini-cart__item-quantity input",
-    function (e) {
-      // Only handle cart quantity inputs that have cart-item-key data
-      const cartItemKey = $(this).data("cart-item-key");
-      if (!cartItemKey) {
-        return; // Exit early if this isn't a cart item quantity input
-      }
-
-      // Skip processing if this input is currently being updated via AJAX
-      if ($(this).hasClass("loading") || $(this).prop("disabled")) {
-        return;
-      }
-
-      const newQty = parseInt($(this).val());
-      const maxQty = parseInt($(this).attr("max"));
-      const originalValue = parseInt($(this).data("original-value"));
-
-      // Validate the new quantity
-      if (isNaN(newQty) || newQty < 1) {
-        $(this).val(originalValue || 1);
-        return;
-      }
-
-      if (newQty > maxQty) {
-        $(this).val(maxQty);
-        return;
-      }
-
-      // Only update if the quantity actually changed
-      if (newQty !== originalValue) {
-        // Add loading state to input
-        $(this).addClass("loading").prop("disabled", true);
-        updateCartQuantity(cartItemKey, newQty, $(this));
-      }
-    }
-  );
-
-  // Handle quantity input focus to store the current value
-  $(document).on(
-    "focus",
-    ".woocommerce-mini-cart__item-quantity input",
-    function (e) {
-      // Only handle cart quantity inputs that have cart-item-key data
-      const cartItemKey = $(this).data("cart-item-key");
-      if (!cartItemKey) {
-        return;
-      }
-
-      // Store the current value as the focus value for comparison later
-      $(this).data("focus-value", $(this).val());
-    }
-  );
-
-  // Handle quantity input blur to trigger update if value changed
-  $(document).on(
-    "blur",
-    ".woocommerce-mini-cart__item-quantity input",
-    function (e) {
-      // Only handle cart quantity inputs that have cart-item-key data
-      const cartItemKey = $(this).data("cart-item-key");
-      if (!cartItemKey) {
-        return;
-      }
-
-      const focusValue = parseInt($(this).data("focus-value")) || 1;
-      const currentValue = parseInt($(this).val()) || 1;
-
-      // If value changed during focus, trigger change event
-      if (focusValue !== currentValue) {
-        $(this).trigger("change");
-      }
-    }
-  );
+  // Direct input changes are disabled for mini cart quantity inputs
+  // Only plus/minus buttons can change quantities now
 
   // Remove item from cart: handle both WooCommerce core and custom handlers
   $(document).ready(function () {
@@ -418,10 +374,22 @@
 
   // Update cart quantity via AJAX
   function updateCartQuantity(cartItemKey, quantity, $element) {
-    // Validate parameters
-    if (!cartItemKey || !quantity || !window.primefit_cart_params) {
+    // Validate parameters - be more defensive
+    if (
+      !cartItemKey ||
+      quantity === undefined ||
+      quantity === null ||
+      quantity < 1 ||
+      !window.primefit_cart_params
+    ) {
+      console.warn("Invalid parameters for updateCartQuantity:", {
+        cartItemKey,
+        quantity,
+      });
       if ($element) {
         $element.removeClass("loading").prop("disabled", false);
+        // Also re-enable the input
+        $element.siblings("input.qty").prop("disabled", false);
       }
       return;
     }
@@ -433,7 +401,11 @@
       ? wcAjaxBase.replace("%%endpoint%%", "update_cart_item_quantity")
       : primefit_cart_params.ajax_url;
     const updateData = wcAjaxBase
-      ? { cart_item_key: cartItemKey, quantity: quantity, security: primefit_cart_params.update_cart_nonce }
+      ? {
+          cart_item_key: cartItemKey,
+          quantity: quantity,
+          security: primefit_cart_params.update_cart_nonce,
+        }
       : {
           action: "wc_ajax_update_cart_item_quantity",
           cart_item_key: cartItemKey,
@@ -461,7 +433,7 @@
               ).each(function () {
                 const $input = $(this);
                 const cartItemKey = $input.data("cart-item-key");
-                
+
                 // Get the value from the HTML attribute (set by server in fragment)
                 const valueFromAttr = parseInt($input.attr("value")) || 1;
                 const currentInputVal = parseInt($input.val()) || 1;
@@ -470,7 +442,7 @@
                 if (valueFromAttr !== currentInputVal) {
                   $input.val(valueFromAttr);
                 }
-                
+
                 // Update the data attribute to match
                 if (cartItemKey) {
                   $input.attr("data-original-value", valueFromAttr);
@@ -547,7 +519,10 @@
       ? wcAjaxBase.replace("%%endpoint%%", "remove_cart_item")
       : primefit_cart_params.ajax_url;
     const ajaxData = wcAjaxBase
-      ? { cart_item_key: cartItemKey, security: primefit_cart_params.remove_cart_nonce }
+      ? {
+          cart_item_key: cartItemKey,
+          security: primefit_cart_params.remove_cart_nonce,
+        }
       : {
           action: "wc_ajax_remove_cart_item",
           cart_item_key: cartItemKey,
@@ -578,7 +553,7 @@
               ).each(function () {
                 const $input = $(this);
                 const cartItemKey = $input.data("cart-item-key");
-                
+
                 // Get the value from the HTML attribute (set by server in fragment)
                 const valueFromAttr = parseInt($input.attr("value")) || 1;
                 const currentInputVal = parseInt($input.val()) || 1;
@@ -587,7 +562,7 @@
                 if (valueFromAttr !== currentInputVal) {
                   $input.val(valueFromAttr);
                 }
-                
+
                 // Update the data attribute to match
                 if (cartItemKey) {
                   $input.attr("data-original-value", valueFromAttr);
@@ -748,29 +723,29 @@
           $(key).replaceWith(value);
         });
 
-      // Sync all quantity inputs after fragments update (no extra network request)
-      setTimeout(function () {
-        $(
-          ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
-        ).each(function () {
-          const $input = $(this);
-          const cartItemKey = $input.data("cart-item-key");
-          
-          // Get the value from the HTML attribute (set by server in fragment)
-          const valueFromAttr = parseInt($input.attr("value")) || 1;
-          const currentInputVal = parseInt($input.val()) || 1;
+        // Sync all quantity inputs after fragments update (no extra network request)
+        setTimeout(function () {
+          $(
+            ".woocommerce-mini-cart__item-quantity input[data-cart-item-key]"
+          ).each(function () {
+            const $input = $(this);
+            const cartItemKey = $input.data("cart-item-key");
 
-          // If the attribute value doesn't match the input value, sync them
-          if (valueFromAttr !== currentInputVal) {
-            $input.val(valueFromAttr);
-          }
-          
-          // Update the data attribute to match
-          if (cartItemKey) {
-            $input.attr("data-original-value", valueFromAttr);
-          }
-        });
-      }, 150);
+            // Get the value from the HTML attribute (set by server in fragment)
+            const valueFromAttr = parseInt($input.attr("value")) || 1;
+            const currentInputVal = parseInt($input.val()) || 1;
+
+            // If the attribute value doesn't match the input value, sync them
+            if (valueFromAttr !== currentInputVal) {
+              $input.val(valueFromAttr);
+            }
+
+            // Update the data attribute to match
+            if (cartItemKey) {
+              $input.attr("data-original-value", valueFromAttr);
+            }
+          });
+        }, 150);
       }
 
       // Since we just added a product, the cart is NOT empty

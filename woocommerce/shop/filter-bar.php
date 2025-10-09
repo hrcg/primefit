@@ -22,6 +22,24 @@ global $wp_query;
 // Get current sorting order
 $current_orderby = isset( $_GET['orderby'] ) ? wc_clean( $_GET['orderby'] ) : apply_filters( 'woocommerce_default_catalog_orderby', get_option( 'woocommerce_default_catalog_orderby' ) );
 
+// Map orderby values to display names and filter values for the custom dropdown
+$orderby_display_names = array(
+	'menu_order' => __( 'Featured', 'primefit' ),
+	'popularity' => __( 'Best selling', 'primefit' ),
+	'rating'     => __( 'Average rating', 'primefit' ),
+	'date'       => __( 'Date', 'primefit' ),
+	'price'      => __( 'Price, low to high', 'primefit' ),
+	'price-desc' => __( 'Price, high to low', 'primefit' ),
+);
+
+$orderby_filter_map = array(
+	'menu_order' => 'featured',
+	'popularity' => 'best-selling',
+	'price'      => 'price-low-high',
+	'price-desc' => 'price-high-low',
+	'date'       => 'date',
+);
+
 // Get sorting options
 $catalog_orderby_options = apply_filters( 'woocommerce_catalog_orderby', array(
 	'menu_order' => __( 'Default sorting', 'woocommerce' ),
@@ -137,35 +155,26 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 			<div class="filter-controls">
 					<div class="filter-dropdown">
 						<button class="filter-dropdown-toggle" type="button" aria-expanded="false">
-							<span class="filter-dropdown-text"><?php esc_html_e( 'Sort', 'primefit' ); ?></span>
+							<span class="filter-dropdown-text"><?php echo esc_html( $orderby_display_names[$current_orderby] ?? __( 'Featured', 'primefit' ) ); ?></span>
 							<svg class="filter-dropdown-icon" width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
 								<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m6 8 4 4 4-4"/>
 							</svg>
 						</button>
 						<div class="filter-dropdown-menu">
-							<div class="filter-dropdown-option active" data-filter="featured">
+							<div class="filter-dropdown-option<?php echo ( $orderby_filter_map[$current_orderby] === 'featured' ) ? ' active' : ''; ?>" data-filter="featured">
 								<?php esc_html_e( 'Featured', 'primefit' ); ?>
 							</div>
-							<div class="filter-dropdown-option" data-filter="best-selling">
+							<div class="filter-dropdown-option<?php echo ( $orderby_filter_map[$current_orderby] === 'best-selling' ) ? ' active' : ''; ?>" data-filter="best-selling">
 								<?php esc_html_e( 'Best selling', 'primefit' ); ?>
 							</div>
-							<div class="filter-dropdown-option" data-filter="alphabetical-az">
-								<?php esc_html_e( 'Alphabetically, A-Z', 'primefit' ); ?>
-							</div>
-							<div class="filter-dropdown-option" data-filter="alphabetical-za">
-								<?php esc_html_e( 'Alphabetically, Z-A', 'primefit' ); ?>
-							</div>
-							<div class="filter-dropdown-option" data-filter="price-low-high">
+							<div class="filter-dropdown-option<?php echo ( $orderby_filter_map[$current_orderby] === 'price-low-high' ) ? ' active' : ''; ?>" data-filter="price-low-high">
 								<?php esc_html_e( 'Price, low to high', 'primefit' ); ?>
 							</div>
-							<div class="filter-dropdown-option" data-filter="price-high-low">
+							<div class="filter-dropdown-option<?php echo ( $orderby_filter_map[$current_orderby] === 'price-high-low' ) ? ' active' : ''; ?>" data-filter="price-high-low">
 								<?php esc_html_e( 'Price, high to low', 'primefit' ); ?>
 							</div>
-							<div class="filter-dropdown-option" data-filter="date-old-new">
-								<?php esc_html_e( 'Date, old to new', 'primefit' ); ?>
-							</div>
-							<div class="filter-dropdown-option" data-filter="date-new-old">
-								<?php esc_html_e( 'Date, new to old', 'primefit' ); ?>
+							<div class="filter-dropdown-option<?php echo ( $orderby_filter_map[$current_orderby] === 'date' ) ? ' active' : ''; ?>" data-filter="date">
+								<?php esc_html_e( 'Date', 'primefit' ); ?>
 							</div>
 						</div>
 					</div>

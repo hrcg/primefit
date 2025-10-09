@@ -929,9 +929,10 @@
   z-index: var(--z-content);
 }
 
+/* Color swatches disabled on product hover */
 .woocommerce ul.products li.product:hover .product-loop-color-swatches {
-  opacity: 1;
-  transform: translateY(0);
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 /* Ensure color swatches are always clickable */

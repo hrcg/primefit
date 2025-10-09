@@ -86,9 +86,8 @@ function primefit_enqueue_assets() {
 		}, 1 );
 	}
 
-	// Cart-specific styles - load on all pages for consistent cart functionality
-	// Mobile-first: Load immediately on mobile, defer on desktop
-	$cart_media = wp_is_mobile() ? 'all' : 'print';
+    // Cart-specific styles - load on all pages and immediately on all devices
+    $cart_media = 'all';
 	wp_enqueue_style(
 		'primefit-cart',
 		PRIMEFIT_THEME_URI . '/assets/css/cart.css',
@@ -96,13 +95,7 @@ function primefit_enqueue_assets() {
 		primefit_get_file_version( '/assets/css/cart.css' ),
 		$cart_media
 	);
-	
-	// Load cart CSS for desktop after page load
-	if ( ! wp_is_mobile() ) {
-		add_action( 'wp_footer', function() {
-			echo '<link rel="stylesheet" href="' . PRIMEFIT_THEME_URI . '/assets/css/cart.css?v=' . primefit_get_file_version( '/assets/css/cart.css' ) . '" media="all">';
-		}, 1 );
-	}
+    
 	// WooCommerce styles - load for all devices
 	if ( class_exists( 'WooCommerce' ) ) {
 		// Load WooCommerce base styles immediately to avoid FOUC
@@ -346,11 +339,9 @@ function primefit_enqueue_assets() {
 		// Cache page type for performance
 		$page_type = primefit_get_page_type();
 
-		// Only load cart fragments on pages that need it - defer to reduce critical path
+        // Only load cart fragments on pages that need it
 		if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'account', 'front_page' ] ) ) {
 			wp_enqueue_script( 'wc-cart-fragments' );
-			// Defer cart fragments to reduce critical path latency
-			wp_script_add_data( 'wc-cart-fragments', 'defer', true );
 		}
 
 		// Only load add to cart scripts on product-related pages
@@ -965,15 +956,16 @@ function primefit_add_cache_busting( $src, $handle, $type ) {
  */
 add_action( 'wp_enqueue_scripts', 'primefit_optimize_cart_fragments', 999 );
 function primefit_optimize_cart_fragments() {
-	if ( class_exists( 'WooCommerce' ) ) {
-		$page_type = primefit_get_page_type();
-		
-		// Only load cart fragments on pages that actually need them
-		if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
-			// Defer cart fragments to reduce critical path
-			wp_script_add_data( 'wc-cart-fragments', 'defer', true );
-		}
-	}
+    if ( class_exists( 'WooCommerce' ) ) {
+        $page_type = primefit_get_page_type();
+        
+        // Only ensure cart fragments script is present where needed (no defer)
+        if ( in_array( $page_type, [ 'product', 'shop', 'category', 'tag', 'cart', 'checkout', 'front_page' ] ) ) {
+            if ( wp_script_is( 'wc-cart-fragments', 'registered' ) && ! wp_script_is( 'wc-cart-fragments', 'enqueued' ) ) {
+                wp_enqueue_script( 'wc-cart-fragments' );
+            }
+        }
+    }
 }
 
 /**

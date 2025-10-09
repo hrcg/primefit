@@ -67,16 +67,17 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 							<div class="woocommerce-mini-cart__item-quantity">
 								<div class="quantity">
 									<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>">−</button>
-									<input 
-										type="number" 
-										class="qty" 
-										value="<?php echo esc_attr( $cart_item['quantity'] ); ?>" 
-										min="1" 
+									<input
+										type="number"
+										class="qty"
+										value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
+										min="1"
 										max="<?php echo esc_attr( $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 999 ); ?>"
 										data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>"
 										data-original-value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
 										step="1"
 										inputmode="numeric"
+										readonly
 									>
 									<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>">+</button>
 								</div>

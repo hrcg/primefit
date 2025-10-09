@@ -374,8 +374,8 @@
 
 .mobile-menu .sub-menu a {
   margin: 10px 0 0 5px;
-  padding: 10px 0 10px 10px;
-  font-size: 13px;
+  padding: 5px 0 5px 10px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   border-left: 2px solid transparent;

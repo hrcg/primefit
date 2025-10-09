@@ -329,12 +329,9 @@
       const filterMap = {
         featured: "menu_order",
         "best-selling": "popularity",
-        "alphabetical-az": "title",
-        "alphabetical-za": "title-desc",
         "price-low-high": "price",
         "price-high-low": "price-desc",
-        "date-old-new": "date",
-        "date-new-old": "date-desc",
+        "date": "date",
       };
       const orderbyValue = filterMap[filterValue] || "menu_order";
       const $hiddenSelect = $(".woocommerce-ordering .orderby");
@@ -414,12 +411,9 @@
       const orderbyMap = {
         menu_order: "featured",
         popularity: "best-selling",
-        title: "alphabetical-az",
-        "title-desc": "alphabetical-za",
         price: "price-low-high",
         "price-desc": "price-high-low",
-        date: "date-old-new",
-        "date-desc": "date-new-old",
+        date: "date",
       };
       const currentFilter = orderbyMap[currentOrderby] || "featured";
       const $dropdown = $(".filter-dropdown");

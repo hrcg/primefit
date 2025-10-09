@@ -2060,7 +2060,7 @@
             <div class="sticky-quantity-wrapper">
               <div class="sticky-quantity">
                 <button class="minus" type="button">−</button>
-                <input type="number" value="${quantityValue}" min="${minValue}" max="${maxValue}" class="sticky-quantity-input">
+                <input type="number" value="${quantityValue}" min="${minValue}" max="${maxValue}" class="sticky-quantity-input" readonly>
                 <button class="plus" type="button">+</button>
               </div>
             </div>
@@ -2089,18 +2089,8 @@
         this.decreaseStickyQuantity();
       });
 
-      // Handle sticky quantity input changes
-      $(document).on("change", ".sticky-quantity-input", (e) => {
-        this.syncStickyQuantityToOriginal();
-      });
-
-      // Handle sticky quantity input keydown
-      $(document).on("keydown", ".sticky-quantity-input", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          this.syncStickyQuantityToOriginal();
-        }
-      });
+      // Direct input changes are disabled for sticky quantity input
+      // Only plus/minus buttons can change quantities now
     }
 
     increaseStickyQuantity() {
