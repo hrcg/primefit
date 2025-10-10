@@ -538,7 +538,6 @@
         this.initializationTimeout = setTimeout(() => {
           requestAnimationFrame(() => {
             this.enhancePaymentMethodCards();
-            this.addPaymentMethodIcons();
             this.addPaymentMethodBadges();
             this.initPaymentMethodInteractions();
             this.setupPaymentMethodObserver();
@@ -655,33 +654,33 @@
         ".woocommerce-checkout .payment_methods"
       );
 
-      // Only reapply if payment methods were actually reset
-      if (
-        $currentPaymentMethods.length &&
-        !$currentPaymentMethods.hasClass("enhanced") &&
-        !$currentPaymentMethods.find(".payment_method").length
-      ) {
+      // Check if any payment methods need enhancement
+      const $unenhanedItems = $currentPaymentMethods.find("li").filter(function() {
+        return !$(this).find(".payment_method").length;
+      });
+
+      // If there are unenhanced items, enhance them (even if Stripe is present)
+      if ($unenhanedItems.length > 0) {
         // Batch DOM operations using requestAnimationFrame to prevent layout thrashing
         requestAnimationFrame(() => {
           // Start batch DOM operations
           this.startBatchDOMOperations();
 
-          // Remove enhanced class temporarily
-          $currentPaymentMethods.removeClass("enhanced");
-          this.isPaymentMethodsEnhanced = false;
-
           // Batch all enhancement operations
           this.enhancePaymentMethodCards();
-          this.addPaymentMethodIcons();
           this.addPaymentMethodBadges();
 
           // End batch DOM operations
           this.endBatchDOMOperations();
 
-          // Re-add enhanced class in a single operation
+          // Add enhanced class in a single operation
           $currentPaymentMethods.addClass("enhanced");
           this.isPaymentMethodsEnhanced = true;
         });
+      } else if (!$currentPaymentMethods.hasClass("enhanced")) {
+        // If all items have .payment_method but container not marked as enhanced
+        $currentPaymentMethods.addClass("enhanced");
+        this.isPaymentMethodsEnhanced = true;
       }
     },
 
@@ -765,45 +764,6 @@
       enhancements.forEach((enhancement) => enhancement());
     },
 
-    /**
-     * Add payment method icons - optimized batched operations
-     */
-    addPaymentMethodIcons: function () {
-      const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
-      const iconOperations = [];
-
-      // Collect all icon operations first - optimized with for...of loop
-      for (const element of $paymentMethods) {
-        const $li = $(element);
-        const $label = $li.find("label");
-        const title = $li.find(".payment-method-title").text().toLowerCase();
-
-        if (!$label.find(".payment-method-icon").length) {
-          let iconClass = "payment-method-icon";
-          if (title.includes("cash") || title.includes("delivery")) {
-            iconClass += " cash";
-          } else if (
-            title.includes("card") ||
-            title.includes("credit") ||
-            title.includes("debit")
-          ) {
-            iconClass += " card";
-          } else if (title.includes("paypal")) {
-            iconClass += " paypal";
-          } else if (title.includes("apple")) {
-            iconClass += " apple-pay";
-          }
-
-          iconOperations.push(() => {
-            const $icon = $(`<div class="${iconClass}">💳</div>`);
-            $label.prepend($icon);
-          });
-        }
-      }
-
-      // Execute all icon operations in a single batch
-      iconOperations.forEach((operation) => operation());
-    },
 
     /**
      * Add payment method badges - optimized batched operations
@@ -815,13 +775,13 @@
       // Collect all badge operations first - optimized with for...of loop
       for (const element of $paymentMethods) {
         const $li = $(element);
-        const $paymentMethod = $li.find(".payment_method");
-        const title = $li.find(".payment-method-title").text().toLowerCase();
+        const $paymentMethodTitle = $li.find(".payment-method-title");
+        const title = $paymentMethodTitle.text().toLowerCase();
 
-        if (!$paymentMethod.find(".payment-method-badge").length) {
+        if (!$li.find(".payment-method-badge").length && $paymentMethodTitle.length) {
           if (title.includes("cash") || title.includes("delivery")) {
             badgeOperations.push(() => {
-              $paymentMethod.append(
+              $paymentMethodTitle.after(
                 '<div class="payment-method-badge recommended">Recommended</div>'
               );
             });
@@ -831,7 +791,7 @@
             title.includes("debit")
           ) {
             badgeOperations.push(() => {
-              $paymentMethod.append(
+              $paymentMethodTitle.after(
                 '<div class="payment-method-badge secure">Secure</div>'
               );
             });
@@ -847,31 +807,45 @@
      * Initialize payment method interactions
      */
     initPaymentMethodInteractions: function () {
-      $(".woocommerce-checkout .payment_methods li").on("click", function (e) {
-        const $li = $(this);
-        const $radio = $li.find('input[type="radio"]');
+      // Use event delegation with more specific targeting
+      $(document).off("click.paymentMethodClick");
+      $(document).on("click.paymentMethodClick", ".woocommerce-checkout .payment_methods li", function (e) {
+        // Don't intercept if clicking directly on the radio or links
+        if ($(e.target).is('input[type="radio"], a')) {
+          return;
+        }
 
-        if (!$(e.target).is('input[type="radio"]')) {
-          $radio.prop("checked", true).trigger("change");
+        const $li = $(this);
+        const $radio = $li.find('input[type="radio"]').first();
+
+        if ($radio.length && !$radio.is(":checked")) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Manually check the radio and trigger change
+          $radio.prop("checked", true);
+          $radio.trigger("change");
+          
+          // Also trigger WooCommerce's payment method change
+          $(document.body).trigger("payment_method_selected");
         }
       });
 
-      $(".woocommerce-checkout .payment_methods input[type='radio']").on(
-        "change",
-        function () {
-          const $radio = $(this);
-          const $li = $radio.closest("li");
-          const $paymentMethod = $li.find(".payment_method");
+      // Handle radio change to add selected class
+      $(document).off("change.paymentMethodChange");
+      $(document).on("change.paymentMethodChange", ".woocommerce-checkout .payment_methods input[type='radio']", function () {
+        const $radio = $(this);
+        const $li = $radio.closest("li");
+        const $paymentMethod = $li.find(".payment_method");
 
-          $(
-            ".woocommerce-checkout .payment_methods .payment_method"
-          ).removeClass("selected");
+        // Remove selected from all payment methods
+        $(".woocommerce-checkout .payment_methods .payment_method").removeClass("selected");
 
-          if ($radio.is(":checked")) {
-            $paymentMethod.addClass("selected");
-          }
+        // Add selected to the checked one
+        if ($radio.is(":checked")) {
+          $paymentMethod.addClass("selected");
         }
-      );
+      });
 
       // Auto-select the first payment method
       const $firstPaymentMethod = $(
@@ -881,6 +855,7 @@
         $firstPaymentMethod.prop("checked", true).trigger("change");
       }
 
+      // Trigger change on already checked radios
       $(
         ".woocommerce-checkout .payment_methods input[type='radio']:checked"
       ).trigger("change");
@@ -1754,30 +1729,39 @@
 
       // Handle WooCommerce checkout updates - only reapply if needed
       $(document.body).on("updated_checkout", function () {
-        // Only reinitialize if payment methods were reset
+        // Check if any payment methods need enhancement
         const $paymentMethods = $(".woocommerce-checkout .payment_methods");
-        if (
-          $paymentMethods.length &&
-          !$paymentMethods.find(".payment_method").length
-        ) {
-          $paymentMethods.removeClass("enhanced");
-          CheckoutManager.isPaymentMethodsEnhanced = false;
-          CheckoutManager.initPaymentMethodEnhancements();
+        
+        if ($paymentMethods.length) {
+          const $unenhanedItems = $paymentMethods.find("li").filter(function() {
+            return !$(this).find(".payment_method").length;
+          });
+          
+          // Only reinitialize if there are unenhanced items
+          if ($unenhanedItems.length > 0) {
+            CheckoutManager.isPaymentMethodsEnhanced = false;
+            CheckoutManager.initPaymentMethodEnhancements();
+          }
         }
       });
 
       // Handle WooCommerce fragments refresh - only reapply if needed
       $(document.body).on("wc_fragments_refreshed", function () {
-        // Only reinitialize if payment methods were reset
+        // Check if any payment methods need enhancement
         const $paymentMethods = $(".woocommerce-checkout .payment_methods");
-        if (
-          $paymentMethods.length &&
-          !$paymentMethods.find(".payment_method").length
-        ) {
-          $paymentMethods.removeClass("enhanced");
-          CheckoutManager.isPaymentMethodsEnhanced = false;
-          CheckoutManager.initPaymentMethodEnhancements();
+        
+        if ($paymentMethods.length) {
+          const $unenhanedItems = $paymentMethods.find("li").filter(function() {
+            return !$(this).find(".payment_method").length;
+          });
+          
+          // Only reinitialize if there are unenhanced items
+          if ($unenhanedItems.length > 0) {
+            CheckoutManager.isPaymentMethodsEnhanced = false;
+            CheckoutManager.initPaymentMethodEnhancements();
+          }
         }
+        
         // After fragments refresh, verify if cart became empty and redirect safely
         tryCheckoutRedirectIfCartEmpty();
       });

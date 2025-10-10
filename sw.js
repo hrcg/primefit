@@ -341,7 +341,7 @@ async function cacheFirstStrategyWithCompression(request, cacheName) {
       // Try to compress and cache compressed version
       const compressed = await compressResponse(networkResponse.clone());
       if (compressed !== networkResponse) {
-        compressedCache.put(request, compressed);
+        compressedCache.put(request, compressed.clone());
       }
     }
     
@@ -390,7 +390,7 @@ async function networkFirstStrategyWithCompression(request, cacheName) {
       // Try to compress and cache compressed version
       const compressed = await compressResponse(networkResponse.clone());
       if (compressed !== networkResponse) {
-        compressedCache.put(request, compressed);
+        compressedCache.put(request, compressed.clone());
       }
     }
 
@@ -466,7 +466,7 @@ async function staleWhileRevalidateStrategyWithCompression(request, cacheName) {
         // Try to compress and cache compressed version
         const compressed = await compressResponse(response.clone());
         if (compressed !== response) {
-          compressedCache.put(request, compressed);
+          compressedCache.put(request, compressed.clone());
         }
       }
       return response;
@@ -607,3 +607,4 @@ async function estimateCacheSize(cache) {
   
   return totalSize;
 }
+

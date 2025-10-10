@@ -2154,6 +2154,18 @@ function primefit_ensure_order_completion( $order_id ) {
 // Fallback redirect function removed - now using custom order-received template
 
 /**
+ * Customize Stripe payment method title
+ */
+add_filter( 'woocommerce_gateway_title', 'primefit_customize_stripe_title', 10, 2 );
+function primefit_customize_stripe_title( $title, $gateway_id ) {
+    // Check if this is a Stripe gateway
+    if ( strpos( $gateway_id, 'stripe' ) !== false ) {
+        return 'Card/Debit Card';
+    }
+    return $title;
+}
+
+/**
  * Add custom payment summary after order completion
  * Note: This is now handled by the payment summary endpoint page
  */

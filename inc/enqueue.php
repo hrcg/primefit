@@ -1074,62 +1074,61 @@ function primefit_add_module_loading() {
 }
 
 /**
- * Register Service Worker for mobile caching
+ * Unregister Service Worker (removed due to compatibility issues)
+ * This will clean up any existing service workers from users' browsers
+ * Runs only once per user session using localStorage
  */
-add_action( 'wp_footer', 'primefit_register_service_worker', 999 );
-function primefit_register_service_worker() {
-	// Only register on frontend and for mobile devices
-	if ( is_admin() || ! wp_is_mobile() ) {
+add_action( 'wp_footer', 'primefit_unregister_service_worker', 999 );
+function primefit_unregister_service_worker() {
+	// Only run on frontend, not in admin
+	if ( is_admin() ) {
 		return;
 	}
-	
-	$sw_url = PRIMEFIT_THEME_URI . '/sw.js';
 	?>
 	<script>
 	(function() {
 		'use strict';
 		
-		// Check if service workers are supported
+		// Check if we've already unregistered (run only once per user)
+		if (localStorage.getItem('sw_unregistered')) {
+			return;
+		}
+		
+		// Unregister any existing service workers
 		if ('serviceWorker' in navigator) {
-			// Register service worker
-			navigator.serviceWorker.register('<?php echo esc_url( $sw_url ); ?>', {
-				scope: '/'
-			}).then(function(registration) {
-
-				// Handle updates
-				registration.addEventListener('updatefound', function() {
-					const newWorker = registration.installing;
-					newWorker.addEventListener('statechange', function() {
-						if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-							// New content is available, notify user
-							if (confirm('New version available! Reload to update?')) {
-								window.location.reload();
+			navigator.serviceWorker.getRegistrations().then(function(registrations) {
+				if (registrations.length > 0) {
+					for (let registration of registrations) {
+						registration.unregister().then(function(success) {
+							if (success) {
+								console.log('Service worker unregistered successfully');
 							}
-						}
-					});
-				});
-
-			}).catch(function(error) {
-			});
-
-			// Handle service worker messages
-			navigator.serviceWorker.addEventListener('message', function(event) {
-				if (event.data && event.data.type === 'CACHE_UPDATED') {
+						});
+					}
+					
+					// Clear all caches
+					if ('caches' in window) {
+						caches.keys().then(function(cacheNames) {
+							return Promise.all(
+								cacheNames.map(function(cacheName) {
+									return caches.delete(cacheName);
+								})
+							).then(function() {
+								console.log('Service worker caches cleared');
+								// Mark as unregistered
+								localStorage.setItem('sw_unregistered', 'true');
+							});
+						});
+					} else {
+						localStorage.setItem('sw_unregistered', 'true');
+					}
+				} else {
+					// No service workers to unregister
+					localStorage.setItem('sw_unregistered', 'true');
 				}
 			});
-
-			// Handle offline/online events
-			window.addEventListener('online', function() {
-				// Notify service worker that we're back online
-				if (navigator.serviceWorker.controller) {
-					navigator.serviceWorker.controller.postMessage({
-						type: 'ONLINE'
-					});
-				}
-			});
-
-			window.addEventListener('offline', function() {
-			});
+		} else {
+			localStorage.setItem('sw_unregistered', 'true');
 		}
 	})();
 	</script>

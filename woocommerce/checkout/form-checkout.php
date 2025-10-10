@@ -94,15 +94,6 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					</div>
 				</div>
 
-				<!-- Payment Options Section - Within Order Summary for Desktop -->
-				<div class="payment-options-section desktop-payment">
-					<h3 class="section-title">Payment options</h3>
-					<?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
-					<div id="order_review" class="woocommerce-checkout-review-order">
-						<?php do_action( 'woocommerce_checkout_order_review' ); ?>
-					</div>
-					<?php do_action( 'woocommerce_checkout_after_order_review' ); ?>
-				</div>
 				</div> <!-- End summary-content -->
 			</div>
 
@@ -218,11 +209,11 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 
 			</div>
 
-			<!-- Mobile: Payment Options (order: 3) -->
-			<div class="payment-options-section mobile-payment">
+			<!-- Unified Payment Options Section (responsive positioning via CSS) -->
+			<div class="payment-options-section">
 				<h3 class="section-title">Payment options</h3>
 				<?php do_action( 'woocommerce_checkout_before_order_review' ); ?>
-				<div class="woocommerce-checkout-review-order mobile-order-review">
+				<div id="order_review" class="woocommerce-checkout-review-order">
 					<?php do_action( 'woocommerce_checkout_order_review' ); ?>
 				</div>
 				<?php do_action( 'woocommerce_checkout_after_order_review' ); ?>

@@ -251,19 +251,6 @@ endif;
             </div>
             <div class="card-content">
                 <div class="payment-method">
-                    <div class="payment-method-icon">
-                        <?php
-                        // Display payment method icon based on method
-                        $payment_method_lower = strtolower( $payment_method );
-                        if ( strpos( $payment_method_lower, 'card' ) !== false || strpos( $payment_method_lower, 'credit' ) !== false ) {
-                            echo '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>';
-                        } elseif ( strpos( $payment_method_lower, 'paypal' ) !== false ) {
-                            echo '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 8h9l-1 8H8.5l1-8z"></path><path d="M6.5 8H5.5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h1"></path></svg>';
-                        } else {
-                            echo '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>';
-                        }
-                        ?>
-                    </div>
                     <div class="payment-method-details">
                         <h4 class="payment-method-name"><?php echo esc_html( $payment_method ); ?></h4>
                         <p class="payment-method-description">
