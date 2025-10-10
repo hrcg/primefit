@@ -42,7 +42,7 @@ function primefit_add_kosovo_to_continents( $continents ) {
 }
 
 /**
- * Make billing postcode optional for specific countries and phone field required
+ * Make billing postcode required for countries where it should be visible
  * Hide billing_address_2 and billing_postcode for Albania, Kosovo, North Macedonia
  */
 add_filter( 'woocommerce_billing_fields', 'primefit_customize_billing_fields' );
@@ -59,9 +59,10 @@ function primefit_customize_billing_fields( $fields ) {
         $selected_country = get_user_meta( $user_id, 'billing_country', true );
     }
     
-    // Make postcode optional for all countries (since it's handled by JavaScript)
+    // Make postcode required for countries where it should be visible
+    // Optional only for Albania, Kosovo, and North Macedonia
     if ( isset( $fields['billing_postcode'] ) ) {
-        $fields['billing_postcode']['required'] = false;
+        $fields['billing_postcode']['required'] = ! in_array( $selected_country, $special_countries );
     }
     
     // Make phone field required
@@ -90,6 +91,12 @@ function primefit_checkout_field_validation() {
         // Clear address_2 and postcode for these countries
         $_POST['billing_address_2'] = '';
         $_POST['billing_postcode'] = '';
+    } else {
+        // For other countries, validate that postcode is provided
+        $postcode = sanitize_text_field( $_POST['billing_postcode'] ?? '' );
+        if ( empty( $postcode ) ) {
+            wc_add_notice( __( 'Postal code is required.', 'primefit' ), 'error' );
+        }
     }
     
     // Validate phone number - now required

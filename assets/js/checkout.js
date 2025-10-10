@@ -90,6 +90,12 @@
       };
 
       markWooClasses();
+      
+      // Initial check for billing_state placeholder
+      const $billingState = $("#billing_state");
+      if ($billingState.is("input[type='text']") && !$billingState.attr("placeholder")) {
+        $billingState.attr("placeholder", "State / County *");
+      }
 
       let updateTimeout = null;
       const debouncedUpdate = function () {
@@ -108,6 +114,22 @@
 
       $(document.body).on("updated_checkout", function () {
         markWooClasses();
+        
+        // Fix billing_state placeholder when it becomes a text input
+        const $billingState = $("#billing_state");
+        if ($billingState.is("input[type='text']") && !$billingState.attr("placeholder")) {
+          $billingState.attr("placeholder", "State / County *");
+        }
+        
+        // Ensure county dropdown is properly updated after country change
+        const $countrySelect = $("#billing_country");
+        const $stateSelect = $("#billing_state");
+        if ($countrySelect.length && $stateSelect.length) {
+          // Re-apply WooCommerce classes to ensure proper functionality
+          $countrySelect.addClass("country_to_state");
+          $stateSelect.addClass("state_select");
+        }
+        
         // Sync our visible totals from Woo's review table
         try {
           CheckoutManager.syncOrderTotalsFromReview();
@@ -1376,6 +1398,8 @@
       const toggleFields = function () {
         const selectedCountry = $countrySelect.val();
         const shouldHide = hiddenCountries.includes(selectedCountry);
+        const $postcodeInput = $("#billing_postcode");
+        const $postcodeWrapper = $postcodeField.find(".optional-field-wrapper");
 
         if (shouldHide) {
           $address2Field.slideUp(300);
@@ -1383,9 +1407,16 @@
           // Clear the field values when hiding
           $("#billing_address_2").val("");
           $("#billing_postcode").val("");
+          // Remove required attribute when hidden
+          $postcodeInput.removeAttr("required");
         } else {
           $address2Field.slideDown(300);
           $postcodeField.slideDown(300);
+          // Make postcode required when visible
+          $postcodeInput.attr("required", "required");
+          // Update placeholder and remove optional text
+          $postcodeInput.attr("placeholder", "Postal code *");
+          $postcodeWrapper.find(".optional-text").text("(required)");
         }
       };
 

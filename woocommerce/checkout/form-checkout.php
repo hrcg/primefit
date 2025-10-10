@@ -178,12 +178,19 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 									<?php
 									$selected_state = $checkout->get_value( 'billing_state' );
 									$selected_country = $checkout->get_value( 'billing_country' );
-									if ( $selected_country ) {
+									
+									// If no country is selected, show a message
+									if ( ! $selected_country ) {
+										echo '<option value="" disabled>Please select a country first</option>';
+									} else {
 										$states = WC()->countries->get_states( $selected_country );
 										if ( $states ) {
 											foreach ( $states as $code => $name ) {
 												echo '<option value="' . esc_attr( $code ) . '"' . selected( $selected_state, $code, false ) . '>' . esc_html( $name ) . '</option>';
 											}
+										} else {
+											// Country has no predefined states, this will be converted to text input by WooCommerce
+											echo '<option value="" disabled>This country has no predefined counties</option>';
 										}
 									}
 									?>
@@ -192,8 +199,8 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 							
 							<div class="form-row form-row-first" id="billing_postcode_field">
 								<div class="optional-field-wrapper">
-									<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" />
-									<span class="optional-text">(optional)</span>
+									<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code *" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" required />
+									<span class="optional-text">(required)</span>
 								</div>
 							</div>
 							

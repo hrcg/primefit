@@ -389,12 +389,23 @@
   height: 80px;
   overflow: hidden;
   flex-shrink: 0;
+  /* iOS Safari scroll flickering prevention */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: auto;
 }
 
 .item-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* iOS Safari scroll flickering prevention */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .item-quantity {
@@ -910,6 +921,155 @@
   margin-top: 4px;
   display: block;
   margin-bottom: 2px;
+}
+
+/* ==========================================================================
+   Select2 Dropdown Styling
+   ========================================================================== */
+
+/* Select2 container styling */
+.select2-container {
+  width: 100% !important;
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: var(--checkout-text);
+  background: var(--checkout-input-bg);
+  border: 1px solid var(--checkout-input-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.select2-container--default .select2-selection--single {
+  height: 48px;
+  border: none;
+  background: transparent;
+  outline: none;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: var(--checkout-text);
+  line-height: 48px;
+  padding: 0;
+  width: 100%;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+  color: var(--checkout-text-light);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 46px;
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+  border-color: var(--checkout-text) transparent transparent transparent;
+  border-style: solid;
+  border-width: 5px 4px 0 4px;
+  height: 0;
+  left: 50%;
+  margin-left: -4px;
+  margin-top: -2px;
+  position: absolute;
+  top: 50%;
+  width: 0;
+}
+
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+  border-color: transparent transparent var(--checkout-text) transparent;
+  border-width: 0 4px 5px 4px;
+}
+
+/* Select2 dropdown styling */
+.select2-dropdown {
+  background: var(--checkout-dropdown-bg);
+  border: 1px solid var(--checkout-input-border);
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  left: -100000px;
+  width: 100%;
+  z-index: 1051;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.select2-container--open .select2-dropdown {
+  left: 0;
+}
+
+.select2-search--dropdown {
+  display: block;
+  padding: 4px;
+}
+
+.select2-search--dropdown .select2-search__field {
+  padding: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--checkout-input-border);
+  border-radius: 4px;
+  background: var(--checkout-input-bg);
+  color: var(--checkout-text);
+  font-size: 14px;
+}
+
+.select2-search--dropdown .select2-search__field:focus {
+  outline: none;
+  border-color: var(--checkout-input-focus-border);
+}
+
+.select2-results {
+  display: block;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.select2-results__options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.select2-results__option {
+  padding: 8px 12px;
+  user-select: none;
+  cursor: pointer;
+  color: var(--checkout-dropdown-text);
+  background: var(--checkout-dropdown-bg);
+  border-bottom: 1px solid var(--checkout-border);
+}
+
+.select2-results__option:last-child {
+  border-bottom: none;
+}
+
+.select2-results__option--highlighted {
+  background: var(--checkout-dropdown-hover);
+  color: var(--checkout-text);
+}
+
+.select2-results__option[aria-selected="true"] {
+  background: var(--checkout-dropdown-selected);
+  color: var(--checkout-text);
+}
+
+/* Focus states */
+.select2-container--default.select2-container--focus .select2-selection--single {
+  border-color: var(--checkout-input-focus-border);
 }
 
 /* ==========================================================================
