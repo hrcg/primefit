@@ -175,10 +175,12 @@ function primefit_create_coupon_reset_tracking_table() {
 }
 
 /**
- * Track discount code usage when order is completed
+ * Track discount code usage when order is completed or processing
  * FIXED: Added comprehensive error handling and validation
+ * FIXED: Added hook for processing status to track savings on all orders
  */
 add_action( 'woocommerce_order_status_completed', 'primefit_track_discount_usage', 10, 1 );
+add_action( 'woocommerce_order_status_processing', 'primefit_track_discount_usage', 10, 1 );
 function primefit_track_discount_usage( $order_id ) {
 	// Validate order ID
 	if ( empty( $order_id ) || ! is_numeric( $order_id ) ) {
@@ -218,6 +220,18 @@ function primefit_track_discount_usage( $order_id ) {
 			$coupon = new WC_Coupon( $coupon_code );
 
 			if ( ! $coupon || ! $coupon->get_id() ) {
+				continue;
+			}
+
+			// Check if this coupon usage for this order is already tracked (prevent duplicates)
+			$existing_record = $wpdb->get_var( $wpdb->prepare(
+				"SELECT id FROM $table_name WHERE order_id = %d AND coupon_code = %s LIMIT 1",
+				$order_id,
+				$coupon_code
+			) );
+
+			// Skip if already tracked
+			if ( $existing_record ) {
 				continue;
 			}
 

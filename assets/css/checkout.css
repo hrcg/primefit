@@ -117,7 +117,7 @@
 /* Desktop layout - use grid to control positioning */
 @media (min-width: 1025px) {
   .checkout-layout {
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr 500px;
     grid-template-rows: auto auto;
     grid-template-areas:
       "form summary"
@@ -157,7 +157,6 @@
 
 /* Right column - Order summary */
 .checkout-summary-section {
-  width: 500px;
   background: var(--checkout-summary-bg);
   border-left: 1px solid var(--checkout-border);
   padding: 20x;
@@ -410,7 +409,7 @@
   position: absolute;
   top: -2px;
   right: -2px;
-  color:  var(--checkout-button-bg);
+  color: var(--checkout-button-bg);
   width: 20px;
   height: 20px;
   display: flex;
@@ -951,18 +950,24 @@
   cursor: pointer;
 }
 
-.select2-container--default .select2-selection--single .select2-selection__rendered {
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__rendered {
   color: var(--checkout-text);
   line-height: 48px;
   padding: 0;
   width: 100%;
 }
 
-.select2-container--default .select2-selection--single .select2-selection__placeholder {
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__placeholder {
   color: var(--checkout-text-light);
 }
 
-.select2-container--default .select2-selection--single .select2-selection__arrow {
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow {
   height: 46px;
   position: absolute;
   top: 1px;
@@ -973,7 +978,10 @@
   justify-content: center;
 }
 
-.select2-container--default .select2-selection--single .select2-selection__arrow b {
+.select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow
+  b {
   border-color: var(--checkout-text) transparent transparent transparent;
   border-style: solid;
   border-width: 5px 4px 0 4px;
@@ -986,7 +994,10 @@
   width: 0;
 }
 
-.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+.select2-container--default.select2-container--open
+  .select2-selection--single
+  .select2-selection__arrow
+  b {
   border-color: transparent transparent var(--checkout-text) transparent;
   border-width: 0 4px 5px 4px;
 }
@@ -1066,7 +1077,8 @@
 }
 
 /* Focus states */
-.select2-container--default.select2-container--focus .select2-selection--single {
+.select2-container--default.select2-container--focus
+  .select2-selection--single {
   border-color: var(--checkout-input-focus-border);
 }
 
@@ -1255,7 +1267,7 @@
 
 .woocommerce-checkout .payment_methods li .payment_method.selected {
   border-color: var(--checkout-input-focus-border);
-  background: var(--checkout-dropdown-selected);
+  background: transparent;
 }
 
 /* Ensure checkmark appears for selected payment method */
@@ -1385,7 +1397,6 @@
   margin: 0;
   padding: 0;
 }
-
 
 /* Payment method badge */
 .payment-method-badge {
@@ -1551,7 +1562,6 @@
     font-size: 13px;
   }
 
-
   .payment-method-badge {
     font-size: 9px;
     padding: 3px 6px;
@@ -1607,7 +1617,6 @@
   .payment-method-description {
     font-size: 12px;
   }
-
 
   .payment-method-badge {
     font-size: 8px;
@@ -1700,10 +1709,9 @@
   overflow: hidden;
 }
 
-
 .woocommerce-checkout .payment_methods li .payment_method.selected {
   border-color: var(--checkout-input-focus-border);
-  background: var(--checkout-dropdown-selected);
+  background: transparent;
 }
 
 /* Ensure checkmark appears for selected payment method */
@@ -1785,7 +1793,6 @@
   outline: none;
 }
 
-
 /* Browser-specific dropdown styling */
 select::-ms-expand {
   display: none;
@@ -1852,7 +1859,7 @@ body.woocommerce-checkout
   li
   .payment_method.selected {
   border-color: var(--checkout-input-focus-border) !important;
-  background: var(--checkout-dropdown-selected) !important;
+  background: transparent !important;
 }
 
 /* Ensure payment method labels maintain styling */

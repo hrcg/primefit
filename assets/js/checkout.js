@@ -90,10 +90,13 @@
       };
 
       markWooClasses();
-      
+
       // Initial check for billing_state placeholder
       const $billingState = $("#billing_state");
-      if ($billingState.is("input[type='text']") && !$billingState.attr("placeholder")) {
+      if (
+        $billingState.is("input[type='text']") &&
+        !$billingState.attr("placeholder")
+      ) {
         $billingState.attr("placeholder", "State / County *");
       }
 
@@ -114,13 +117,16 @@
 
       $(document.body).on("updated_checkout", function () {
         markWooClasses();
-        
+
         // Fix billing_state placeholder when it becomes a text input
         const $billingState = $("#billing_state");
-        if ($billingState.is("input[type='text']") && !$billingState.attr("placeholder")) {
+        if (
+          $billingState.is("input[type='text']") &&
+          !$billingState.attr("placeholder")
+        ) {
           $billingState.attr("placeholder", "State / County *");
         }
-        
+
         // Ensure county dropdown is properly updated after country change
         const $countrySelect = $("#billing_country");
         const $stateSelect = $("#billing_state");
@@ -129,12 +135,12 @@
           $countrySelect.addClass("country_to_state");
           $stateSelect.addClass("state_select");
         }
-        
+
         // Sync our visible totals from Woo's review table
         try {
           CheckoutManager.syncOrderTotalsFromReview();
         } catch (e) {}
-        
+
         // Trigger cart fragments refresh to update mini cart (especially shipping progress bar)
         // when shipping costs change due to country/address updates
         if (typeof CartManager !== "undefined" && CartManager.queueRefresh) {
@@ -166,8 +172,10 @@
       );
 
       // Prefer the last .amount inside each cell if multiple
-      const subtotalHtml = $subtotal.find(".amount").last().html() || $subtotal.last().html();
-      const totalHtml = $total.find(".amount").last().html() || $total.last().html();
+      const subtotalHtml =
+        $subtotal.find(".amount").last().html() || $subtotal.last().html();
+      const totalHtml =
+        $total.find(".amount").last().html() || $total.last().html();
 
       if (subtotalHtml) {
         $(".order-totals .total-line:contains('Subtotal') .total-value").html(
@@ -655,9 +663,11 @@
       );
 
       // Check if any payment methods need enhancement
-      const $unenhanedItems = $currentPaymentMethods.find("li").filter(function() {
-        return !$(this).find(".payment_method").length;
-      });
+      const $unenhanedItems = $currentPaymentMethods
+        .find("li")
+        .filter(function () {
+          return !$(this).find(".payment_method").length;
+        });
 
       // If there are unenhanced items, enhance them (even if Stripe is present)
       if ($unenhanedItems.length > 0) {
@@ -749,8 +759,10 @@
             );
             $paymentContent.css("position", "relative");
 
+            // Preserve the original radio element and its event handlers
+            const $originalRadio = $radio.clone(true);
             $label.empty();
-            $label.append($radio);
+            $label.append($originalRadio);
             $label.append($paymentContent);
 
             if ($paymentBox.length) {
@@ -763,7 +775,6 @@
       // Execute all enhancements in a single batch
       enhancements.forEach((enhancement) => enhancement());
     },
-
 
     /**
      * Add payment method badges - optimized batched operations
@@ -778,7 +789,10 @@
         const $paymentMethodTitle = $li.find(".payment-method-title");
         const title = $paymentMethodTitle.text().toLowerCase();
 
-        if (!$li.find(".payment-method-badge").length && $paymentMethodTitle.length) {
+        if (
+          !$li.find(".payment-method-badge").length &&
+          $paymentMethodTitle.length
+        ) {
           if (title.includes("cash") || title.includes("delivery")) {
             badgeOperations.push(() => {
               $paymentMethodTitle.after(
@@ -809,43 +823,80 @@
     initPaymentMethodInteractions: function () {
       // Use event delegation with more specific targeting
       $(document).off("click.paymentMethodClick");
-      $(document).on("click.paymentMethodClick", ".woocommerce-checkout .payment_methods li", function (e) {
-        // Don't intercept if clicking directly on the radio or links
-        if ($(e.target).is('input[type="radio"], a')) {
-          return;
-        }
+      $(document).on(
+        "click.paymentMethodClick",
+        ".woocommerce-checkout .payment_methods li",
+        function (e) {
+          // Don't intercept if clicking directly on the radio or links
+          if ($(e.target).is('input[type="radio"], a')) {
+            return;
+          }
 
-        const $li = $(this);
-        const $radio = $li.find('input[type="radio"]').first();
+          const $li = $(this);
+          const $radio = $li.find('input[type="radio"]').first();
 
-        if ($radio.length && !$radio.is(":checked")) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          // Manually check the radio and trigger change
-          $radio.prop("checked", true);
-          $radio.trigger("change");
-          
-          // Also trigger WooCommerce's payment method change
-          $(document.body).trigger("payment_method_selected");
+          if ($radio.length) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Always activate the payment method when clicked
+            // This ensures clicking on the li container properly activates the payment method
+            const wasChecked = $radio.is(":checked");
+
+            // Ensure the radio is checked
+            $radio.prop("checked", true);
+            $radio[0].checked = true;
+
+            // Always trigger activation events for payment gateways
+            // This ensures gateways like Stripe load their iframes even if already selected
+
+            // Trigger native click for immediate activation
+            $radio[0].click();
+
+            // Trigger change event
+            $radio.trigger("change");
+
+            // Trigger WooCommerce's payment method selection event
+            $(document.body).trigger("payment_method_selected");
+
+            // Additional activation triggers for better compatibility
+            setTimeout(() => {
+              $(document.body).trigger("payment_method_selected");
+              // Force another click if needed for stubborn gateways
+              if ($radio.is(":checked")) {
+                $radio[0].click();
+              }
+            }, 10);
+
+            // Extra trigger for gateways that need it (like Stripe)
+            setTimeout(() => {
+              $(document.body).trigger("payment_method_selected");
+            }, 100);
+          }
         }
-      });
+      );
 
       // Handle radio change to add selected class
       $(document).off("change.paymentMethodChange");
-      $(document).on("change.paymentMethodChange", ".woocommerce-checkout .payment_methods input[type='radio']", function () {
-        const $radio = $(this);
-        const $li = $radio.closest("li");
-        const $paymentMethod = $li.find(".payment_method");
+      $(document).on(
+        "change.paymentMethodChange",
+        ".woocommerce-checkout .payment_methods input[type='radio']",
+        function () {
+          const $radio = $(this);
+          const $li = $radio.closest("li");
+          const $paymentMethod = $li.find(".payment_method");
 
-        // Remove selected from all payment methods
-        $(".woocommerce-checkout .payment_methods .payment_method").removeClass("selected");
+          // Remove selected from all payment methods
+          $(
+            ".woocommerce-checkout .payment_methods .payment_method"
+          ).removeClass("selected");
 
-        // Add selected to the checked one
-        if ($radio.is(":checked")) {
-          $paymentMethod.addClass("selected");
+          // Add selected to the checked one
+          if ($radio.is(":checked")) {
+            $paymentMethod.addClass("selected");
+          }
         }
-      });
+      );
 
       // Auto-select the first payment method
       const $firstPaymentMethod = $(
@@ -928,24 +979,50 @@
         // Minimal core prefixes - only most commonly used countries (lazy-loaded)
         corePrefixes: {
           // North America
-          US: "+1", CA: "+1",
+          US: "+1",
+          CA: "+1",
           // Europe (top 10 by population)
-          DE: "+49", GB: "+44", FR: "+33", IT: "+39", ES: "+34",
-          TR: "+90", RU: "+7", PL: "+48", UA: "+380", NL: "+31",
+          DE: "+49",
+          GB: "+44",
+          FR: "+33",
+          IT: "+39",
+          ES: "+34",
+          TR: "+90",
+          RU: "+7",
+          PL: "+48",
+          UA: "+380",
+          NL: "+31",
           AT: "+43",
           // Asia-Pacific (top 10)
-          CN: "+86", IN: "+91", JP: "+81", KR: "+82", ID: "+62",
-          PH: "+63", VN: "+84", TH: "+66", MY: "+60", SG: "+65",
+          CN: "+86",
+          IN: "+91",
+          JP: "+81",
+          KR: "+82",
+          ID: "+62",
+          PH: "+63",
+          VN: "+84",
+          TH: "+66",
+          MY: "+60",
+          SG: "+65",
           // South America (top 5)
-          BR: "+55", AR: "+54", CO: "+57", PE: "+51", VE: "+58",
+          BR: "+55",
+          AR: "+54",
+          CO: "+57",
+          PE: "+51",
+          VE: "+58",
           // Africa (top 5)
-          NG: "+234", EG: "+20", ZA: "+27", DZ: "+213", MA: "+212",
+          NG: "+234",
+          EG: "+20",
+          ZA: "+27",
+          DZ: "+213",
+          MA: "+212",
           // Oceania
-          AU: "+61", NZ: "+64",
+          AU: "+61",
+          NZ: "+64",
         },
 
         // Lazy load additional regions on demand
-        loadRegion: function(regionCode) {
+        loadRegion: function (regionCode) {
           if (this.loadedRegions.has(regionCode)) {
             return Promise.resolve(this.corePrefixes);
           }
@@ -966,32 +1043,84 @@
         },
 
         // Get region-specific prefixes (example implementation)
-        getRegionPrefixes: function(regionCode) {
+        getRegionPrefixes: function (regionCode) {
           const regions = {
             europe: {
-              BE: "+32", CH: "+41", AT: "+43", SE: "+46", NO: "+47",
-              DK: "+45", FI: "+358", CZ: "+420", HU: "+36", RO: "+40",
-              BG: "+359", HR: "+385", SI: "+386", SK: "+421", LT: "+370",
-              LV: "+371", EE: "+372", IE: "+353", PT: "+351", GR: "+30",
+              BE: "+32",
+              CH: "+41",
+              AT: "+43",
+              SE: "+46",
+              NO: "+47",
+              DK: "+45",
+              FI: "+358",
+              CZ: "+420",
+              HU: "+36",
+              RO: "+40",
+              BG: "+359",
+              HR: "+385",
+              SI: "+386",
+              SK: "+421",
+              LT: "+370",
+              LV: "+371",
+              EE: "+372",
+              IE: "+353",
+              PT: "+351",
+              GR: "+30",
               AL: "+355", // Albania
               XK: "+383", // Kosovo
               MK: "+389", // North Macedonia
             },
             africa: {
-              KE: "+254", UG: "+256", TZ: "+255", GH: "+233", CI: "+225",
-              SN: "+221", ML: "+223", BF: "+226", NE: "+227", TD: "+235",
+              KE: "+254",
+              UG: "+256",
+              TZ: "+255",
+              GH: "+233",
+              CI: "+225",
+              SN: "+221",
+              ML: "+223",
+              BF: "+226",
+              NE: "+227",
+              TD: "+235",
             },
             asia: {
-              TW: "+886", HK: "+852", MO: "+853", KH: "+855", LA: "+856",
-              MM: "+95", BD: "+880", LK: "+94", MV: "+960", BT: "+975",
-              NP: "+977", PK: "+92", AF: "+93", IR: "+98", IQ: "+964",
+              TW: "+886",
+              HK: "+852",
+              MO: "+853",
+              KH: "+855",
+              LA: "+856",
+              MM: "+95",
+              BD: "+880",
+              LK: "+94",
+              MV: "+960",
+              BT: "+975",
+              NP: "+977",
+              PK: "+92",
+              AF: "+93",
+              IR: "+98",
+              IQ: "+964",
             },
             americas: {
-              MX: "+52", GT: "+502", BZ: "+501", SV: "+503", HN: "+504",
-              NI: "+505", CR: "+506", PA: "+507", CU: "+53", JM: "+1876",
-              HT: "+509", DO: "+1809", PR: "+1787", CL: "+56", UY: "+598",
-              PY: "+595", BO: "+591", EC: "+593", GY: "+592", SR: "+597",
-            }
+              MX: "+52",
+              GT: "+502",
+              BZ: "+501",
+              SV: "+503",
+              HN: "+504",
+              NI: "+505",
+              CR: "+506",
+              PA: "+507",
+              CU: "+53",
+              JM: "+1876",
+              HT: "+509",
+              DO: "+1809",
+              PR: "+1787",
+              CL: "+56",
+              UY: "+598",
+              PY: "+595",
+              BO: "+591",
+              EC: "+593",
+              GY: "+592",
+              SR: "+597",
+            },
           };
 
           return regions[regionCode] || {};
@@ -1029,29 +1158,81 @@
         },
 
         // Determine which region a country belongs to for lazy loading
-        getCountryRegion: function(countryCode) {
+        getCountryRegion: function (countryCode) {
           // Simple region mapping - in production, this could be more sophisticated
           const regionMap = {
             // Europe
-            BE: 'europe', CH: 'europe', AT: 'europe', SE: 'europe', NO: 'europe',
-            DK: 'europe', FI: 'europe', CZ: 'europe', HU: 'europe', RO: 'europe',
-            BG: 'europe', HR: 'europe', SI: 'europe', SK: 'europe', LT: 'europe',
-            LV: 'europe', EE: 'europe', IE: 'europe', PT: 'europe', GR: 'europe',
-            AL: 'europe', // Albania
-            XK: 'europe', // Kosovo
-            MK: 'europe', // North Macedonia
+            BE: "europe",
+            CH: "europe",
+            AT: "europe",
+            SE: "europe",
+            NO: "europe",
+            DK: "europe",
+            FI: "europe",
+            CZ: "europe",
+            HU: "europe",
+            RO: "europe",
+            BG: "europe",
+            HR: "europe",
+            SI: "europe",
+            SK: "europe",
+            LT: "europe",
+            LV: "europe",
+            EE: "europe",
+            IE: "europe",
+            PT: "europe",
+            GR: "europe",
+            AL: "europe", // Albania
+            XK: "europe", // Kosovo
+            MK: "europe", // North Macedonia
             // Africa
-            KE: 'africa', UG: 'africa', TZ: 'africa', GH: 'africa', CI: 'africa',
-            SN: 'africa', ML: 'africa', BF: 'africa', NE: 'africa', TD: 'africa',
+            KE: "africa",
+            UG: "africa",
+            TZ: "africa",
+            GH: "africa",
+            CI: "africa",
+            SN: "africa",
+            ML: "africa",
+            BF: "africa",
+            NE: "africa",
+            TD: "africa",
             // Asia
-            TW: 'asia', HK: 'asia', MO: 'asia', KH: 'asia', LA: 'asia',
-            MM: 'asia', BD: 'asia', LK: 'asia', MV: 'asia', BT: 'asia',
-            NP: 'asia', PK: 'asia', AF: 'asia', IR: 'asia', IQ: 'asia',
+            TW: "asia",
+            HK: "asia",
+            MO: "asia",
+            KH: "asia",
+            LA: "asia",
+            MM: "asia",
+            BD: "asia",
+            LK: "asia",
+            MV: "asia",
+            BT: "asia",
+            NP: "asia",
+            PK: "asia",
+            AF: "asia",
+            IR: "asia",
+            IQ: "asia",
             // Americas
-            MX: 'americas', GT: 'americas', BZ: 'americas', SV: 'americas', HN: 'americas',
-            NI: 'americas', CR: 'americas', PA: 'americas', CU: 'americas', JM: 'americas',
-            HT: 'americas', DO: 'americas', PR: 'americas', CL: 'americas', UY: 'americas',
-            PY: 'americas', BO: 'americas', EC: 'americas', GY: 'americas', SR: 'americas',
+            MX: "americas",
+            GT: "americas",
+            BZ: "americas",
+            SV: "americas",
+            HN: "americas",
+            NI: "americas",
+            CR: "americas",
+            PA: "americas",
+            CU: "americas",
+            JM: "americas",
+            HT: "americas",
+            DO: "americas",
+            PR: "americas",
+            CL: "americas",
+            UY: "americas",
+            PY: "americas",
+            BO: "americas",
+            EC: "americas",
+            GY: "americas",
+            SR: "americas",
           };
 
           return regionMap[countryCode];
@@ -1435,12 +1616,20 @@
       // Listen for WooCommerce checkout updates
       $(document.body).on("updated_checkout", () => {
         this.processFieldErrors(fieldMapping);
+        this.handleCouponErrors(); // Handle coupon-specific errors
+
+        // Re-initialize payment method interactions after checkout update
+        // This ensures our click handlers work even after WooCommerce refreshes the payment methods
+        setTimeout(() => {
+          this.initPaymentMethodInteractions();
+        }, 100);
       });
 
       // Listen for form validation errors
       $(document.body).on("checkout_error", () => {
         setTimeout(() => {
           this.processFieldErrors(fieldMapping);
+          this.handleCouponErrors(); // Handle coupon-specific errors
         }, 100);
       });
     },
@@ -1537,47 +1726,80 @@
     },
 
     /**
+     * Handle coupon-specific errors from WooCommerce notices
+     */
+    handleCouponErrors: function () {
+      const $errorBanner = $(
+        ".woocommerce-error, .woocommerce-NoticeGroup-checkout .woocommerce-error"
+      );
+
+      if (!$errorBanner.length) {
+        return;
+      }
+
+      // Process each error message
+      const $errorItems = $errorBanner.find("li");
+      for (const errorElement of $errorItems) {
+        const $errorItem = $(errorElement);
+        const errorText = $errorItem.text().trim();
+        const lowerErrorText = errorText.toLowerCase();
+
+        // Check if this is a coupon-related error
+        const isCouponError =
+          lowerErrorText.includes("coupon") ||
+          lowerErrorText.includes("discount code");
+
+        // Check if this is a usage limit error
+        const isUsageLimitError =
+          lowerErrorText.includes("usage limit") ||
+          lowerErrorText.includes("has been reached") ||
+          lowerErrorText.includes("maximum usage");
+
+        // Show toast notification for coupon errors
+        if (isCouponError && typeof ToastNotification !== "undefined") {
+          if (isUsageLimitError) {
+            // Show error toast for usage limit
+            ToastNotification.error(errorText, {
+              duration: 6000,
+              position: "top-right",
+            });
+
+            // Show follow-up toast prompting to remove the coupon
+            setTimeout(() => {
+              ToastNotification.warning(
+                "Please remove this coupon code to continue",
+                {
+                  duration: 5000,
+                  position: "top-right",
+                }
+              );
+            }, 500);
+          } else {
+            // Show regular error toast for other coupon errors
+            ToastNotification.error(errorText, {
+              duration: 5000,
+              position: "top-right",
+            });
+          }
+        }
+      }
+    },
+
+    /**
      * Override WooCommerce's default checkout processing
      * Replace the white overlay with our custom dark theme overlay
      */
     overrideCheckoutProcessing: function () {
-      // Listen for checkout form submission
-      $(document.body).on("submit", ".woocommerce-checkout form", function (e) {
-        // Show our custom processing indicator
+      // Show loading indicator when checkout processing starts
+      $(document.body).on("checkout_place_order", function () {
         CheckoutManager.showCustomProcessingIndicator();
+        // Return true to allow the checkout to proceed
+        return true;
+      });
 
-        // Prevent the default WooCommerce blockUI overlay
-        e.preventDefault();
-
-        // Submit the form via AJAX to avoid the white overlay
-        const formData = new FormData(this);
-        formData.append("action", "woocommerce_checkout");
-        formData.append("security", wc_checkout_params.checkout_nonce);
-
-        $.ajax({
-          url: wc_checkout_params.ajax_url,
-          type: "POST",
-          data: formData,
-          processData: false,
-          contentType: false,
-          success: function (response) {
-            if (response.result === "success") {
-              // Redirect to success page
-              window.location.href = response.redirect;
-            } else {
-              // Show errors
-              CheckoutManager.hideCustomProcessingIndicator();
-              $(".woocommerce-error").remove();
-              $(".woocommerce-notices-wrapper").prepend(response.messages);
-            }
-          },
-          error: function () {
-            CheckoutManager.hideCustomProcessingIndicator();
-            alert(
-              "There was an error processing your order. Please try again."
-            );
-          },
-        });
+      // Hide loading indicator when there's an error
+      $(document.body).on("checkout_error", function () {
+        CheckoutManager.hideCustomProcessingIndicator();
       });
     },
 
@@ -1585,6 +1807,12 @@
      * Show custom processing indicator
      */
     showCustomProcessingIndicator: function () {
+      // Remove any existing indicators first
+      $(
+        ".checkout-processing-backdrop, .checkout-processing-indicator"
+      ).remove();
+
+      const backdrop = '<div class="checkout-processing-backdrop"></div>';
       const indicator = `
         <div class="checkout-processing-indicator">
           <div class="spinner"></div>
@@ -1592,7 +1820,7 @@
         </div>
       `;
 
-      $("body").append(indicator);
+      $("body").append(backdrop + indicator);
       $("body").addClass("checkout-processing");
     },
 
@@ -1600,7 +1828,9 @@
      * Hide custom processing indicator
      */
     hideCustomProcessingIndicator: function () {
-      $(".checkout-processing-indicator").remove();
+      $(
+        ".checkout-processing-backdrop, .checkout-processing-indicator"
+      ).remove();
       $("body").removeClass("checkout-processing");
     },
 
@@ -1673,6 +1903,107 @@
         // Required elements not found
       }
     },
+
+    /**
+     * Test function for payment method selection
+     * Can be called from browser console: CheckoutManager.testPaymentMethodSelection()
+     */
+    testPaymentMethodSelection: function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
+
+      if ($paymentMethods.length > 0) {
+        // Test clicking on the first payment method
+        const $firstPaymentMethod = $paymentMethods.first();
+        const $radio = $firstPaymentMethod.find('input[type="radio"]').first();
+        const $paymentMethodContainer =
+          $firstPaymentMethod.find(".payment_method");
+
+        if ($radio.length) {
+          console.log("Testing payment method selection...");
+          console.log("Radio checked before click:", $radio.is(":checked"));
+          console.log(
+            "Payment method selected before click:",
+            $paymentMethodContainer.hasClass("selected")
+          );
+
+          // Simulate click on the li element
+          $firstPaymentMethod.click();
+
+          setTimeout(() => {
+            console.log("Radio checked after click:", $radio.is(":checked"));
+            console.log(
+              "Payment method selected after click:",
+              $paymentMethodContainer.hasClass("selected")
+            );
+
+            // Check if payment gateway elements exist (like Stripe iframe containers)
+            const $paymentBoxes = $firstPaymentMethod.find(".payment_box");
+            console.log("Payment boxes found:", $paymentBoxes.length);
+
+            // Check for specific gateway elements
+            const $stripeElements = $firstPaymentMethod.find(
+              '[id*="stripe"], [class*="stripe"]'
+            );
+            console.log("Stripe elements found:", $stripeElements.length);
+
+            console.log("Payment method selection test complete");
+          }, 150);
+        } else {
+          console.log("No radio button found in payment method");
+        }
+      } else {
+        console.log("No payment methods found");
+      }
+    },
+
+    /**
+     * Test function for switching between payment methods
+     * Can be called from browser console: CheckoutManager.testPaymentMethodSwitching()
+     */
+    testPaymentMethodSwitching: function () {
+      const $paymentMethods = $(".woocommerce-checkout .payment_methods li");
+
+      if ($paymentMethods.length > 1) {
+        const $firstPaymentMethod = $paymentMethods.first();
+        const $secondPaymentMethod = $paymentMethods.eq(1);
+
+        console.log("Testing payment method switching...");
+
+        // Click on first payment method
+        $firstPaymentMethod.click();
+
+        setTimeout(() => {
+          console.log("After clicking first payment method:");
+          console.log(
+            "- First radio checked:",
+            $firstPaymentMethod.find('input[type="radio"]').is(":checked")
+          );
+          console.log(
+            "- Second radio checked:",
+            $secondPaymentMethod.find('input[type="radio"]').is(":checked")
+          );
+
+          // Click on second payment method
+          $secondPaymentMethod.click();
+
+          setTimeout(() => {
+            console.log("After clicking second payment method:");
+            console.log(
+              "- First radio checked:",
+              $firstPaymentMethod.find('input[type="radio"]').is(":checked")
+            );
+            console.log(
+              "- Second radio checked:",
+              $secondPaymentMethod.find('input[type="radio"]').is(":checked")
+            );
+
+            console.log("Payment method switching test complete");
+          }, 150);
+        }, 150);
+      } else {
+        console.log("Need at least 2 payment methods for switching test");
+      }
+    },
   };
 
   // ----- Private helpers: safe checkout redirect when cart is empty -----
@@ -1731,12 +2062,14 @@
       $(document.body).on("updated_checkout", function () {
         // Check if any payment methods need enhancement
         const $paymentMethods = $(".woocommerce-checkout .payment_methods");
-        
+
         if ($paymentMethods.length) {
-          const $unenhanedItems = $paymentMethods.find("li").filter(function() {
-            return !$(this).find(".payment_method").length;
-          });
-          
+          const $unenhanedItems = $paymentMethods
+            .find("li")
+            .filter(function () {
+              return !$(this).find(".payment_method").length;
+            });
+
           // Only reinitialize if there are unenhanced items
           if ($unenhanedItems.length > 0) {
             CheckoutManager.isPaymentMethodsEnhanced = false;
@@ -1749,19 +2082,21 @@
       $(document.body).on("wc_fragments_refreshed", function () {
         // Check if any payment methods need enhancement
         const $paymentMethods = $(".woocommerce-checkout .payment_methods");
-        
+
         if ($paymentMethods.length) {
-          const $unenhanedItems = $paymentMethods.find("li").filter(function() {
-            return !$(this).find(".payment_method").length;
-          });
-          
+          const $unenhanedItems = $paymentMethods
+            .find("li")
+            .filter(function () {
+              return !$(this).find(".payment_method").length;
+            });
+
           // Only reinitialize if there are unenhanced items
           if ($unenhanedItems.length > 0) {
             CheckoutManager.isPaymentMethodsEnhanced = false;
             CheckoutManager.initPaymentMethodEnhancements();
           }
         }
-        
+
         // After fragments refresh, verify if cart became empty and redirect safely
         tryCheckoutRedirectIfCartEmpty();
       });
