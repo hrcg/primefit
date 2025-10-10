@@ -43,5 +43,30 @@
     } catch (e) {
       // Ignore if URL API not available
     }
+
+    // Header back button logic (for single product pages)
+    var backBtn = document.querySelector(".header-back-button");
+    if (backBtn) {
+      backBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        var homeUrl = backBtn.getAttribute("data-home-url") || "/";
+        var ref = document.referrer;
+        var isSameOriginReferrer = false;
+        if (ref) {
+          try {
+            var refUrl = new URL(ref);
+            isSameOriginReferrer = refUrl.origin === window.location.origin;
+          } catch (err) {
+            isSameOriginReferrer = false;
+          }
+        }
+
+        if (isSameOriginReferrer) {
+          window.history.back();
+        } else {
+          window.location.href = homeUrl;
+        }
+      });
+    }
   });
 })(jQuery);

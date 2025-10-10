@@ -91,12 +91,6 @@ $gallery_data = array(
 	<!-- Main Image Display -->
 	<div class="product-main-image">
 		<div class="main-image-wrapper">
-			<!-- Back Button -->
-			<button class="gallery-back-button" aria-label="<?php esc_attr_e( 'Go back', 'primefit' ); ?>" data-home-url="<?php echo esc_url( home_url( '/' ) ); ?>">
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-				</svg>
-			</button>
 			<?php
 			$main_attachment_id = $attachment_ids[0];
 
@@ -197,31 +191,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	const thumbnails = galleryContainer.querySelectorAll('.thumbnail-item');
 	const prevBtn = galleryContainer.querySelector('.image-nav-prev');
 	const nextBtn = galleryContainer.querySelector('.image-nav-next');
-	const backBtn = galleryContainer.querySelector('.gallery-back-button');
-
-	// Back button logic: if user came from a same-origin page, go back; else go home
-	if (backBtn) {
-		backBtn.addEventListener('click', function(e) {
-			e.preventDefault();
-			const homeUrl = backBtn.getAttribute('data-home-url') || '/';
-			const ref = document.referrer;
-			let isSameOriginReferrer = false;
-			if (ref) {
-				try {
-					const refUrl = new URL(ref);
-					isSameOriginReferrer = refUrl.origin === window.location.origin;
-				} catch (err) {
-					isSameOriginReferrer = false;
-				}
-			}
-
-			if (isSameOriginReferrer) {
-				window.history.back();
-			} else {
-				window.location.href = homeUrl;
-			}
-		});
-	}
 
 	// Gallery data from PHP
 	const galleryData = <?php echo json_encode( $gallery_data ); ?>;
@@ -652,6 +621,18 @@ document.addEventListener('DOMContentLoaded', function() {
 							<path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 					</button>
+					<div class="lightbox-controls">
+						<button class="lightbox-zoom-in" aria-label="Zoom in">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+						</button>
+						<button class="lightbox-zoom-out" aria-label="Zoom out">
+							<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
+						</button>
+					</div>
 					<div class="lightbox-image-container">
 						<img class="lightbox-image" src="" alt="" />
 					</div>
@@ -690,6 +671,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			// Show lightbox
 			lightbox.classList.add('active');
 			document.body.style.overflow = 'hidden';
+			document.body.style.position = 'fixed';
+			document.body.style.width = '100%';
 
 			// Focus management
 			lightbox.querySelector('.lightbox-close').focus();
@@ -698,6 +681,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		function closeLightbox() {
 			lightbox.classList.remove('active');
 			document.body.style.overflow = '';
+			document.body.style.position = '';
+			document.body.style.width = '';
 		}
 
 		function navigateLightbox(direction) {
@@ -737,47 +722,55 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Touch navigation and zoom for lightbox
 		let lightboxStartX = 0;
 		let lightboxStartY = 0;
-		let lastTapTime = 0;
 		let isZoomed = false;
 		let currentScale = 1;
 		let currentTranslateX = 0;
 		let currentTranslateY = 0;
-		let initialDistance = 0;
-		let initialScale = 1;
 
 		const lightboxImage = lightbox.querySelector('.lightbox-image');
 		const lightboxImageContainer = lightbox.querySelector('.lightbox-image-container');
+		const zoomInBtn = lightbox.querySelector('.lightbox-zoom-in');
+		const zoomOutBtn = lightbox.querySelector('.lightbox-zoom-out');
 
-		// Double tap to zoom functionality
-		lightboxImage.addEventListener('touchend', function(e) {
-			const currentTime = new Date().getTime();
-			const tapLength = currentTime - lastTapTime;
-			
-			if (tapLength < 500 && tapLength > 0) {
-				// Double tap detected
-				e.preventDefault();
-				toggleZoom();
-			}
-			
-			lastTapTime = currentTime;
-		}, { passive: false });
+		// Zoom button functionality
+		zoomInBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			zoomIn();
+		});
 
-		function toggleZoom() {
-			if (isZoomed) {
-				// Zoom out
-				resetZoom();
-			} else {
-				// Zoom in
-				zoomIn();
+		zoomOutBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			zoomOut();
+		});
+
+		function zoomIn() {
+			if (currentScale < 3) {
+				isZoomed = true;
+				currentScale = Math.min(currentScale + 0.5, 3);
+				lightboxImage.style.transform = `scale(${currentScale})`;
+				lightboxImage.style.transition = 'transform 0.3s ease';
+				lightboxImageContainer.style.overflow = 'auto';
+				updateZoomButtons();
 			}
 		}
 
-		function zoomIn() {
-			isZoomed = true;
-			currentScale = 2;
-			lightboxImage.style.transform = `scale(${currentScale})`;
-			lightboxImage.style.transition = 'transform 0.3s ease';
-			lightboxImageContainer.style.overflow = 'auto';
+		function zoomOut() {
+			if (currentScale > 1) {
+				currentScale = Math.max(currentScale - 0.5, 1);
+				lightboxImage.style.transform = `scale(${currentScale})`;
+				lightboxImage.style.transition = 'transform 0.3s ease';
+				
+				if (currentScale === 1) {
+					isZoomed = false;
+					currentTranslateX = 0;
+					currentTranslateY = 0;
+					lightboxImage.style.transform = 'scale(1) translate(0, 0)';
+					lightboxImageContainer.style.overflow = 'hidden';
+				}
+				updateZoomButtons();
+			}
 		}
 
 		function resetZoom() {
@@ -788,6 +781,12 @@ document.addEventListener('DOMContentLoaded', function() {
 			lightboxImage.style.transform = 'scale(1) translate(0, 0)';
 			lightboxImage.style.transition = 'transform 0.3s ease';
 			lightboxImageContainer.style.overflow = 'hidden';
+			updateZoomButtons();
+		}
+
+		function updateZoomButtons() {
+			zoomInBtn.style.opacity = currentScale >= 3 ? '0.5' : '1';
+			zoomOutBtn.style.opacity = currentScale <= 1 ? '0.5' : '1';
 		}
 
 		// Pan functionality when zoomed
@@ -820,23 +819,26 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		}, { passive: true });
 
-		// Swipe navigation (only when not zoomed)
+		// Swipe navigation (only when not zoomed and not on controls)
 		lightbox.addEventListener('touchstart', function(e) {
-			if (!isZoomed) {
+			// Only track swipe if not zoomed and not touching controls
+			if (!isZoomed && !e.target.closest('.lightbox-controls') && !e.target.closest('.lightbox-close')) {
 				lightboxStartX = e.touches[0].clientX;
 				lightboxStartY = e.touches[0].clientY;
 			}
 		}, { passive: true });
 
 		lightbox.addEventListener('touchend', function(e) {
-			if (!isZoomed && e.changedTouches && e.changedTouches.length) {
+			// Only handle swipe if not zoomed and not touching controls
+			if (!isZoomed && !e.target.closest('.lightbox-controls') && !e.target.closest('.lightbox-close') && e.changedTouches && e.changedTouches.length) {
 				const endX = e.changedTouches[0].clientX;
 				const endY = e.changedTouches[0].clientY;
 				const deltaX = endX - lightboxStartX;
 				const deltaY = endY - lightboxStartY;
 
-				// Only handle horizontal swipes when not zoomed
-				if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+				// Only handle horizontal swipes with sufficient distance
+				if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 80) {
+					e.preventDefault();
 					if (deltaX > 0) {
 						navigateLightbox('prev');
 					} else {
@@ -844,7 +846,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					}
 				}
 			}
-		}, { passive: true });
+		}, { passive: false });
 
 		// Handle window resize to disable lightbox on desktop
 		window.addEventListener('resize', function() {

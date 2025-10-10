@@ -25,6 +25,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="container">
 		<div class="header-inner">
 			<nav class="header-left" aria-label="Primary Menu">
+				<!-- Back Button (only visible on single product pages) -->
+				<button class="header-back-button" aria-label="<?php esc_attr_e( 'Go back', 'primefit' ); ?>" data-home-url="<?php echo esc_url( home_url( '/' ) ); ?>" style="display: none;">
+					<img src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/back-button.svg' ); ?>" alt="<?php esc_attr_e( 'Go back', 'primefit' ); ?>" class="back-button-icon">
+				</button>
+				<!-- Hamburger Menu -->
 				<button class="hamburger" aria-label="Open menu" aria-controls="mobile-nav" aria-expanded="false">
 					<span></span>
 					<span></span>

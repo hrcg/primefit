@@ -210,6 +210,43 @@
   -webkit-touch-callout: none;
 }
 
+/* Header Back Button */
+.header-back-button {
+  display: none;
+  position: relative;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.header-back-button .back-button-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: brightness(0) invert(1); /* Makes the SVG white */
+}
+
+/* Hide back button on desktop - only show on mobile */
+@media (min-width: 1025px) {
+  .header-back-button {
+    display: none !important;
+  }
+}
+
+/* Show back button on single product pages on mobile only, hide hamburger */
+@media (max-width: 1024px) {
+  body.single-product .header-back-button {
+    display: block !important;
+  }
+
+  body.single-product .hamburger {
+    display: none !important;
+  }
+}
+
 .hamburger span {
   height: 2px;
   background: #fff !important;
