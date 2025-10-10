@@ -1888,12 +1888,21 @@ input[type="search"] {
 }
 
 /* ========================================
-   HIDE IMAGE NAVIGATION ELEMENTS
+   IMAGE NAVIGATION ELEMENTS
    ======================================== */
 
-/* Hide image navigation arrows - keeping JS functionality intact */
+/* Show image navigation arrows on desktop, hide on mobile */
 .image-nav,
 .image-nav-prev,
 .image-nav-next {
-  display: none !important;
+  display: flex !important;
+}
+
+/* Hide image navigation arrows on mobile */
+@media (max-width: 768px) {
+  .image-nav,
+  .image-nav-prev,
+  .image-nav-next {
+    display: none !important;
+  }
 }

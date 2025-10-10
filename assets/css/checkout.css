@@ -667,6 +667,49 @@
   line-height: 1.4;
 }
 
+/* Optional field wrapper for positioning optional text */
+.optional-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Optional text styling */
+.optional-text {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--checkout-text-light);
+  pointer-events: none;
+  z-index: 5;
+  background: var(--checkout-input-bg);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+/* Ensure optional text doesn't interfere with input focus */
+.optional-field-wrapper input:focus + .optional-text,
+.optional-field-wrapper select:focus + .optional-text {
+  opacity: 0.7;
+}
+
+/* Ensure optional text has proper spacing from input content */
+.optional-field-wrapper input {
+  padding-right: 80px; /* Make space for optional text */
+}
+
+.optional-field-wrapper select {
+  padding-right: 80px; /* Make space for optional text */
+}
+
+/* Special handling for phone field to avoid conflict with help icon */
+.phone-field-with-help .optional-text {
+  right: 40px; /* Move left to avoid help icon */
+}
+
 /* Phone field with help icon inside */
 .phone-field-with-help {
   position: relative;
@@ -1434,6 +1477,36 @@
     padding: 2px 5px;
     top: 8px;
     right: 8px;
+  }
+
+  /* Mobile adjustments for optional text */
+  .optional-text {
+    font-size: 11px;
+    right: 8px;
+  }
+
+  .optional-field-wrapper input {
+    padding-right: 70px; /* Reduce space on mobile */
+  }
+
+  .optional-field-wrapper select {
+    padding-right: 70px; /* Reduce space on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small screen adjustments for optional text */
+  .optional-text {
+    font-size: 10px;
+    right: 6px;
+  }
+
+  .optional-field-wrapper input {
+    padding-right: 65px; /* Further reduce space on very small screens */
+  }
+
+  .optional-field-wrapper select {
+    padding-right: 65px; /* Further reduce space on very small screens */
   }
 }
 

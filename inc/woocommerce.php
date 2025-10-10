@@ -69,6 +69,11 @@ function primefit_customize_billing_fields( $fields ) {
         $fields['billing_phone']['required'] = true;
     }
     
+    // Make state field required
+    if ( isset( $fields['billing_state'] ) ) {
+        $fields['billing_state']['required'] = true;
+    }
+    
     return $fields;
 }
 

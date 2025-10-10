@@ -116,7 +116,7 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					<p class="section-description">We'll use this email to send you details and updates about your order.</p>
 					
 					<div class="form-field">
-						<input type="email" name="billing_email" id="billing_email" placeholder="Email address" value="<?php echo esc_attr( $checkout->get_value( 'billing_email' ) ); ?>" required />
+						<input type="email" name="billing_email" id="billing_email" placeholder="Email address *" value="<?php echo esc_attr( $checkout->get_value( 'billing_email' ) ); ?>" required />
 					</div>
 					
 					<?php if ( ! is_user_logged_in() ) : ?>
@@ -137,16 +137,16 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 							<h3>Billing details</h3>
 							
 							<div class="form-row form-row-first">
-								<input type="text" name="billing_first_name" id="billing_first_name" placeholder="First name" value="<?php echo esc_attr( $checkout->get_value( 'billing_first_name' ) ); ?>" required />
+								<input type="text" name="billing_first_name" id="billing_first_name" placeholder="First name *" value="<?php echo esc_attr( $checkout->get_value( 'billing_first_name' ) ); ?>" required />
 							</div>
 							
 							<div class="form-row form-row-last">
-								<input type="text" name="billing_last_name" id="billing_last_name" placeholder="Last name" value="<?php echo esc_attr( $checkout->get_value( 'billing_last_name' ) ); ?>" required />
+								<input type="text" name="billing_last_name" id="billing_last_name" placeholder="Last name *" value="<?php echo esc_attr( $checkout->get_value( 'billing_last_name' ) ); ?>" required />
 							</div>
 							
 							<div class="form-row form-row-wide">
 								<select name="billing_country" id="billing_country" required>
-									<option value="">Country / Region</option>
+									<option value="">Country / Region *</option>
 									<?php
 									$countries = WC()->countries->get_countries();
 									$selected_country = $checkout->get_value( 'billing_country' );
@@ -158,20 +158,23 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 							</div>
 							
 							<div class="form-row form-row-wide">
-								<input type="text" name="billing_address_1" id="billing_address_1" placeholder="House number and street name" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_1' ) ); ?>" required />
+								<input type="text" name="billing_address_1" id="billing_address_1" placeholder="House number and street name *" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_1' ) ); ?>" required />
 							</div>
 							
 							<div class="form-row form-row-wide" id="billing_address_2_field">
-								<input type="text" name="billing_address_2" id="billing_address_2" placeholder="Apartment, suite, unit, etc. (optional)" value="<?php echo esc_attr( $checkout->get_value( 'billing_address_2' ) ); ?>" />
+								<div class="optional-field-wrapper">
+									<input type="text" name="billing_address_2" id="billing_address_2" placeholder="Apartment, suite, unit, etc." value="<?php echo esc_attr( $checkout->get_value( 'billing_address_2' ) ); ?>" />
+									<span class="optional-text">(optional)</span>
+								</div>
 							</div>
 							
 							<div class="form-row form-row-wide">
-								<input type="text" name="billing_city" id="billing_city" placeholder="City" value="<?php echo esc_attr( $checkout->get_value( 'billing_city' ) ); ?>" required />
+								<input type="text" name="billing_city" id="billing_city" placeholder="City *" value="<?php echo esc_attr( $checkout->get_value( 'billing_city' ) ); ?>" required />
 							</div>
 							
 							<div class="form-row form-row-wide">
-								<select name="billing_state" id="billing_state">
-									<option value="">County</option>
+								<select name="billing_state" id="billing_state" required>
+									<option value="">County *</option>
 									<?php
 									$selected_state = $checkout->get_value( 'billing_state' );
 									$selected_country = $checkout->get_value( 'billing_country' );
@@ -188,12 +191,15 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 							</div>
 							
 							<div class="form-row form-row-first" id="billing_postcode_field">
-								<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" />
+								<div class="optional-field-wrapper">
+									<input type="text" name="billing_postcode" id="billing_postcode" placeholder="Postal code" value="<?php echo esc_attr( $checkout->get_value( 'billing_postcode' ) ); ?>" />
+									<span class="optional-text">(optional)</span>
+								</div>
 							</div>
 							
 							<div class="form-row form-row-last">
 								<div class="phone-field-with-help">
-									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" pattern="^\+?[0-9\s\-\(\)]+$" title="Please enter a valid phone number (numbers, spaces, hyphens, parentheses, and optional + sign)" required />
+									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone *" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" pattern="^\+?[0-9\s\-\(\)]+$" title="Please enter a valid phone number (numbers, spaces, hyphens, parentheses, and optional + sign)" required />
 									<span class="help-icon-inside" data-tooltip="In case we need to contact you about your order">?</span>
 								</div>
 							</div>
