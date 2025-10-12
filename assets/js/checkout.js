@@ -37,7 +37,11 @@
     loadingStartTime: null,
     // Track Select2 open state to avoid destroying while open (mobile auto-close bug)
     isCountryDropdownOpen: false,
-    isStateDropdownOpen: false,
+    // Throttle for syncing totals UI
+    lastTotalsSyncTs: 0,
+    // Cache last seen totals to avoid redundant DOM writes
+    lastSubtotalHtml: null,
+    lastTotalHtml: null,
 
     init: function () {
       // Prevent multiple initializations
@@ -142,19 +146,33 @@
           $stateSelect.addClass("state_select");
         }
 
-        // Sync our visible totals from Woo's review table
+        // Sync our visible totals from Woo's review table (throttled)
         try {
-          CheckoutManager.syncOrderTotalsFromReview();
+          const nowTs = Date.now();
+          if (nowTs - CheckoutManager.lastTotalsSyncTs > 300) {
+            CheckoutManager.syncOrderTotalsFromReview();
+            CheckoutManager.lastTotalsSyncTs = nowTs;
+          }
         } catch (e) {}
 
-        // Trigger cart fragments refresh to update mini cart (especially shipping progress bar)
-        // when shipping costs change due to country/address updates
-        if (typeof CartManager !== "undefined" && CartManager.queueRefresh) {
-          CartManager.queueRefresh("wc_fragment_refresh");
-        } else {
-          // Fallback if CartManager is not available
-          $(document.body).trigger("wc_fragment_refresh");
-        }
+        // Trigger cart fragments refresh only if not too recent to avoid churn
+        (function () {
+          const now = Date.now();
+          const lastRefresh =
+            $(document.body).data("last-wc-fragment-refresh") || 0;
+          if (now - lastRefresh > 3000) {
+            if (
+              typeof CartManager !== "undefined" &&
+              CartManager.queueRefresh
+            ) {
+              CartManager.queueRefresh("wc_fragment_refresh");
+            } else {
+              // Fallback if CartManager is not available
+              $(document.body).trigger("wc_fragment_refresh");
+            }
+            $(document.body).data("last-wc-fragment-refresh", now);
+          }
+        })();
       });
 
       // Important: Do NOT trigger update_checkout on wc_fragments_refreshed,
@@ -257,10 +275,8 @@
           });
         }
 
-        // Re-initialize state field after checkout update (with guard)
-        if (!this.isStateDropdownOpen) {
-          this.initStateField();
-        }
+        // Re-initialize state field after checkout update
+        this.initStateField();
       });
     },
 
@@ -302,14 +318,6 @@
           dropdownAutoWidth: false,
         });
 
-        // Track open/close to prevent re-init while user is interacting
-        $stateField.on("select2:open", () => {
-          this.isStateDropdownOpen = true;
-        });
-        $stateField.on("select2:close", () => {
-          this.isStateDropdownOpen = false;
-        });
-
         // Trigger WooCommerce update when state changes
         $stateField.on("select2:select", function (e) {
           $(this).trigger("change");
@@ -342,15 +350,17 @@
       const totalHtml =
         $total.find(".amount").last().html() || $total.last().html();
 
-      if (subtotalHtml) {
+      if (subtotalHtml && subtotalHtml !== this.lastSubtotalHtml) {
         $(".order-totals .total-line:contains('Subtotal') .total-value").html(
           subtotalHtml
         );
+        this.lastSubtotalHtml = subtotalHtml;
       }
 
-      if (totalHtml) {
+      if (totalHtml && totalHtml !== this.lastTotalHtml) {
         $(".order-totals .final-total .total-value").html(totalHtml);
         $(".summary-total-mobile").html(totalHtml);
+        this.lastTotalHtml = totalHtml;
       }
     },
 
@@ -992,52 +1002,18 @@
         "click.paymentMethodClick",
         ".woocommerce-checkout .payment_methods li",
         function (e) {
-          // Don't intercept if clicking directly on the radio or links
-          if ($(e.target).is('input[type="radio"], a')) {
-            return;
-          }
+          if ($(e.target).is('input[type="radio"], a')) return;
 
-          const $li = $(this);
-          const $radio = $li.find('input[type="radio"]').first();
+          const $radio = $(this).find('input[type="radio"]').first();
+          if (!$radio.length) return;
 
-          if ($radio.length) {
-            e.preventDefault();
-            e.stopPropagation();
+          e.preventDefault();
+          e.stopPropagation();
 
-            // Always activate the payment method when clicked
-            // This ensures clicking on the li container properly activates the payment method
-            const wasChecked = $radio.is(":checked");
+          // Only act if changing selection
+          if ($radio.is(":checked")) return;
 
-            // Ensure the radio is checked
-            $radio.prop("checked", true);
-            $radio[0].checked = true;
-
-            // Always trigger activation events for payment gateways
-            // This ensures gateways like Stripe load their iframes even if already selected
-
-            // Trigger native click for immediate activation
-            $radio[0].click();
-
-            // Trigger change event
-            $radio.trigger("change");
-
-            // Trigger WooCommerce's payment method selection event
-            $(document.body).trigger("payment_method_selected");
-
-            // Additional activation triggers for better compatibility
-            setTimeout(() => {
-              $(document.body).trigger("payment_method_selected");
-              // Force another click if needed for stubborn gateways
-              if ($radio.is(":checked")) {
-                $radio[0].click();
-              }
-            }, 10);
-
-            // Extra trigger for gateways that need it (like Stripe)
-            setTimeout(() => {
-              $(document.body).trigger("payment_method_selected");
-            }, 100);
-          }
+          $radio.prop("checked", true).trigger("change");
         }
       );
 
@@ -1060,21 +1036,11 @@
           if ($radio.is(":checked")) {
             $paymentMethod.addClass("selected");
           }
+          // Let WooCommerce handle payment_method_selected and iframe loads
         }
       );
 
-      // Auto-select the first payment method
-      const $firstPaymentMethod = $(
-        ".woocommerce-checkout .payment_methods input[type='radio']"
-      ).first();
-      if ($firstPaymentMethod.length && !$firstPaymentMethod.is(":checked")) {
-        $firstPaymentMethod.prop("checked", true).trigger("change");
-      }
-
-      // Trigger change on already checked radios
-      $(
-        ".woocommerce-checkout .payment_methods input[type='radio']:checked"
-      ).trigger("change");
+      // Do not auto-force clicks/changes here; Woo sets default selection.
     },
 
     /**
