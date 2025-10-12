@@ -56,6 +56,7 @@
         this.initFieldSpecificErrors();
         this.initCountryBasedFieldHiding();
         this.initCheckoutTotalsAutoUpdate();
+        this.initCountrySearch();
 
         // Initialize payment methods with proper timing
         this.initPaymentMethodEnhancements();
@@ -157,6 +158,135 @@
       // it creates a loop with global listeners that refresh fragments after checkout updates.
 
       // Don't auto-trigger periodic updates; only initialize classes once
+    },
+
+    /**
+     * Initialize country field search functionality
+     * Uses WooCommerce's built-in Select2 for efficient search
+     */
+    initCountrySearch: function () {
+      const $countryField = $("#billing_country");
+
+      if (!$countryField.length) {
+        return;
+      }
+
+      // Check if Select2 is available (comes with WooCommerce)
+      if (typeof $.fn.select2 === "undefined") {
+        // If Select2 is not loaded yet, wait and try again
+        setTimeout(() => {
+          this.initCountrySearch();
+        }, 500);
+        return;
+      }
+
+      // Destroy existing Select2 instance if present
+      if ($countryField.hasClass("select2-hidden-accessible")) {
+        $countryField.select2("destroy");
+      }
+
+      // Initialize Select2 on country field
+      $countryField.select2({
+        placeholder: "Country / Region *",
+        allowClear: false,
+        width: "100%",
+        minimumResultsForSearch: 0, // Always show search box
+        theme: "default",
+        dropdownAutoWidth: false,
+      });
+
+      // Initialize state field
+      this.initStateField();
+
+      // Trigger WooCommerce update when country changes
+      $countryField.on("select2:select", function (e) {
+        // Trigger change event for WooCommerce
+        $(this).trigger("change");
+
+        // Trigger WooCommerce checkout update
+        $(document.body).trigger("update_checkout");
+      });
+
+      // Re-apply Select2 after WooCommerce updates
+      $(document.body).on("updated_checkout", () => {
+        const $updatedCountryField = $("#billing_country");
+
+        if ($updatedCountryField.length) {
+          // Destroy existing Select2 instance if present
+          if ($updatedCountryField.hasClass("select2-hidden-accessible")) {
+            $updatedCountryField.select2("destroy");
+          }
+
+          // Reinitialize Select2
+          $updatedCountryField.select2({
+            placeholder: "Country / Region *",
+            allowClear: false,
+            width: "100%",
+            minimumResultsForSearch: 0,
+            theme: "default",
+            dropdownAutoWidth: false,
+          });
+
+          // Re-bind the select event
+          $updatedCountryField.on("select2:select", function (e) {
+            $(this).trigger("change");
+            $(document.body).trigger("update_checkout");
+          });
+        }
+
+        // Re-initialize state field after checkout update
+        this.initStateField();
+      });
+    },
+
+    /**
+     * Initialize state/county field with proper placeholder and search
+     */
+    initStateField: function () {
+      const $stateField = $("#billing_state");
+
+      if (!$stateField.length) {
+        return;
+      }
+
+      // Check if Select2 is available
+      if (typeof $.fn.select2 === "undefined") {
+        return;
+      }
+
+      // If it's a select field (not text input)
+      if ($stateField.is("select")) {
+        // Ensure the first option has the placeholder
+        const $firstOption = $stateField.find("option:first");
+        if ($firstOption.length && !$firstOption.val()) {
+          $firstOption.text("County *");
+        }
+
+        // Destroy existing Select2 instance if present
+        if ($stateField.hasClass("select2-hidden-accessible")) {
+          $stateField.select2("destroy");
+        }
+
+        // Initialize Select2 on state field with search
+        $stateField.select2({
+          placeholder: "County *",
+          allowClear: false,
+          width: "100%",
+          minimumResultsForSearch: 0, // Always show search box
+          theme: "default",
+          dropdownAutoWidth: false,
+        });
+
+        // Trigger WooCommerce update when state changes
+        $stateField.on("select2:select", function (e) {
+          $(this).trigger("change");
+        });
+      } else if ($stateField.is("input[type='text']")) {
+        // If it's a text input, ensure placeholder is set
+        if (!$stateField.attr("placeholder")) {
+          $stateField.attr("placeholder", "State / County *");
+        }
+      }
     },
 
     /**

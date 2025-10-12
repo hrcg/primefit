@@ -934,7 +934,6 @@
   line-height: 1.42857143;
   color: var(--checkout-text);
   background: var(--checkout-input-bg);
-  border: 1px solid var(--checkout-input-border);
   border-radius: 4px;
   box-sizing: border-box;
 }
@@ -2023,4 +2022,140 @@ body .woocommerce-checkout .blockUI {
 /* Hide the default WooCommerce processing message */
 body .woocommerce-checkout .blockMsg h1 {
   display: none !important;
+}
+
+/* ==========================================================================
+   Country Field Search (Select2) Styles
+   ========================================================================== */
+
+/* Select2 container - match checkout input styling */
+.woocommerce-checkout .select2-container--default .select2-selection--single {
+  background-color: var(--checkout-input-bg) !important;
+  border: 1px solid var(--checkout-input-border) !important;
+  border-radius: 4px !important;
+  height: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 15px !important;
+  font-size: 16px !important;
+  color: var(--checkout-text) !important;
+  transition: border-color 0.2s ease !important;
+}
+
+/* Select2 selected value text */
+.woocommerce-checkout
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__rendered {
+  color: var(--checkout-text) !important;
+  line-height: 50px !important;
+  padding: 0 !important;
+  font-size: 16px !important;
+}
+
+/* Select2 arrow */
+.woocommerce-checkout
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow {
+  height: 50px !important;
+  right: 10px !important;
+}
+
+.woocommerce-checkout
+  .select2-container--default
+  .select2-selection--single
+  .select2-selection__arrow
+  b {
+  border-color: var(--checkout-text) transparent transparent transparent !important;
+  border-width: 6px 6px 0 6px !important;
+  margin-top: -3px !important;
+}
+
+/* Select2 dropdown */
+.select2-container--default .select2-dropdown {
+  background-color: var(--checkout-dropdown-bg) !important;
+  border: 1px solid var(--checkout-input-border) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  margin-top: 4px !important;
+  overflow: hidden !important;
+}
+
+/* Select2 search box */
+.select2-container--default .select2-search--dropdown {
+  padding: 8px !important;
+  background-color: var(--checkout-dropdown-bg) !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  background-color: var(--checkout-input-bg) !important;
+  border: 1px solid var(--checkout-input-border) !important;
+  border-radius: 4px !important;
+  color: var(--checkout-text) !important;
+  padding: 8px 12px !important;
+  font-size: 16px !important;
+  outline: none !important;
+}
+
+.select2-container--default
+  .select2-search--dropdown
+  .select2-search__field:focus {
+  border-color: var(--checkout-input-focus-border) !important;
+}
+
+/* Select2 results */
+.select2-container--default .select2-results__option {
+  background-color: var(--checkout-dropdown-bg) !important;
+  color: var(--checkout-dropdown-text) !important;
+  padding: 10px 12px !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.select2-container--default .select2-results__option--highlighted,
+.select2-container--default .select2-results__option:hover {
+  background-color: var(--checkout-dropdown-hover) !important;
+  color: var(--checkout-text) !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected="true"] {
+  background-color: var(--checkout-dropdown-selected) !important;
+  color: var(--checkout-text) !important;
+}
+
+/* Select2 results wrapper - prevent double scrollbar */
+.select2-container--default .select2-results {
+  overflow: hidden !important;
+}
+
+/* Select2 results container - single scrollbar only */
+.select2-container--default .select2-results > .select2-results__options {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background-color: var(--checkout-dropdown-bg) !important;
+}
+
+/* Select2 no results message */
+.select2-container--default .select2-results__option--disabled {
+  color: var(--checkout-text-muted) !important;
+  background-color: var(--checkout-dropdown-bg) !important;
+}
+
+/* Ensure Select2 is full width */
+.woocommerce-checkout .select2-container {
+  width: 100% !important;
+}
+
+/* Mobile optimization for Select2 */
+@media (max-width: 768px) {
+  .select2-container--default .select2-dropdown {
+    max-width: calc(100vw - 32px) !important;
+  }
+
+  .select2-container--default .select2-results > .select2-results__options {
+    max-height: 250px !important;
+  }
 }
