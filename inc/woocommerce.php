@@ -44,10 +44,11 @@ function primefit_add_kosovo_to_continents( $continents ) {
 /**
  * Make billing postcode required for countries where it should be visible
  * Hide billing_address_2 and billing_postcode for Albania, Kosovo, North Macedonia
+ * Make billing email not required for Albania, Kosovo, North Macedonia
  */
 add_filter( 'woocommerce_billing_fields', 'primefit_customize_billing_fields' );
 function primefit_customize_billing_fields( $fields ) {
-    // Countries where postcode should be optional and address_2 should be hidden
+    // Countries where postcode and email should be optional
     $special_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
     
     // Get the selected country from the checkout
@@ -63,6 +64,11 @@ function primefit_customize_billing_fields( $fields ) {
     // Optional only for Albania, Kosovo, and North Macedonia
     if ( isset( $fields['billing_postcode'] ) ) {
         $fields['billing_postcode']['required'] = ! in_array( $selected_country, $special_countries );
+    }
+    
+    // Make email not required for Albania, Kosovo, and North Macedonia
+    if ( isset( $fields['billing_email'] ) ) {
+        $fields['billing_email']['required'] = ! in_array( $selected_country, $special_countries );
     }
     
     // Make phone field required
@@ -91,11 +97,25 @@ function primefit_checkout_field_validation() {
         // Clear address_2 and postcode for these countries
         $_POST['billing_address_2'] = '';
         $_POST['billing_postcode'] = '';
+        
+        // Email is not required for these countries, but if provided, validate it
+        $email = sanitize_email( $_POST['billing_email'] ?? '' );
+        if ( ! empty( $email ) && ! is_email( $email ) ) {
+            wc_add_notice( __( 'Please provide a valid email address.', 'primefit' ), 'error' );
+        }
     } else {
         // For other countries, validate that postcode is provided
         $postcode = sanitize_text_field( $_POST['billing_postcode'] ?? '' );
         if ( empty( $postcode ) ) {
             wc_add_notice( __( 'Postal code is required.', 'primefit' ), 'error' );
+        }
+        
+        // Email is required for other countries
+        $email = sanitize_email( $_POST['billing_email'] ?? '' );
+        if ( empty( $email ) ) {
+            wc_add_notice( __( 'Email address is required.', 'primefit' ), 'error' );
+        } elseif ( ! is_email( $email ) ) {
+            wc_add_notice( __( 'Please provide a valid email address.', 'primefit' ), 'error' );
         }
     }
     

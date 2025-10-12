@@ -87,9 +87,6 @@ function primefit_loop_product_thumbnail() {
 		] );
 	}
 	
-	// Add status badge
-	get_template_part( 'woocommerce/global/product-status-badge' );
-	
 	// Add color swatches for variable products
 	if ( $product->is_type( 'variable' ) ) {
 		primefit_render_product_loop_color_swatches( $product );
@@ -139,16 +136,50 @@ function primefit_add_product_status_tag() {
 		$sale_percentage = 'SALE';
 		$tag_class = 'sale';
 		$percentage = 0;
-		
-		if ( $product->get_regular_price() && $product->get_sale_price() ) {
-			$percentage = round( ( ( $product->get_regular_price() - $product->get_sale_price() ) / $product->get_regular_price() ) * 100 );
-			if ( $percentage >= 50 ) {
-				$sale_percentage = 'FLASH SALE';
-				$tag_class = 'flash-sale';
+
+		// Handle different product types for percentage calculation
+		if ( $product->is_type( 'simple' ) ) {
+			// For simple products, use direct price comparison
+			$regular_price = $product->get_regular_price();
+			$sale_price = $product->get_sale_price();
+
+			if ( $regular_price && $sale_price ) {
+				$percentage = round( ( ( $regular_price - $sale_price ) / $regular_price ) * 100 );
 			}
+		} elseif ( $product->is_type( 'variable' ) ) {
+			// For variable products, find the highest percentage discount across variations
+			$variations = $product->get_available_variations();
+			$max_percentage = 0;
+
+			foreach ( $variations as $variation_data ) {
+				$variation = wc_get_product( $variation_data['variation_id'] );
+				if ( $variation && $variation->is_on_sale() ) {
+					$var_regular_price = $variation->get_regular_price();
+					$var_sale_price = $variation->get_sale_price();
+
+					if ( $var_regular_price && $var_sale_price ) {
+						$var_percentage = round( ( ( $var_regular_price - $var_sale_price ) / $var_regular_price ) * 100 );
+						if ( $var_percentage > $max_percentage ) {
+							$max_percentage = $var_percentage;
+						}
+					}
+				}
+			}
+
+			$percentage = $max_percentage;
 		}
-		
-		echo '<span class="product-status-tag ' . esc_attr( $tag_class ) . '">' . esc_html( $sale_percentage ) . '</span>';
+
+		if ( $percentage >= 50 ) {
+			$sale_percentage = 'FLASH SALE';
+			$tag_class = 'flash-sale';
+		}
+
+		// Display sale tag with percentage
+		$sale_text = $sale_percentage;
+		if ( $percentage > 0 ) {
+			$sale_text .= ' - ' . $percentage . '% OFF';
+		}
+		echo '<span class="product-status-tag ' . esc_attr( $tag_class ) . '">' . esc_html( $sale_text ) . '</span>';
 		$has_sale_label = true;
 	}
 	

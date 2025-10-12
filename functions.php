@@ -633,8 +633,8 @@ function primefit_handle_url_coupon() {
 	$httponly = true;
 	setcookie( 'primefit_pending_coupon', $coupon_code, [ 'expires' => $expires, 'path' => '/', 'secure' => $secure, 'httponly' => $httponly, 'samesite' => 'Lax' ] );
 
-	// If on cart/checkout and cart exists and not empty, attempt immediate apply
-	if ( ( is_cart() || is_checkout() ) && function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
+	// If cart exists and not empty, attempt immediate apply on any page
+	if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
 		primefit_try_apply_coupon_from_cookie();
 	}
 
@@ -691,7 +691,7 @@ function primefit_apply_coupon_if_valid( $coupon_code ) {
 add_action( 'wp_loaded', 'primefit_apply_pending_coupon_from_cookie', 20 );
 function primefit_apply_pending_coupon_from_cookie() {
 	// Only run on frontend and when not admin/ajax
-	if ( is_admin() || wp_doing_ajax() ) {
+	if ( is_admin() ) {
 		return;
 	}
 
@@ -705,11 +705,6 @@ function primefit_try_apply_coupon_from_cookie() {
 
 	$coupon_code = sanitize_text_field( wp_unslash( $_COOKIE['primefit_pending_coupon'] ) );
 
-	// Only on cart/checkout to avoid cache-busting elsewhere
-	if ( ! ( is_cart() || is_checkout() ) ) {
-		return;
-	}
-
 	// Check if cart exists and is not empty before applying coupon
 	if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
 		$applied = primefit_apply_coupon_if_valid( $coupon_code );
@@ -717,10 +712,19 @@ function primefit_try_apply_coupon_from_cookie() {
 			// Clear cookie after successful application
 			setcookie( 'primefit_pending_coupon', '', [ 'expires' => time() - HOUR_IN_SECONDS, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' ] );
 		}
-	} elseif ( function_exists( 'WC' ) && WC()->cart && WC()->cart->is_empty() ) {
-		// Cart is empty, clear the pending coupon cookie to prevent auto-reapplication
-		setcookie( 'primefit_pending_coupon', '', [ 'expires' => time() - HOUR_IN_SECONDS, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' ] );
 	}
+}
+
+// Apply pending coupon immediately after adding to cart (non-AJAX)
+add_action( 'woocommerce_add_to_cart', 'primefit_apply_coupon_after_add_to_cart', 99, 6 );
+function primefit_apply_coupon_after_add_to_cart( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data ) {
+	primefit_try_apply_coupon_from_cookie();
+}
+
+// Apply pending coupon immediately after adding to cart via AJAX
+add_action( 'woocommerce_ajax_added_to_cart', 'primefit_apply_coupon_after_ajax_add', 99, 1 );
+function primefit_apply_coupon_after_ajax_add( $product_id ) {
+	primefit_try_apply_coupon_from_cookie();
 }
 
 /**

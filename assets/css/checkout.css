@@ -1437,6 +1437,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
+  margin-top: 20px;
 }
 
 .woocommerce-checkout #place_order:hover {
@@ -1447,6 +1448,65 @@
   background: var(--checkout-text-light);
   color: var(--checkout-text);
   cursor: not-allowed;
+}
+
+/* Loading indicator for place order button */
+.woocommerce-checkout #place_order.loading {
+  position: relative;
+  color: transparent;
+}
+
+.woocommerce-checkout #place_order.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animated loading dots */
+.loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.loading-dots .dot {
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  border-radius: 50%;
+  animation: loadingDots 1.4s infinite ease-in-out both;
+}
+
+.loading-dots .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dots .dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes loadingDots {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 
 /* ==========================================================================
@@ -1663,31 +1723,6 @@
 /* Hide default order review heading */
 .woocommerce-checkout #order_review_heading {
   display: none;
-}
-
-/* Style place order button */
-.woocommerce-checkout #place_order {
-  width: 100%;
-  padding: 16px;
-  background: var(--checkout-coupon-btn-bg);
-  color: var(--checkout-coupon-btn-text);
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 20px;
-}
-
-.woocommerce-checkout #place_order:hover {
-  background: var(--checkout-coupon-btn-hover-bg);
-}
-
-.woocommerce-checkout #place_order:disabled {
-  background: var(--checkout-text-light);
-  color: var(--checkout-text);
-  cursor: not-allowed;
 }
 
 /* Payment methods styling - Enhanced version */

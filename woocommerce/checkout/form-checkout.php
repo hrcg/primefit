@@ -107,7 +107,14 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					<p class="section-description">We'll use this email to send you details and updates about your order.</p>
 					
 					<div class="form-field">
-						<input type="email" name="billing_email" id="billing_email" placeholder="Email address *" value="<?php echo esc_attr( $checkout->get_value( 'billing_email' ) ); ?>" required />
+						<?php
+						// Check if email should be required based on country
+						$selected_country = $checkout->get_value( 'billing_country' );
+						$special_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
+						$email_required = ! in_array( $selected_country, $special_countries );
+						$email_placeholder = $email_required ? 'Email address *' : 'Email address';
+						?>
+						<input type="email" name="billing_email" id="billing_email" placeholder="<?php echo esc_attr( $email_placeholder ); ?>" value="<?php echo esc_attr( $checkout->get_value( 'billing_email' ) ); ?>" <?php echo $email_required ? 'required' : ''; ?> />
 					</div>
 					
 					<?php if ( ! is_user_logged_in() ) : ?>

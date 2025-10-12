@@ -33,6 +33,8 @@
     isPaymentMethodsEnhanced: false,
     initializationTimeout: null,
     paymentMethodObserver: null,
+    isProcessingOrder: false,
+    loadingStartTime: null,
 
     init: function () {
       // Prevent multiple initializations
@@ -1541,16 +1543,18 @@
     /**
      * Initialize country-based field hiding
      * Hide billing_address_2 and billing_postcode for specific countries
+     * Make billing_email not required for specific countries
      */
     initCountryBasedFieldHiding: function () {
       const $countrySelect = $("#billing_country");
       const $address2Field = $("#billing_address_2_field");
       const $postcodeField = $("#billing_postcode_field");
+      const $emailField = $("#billing_email");
 
-      // Countries where address_2 and postcode should be hidden
+      // Countries where address_2, postcode, and email should be optional
       const hiddenCountries = ["AL", "XK", "MK"]; // Albania, Kosovo, North Macedonia
 
-      // Function to toggle field visibility
+      // Function to toggle field visibility and requirements
       const toggleFields = function () {
         const selectedCountry = $countrySelect.val();
         const shouldHide = hiddenCountries.includes(selectedCountry);
@@ -1565,6 +1569,10 @@
           $("#billing_postcode").val("");
           // Remove required attribute when hidden
           $postcodeInput.removeAttr("required");
+
+          // Make email not required for these countries
+          $emailField.removeAttr("required");
+          $emailField.attr("placeholder", "Email address");
         } else {
           $address2Field.slideDown(300);
           $postcodeField.slideDown(300);
@@ -1573,6 +1581,10 @@
           // Update placeholder and remove optional text
           $postcodeInput.attr("placeholder", "Postal code *");
           $postcodeWrapper.find(".optional-text").text("(required)");
+
+          // Make email required for other countries
+          $emailField.attr("required", "required");
+          $emailField.attr("placeholder", "Email address *");
         }
       };
 
@@ -1799,7 +1811,40 @@
 
       // Hide loading indicator when there's an error
       $(document.body).on("checkout_error", function () {
+        // Only hide if we're actually processing an order
+        if (CheckoutManager.isProcessingOrder) {
+          CheckoutManager.hideCustomProcessingIndicator();
+        }
+      });
+
+      // Hide loading indicator when checkout completes successfully
+      $(document.body).on("checkout_complete", function () {
         CheckoutManager.hideCustomProcessingIndicator();
+      });
+
+      // Also handle the case when the form is submitted successfully
+      // This covers cases where WooCommerce redirects to thank you page
+      $(document).on("submit", "form.checkout", function () {
+        // Small delay to ensure the loading indicator shows before redirect
+        setTimeout(() => {
+          CheckoutManager.showCustomProcessingIndicator();
+        }, 100);
+      });
+
+      // Show loading dots immediately when place order button is clicked
+      // This provides immediate visual feedback without interfering with form submission
+      $(document).on("click", "#place_order", function (e) {
+        // Only show loading if the button is not already in loading state
+        if (!$(this).hasClass("loading")) {
+          CheckoutManager.showPlaceOrderLoading();
+
+          // Also show the full processing indicator after a short delay
+          // This ensures the loading state persists even if checkout_place_order fires quickly
+          setTimeout(() => {
+            CheckoutManager.showCustomProcessingIndicator();
+          }, 200);
+        }
+        // Don't prevent default - let WooCommerce handle the form submission
       });
     },
 
@@ -1822,6 +1867,12 @@
 
       $("body").append(backdrop + indicator);
       $("body").addClass("checkout-processing");
+
+      // Show loading dots on place order button if not already showing
+      const $placeOrderBtn = $("#place_order");
+      if ($placeOrderBtn.length && !$placeOrderBtn.hasClass("loading")) {
+        this.showPlaceOrderLoading();
+      }
     },
 
     /**
@@ -1832,6 +1883,60 @@
         ".checkout-processing-backdrop, .checkout-processing-indicator"
       ).remove();
       $("body").removeClass("checkout-processing");
+
+      // Hide loading dots on place order button
+      this.hidePlaceOrderLoading();
+    },
+
+    /**
+     * Show loading dots on place order button
+     */
+    showPlaceOrderLoading: function () {
+      const $placeOrderBtn = $("#place_order");
+      if ($placeOrderBtn.length) {
+        // Store original text
+        const originalText = $placeOrderBtn.text().trim();
+        $placeOrderBtn.data("original-text", originalText);
+
+        // Add loading class and replace text with dots
+        $placeOrderBtn.addClass("loading");
+        $placeOrderBtn.html(
+          '<span class="loading-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>'
+        );
+        // Don't disable the button here - let WooCommerce handle the disabling
+
+        // Set processing flag
+        this.isProcessingOrder = true;
+        this.loadingStartTime = Date.now();
+      }
+    },
+
+    /**
+     * Hide loading dots on place order button
+     */
+    hidePlaceOrderLoading: function () {
+      const $placeOrderBtn = $("#place_order");
+      if ($placeOrderBtn.length) {
+        // Ensure minimum display time of 1 second for better UX
+        const minDisplayTime = 1000; // 1 second
+        const elapsedTime = this.loadingStartTime
+          ? Date.now() - this.loadingStartTime
+          : 0;
+        const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+
+        setTimeout(() => {
+          // Remove loading class and restore original text
+          $placeOrderBtn.removeClass("loading");
+          const originalText =
+            $placeOrderBtn.data("original-text") || "Place order";
+          $placeOrderBtn.text(originalText);
+          // Don't re-enable the button here - let WooCommerce handle the state
+
+          // Reset processing flag
+          this.isProcessingOrder = false;
+          this.loadingStartTime = null;
+        }, remainingTime);
+      }
     },
 
     /**
