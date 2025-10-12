@@ -35,6 +35,9 @@
     paymentMethodObserver: null,
     isProcessingOrder: false,
     loadingStartTime: null,
+    // Track Select2 open state to avoid destroying while open (mobile auto-close bug)
+    isCountryDropdownOpen: false,
+    isStateDropdownOpen: false,
 
     init: function () {
       // Prevent multiple initializations
@@ -195,6 +198,14 @@
         dropdownAutoWidth: false,
       });
 
+      // Track open/close to prevent re-init while user is interacting
+      $countryField.on("select2:open", () => {
+        this.isCountryDropdownOpen = true;
+      });
+      $countryField.on("select2:close", () => {
+        this.isCountryDropdownOpen = false;
+      });
+
       // Initialize state field
       this.initStateField();
 
@@ -209,6 +220,10 @@
 
       // Re-apply Select2 after WooCommerce updates
       $(document.body).on("updated_checkout", () => {
+        // Skip re-initialization if user is currently interacting with the dropdown
+        if (this.isCountryDropdownOpen) {
+          return;
+        }
         const $updatedCountryField = $("#billing_country");
 
         if ($updatedCountryField.length) {
@@ -227,6 +242,14 @@
             dropdownAutoWidth: false,
           });
 
+          // Re-bind open/close listeners after re-init
+          $updatedCountryField.on("select2:open", () => {
+            this.isCountryDropdownOpen = true;
+          });
+          $updatedCountryField.on("select2:close", () => {
+            this.isCountryDropdownOpen = false;
+          });
+
           // Re-bind the select event
           $updatedCountryField.on("select2:select", function (e) {
             $(this).trigger("change");
@@ -234,8 +257,10 @@
           });
         }
 
-        // Re-initialize state field after checkout update
-        this.initStateField();
+        // Re-initialize state field after checkout update (with guard)
+        if (!this.isStateDropdownOpen) {
+          this.initStateField();
+        }
       });
     },
 
@@ -275,6 +300,14 @@
           minimumResultsForSearch: 0, // Always show search box
           theme: "default",
           dropdownAutoWidth: false,
+        });
+
+        // Track open/close to prevent re-init while user is interacting
+        $stateField.on("select2:open", () => {
+          this.isStateDropdownOpen = true;
+        });
+        $stateField.on("select2:close", () => {
+          this.isStateDropdownOpen = false;
         });
 
         // Trigger WooCommerce update when state changes
