@@ -722,6 +722,8 @@
           requestAnimationFrame(() => {
             this.enhancePaymentMethodCards();
             this.addPaymentMethodBadges();
+            // Ensure Stripe markup stays untouched and valid
+            this.fixStripePaymentMethodMarkup();
             this.initPaymentMethodInteractions();
             this.setupPaymentMethodObserver();
 
@@ -796,10 +798,10 @@
         this.paymentMethodObserver.observe($paymentMethods[0], {
           childList: true,
           subtree: true,
-          attributes: true,
-          attributeFilter: ["class", "id", "data-*"], // More specific attribute filtering
-          characterData: false, // Disable character data observation
-          attributeOldValue: false, // Don't store old attribute values
+          // Only watch structural changes; attribute changes like class toggles can
+          // cause unnecessary reprocessing and gateway refreshes
+          attributes: false,
+          characterData: false,
         });
       }
     },
@@ -854,6 +856,8 @@
           // Batch all enhancement operations
           this.enhancePaymentMethodCards();
           this.addPaymentMethodBadges();
+          // After enhancements, normalize Stripe radio to prevent duplicate IDs/structure
+          this.fixStripePaymentMethodMarkup();
 
           // End batch DOM operations
           this.endBatchDOMOperations();
@@ -867,6 +871,61 @@
         $currentPaymentMethods.addClass("enhanced");
         this.isPaymentMethodsEnhanced = true;
       }
+    },
+
+    /**
+     * Normalize Stripe payment method markup to avoid duplicate radios/IDs
+     * and ensure WooCommerce/Stripe JS can bind correctly on desktop.
+     */
+    fixStripePaymentMethodMarkup: function () {
+      const $methods = $(".woocommerce-checkout .payment_methods li");
+
+      $methods.each(function () {
+        const $li = $(this);
+        const isStripe =
+          $li.hasClass("payment_method_stripe") ||
+          $li.find('input[type="radio"][value="stripe"]').length > 0 ||
+          $li.find('label[for="payment_method_stripe"]').length > 0;
+
+        if (!isStripe) return;
+
+        const $label = $li.find('label[for="payment_method_stripe"]').first();
+        // Prefer the standard WooCommerce radio by ID, otherwise first radio in li
+        let $primaryRadio = $li
+          .find(
+            'input[type="radio"][name="payment_method"][id="payment_method_stripe"]'
+          )
+          .first();
+        if (!$primaryRadio.length) {
+          $primaryRadio = $li
+            .find('input[type="radio"][name="payment_method"]')
+            .first();
+        }
+
+        if (!$primaryRadio.length) return;
+
+        // Ensure the radio has the canonical ID and the label points to it
+        if ($primaryRadio.attr("id") !== "payment_method_stripe") {
+          $primaryRadio.attr("id", "payment_method_stripe");
+        }
+        if ($label.length && $label.attr("for") !== "payment_method_stripe") {
+          $label.attr("for", "payment_method_stripe");
+        }
+
+        // Remove duplicate Stripe radios within this li (keep the first)
+        $li
+          .find(
+            'input[type="radio"][name="payment_method"][id="payment_method_stripe"]'
+          )
+          .not($primaryRadio)
+          .remove();
+
+        // If the radio is nested inside the label, move it directly before the label
+        if ($primaryRadio.closest("label").length && $label.length) {
+          const $moved = $primaryRadio.detach();
+          $label.before($moved);
+        }
+      });
     },
 
     /**
@@ -905,6 +964,12 @@
         const $radio = $li.find('input[type="radio"]');
         const $paymentBox = $li.find(".payment_box");
 
+        // Check if this is Stripe
+        const isStripe =
+          $li.hasClass("payment_method_stripe") ||
+          $radio.filter('[value="stripe"]').length > 0 ||
+          $label.attr("for") === "payment_method_stripe";
+
         // Only enhance if not already enhanced
         if (!$li.find(".payment_method").length && $label.length) {
           enhancements.push(() =>
@@ -934,11 +999,20 @@
             );
             $paymentContent.css("position", "relative");
 
-            // Preserve the original radio element and its event handlers
-            const $originalRadio = $radio.clone(true);
-            $label.empty();
-            $label.append($originalRadio);
-            $label.append($paymentContent);
+            if (isStripe) {
+              // For Stripe: keep radio outside label, just add styling structure
+              $label.empty();
+              $label.append($paymentContent);
+              // Radio will be repositioned by fixStripePaymentMethodMarkup()
+            } else {
+              // For other methods: move radio into label
+              const $movedRadio = $radio.first().detach();
+              $label.empty();
+              if ($movedRadio && $movedRadio.length) {
+                $label.append($movedRadio);
+              }
+              $label.append($paymentContent);
+            }
 
             if ($paymentBox.length) {
               $paymentBox.appendTo($li.find(".payment_method"));
@@ -1007,8 +1081,8 @@
           const $radio = $(this).find('input[type="radio"]').first();
           if (!$radio.length) return;
 
-          e.preventDefault();
-          e.stopPropagation();
+          // Don't preventDefault/stopPropagation - WooCommerce needs the event to bubble
+          // for payment_method_selected and gateway initialization (e.g., Stripe Elements)
 
           // Only act if changing selection
           if ($radio.is(":checked")) return;
@@ -1027,13 +1101,21 @@
           const $li = $radio.closest("li");
           const $paymentMethod = $li.find(".payment_method");
 
-          // Remove selected from all payment methods
-          $(
-            ".woocommerce-checkout .payment_methods .payment_method"
-          ).removeClass("selected");
-
-          // Add selected to the checked one
+          // Only update if this is being checked (not unchecked by another selection)
           if ($radio.is(":checked")) {
+            // Remove selected only from currently selected items (more efficient)
+            const $currentlySelected = $paymentMethod
+              .closest("ul")
+              .find(".payment_method.selected");
+
+            if (
+              $currentlySelected.length &&
+              !$currentlySelected.is($paymentMethod)
+            ) {
+              $currentlySelected.removeClass("selected");
+            }
+
+            // Add selected to the checked one
             $paymentMethod.addClass("selected");
           }
           // Let WooCommerce handle payment_method_selected and iframe loads
@@ -1041,6 +1123,34 @@
       );
 
       // Do not auto-force clicks/changes here; Woo sets default selection.
+    },
+
+    /**
+     * Restore selected state based on which radio is currently checked
+     * Call this after WooCommerce updates the checkout HTML
+     */
+    restorePaymentMethodSelectedState: function () {
+      // Find the checked radio
+      const $checkedRadio = $(
+        ".woocommerce-checkout .payment_methods input[type='radio']:checked"
+      );
+
+      if ($checkedRadio.length) {
+        const $li = $checkedRadio.closest("li");
+        const $paymentMethod = $li.find(".payment_method");
+
+        // Only manipulate if not already selected (avoid unnecessary DOM ops)
+        if (!$paymentMethod.hasClass("selected")) {
+          // Remove selected only from currently selected items (more efficient)
+          $paymentMethod
+            .closest("ul")
+            .find(".payment_method.selected")
+            .removeClass("selected");
+
+          // Add selected to the checked one
+          $paymentMethod.addClass("selected");
+        }
+      }
     },
 
     /**
@@ -2309,6 +2419,11 @@
             CheckoutManager.isPaymentMethodsEnhanced = false;
             CheckoutManager.initPaymentMethodEnhancements();
           }
+          // Always ensure Stripe's markup is normalized after every refresh
+          CheckoutManager.fixStripePaymentMethodMarkup();
+
+          // Restore the selected state after WooCommerce refreshes the HTML
+          CheckoutManager.restorePaymentMethodSelectedState();
         }
       });
 
@@ -2329,6 +2444,11 @@
             CheckoutManager.isPaymentMethodsEnhanced = false;
             CheckoutManager.initPaymentMethodEnhancements();
           }
+          // Normalize Stripe radio/label positions and IDs to keep Elements working
+          CheckoutManager.fixStripePaymentMethodMarkup();
+
+          // Restore the selected state after fragments refresh
+          CheckoutManager.restorePaymentMethodSelectedState();
         }
 
         // After fragments refresh, verify if cart became empty and redirect safely
