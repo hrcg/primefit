@@ -826,6 +826,7 @@
 .woocommerce ul.products li.product .product-status-tag.flash-sale {
   background: #ff3b30;
   color: #fff;
+  animation: none; /* Remove any blinking animation */
 }
 
 .woocommerce ul.products li.product .product-status-tag.sale {

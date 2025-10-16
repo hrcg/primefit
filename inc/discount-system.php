@@ -175,10 +175,12 @@ function primefit_create_coupon_reset_tracking_table() {
 }
 
 /**
- * Track discount code usage when order is completed
+ * Track discount code usage when order is completed or processing
  * FIXED: Added comprehensive error handling and validation
+ * FIXED: Added hook for processing status to track savings on all orders
  */
 add_action( 'woocommerce_order_status_completed', 'primefit_track_discount_usage', 10, 1 );
+add_action( 'woocommerce_order_status_processing', 'primefit_track_discount_usage', 10, 1 );
 function primefit_track_discount_usage( $order_id ) {
 	// Validate order ID
 	if ( empty( $order_id ) || ! is_numeric( $order_id ) ) {
@@ -218,6 +220,18 @@ function primefit_track_discount_usage( $order_id ) {
 			$coupon = new WC_Coupon( $coupon_code );
 
 			if ( ! $coupon || ! $coupon->get_id() ) {
+				continue;
+			}
+
+			// Check if this coupon usage for this order is already tracked (prevent duplicates)
+			$existing_record = $wpdb->get_var( $wpdb->prepare(
+				"SELECT id FROM $table_name WHERE order_id = %d AND coupon_code = %s LIMIT 1",
+				$order_id,
+				$coupon_code
+			) );
+
+			// Skip if already tracked
+			if ( $existing_record ) {
 				continue;
 			}
 
@@ -509,7 +523,7 @@ function primefit_get_client_ip() {
 			}
 
 			// Handle comma-separated IPs (like X-Forwarded-For)
-			if ( strpos( $ip, ',' ) !== false ) {
+			if ( $ip && strpos( $ip, ',' ) !== false ) {
 				$ip = trim( explode( ',', $ip )[0] );
 			}
 
@@ -1924,7 +1938,7 @@ function primefit_coupon_bulk_action_notices() {
 	}
 
 	if ( isset( $_GET['coupon_reset'] ) ) {
-		$coupon_code = sanitize_text_field( $_GET['coupon_reset'] );
+		$coupon_code = sanitize_text_field( $_GET['coupon_reset'] ?? '' );
 		printf(
 			'<div class="notice notice-success is-dismissible"><p>' .
 			__( 'Statistics reset for coupon "%s".', 'primefit' ) .
@@ -1934,7 +1948,7 @@ function primefit_coupon_bulk_action_notices() {
 	}
 
 	if ( isset( $_GET['reset_error'] ) ) {
-		$error = sanitize_text_field( $_GET['reset_error'] );
+		$error = sanitize_text_field( $_GET['reset_error'] ?? '' );
 		printf(
 			'<div class="notice notice-error is-dismissible"><p>' .
 			__( 'Error resetting coupon: %s', 'primefit' ) .
@@ -1967,7 +1981,7 @@ function primefit_coupon_analytics_page() {
 	if ( isset( $_POST['reset_coupon'] ) && isset( $_POST['coupon_code'] ) ) {
 		check_admin_referer( 'reset_coupon_stats' );
 
-		$coupon_code = sanitize_text_field( $_POST['coupon_code'] );
+		$coupon_code = sanitize_text_field( $_POST['coupon_code'] ?? '' );
 		$result = primefit_reset_coupon_stats( $coupon_code );
 
 		if ( is_wp_error( $result ) ) {

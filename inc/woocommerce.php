@@ -44,16 +44,17 @@ function primefit_add_kosovo_to_continents( $continents ) {
 /**
  * Make billing postcode required for countries where it should be visible
  * Hide billing_address_2 and billing_postcode for Albania, Kosovo, North Macedonia
+ * Make billing email not required for Albania, Kosovo, North Macedonia
  */
 add_filter( 'woocommerce_billing_fields', 'primefit_customize_billing_fields' );
 function primefit_customize_billing_fields( $fields ) {
-    // Countries where postcode should be optional and address_2 should be hidden
+    // Countries where postcode and email should be optional
     $special_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
     
     // Get the selected country from the checkout
     $selected_country = '';
     if ( isset( $_POST['billing_country'] ) ) {
-        $selected_country = sanitize_text_field( $_POST['billing_country'] );
+        $selected_country = sanitize_text_field( $_POST['billing_country'] ?? '' );
     } elseif ( is_user_logged_in() ) {
         $user_id = get_current_user_id();
         $selected_country = get_user_meta( $user_id, 'billing_country', true );
@@ -63,6 +64,11 @@ function primefit_customize_billing_fields( $fields ) {
     // Optional only for Albania, Kosovo, and North Macedonia
     if ( isset( $fields['billing_postcode'] ) ) {
         $fields['billing_postcode']['required'] = ! in_array( $selected_country, $special_countries );
+    }
+    
+    // Make email not required for Albania, Kosovo, and North Macedonia
+    if ( isset( $fields['billing_email'] ) ) {
+        $fields['billing_email']['required'] = ! in_array( $selected_country, $special_countries );
     }
     
     // Make phone field required
@@ -91,11 +97,25 @@ function primefit_checkout_field_validation() {
         // Clear address_2 and postcode for these countries
         $_POST['billing_address_2'] = '';
         $_POST['billing_postcode'] = '';
+        
+        // Email is not required for these countries, but if provided, validate it
+        $email = sanitize_email( $_POST['billing_email'] ?? '' );
+        if ( ! empty( $email ) && ! is_email( $email ) ) {
+            wc_add_notice( __( 'Please provide a valid email address.', 'primefit' ), 'error' );
+        }
     } else {
         // For other countries, validate that postcode is provided
         $postcode = sanitize_text_field( $_POST['billing_postcode'] ?? '' );
         if ( empty( $postcode ) ) {
             wc_add_notice( __( 'Postal code is required.', 'primefit' ), 'error' );
+        }
+        
+        // Email is required for other countries
+        $email = sanitize_email( $_POST['billing_email'] ?? '' );
+        if ( empty( $email ) ) {
+            wc_add_notice( __( 'Email address is required.', 'primefit' ), 'error' );
+        } elseif ( ! is_email( $email ) ) {
+            wc_add_notice( __( 'Please provide a valid email address.', 'primefit' ), 'error' );
         }
     }
     
@@ -1228,7 +1248,7 @@ function primefit_register_cart_ajax_handlers() {
 		wp_die( 'Security check failed' );
 	}
 	
-	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] );
+	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] ?? '' );
 	$quantity = intval( $_POST['quantity'] );
 	
 	if ( $cart_item_key && $quantity > 0 ) {
@@ -1262,7 +1282,7 @@ function primefit_register_cart_ajax_handlers() {
 		return;
 	}
 	
-	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] );
+	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] ?? '' );
 	
 	if ( empty( $cart_item_key ) ) {
 		wp_send_json_error( 'Invalid cart item key' );
@@ -2005,7 +2025,7 @@ function primefit_handle_apply_coupon() {
 		wp_send_json_error( __( 'Security check failed', 'primefit' ) );
 	}
 	
-	$coupon_code = sanitize_text_field( $_POST['coupon_code'] );
+	$coupon_code = sanitize_text_field( $_POST['coupon_code'] ?? '' );
 	
 	if ( empty( $coupon_code ) ) {
 		wp_send_json_error( __( 'Please enter a coupon code', 'primefit' ) );
@@ -2053,7 +2073,7 @@ function primefit_handle_remove_coupon() {
 		wp_send_json_error( __( 'Security check failed', 'primefit' ) );
 	}
 	
-	$coupon_code = sanitize_text_field( $_POST['coupon'] );
+	$coupon_code = sanitize_text_field( $_POST['coupon'] ?? '' );
 	
 	if ( empty( $coupon_code ) ) {
 		wp_send_json_error( __( 'Invalid coupon code', 'primefit' ) );
@@ -2152,6 +2172,18 @@ function primefit_ensure_order_completion( $order_id ) {
 // Redirect function removed - now using custom order-received template
 
 // Fallback redirect function removed - now using custom order-received template
+
+/**
+ * Customize Stripe payment method title
+ */
+add_filter( 'woocommerce_gateway_title', 'primefit_customize_stripe_title', 10, 2 );
+function primefit_customize_stripe_title( $title, $gateway_id ) {
+    // Check if this is a Stripe gateway
+    if ( $gateway_id && strpos( $gateway_id, 'stripe' ) !== false ) {
+        return 'Card/Debit Card';
+    }
+    return $title;
+}
 
 /**
  * Add custom payment summary after order completion

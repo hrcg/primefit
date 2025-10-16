@@ -68,7 +68,7 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 	$optimized_url = str_replace( ['.jpg', '.jpeg', '.png'], '.' . $format, $image_url );
 
 	// Check if optimized version exists (for local images)
-	if ( strpos( $optimized_url, home_url() ) === 0 ) {
+	if ( $optimized_url && strpos( $optimized_url, home_url() ) === 0 ) {
 		$local_path = str_replace( home_url(), ABSPATH, $optimized_url );
 		if ( file_exists( $local_path ) ) {
 			return $optimized_url;
@@ -76,7 +76,7 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 	}
 
 	// For theme assets, check multiple fallback formats
-	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
+	if ( $image_url && strpos( $image_url, get_template_directory_uri() ) === 0 ) {
 		// Try multiple fallback formats
 		$fallback_formats = ['avif', 'webp', 'jpg', 'jpeg', 'png'];
 
@@ -87,7 +87,7 @@ function primefit_get_optimized_image_url( $image_url, $format = 'webp' ) {
 
 			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp', '.avif'], '.' . $fallback_format, $image_url );
 
-			if ( strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
+			if ( $fallback_url && strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
 				$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $fallback_url );
 
 				if ( file_exists( $local_path ) ) {
@@ -122,7 +122,7 @@ function primefit_get_hero_optimized_image_url( $image_url, $format = 'webp' ) {
 	$optimized_url = str_replace( ['.jpg', '.jpeg', '.png'], '.' . $format, $image_url );
 
 	// Check if optimized version exists (for local images)
-	if ( strpos( $optimized_url, home_url() ) === 0 ) {
+	if ( $optimized_url && strpos( $optimized_url, home_url() ) === 0 ) {
 		$local_path = str_replace( home_url(), ABSPATH, $optimized_url );
 		if ( file_exists( $local_path ) ) {
 			return $optimized_url;
@@ -130,7 +130,7 @@ function primefit_get_hero_optimized_image_url( $image_url, $format = 'webp' ) {
 	}
 
 	// For theme assets, check multiple fallback formats
-	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
+	if ( $image_url && strpos( $image_url, get_template_directory_uri() ) === 0 ) {
 		// Try multiple fallback formats
 		$fallback_formats = ['avif', 'webp', 'jpg', 'jpeg', 'png'];
 
@@ -141,7 +141,7 @@ function primefit_get_hero_optimized_image_url( $image_url, $format = 'webp' ) {
 
 			$fallback_url = str_replace( ['.jpg', '.jpeg', '.png', '.webp', '.avif'], '.' . $fallback_format, $image_url );
 
-			if ( strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
+			if ( $fallback_url && strpos( $fallback_url, get_template_directory_uri() ) === 0 ) {
 				$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $fallback_url );
 
 				if ( file_exists( $local_path ) ) {
@@ -167,7 +167,7 @@ function primefit_get_responsive_image_url( $image_url, $width ) {
 	}
 
 	// For theme assets, try to find responsive versions
-	if ( strpos( $image_url, get_template_directory_uri() ) === 0 ) {
+	if ( $image_url && strpos( $image_url, get_template_directory_uri() ) === 0 ) {
 		$path_info = pathinfo( $image_url );
 		$dirname = $path_info['dirname'];
 		$filename = $path_info['filename'];
@@ -189,7 +189,7 @@ function primefit_get_responsive_image_url( $image_url, $width ) {
 	}
 
 	// For uploaded images, try WordPress responsive image sizes
-	if ( strpos( $image_url, home_url() ) === 0 ) {
+	if ( $image_url && strpos( $image_url, home_url() ) === 0 ) {
 		// Try to get attachment ID and generate responsive URL
 		$attachment_id = primefit_get_attachment_id_from_url( $image_url );
 		if ( $attachment_id ) {
@@ -277,12 +277,12 @@ function primefit_get_best_image_uri( $urls = [] ) {
 		}
 
 		// If it's a relative path, convert to full URL
-		if ( strpos( $url, 'http' ) !== 0 ) {
+		if ( $url && strpos( $url, 'http' ) !== 0 ) {
 			$url = get_template_directory_uri() . $url;
 		}
 
 		// Check if file exists
-		if ( strpos( $url, get_template_directory_uri() ) === 0 ) {
+		if ( $url && strpos( $url, get_template_directory_uri() ) === 0 ) {
 			$local_path = str_replace( get_template_directory_uri(), get_template_directory(), $url );
 
 			if ( file_exists( $local_path ) ) {
@@ -479,7 +479,7 @@ function primefit_render_size_selection_overlay( $product ) {
 	// First, look for attributes containing 'size' - your products have 'pa_size'
 	foreach ( $attributes as $attribute_name => $options ) {
 		$clean_name = strtolower( str_replace( 'pa_', '', $attribute_name ) );
-		if ( in_array( $clean_name, array( 'size', 'sizes', 'clothing-size' ) ) || strpos( $clean_name, 'size' ) !== false ) {
+		if ( in_array( $clean_name, array( 'size', 'sizes', 'clothing-size' ) ) || ( $clean_name && strpos( $clean_name, 'size' ) !== false ) ) {
 			$size_attribute = $attribute_name;
 			$size_options = $options;
 			break;

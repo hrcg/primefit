@@ -72,14 +72,14 @@ $default_size = '';
 // Extract default color and size from WooCommerce defaults
 foreach ( $default_attributes as $attr_name => $attr_value ) {
 	$clean_name = strtolower( str_replace( 'pa_', '', $attr_name ) );
-	if ( stripos( $clean_name, 'color' ) !== false || 
-		 stripos( $attr_name, 'color' ) !== false ||
-		 stripos( $attr_name, 'pa_color' ) !== false ) {
+	if ( ( $clean_name && stripos( $clean_name, 'color' ) !== false ) || 
+		 ( $attr_name && stripos( $attr_name, 'color' ) !== false ) ||
+		 ( $attr_name && stripos( $attr_name, 'pa_color' ) !== false ) ) {
 		$default_color = $attr_value;
 	}
-	if ( stripos( $clean_name, 'size' ) !== false || 
-		 stripos( $attr_name, 'size' ) !== false ||
-		 stripos( $attr_name, 'pa_size' ) !== false ) {
+	if ( ( $clean_name && stripos( $clean_name, 'size' ) !== false ) || 
+		 ( $attr_name && stripos( $attr_name, 'size' ) !== false ) ||
+		 ( $attr_name && stripos( $attr_name, 'pa_size' ) !== false ) ) {
 		$default_size = $attr_value;
 	}
 }
@@ -110,7 +110,7 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 	foreach ( $variation_attributes as $attr_name => $options ) {
 		$clean_name = strtolower( str_replace( 'pa_', '', $attr_name ) );
 		if ( in_array( $clean_name, array( 'size', 'sizes', 'clothing-size' ) ) || 
-			 strpos( $clean_name, 'size' ) !== false ) {
+			 ( $clean_name && strpos( $clean_name, 'size' ) !== false ) ) {
 			// Create a mock attribute object for consistency
 			$size_attribute = (object) array(
 				'get_name' => function() use ($attr_name) { return $attr_name; },

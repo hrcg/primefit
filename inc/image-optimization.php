@@ -358,7 +358,7 @@ function primefit_add_lazy_loading_attributes( $attr, $attachment, $size ) {
 	
 	$is_above_fold = false;
 	foreach ( $above_fold_images as $above_fold ) {
-		if ( strpos( $attr['src'], $above_fold ) !== false ) {
+		if ( $attr['src'] && strpos( $attr['src'], $above_fold ) !== false ) {
 			$is_above_fold = true;
 			break;
 		}
@@ -751,7 +751,7 @@ function primefit_generate_webp_version( $file_path ) {
  */
 add_filter( 'attachment_fields_to_edit', 'primefit_add_image_optimization_fields', 10, 2 );
 function primefit_add_image_optimization_fields( $fields, $post ) {
-	if ( strpos( $post->post_mime_type, 'image/' ) === 0 ) {
+	if ( $post->post_mime_type && strpos( $post->post_mime_type, 'image/' ) === 0 ) {
 		$fields['primefit_optimize'] = [
 			'label' => __( 'Optimize Image', 'primefit' ),
 			'input' => 'html',

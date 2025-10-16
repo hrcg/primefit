@@ -232,6 +232,13 @@
   /**
    * Unified Coupon Manager - Shared between checkout and cart
    * Prevents race conditions and duplicate coupon applications
+   *
+   * Features:
+   * - Toast notifications for coupon errors (including usage limit errors)
+   * - Automatic detection of usage limit errors with special handling
+   * - User prompts to remove invalid coupons
+   * - Race condition prevention with processing queue
+   * - Consistent error handling across cart and checkout pages
    */
   const CouponManager = {
     // Centralized state management
@@ -529,15 +536,50 @@
           .text("APPLY");
       }
 
-      // Show error message
+      // Get error message
       const errorMsg = response.data || "Failed to apply coupon";
-      if ($form.length && options.showErrorMessage !== false) {
-        $form.after(
-          '<div class="coupon-message error">' +
-            errorMsg.replace(/[<>\"'&]/g, "") +
-            "</div>"
-        );
-        setTimeout(() => jQuery(".coupon-message").fadeOut(), 5000);
+      const cleanErrorMsg = errorMsg.replace(/[<>\"'&]/g, "");
+
+      // Check if this is a usage limit error
+      const isUsageLimitError =
+        cleanErrorMsg.toLowerCase().includes("usage limit") ||
+        cleanErrorMsg.toLowerCase().includes("has been reached") ||
+        cleanErrorMsg.toLowerCase().includes("maximum usage");
+
+      // Show toast notification for coupon errors
+      if (typeof ToastNotification !== "undefined") {
+        if (isUsageLimitError) {
+          // Show error toast for usage limit
+          ToastNotification.error(cleanErrorMsg, {
+            duration: 6000,
+            position: "top-right",
+          });
+
+          // Show follow-up toast prompting to remove the coupon
+          setTimeout(() => {
+            ToastNotification.warning(
+              "Please remove this coupon code to continue",
+              {
+                duration: 5000,
+                position: "top-right",
+              }
+            );
+          }, 500);
+        } else {
+          // Show regular error toast
+          ToastNotification.error(cleanErrorMsg, {
+            duration: 5000,
+            position: "top-right",
+          });
+        }
+      } else {
+        // Fallback: Show inline error message if ToastNotification not available
+        if ($form.length && options.showErrorMessage !== false) {
+          $form.after(
+            '<div class="coupon-message error">' + cleanErrorMsg + "</div>"
+          );
+          setTimeout(() => jQuery(".coupon-message").fadeOut(), 5000);
+        }
       }
 
       if (options.onError) options.onError(errorMsg);
@@ -890,6 +932,28 @@
       badge.hidden = false;
       badge.setAttribute("data-count", String(count));
       badge.textContent = `(${count})`;
+    },
+
+    /**
+     * Test function - can be called from console to test toast notifications
+     * Example: ToastNotification.test()
+     */
+    test: function () {
+      this.success("Success! This is a success message");
+      setTimeout(() => this.error("Error! This is an error message"), 1000);
+      setTimeout(
+        () => this.warning("Warning! This is a warning message"),
+        2000
+      );
+      setTimeout(() => this.info("Info! This is an info message"), 3000);
+      setTimeout(
+        () =>
+          this.error(
+            'Usage limit for coupon "swiss10" has been reached. Please remove this coupon code to continue.',
+            { duration: 6000 }
+          ),
+        4000
+      );
     },
   };
 

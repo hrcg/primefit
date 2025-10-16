@@ -62,6 +62,7 @@
 
 .header-left {
   justify-content: flex-start;
+  gap: 16px;
 }
 
 .header-center {
@@ -224,7 +225,7 @@
 
 .header-back-button .back-button-icon {
   width: 22px;
-  height: 22px;
+  height: 18px;
   display: block;
   filter: brightness(0) invert(1); /* Makes the SVG white */
 }
@@ -274,6 +275,326 @@
   .hamburger span {
     background: #fff !important;
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Search Toggle Button */
+.search-toggle {
+  display: none;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.search-toggle svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+/* Show search toggle on mobile */
+@media (max-width: 1024px) {
+  .search-toggle--mobile {
+    display: block;
+  }
+}
+
+/* Hide search toggle on desktop (will use menu item instead) */
+@media (min-width: 1025px) {
+  .search-toggle--mobile {
+    display: none;
+  }
+}
+
+/* Search Overlay */
+.search-overlay-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dropdown);
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s linear 0.2s, opacity 0.2s ease;
+}
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.search-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  color: #000;
+  transform: translateY(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Search Panel Header */
+.search-panel-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  color: #666;
+  z-index: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 16px 16px 48px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #fff;
+  color: #000;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  border-color: #000;
+}
+
+.search-close {
+  position: absolute;
+  right: 16px;
+  background: transparent;
+  border: 0;
+  color: #666;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+}
+
+.search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-results-count {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.search-view-all {
+  font-size: 14px;
+  color: #000;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.search-view-all:hover {
+  text-decoration: underline;
+}
+
+/* Search Panel Content */
+.search-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+}
+
+/* Search Results */
+.search-results {
+  display: none;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.search-result-item {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-result-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.search-result-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.search-result-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.search-result-item:hover .search-result-image img {
+  transform: scale(1.05);
+}
+
+.search-result-content {
+  padding: 16px;
+}
+
+.search-result-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #000;
+  line-height: 1.3;
+}
+
+.search-result-price {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}
+
+/* Search Loading State */
+.search-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.search-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e5e5;
+  border-top: 3px solid #000;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Search No Results */
+.search-no-results {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #666;
+  text-align: center;
+}
+
+.search-no-results p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Search States */
+.search-open .search-overlay-wrap {
+  visibility: visible;
+  opacity: 1;
+}
+
+.search-open .search-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.search-open .search-panel {
+  transform: translateY(0);
+}
+
+/* Prevent body scroll when search is open */
+.search-scroll-locked {
+  overflow: hidden;
+}
+
+/* Desktop Search Styles */
+@media (min-width: 1025px) {
+  .search-panel {
+    max-width: 1200px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+  
+  .search-open .search-panel {
+    transform: translateX(-50%) translateY(0);
+  }
+  
+  .search-results-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  
+  .search-result-image {
+    height: 240px;
+  }
+  
+  .search-result-title {
+    font-size: 16px;
+  }
+  
+  .search-result-price {
+    font-size: 16px;
+  }
+}
+
+/* Mobile Search Styles */
+@media (max-width: 1024px) {
+  .search-panel {
+    height: 100vh;
+  }
+  
+  .search-results-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .search-result-image {
+    height: 180px;
   }
 }
 
@@ -723,7 +1044,7 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
 }
 
 #menu-account {
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
 /* Mega Menu Styles */

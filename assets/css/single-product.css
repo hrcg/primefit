@@ -1629,6 +1629,7 @@ body.single-product .single-product-page {
 input[type="number"],
 input[type="search"] {
   /* Optimize input rendering */
+  appearance: none;
   -webkit-appearance: none;
   -moz-appearance: textfield;
   /* Disable unnecessary features */

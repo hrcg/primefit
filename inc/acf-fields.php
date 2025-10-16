@@ -38,7 +38,7 @@ function primefit_get_product_color_choices( $product_id ) {
 		// Look for color attributes
 		foreach ( $attributes as $attribute_name => $attribute_value ) {
 			// Check for color attributes - look for 'color' in the attribute name
-			if ( stripos( $attribute_name, 'color' ) !== false && ! empty( $attribute_value ) ) {
+			if ( ( $attribute_name && stripos( $attribute_name, 'color' ) !== false ) && ! empty( $attribute_value ) ) {
 				// Clean up the color value for display
 				$color_name = ucwords( str_replace( array( 'attribute_', 'pa_' ), '', $attribute_value ) );
 				// Use normalized color value as key for consistent matching

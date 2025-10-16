@@ -14,6 +14,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 <head>
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="verify-paysera" content="27896fd15f547b01780669a2c65f1189">
+	
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-SQ3XS6BVYY"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+		gtag('config', 'G-SQ3XS6BVYY');
+	</script>
+	
+	<!-- Microsoft Clarity -->
+	<script type="text/javascript">
+		(function(c,l,a,r,i,t,y){
+			c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+			t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+			y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+		})(window, document, "clarity", "script", "t8m0awb6pd");
+	</script>
+	
 	<?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
@@ -34,6 +54,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span></span>
 					<span></span>
 					<span></span>
+				</button>
+				
+				<!-- Search Icon for Mobile -->
+				<button class="search-toggle search-toggle--mobile" aria-label="Search" aria-controls="search-overlay" aria-expanded="false">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="8"></circle>
+						<path d="m21 21-4.35-4.35"></path>
+					</svg>
 				</button>
 				<?php
 					wp_nav_menu([
@@ -174,6 +202,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 						?>
 					</nav>
 				</aside>
+			</div>
+
+			<!-- Search Overlay -->
+			<div class="search-overlay-wrap" id="search-overlay">
+				<div class="search-overlay" aria-hidden="true"></div>
+				<div class="search-panel" role="dialog" aria-modal="true" aria-label="Search" hidden>
+					<div class="search-panel-header">
+						<div class="search-input-container">
+							<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="11" cy="11" r="8"></circle>
+								<path d="m21 21-4.35-4.35"></path>
+							</svg>
+							<input type="text" class="search-input" placeholder="Search products..." autocomplete="off" aria-label="Search products">
+							<button class="search-close" aria-label="Close search">&times;</button>
+						</div>
+                        <div class="search-results-header">
+                            <span class="search-results-count">0 results</span>
+                        </div>
+					</div>
+					<div class="search-panel-content">
+						<div class="search-results">
+							<!-- Search results will be populated here -->
+						</div>
+						<div class="search-loading" style="display: none;">
+							<div class="search-spinner"></div>
+							<span>Searching...</span>
+						</div>
+						<div class="search-no-results" style="display: none;">
+							<p>No products found. Try a different search term.</p>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
