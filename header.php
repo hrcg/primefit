@@ -55,6 +55,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span></span>
 					<span></span>
 				</button>
+				
+				<!-- Search Icon for Mobile -->
+				<button class="search-toggle search-toggle--mobile" aria-label="Search" aria-controls="search-overlay" aria-expanded="false">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="8"></circle>
+						<path d="m21 21-4.35-4.35"></path>
+					</svg>
+				</button>
 				<?php
 					wp_nav_menu([
 						'theme_location' => 'primary',
@@ -194,6 +202,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 						?>
 					</nav>
 				</aside>
+			</div>
+
+			<!-- Search Overlay -->
+			<div class="search-overlay-wrap" id="search-overlay">
+				<div class="search-overlay" aria-hidden="true"></div>
+				<div class="search-panel" role="dialog" aria-modal="true" aria-label="Search" hidden>
+					<div class="search-panel-header">
+						<div class="search-input-container">
+							<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="11" cy="11" r="8"></circle>
+								<path d="m21 21-4.35-4.35"></path>
+							</svg>
+							<input type="text" class="search-input" placeholder="Search products..." autocomplete="off" aria-label="Search products">
+							<button class="search-close" aria-label="Close search">&times;</button>
+						</div>
+                        <div class="search-results-header">
+                            <span class="search-results-count">0 results</span>
+                        </div>
+					</div>
+					<div class="search-panel-content">
+						<div class="search-results">
+							<!-- Search results will be populated here -->
+						</div>
+						<div class="search-loading" style="display: none;">
+							<div class="search-spinner"></div>
+							<span>Searching...</span>
+						</div>
+						<div class="search-no-results" style="display: none;">
+							<p>No products found. Try a different search term.</p>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

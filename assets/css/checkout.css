@@ -2152,7 +2152,9 @@ body .woocommerce-checkout .blockMsg h1 {
 /* Mobile optimization for Select2 */
 @media (max-width: 768px) {
   .select2-container--default .select2-dropdown {
-    max-width: calc(100vw - 32px) !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
   }
 
   .select2-container--default .select2-results > .select2-results__options {

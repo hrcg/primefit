@@ -136,7 +136,7 @@ $order_notes = $order->get_customer_order_notes();
                                             $variation_attributes = array();
                                             
                                             foreach ( $variation_data as $meta ) {
-                                                if ( strpos( $meta->key, 'attribute_' ) === 0 ) {
+                                                if ( $meta->key && strpos( $meta->key, 'attribute_' ) === 0 ) {
                                                     $attribute_name = str_replace( 'attribute_', '', $meta->key );
                                                     $attribute_name = wc_attribute_label( $attribute_name );
                                                     $variation_attributes[] = $attribute_name . ': ' . $meta->value;

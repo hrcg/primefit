@@ -1108,10 +1108,7 @@
               .closest("ul")
               .find(".payment_method.selected");
 
-            if (
-              $currentlySelected.length &&
-              !$currentlySelected.is($paymentMethod)
-            ) {
+            if ($currentlySelected.length && !$currentlySelected.is($paymentMethod)) {
               $currentlySelected.removeClass("selected");
             }
 

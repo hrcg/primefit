@@ -36,14 +36,14 @@ $default_size = '';
 // Extract default color and size from WooCommerce defaults
 foreach ( $default_attributes as $attr_name => $attr_value ) {
 	$clean_name = strtolower( str_replace( 'pa_', '', $attr_name ) );
-	if ( stripos( $clean_name, 'color' ) !== false || 
-		 stripos( $attr_name, 'color' ) !== false ||
-		 stripos( $attr_name, 'pa_color' ) !== false ) {
+	if ( ( $clean_name && stripos( $clean_name, 'color' ) !== false ) || 
+		 ( $attr_name && stripos( $attr_name, 'color' ) !== false ) ||
+		 ( $attr_name && stripos( $attr_name, 'pa_color' ) !== false ) ) {
 		$default_color = $attr_value;
 	}
-	if ( stripos( $clean_name, 'size' ) !== false || 
-		 stripos( $attr_name, 'size' ) !== false ||
-		 stripos( $attr_name, 'pa_size' ) !== false ) {
+	if ( ( $clean_name && stripos( $clean_name, 'size' ) !== false ) || 
+		 ( $attr_name && stripos( $attr_name, 'size' ) !== false ) ||
+		 ( $attr_name && stripos( $attr_name, 'pa_size' ) !== false ) ) {
 		$default_size = $attr_value;
 	}
 }

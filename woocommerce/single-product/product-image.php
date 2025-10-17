@@ -22,9 +22,9 @@ $product_id = $product->get_id();
 // Get the current selected color from POST data or default
 $selected_color = '';
 if ( isset( $_POST['attribute_pa_color'] ) ) {
-	$selected_color = sanitize_text_field( $_POST['attribute_pa_color'] );
+	$selected_color = sanitize_text_field( $_POST['attribute_pa_color'] ?? '' );
 } elseif ( isset( $_GET['color'] ) ) {
-	$selected_color = sanitize_text_field( $_GET['color'] );
+	$selected_color = sanitize_text_field( $_GET['color'] ?? '' );
 }
 
 // Try to get cached gallery data first

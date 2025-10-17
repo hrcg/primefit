@@ -131,7 +131,7 @@ function primefit_enqueue_assets() {
 		// Checkout page styles - Load ONLY on checkout pages
 		if ( $page_type === 'checkout' ) {
 			// Additional verification to ensure we're really on a checkout page
-			$is_checkout_page = is_checkout();
+			$is_checkout_page = function_exists('is_checkout') ? is_checkout() : false;
 			$is_custom_checkout = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('checkout')));
 
 			if ( $is_checkout_page || $is_custom_checkout ) {
@@ -155,7 +155,7 @@ function primefit_enqueue_assets() {
 		}
 		
 		// Account page styles - Load ONLY on my-account pages
-		$is_account_page = is_account_page();
+		$is_account_page = function_exists('is_account_page') ? is_account_page() : false;
 		$is_custom_account = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('myaccount')));
 		$is_account_endpoint = function_exists('is_wc_endpoint_url') && (
 			is_wc_endpoint_url('orders') ||
@@ -205,7 +205,7 @@ function primefit_enqueue_assets() {
 		}
 
 		// Alternative check: if we have order and key parameters and we're on checkout thank you page
-		if ( isset( $_GET['key'] ) && isset( $_GET['order'] ) && is_checkout() && ! is_account_page() ) {
+		if ( isset( $_GET['key'] ) && isset( $_GET['order'] ) && function_exists('is_checkout') && is_checkout() && ! (function_exists('is_account_page') && is_account_page()) ) {
 			$load_payment_summary = true;
 		}
 
@@ -307,6 +307,15 @@ function primefit_enqueue_assets() {
 		true 
 	);
 	
+	// Search functionality - load on all pages (header search) - defer for better performance
+	wp_enqueue_script( 
+		'primefit-search', 
+		PRIMEFIT_THEME_URI . '/assets/js/search.js', 
+		[ 'jquery' ], 
+		primefit_get_file_version( '/assets/js/search.js' ), 
+		true 
+	);
+	
 	// Hero video - load on front page and pages with hero sections - defer for better performance
 	// On mobile, this will be lazy loaded instead
 	if ( ( $page_type === 'front_page' || is_page_template( 'page-hero.php' ) ) && ! wp_is_mobile() ) {
@@ -356,7 +365,7 @@ function primefit_enqueue_assets() {
 			'wc_ajax_add_to_cart_nonce' => wp_create_nonce( 'wc_ajax_add_to_cart' ),
 			'i18n_view_cart' => esc_attr__( 'View cart', 'woocommerce' ),
 			'cart_url' => apply_filters( 'woocommerce_add_to_cart_redirect', wc_get_cart_url() ),
-			'is_cart' => is_cart(),
+			'is_cart' => function_exists('is_cart') ? is_cart() : false,
 			'cart_redirect_after_add' => get_option( 'woocommerce_cart_redirect_after_add' ),
 		] );
 		
@@ -380,13 +389,13 @@ function primefit_enqueue_assets() {
 function primefit_get_page_type() {
 	static $page_type = null;
 	if ( $page_type === null ) {
-		if ( is_product() ) $page_type = 'product';
-		elseif ( is_shop() ) $page_type = 'shop';
-		elseif ( is_product_category() ) $page_type = 'category';
-		elseif ( is_product_tag() ) $page_type = 'tag';
-		elseif ( is_checkout() ) $page_type = 'checkout';
-		elseif ( is_cart() ) $page_type = 'cart';
-		elseif ( is_account_page() ) $page_type = 'account';
+		if ( function_exists('is_product') && is_product() ) $page_type = 'product';
+		elseif ( function_exists('is_shop') && is_shop() ) $page_type = 'shop';
+		elseif ( function_exists('is_product_category') && is_product_category() ) $page_type = 'category';
+		elseif ( function_exists('is_product_tag') && is_product_tag() ) $page_type = 'tag';
+		elseif ( function_exists('is_checkout') && is_checkout() ) $page_type = 'checkout';
+		elseif ( function_exists('is_cart') && is_cart() ) $page_type = 'cart';
+		elseif ( function_exists('is_account_page') && is_account_page() ) $page_type = 'account';
 		elseif ( is_front_page() ) $page_type = 'front_page';
 		elseif ( function_exists('wc_get_page_id') && is_page(wc_get_page_id('shop')) ) $page_type = 'shop';
 		elseif ( function_exists('wc_get_page_id') && is_page(wc_get_page_id('cart')) ) $page_type = 'cart';
@@ -430,7 +439,7 @@ function primefit_enqueue_product_scripts() {
 		// Checkout page specific scripts - Only load on actual checkout pages
 		if ( $page_type === 'checkout' ) {
 			// Additional verification to ensure we're really on a checkout page
-			$is_checkout_page = is_checkout();
+			$is_checkout_page = function_exists('is_checkout') ? is_checkout() : false;
 			$is_custom_checkout = (function_exists('wc_get_page_id') && is_page(wc_get_page_id('checkout')));
 
 			if ( $is_checkout_page || $is_custom_checkout ) {
@@ -581,7 +590,7 @@ function primefit_add_cache_headers() {
 	}
 
 	// Never cache WooCommerce transactional pages (cart, checkout, account)
-	if ( function_exists( 'is_checkout' ) && ( is_cart() || is_checkout() || is_account_page() ) ) {
+	if ( function_exists( 'is_checkout' ) && ( (function_exists('is_cart') && is_cart()) || is_checkout() || (function_exists('is_account_page') && is_account_page()) ) ) {
 		header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
 		header( 'Pragma: no-cache' );
 		header( 'Expires: 0' );
@@ -670,7 +679,7 @@ function primefit_optimize_product_image_attributes( $attr, $attachment, $size )
 
 			// Add cache control for images served through WordPress
 			add_filter( 'wp_headers', function( $headers, $wp_query ) use ( $attr ) {
-				if ( ! empty( $headers['Content-Type'] ) && strpos( $headers['Content-Type'], 'image/' ) === 0 ) {
+				if ( ! empty( $headers['Content-Type'] ) && $headers['Content-Type'] && strpos( $headers['Content-Type'], 'image/' ) === 0 ) {
 					$headers['Cache-Control'] = 'public, max-age=86400, immutable';
 					$headers['Expires'] = gmdate( 'D, d M Y H:i:s', time() + 86400 ) . ' GMT';
 				}
@@ -930,7 +939,7 @@ function primefit_cache_busting_scripts( $src, $handle ) {
 
 function primefit_add_cache_busting( $src, $handle, $type ) {
 	// Only add cache busting for our theme assets
-	if ( strpos( $src, PRIMEFIT_THEME_URI ) === false ) {
+	if ( $src && strpos( $src, PRIMEFIT_THEME_URI ) === false ) {
 		return $src;
 	}
 

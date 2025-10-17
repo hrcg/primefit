@@ -54,7 +54,7 @@ function primefit_customize_billing_fields( $fields ) {
     // Get the selected country from the checkout
     $selected_country = '';
     if ( isset( $_POST['billing_country'] ) ) {
-        $selected_country = sanitize_text_field( $_POST['billing_country'] );
+        $selected_country = sanitize_text_field( $_POST['billing_country'] ?? '' );
     } elseif ( is_user_logged_in() ) {
         $user_id = get_current_user_id();
         $selected_country = get_user_meta( $user_id, 'billing_country', true );
@@ -1248,7 +1248,7 @@ function primefit_register_cart_ajax_handlers() {
 		wp_die( 'Security check failed' );
 	}
 	
-	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] );
+	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] ?? '' );
 	$quantity = intval( $_POST['quantity'] );
 	
 	if ( $cart_item_key && $quantity > 0 ) {
@@ -1282,7 +1282,7 @@ function primefit_register_cart_ajax_handlers() {
 		return;
 	}
 	
-	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] );
+	$cart_item_key = sanitize_text_field( $_POST['cart_item_key'] ?? '' );
 	
 	if ( empty( $cart_item_key ) ) {
 		wp_send_json_error( 'Invalid cart item key' );
@@ -2025,7 +2025,7 @@ function primefit_handle_apply_coupon() {
 		wp_send_json_error( __( 'Security check failed', 'primefit' ) );
 	}
 	
-	$coupon_code = sanitize_text_field( $_POST['coupon_code'] );
+	$coupon_code = sanitize_text_field( $_POST['coupon_code'] ?? '' );
 	
 	if ( empty( $coupon_code ) ) {
 		wp_send_json_error( __( 'Please enter a coupon code', 'primefit' ) );
@@ -2073,7 +2073,7 @@ function primefit_handle_remove_coupon() {
 		wp_send_json_error( __( 'Security check failed', 'primefit' ) );
 	}
 	
-	$coupon_code = sanitize_text_field( $_POST['coupon'] );
+	$coupon_code = sanitize_text_field( $_POST['coupon'] ?? '' );
 	
 	if ( empty( $coupon_code ) ) {
 		wp_send_json_error( __( 'Invalid coupon code', 'primefit' ) );
@@ -2179,7 +2179,7 @@ function primefit_ensure_order_completion( $order_id ) {
 add_filter( 'woocommerce_gateway_title', 'primefit_customize_stripe_title', 10, 2 );
 function primefit_customize_stripe_title( $title, $gateway_id ) {
     // Check if this is a Stripe gateway
-    if ( strpos( $gateway_id, 'stripe' ) !== false ) {
+    if ( $gateway_id && strpos( $gateway_id, 'stripe' ) !== false ) {
         return 'Card/Debit Card';
     }
     return $title;

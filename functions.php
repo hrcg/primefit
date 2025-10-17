@@ -103,11 +103,11 @@ function primefit_remove_brands_css() {
 add_filter( 'style_loader_tag', 'primefit_remove_block_library_css_tag', 10, 4 );
 function primefit_remove_block_library_css_tag( $html, $handle, $href, $media ) {
 	// Check if this is a block library CSS file from any location
-	if ( strpos( $href, 'wp-block-library' ) !== false ||
-		 strpos( $href, 'blocks.css' ) !== false ||
-		 strpos( $handle, 'wp-block' ) !== false ||
-		 strpos( $handle, 'wc-blocks' ) !== false ||
-		 strpos( $href, '/blocks' ) !== false ) {
+	if ( ( $href && strpos( $href, 'wp-block-library' ) !== false ) ||
+		 ( $href && strpos( $href, 'blocks.css' ) !== false ) ||
+		 ( $handle && strpos( $handle, 'wp-block' ) !== false ) ||
+		 ( $handle && strpos( $handle, 'wc-blocks' ) !== false ) ||
+		 ( $href && strpos( $href, '/blocks' ) !== false ) ) {
 		return ''; // Return empty string to remove the tag completely
 	}
 	return $html;
@@ -117,9 +117,9 @@ function primefit_remove_block_library_css_tag( $html, $handle, $href, $media ) 
 add_filter( 'style_loader_tag', 'primefit_remove_brands_css_tag', 10, 4 );
 function primefit_remove_brands_css_tag( $html, $handle, $href, $media ) {
 	// Check if this is a brands.css file from any location
-	if ( strpos( $href, 'brands.css' ) !== false ||
-		 strpos( $handle, 'brands' ) !== false ||
-		 strpos( $href, '/brands' ) !== false ) {
+	if ( ( $href && strpos( $href, 'brands.css' ) !== false ) ||
+		 ( $handle && strpos( $handle, 'brands' ) !== false ) ||
+		 ( $href && strpos( $href, '/brands' ) !== false ) ) {
 		return ''; // Return empty string to remove the tag completely
 	}
 	return $html;
@@ -526,6 +526,8 @@ function primefit_clear_all_query_caches() {
 		wp_cache_flush_group( 'primefit_products' );
 		wp_cache_flush_group( 'primefit_variations' );
 		wp_cache_flush_group( 'primefit_product_meta' );
+		// Also clear search cache to avoid stale search results after product updates
+		wp_cache_flush_group( 'primefit_search' );
 	}
 	
 	// Note: If wp_cache_flush_group is not available, we rely on the transient
@@ -575,7 +577,7 @@ add_action( 'init', function() {
 	
 	// Ensure WooCommerce shortcodes are enabled
 	add_action( 'wp', function() {
-		if ( is_checkout() ) {
+		if ( class_exists( 'WooCommerce' ) && function_exists( 'is_checkout' ) && is_checkout() ) {
 			// Force shortcode processing
 			add_filter( 'the_content', 'do_shortcode', 11 );
 			
@@ -615,7 +617,7 @@ function primefit_handle_url_coupon() {
 		return;
 	}
 
-	$coupon_code = sanitize_text_field( $_GET['coupon'] );
+	$coupon_code = sanitize_text_field( $_GET['coupon'] ?? '' );
 
 	if ( empty( $coupon_code ) ) {
 		return;
@@ -703,7 +705,7 @@ function primefit_try_apply_coupon_from_cookie() {
 		return;
 	}
 
-	$coupon_code = sanitize_text_field( wp_unslash( $_COOKIE['primefit_pending_coupon'] ) );
+	$coupon_code = sanitize_text_field( wp_unslash( $_COOKIE['primefit_pending_coupon'] ?? '' ) );
 
 	// Check if cart exists and is not empty before applying coupon
 	if ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) {
@@ -750,11 +752,194 @@ function primefit_redirect_without_coupon_param() {
 	}
 
 	// Build clean URL
-	$url = remove_query_arg( 'coupon' );
+	$current_uri = $_SERVER['REQUEST_URI'] ?? '';
+	$url = remove_query_arg( 'coupon', $current_uri );
 
 	// Only redirect if the URL actually changed
-	if ( $url !== $_SERVER['REQUEST_URI'] ) {
+	if ( $url !== $current_uri ) {
 		wp_redirect( $url );
 		exit; // SECURITY: Must exit after redirect to prevent code execution
 	}
+}
+
+/**
+ * AJAX Product Search Handler
+ * Efficient product search with caching and WooCommerce integration
+ */
+add_action( 'wp_ajax_primefit_product_search', 'primefit_handle_product_search' );
+add_action( 'wp_ajax_nopriv_primefit_product_search', 'primefit_handle_product_search' );
+
+function primefit_handle_product_search() {
+	// Verify nonce for security
+	if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'primefit_nonce' ) ) {
+		wp_send_json_error( 'Security check failed', 403 );
+	}
+
+	// Sanitize search query
+	$search_query = sanitize_text_field( $_POST['query'] ?? '' );
+	
+	if ( empty( $search_query ) || strlen( $search_query ) < 2 ) {
+		wp_send_json_error( 'Search query too short', 400 );
+	}
+
+	// Generate cache key
+	$cache_key = 'primefit_search_' . md5( $search_query );
+	
+	// Try to get cached results first
+	$cached_results = wp_cache_get( $cache_key, 'primefit_search' );
+	
+	if ( false !== $cached_results ) {
+		wp_send_json_success( $cached_results );
+	}
+
+	// Perform optimized product search
+	$search_results = primefit_perform_product_search( $search_query );
+	
+	// Add debug info if no results found
+	if ( empty( $search_results['products'] ) ) {
+		$search_results['debug'] = array(
+			'query' => $search_query,
+			'total_found' => $search_results['total'],
+			'wc_active' => class_exists( 'WooCommerce' ),
+			'wc_version' => class_exists( 'WooCommerce' ) ? WC()->version : 'N/A'
+		);
+	}
+	
+	// Cache results for 15 minutes
+	wp_cache_set( $cache_key, $search_results, 'primefit_search', 900 );
+	
+	wp_send_json_success( $search_results );
+}
+
+/**
+ * Perform optimized product search with WooCommerce integration
+ */
+function primefit_perform_product_search( $search_query ) {
+	global $wpdb;
+	
+	// Use WooCommerce's product search with optimized query
+	$args = array(
+		'post_type' => 'product',
+		'post_status' => 'publish',
+		'posts_per_page' => 12, // Limit results for performance
+		's' => $search_query,
+		'meta_query' => array(
+			'relation' => 'OR',
+			// Include products that are visible in catalog
+			array(
+				'key' => '_visibility',
+				'value' => array( 'visible', 'catalog' ),
+				'compare' => 'IN'
+			),
+			// Include products without visibility meta (default to visible)
+			array(
+				'key' => '_visibility',
+				'compare' => 'NOT EXISTS'
+			),
+			// Include products with modern WooCommerce visibility settings
+			array(
+				'key' => '_wc_product_catalog_visibility',
+				'value' => array( 'visible', 'catalog' ),
+				'compare' => 'IN'
+			),
+			// Include products that are searchable
+			array(
+				'key' => '_wc_product_searchable',
+				'value' => 'yes',
+				'compare' => '='
+			)
+		),
+		'orderby' => 'relevance',
+		'order' => 'DESC'
+	);
+
+	$query = new WP_Query( $args );
+	
+	$results = array(
+		'products' => array(),
+		'ids' => array(),
+		'total' => $query->found_posts,
+		'query' => $search_query,
+		'html' => ''
+	);
+
+	if ( $query->have_posts() ) {
+		while ( $query->have_posts() ) {
+			$query->the_post();
+			global $product;
+			
+			if ( ! $product || ! $product->is_visible() ) {
+				continue;
+			}
+
+			// Get product data efficiently
+			$product_data = primefit_get_search_product_data( $product );
+			if ( $product_data ) {
+				$results['products'][] = $product_data;
+				$results['ids'][] = (int) $product_data['id'];
+			}
+		}
+		wp_reset_postdata();
+	}
+
+	// Render WooCommerce product loop HTML for the found IDs using the standard loop component
+	if ( ! empty( $results['ids'] ) ) {
+		$ids_str = implode( ',', array_map( 'absint', $results['ids'] ) );
+		// Use 4 columns for compact search overlay layout
+		$columns = 4;
+		$results['html'] = do_shortcode( '[products ids="' . esc_attr( $ids_str ) . '" columns="' . esc_attr( $columns ) . '"]' );
+	}
+
+	return $results;
+}
+
+/**
+ * Get optimized product data for search results
+ */
+function primefit_get_search_product_data( $product ) {
+	if ( ! $product || ! method_exists( $product, 'get_id' ) ) {
+		return false;
+	}
+
+	$product_id = $product->get_id();
+	
+	// Get cached product data if available
+	$cache_key = "search_product_{$product_id}";
+	$cached_data = wp_cache_get( $cache_key, 'primefit_products' );
+	
+	if ( false !== $cached_data ) {
+		return $cached_data;
+	}
+
+	// Get product image
+	$image_id = $product->get_image_id();
+	$image_url = '';
+	if ( $image_id ) {
+		$image_url = wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' );
+	}
+
+	// Get product price
+	$price_html = $product->get_price_html();
+	
+	// Get product title with SKU if available
+	$title = $product->get_name();
+	$sku = $product->get_sku();
+	if ( $sku ) {
+		$title = $sku . '. ' . $title;
+	}
+
+	$product_data = array(
+		'id' => $product_id,
+		'title' => $title,
+		'url' => get_permalink( $product_id ),
+		'image' => $image_url,
+		'price' => $price_html,
+		'is_on_sale' => $product->is_on_sale(),
+		'stock_status' => $product->get_stock_status()
+	);
+
+	// Cache for 1 hour
+	wp_cache_set( $cache_key, $product_data, 'primefit_products', 3600 );
+	
+	return $product_data;
 }

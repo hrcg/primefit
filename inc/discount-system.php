@@ -523,7 +523,7 @@ function primefit_get_client_ip() {
 			}
 
 			// Handle comma-separated IPs (like X-Forwarded-For)
-			if ( strpos( $ip, ',' ) !== false ) {
+			if ( $ip && strpos( $ip, ',' ) !== false ) {
 				$ip = trim( explode( ',', $ip )[0] );
 			}
 
@@ -1938,7 +1938,7 @@ function primefit_coupon_bulk_action_notices() {
 	}
 
 	if ( isset( $_GET['coupon_reset'] ) ) {
-		$coupon_code = sanitize_text_field( $_GET['coupon_reset'] );
+		$coupon_code = sanitize_text_field( $_GET['coupon_reset'] ?? '' );
 		printf(
 			'<div class="notice notice-success is-dismissible"><p>' .
 			__( 'Statistics reset for coupon "%s".', 'primefit' ) .
@@ -1948,7 +1948,7 @@ function primefit_coupon_bulk_action_notices() {
 	}
 
 	if ( isset( $_GET['reset_error'] ) ) {
-		$error = sanitize_text_field( $_GET['reset_error'] );
+		$error = sanitize_text_field( $_GET['reset_error'] ?? '' );
 		printf(
 			'<div class="notice notice-error is-dismissible"><p>' .
 			__( 'Error resetting coupon: %s', 'primefit' ) .
@@ -1981,7 +1981,7 @@ function primefit_coupon_analytics_page() {
 	if ( isset( $_POST['reset_coupon'] ) && isset( $_POST['coupon_code'] ) ) {
 		check_admin_referer( 'reset_coupon_stats' );
 
-		$coupon_code = sanitize_text_field( $_POST['coupon_code'] );
+		$coupon_code = sanitize_text_field( $_POST['coupon_code'] ?? '' );
 		$result = primefit_reset_coupon_stats( $coupon_code );
 
 		if ( is_wp_error( $result ) ) {
