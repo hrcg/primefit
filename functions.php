@@ -782,8 +782,11 @@ function primefit_handle_product_search() {
 		wp_send_json_error( 'Search query too short', 400 );
 	}
 
-	// Generate cache key
-	$cache_key = 'primefit_search_' . md5( $search_query );
+	// Normalize search query for consistent caching (lowercase, trim)
+	$normalized_query = strtolower( trim( $search_query ) );
+
+	// Generate cache key using normalized query
+	$cache_key = 'primefit_search_' . md5( $normalized_query );
 	
 	// Try to get cached results first
 	$cached_results = wp_cache_get( $cache_key, 'primefit_search' );
@@ -792,13 +795,14 @@ function primefit_handle_product_search() {
 		wp_send_json_success( $cached_results );
 	}
 
-	// Perform optimized product search
-	$search_results = primefit_perform_product_search( $search_query );
+	// Perform optimized product search using normalized query
+	$search_results = primefit_perform_product_search( $normalized_query );
 	
 	// Add debug info if no results found
 	if ( empty( $search_results['products'] ) ) {
 		$search_results['debug'] = array(
-			'query' => $search_query,
+			'original_query' => $search_query,
+			'normalized_query' => $normalized_query,
 			'total_found' => $search_results['total'],
 			'wc_active' => class_exists( 'WooCommerce' ),
 			'wc_version' => class_exists( 'WooCommerce' ) ? WC()->version : 'N/A'
@@ -887,7 +891,12 @@ function primefit_perform_product_search( $search_query ) {
 		$ids_str = implode( ',', array_map( 'absint', $results['ids'] ) );
 		// Use 4 columns for compact search overlay layout
 		$columns = 4;
-		$results['html'] = do_shortcode( '[products ids="' . esc_attr( $ids_str ) . '" columns="' . esc_attr( $columns ) . '"]' );
+		$html = do_shortcode( '[products ids="' . esc_attr( $ids_str ) . '" columns="' . esc_attr( $columns ) . '"]' );
+		
+		// Add search-products class to the products ul element
+		$html = str_replace( 'class="products columns-' . $columns . '"', 'class="products columns-' . $columns . ' search-products"', $html );
+		
+		$results['html'] = $html;
 	}
 
 	return $results;

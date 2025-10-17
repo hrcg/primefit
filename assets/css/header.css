@@ -285,7 +285,6 @@
   border: 0;
   color: #fff;
   cursor: pointer;
-  padding: 8px;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
 }
@@ -347,7 +346,6 @@
 /* Search Panel Header */
 .search-panel-header {
   padding: 20px;
-  border-bottom: 1px solid #e5e5e5;
 }
 
 .search-input-container {
@@ -366,9 +364,8 @@
 
 .search-input {
   width: 100%;
-  padding: 16px 16px 16px 48px;
+  padding: 10px 10px 10px 48px;
   border: 1px solid #e5e5e5;
-  border-radius: 8px;
   font-size: 16px;
   background: #fff;
   color: #000;
@@ -432,7 +429,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  row-gap: 28px;
   margin-top: 20px;
+}
+
+/* Search products grid styling */
+.search-products {
+  gap: 70px 20px !important;
 }
 
 .search-result-item {
@@ -511,8 +514,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Search No Results */
@@ -553,30 +560,30 @@
 /* Desktop Search Styles */
 @media (min-width: 1025px) {
   .search-panel {
-    max-width: 1200px;
+    min-width: 1000px;
     left: 50%;
     transform: translateX(-50%) translateY(-100%);
-    border-radius: 0 0 12px 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
-  
+
   .search-open .search-panel {
     transform: translateX(-50%) translateY(0);
   }
-  
+
   .search-results-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 32px;
+    row-gap: 40px;
   }
-  
+
   .search-result-image {
     height: 240px;
   }
-  
+
   .search-result-title {
     font-size: 16px;
   }
-  
+
   .search-result-price {
     font-size: 16px;
   }
@@ -587,14 +594,94 @@
   .search-panel {
     height: 100vh;
   }
-  
+
   .search-results-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 24px;
+    row-gap: 32px;
   }
-  
+
   .search-result-image {
     height: 180px;
+  }
+}
+
+/* Dark Mode Support for Search */
+@media (prefers-color-scheme: dark) {
+  .search-panel {
+    background: #1a1a1a;
+    color: #fff;
+  }
+  .search-icon {
+    color: #999;
+  }
+
+  .search-input {
+    background: #2a2a2a;
+    color: #fff;
+    border-color: #333;
+  }
+
+  .search-input:focus {
+    border-color: #fff;
+  }
+
+  .search-input::placeholder {
+    color: #999;
+  }
+
+  .search-close {
+    color: #999;
+  }
+
+  .search-results-count {
+    color: #999;
+  }
+
+  .search-view-all {
+    color: #fff;
+  }
+
+  .search-view-all:hover {
+    color: #ccc;
+  }
+
+  .search-result-item {
+    background: #2a2a2a;
+    border-color: #333;
+  }
+
+  .search-result-item:hover {
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+  }
+
+  .search-result-image {
+    background: #333;
+  }
+
+  .search-result-title {
+    color: #fff;
+  }
+
+  .search-result-price {
+    color: #fff;
+  }
+
+  .search-loading {
+    color: #999;
+  }
+
+  .search-spinner {
+    border-color: #333;
+    border-top-color: #fff;
+  }
+
+  .search-no-results {
+    color: #999;
+  }
+
+  .search-overlay {
+    background: rgba(0, 0, 0, 0.7);
   }
 }
 
@@ -842,8 +929,12 @@
 
   .header-left {
     order: 1;
-    margin-right: 40px;
     margin-bottom: 5px;
+  }
+
+  /* Add margin-right only when search icon is not rendered (single product pages) */
+  body.single-product .header-left {
+    margin-right: 40px;
   }
 
   .header-center {
