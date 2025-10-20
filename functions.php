@@ -782,8 +782,7 @@ function primefit_handle_product_search() {
 		wp_send_json_error( 'Search query too short', 400 );
 	}
 
-	// Track search query for trending functionality
-	primefit_track_search_query( $search_query );
+	// NOTE: We record trending searches only when there are results (handled below)
 
 	// Normalize search query for consistent caching (lowercase, trim)
 	$normalized_query = strtolower( trim( $search_query ) );
@@ -795,6 +794,10 @@ function primefit_handle_product_search() {
 	$cached_results = wp_cache_get( $cache_key, 'primefit_search' );
 	
 	if ( false !== $cached_results ) {
+		// Track only if cached results contain products
+		if ( ! empty( $cached_results['products'] ) ) {
+			primefit_track_search_query( $search_query );
+		}
 		wp_send_json_success( $cached_results );
 	}
 
@@ -812,6 +815,11 @@ function primefit_handle_product_search() {
 		);
 	}
 	
+	// Track only if fresh results contain products
+	if ( ! empty( $search_results['products'] ) ) {
+		primefit_track_search_query( $search_query );
+	}
+
 	// Cache results for 15 minutes
 	wp_cache_set( $cache_key, $search_results, 'primefit_search', 900 );
 	
