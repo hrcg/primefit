@@ -782,6 +782,9 @@ function primefit_handle_product_search() {
 		wp_send_json_error( 'Search query too short', 400 );
 	}
 
+	// Track search query for trending functionality
+	primefit_track_search_query( $search_query );
+
 	// Normalize search query for consistent caching (lowercase, trim)
 	$normalized_query = strtolower( trim( $search_query ) );
 
@@ -951,4 +954,121 @@ function primefit_get_search_product_data( $product ) {
 	wp_cache_set( $cache_key, $product_data, 'primefit_products', 3600 );
 	
 	return $product_data;
+}
+
+/**
+ * Track search queries for trending functionality
+ */
+function primefit_track_search_query( $query ) {
+	if ( empty( $query ) || strlen( $query ) < 2 ) {
+		return;
+	}
+
+	$query = sanitize_text_field( $query );
+	$today = date( 'Y-m-d' );
+	
+	// Use transient for better performance and automatic cleanup
+	$cache_key = 'primefit_trending_' . $today;
+	$trending_data = get_transient( $cache_key );
+	
+	if ( false === $trending_data ) {
+		$trending_data = array();
+	}
+	
+	// Increment count for this query
+	if ( ! isset( $trending_data[ $query ] ) ) {
+		$trending_data[ $query ] = 0;
+	}
+	$trending_data[ $query ]++;
+	
+	// Store with 24-hour expiration (automatically cleaned up)
+	set_transient( $cache_key, $trending_data, DAY_IN_SECONDS );
+	
+	// Also update persistent storage for historical data (less frequent)
+	$persistent_data = get_option( 'primefit_trending_searches', array() );
+	if ( ! isset( $persistent_data[ $today ] ) ) {
+		$persistent_data[ $today ] = array();
+	}
+	$persistent_data[ $today ][ $query ] = $trending_data[ $query ];
+	
+	// Clean up old data (keep only last 7 days)
+	$cutoff_date = date( 'Y-m-d', strtotime( '-7 days' ) );
+	foreach ( $persistent_data as $date => $queries ) {
+		if ( $date < $cutoff_date ) {
+			unset( $persistent_data[ $date ] );
+		}
+	}
+	
+	// Update option more frequently (every 3rd search) for better trending accuracy
+	static $write_counter = 0;
+	$write_counter++;
+	if ( $write_counter % 3 === 0 ) {
+		update_option( 'primefit_trending_searches', $persistent_data );
+	}
+}
+
+/**
+ * Get trending searches
+ */
+function primefit_get_trending_searches( $limit = 4, $days = 3 ) {
+	// Try to get cached results first
+	$cache_key = 'primefit_trending_results_' . $days . '_' . $limit;
+	$cached_results = wp_cache_get( $cache_key, 'primefit_trending' );
+	
+	if ( false !== $cached_results ) {
+		return $cached_results;
+	}
+	
+	$trending_data = get_option( 'primefit_trending_searches', array() );
+	$combined_counts = array();
+	
+	// Include today's transient data for more up-to-date results
+	$today = date( 'Y-m-d' );
+	$today_cache_key = 'primefit_trending_' . $today;
+	$today_data = get_transient( $today_cache_key );
+	
+	if ( false !== $today_data ) {
+		$trending_data[ $today ] = $today_data;
+	}
+	
+	// Combine counts from last N days
+	$cutoff_date = date( 'Y-m-d', strtotime( "-{$days} days" ) );
+	foreach ( $trending_data as $date => $queries ) {
+		if ( $date >= $cutoff_date ) {
+			foreach ( $queries as $query => $count ) {
+				if ( ! isset( $combined_counts[ $query ] ) ) {
+					$combined_counts[ $query ] = 0;
+				}
+				$combined_counts[ $query ] += $count;
+			}
+		}
+	}
+	
+	// Sort by count and return top results
+	arsort( $combined_counts );
+	$results = array_slice( array_keys( $combined_counts ), 0, $limit );
+	
+	// Cache results for 15 minutes
+	wp_cache_set( $cache_key, $results, 'primefit_trending', 900 );
+	
+	return $results;
+}
+
+/**
+ * AJAX handler for getting trending searches
+ */
+add_action( 'wp_ajax_primefit_get_trending_searches', 'primefit_handle_get_trending_searches' );
+add_action( 'wp_ajax_nopriv_primefit_get_trending_searches', 'primefit_handle_get_trending_searches' );
+
+function primefit_handle_get_trending_searches() {
+	// Verify nonce for security
+	if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'primefit_nonce' ) ) {
+		wp_send_json_error( 'Security check failed', 403 );
+	}
+
+	$trending_searches = primefit_get_trending_searches( 4, 3 );
+	
+	wp_send_json_success( array(
+		'trending_searches' => $trending_searches
+	) );
 }

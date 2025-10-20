@@ -32,6 +32,8 @@
       cache: new Map(),
       currentRequest: null, // jqXHR object for proper cancellation
       lastRequestId: 0, // Track request sequence to prevent stale responses
+      trendingSearchesLoaded: false, // Track if trending searches have been loaded
+      trendingSearchesCache: null, // Cache trending searches data
     },
 
     // DOM elements
@@ -47,6 +49,8 @@
       $searchNoResults: null,
       $searchResultsCount: null,
       $searchViewAll: null,
+      $trendingSearches: null,
+      $trendingSearchesList: null,
     },
 
     /**
@@ -56,6 +60,7 @@
       this.cacheElements();
       this.bindEvents();
       this.setupDesktopSearchMenu();
+      // Don't load trending searches immediately - load when search opens
     },
 
     /**
@@ -73,6 +78,8 @@
       this.elements.$searchNoResults = $(".search-no-results");
       this.elements.$searchResultsCount = $(".search-results-count");
       this.elements.$searchViewAll = $(".search-view-all");
+      this.elements.$trendingSearches = $("#trending-searches");
+      this.elements.$trendingSearchesList = $(".trending-searches-list");
     },
 
     /**
@@ -148,6 +155,13 @@
       this.elements.$searchPanel.removeAttr("hidden");
       this.elements.$searchToggle.attr("aria-expanded", "true");
 
+      // Load trending searches only when search opens (lazy loading)
+      if (!this.state.trendingSearchesLoaded) {
+        this.loadTrendingSearches();
+      } else if (this.state.trendingSearchesCache) {
+        this.displayTrendingSearches(this.state.trendingSearchesCache);
+      }
+
       // Focus search input after animation with multiple attempts for reliability
       setTimeout(() => {
         this.elements.$searchInput.focus();
@@ -193,6 +207,9 @@
         this.state.currentRequest.abort();
         this.state.currentRequest = null;
       }
+
+      // Clean up event handlers to prevent memory leaks
+      this.elements.$trendingSearchesList.off('click.trending');
     },
 
     /**
@@ -210,9 +227,11 @@
 
       if (rawQuery.length < this.config.minQueryLength) {
         this.clearResults();
+        this.showTrendingSearches();
         return;
       }
 
+      this.hideTrendingSearches();
       this.performSearch(normalizedQuery);
     },
 
@@ -227,9 +246,8 @@
           break;
         case "Enter":
           e.preventDefault();
-          if (this.state.currentQuery.length >= this.config.minQueryLength) {
-            this.navigateToSearchResults();
-          }
+          // Disabled: Enter key no longer navigates to search results page
+          // Users can click on individual products or use trending searches
           break;
       }
     },
@@ -427,6 +445,9 @@
       }
       this.hideLoading();
       this.hideNoResults();
+      
+      // Show trending searches when clearing results (only if there are trending searches)
+      this.showTrendingSearches();
     },
 
     /**
@@ -521,6 +542,106 @@
      */
     normalizeQuery: function (query) {
       return query.toLowerCase().trim();
+    },
+
+    /**
+     * Load trending searches from server
+     */
+    loadTrendingSearches: function () {
+      // Return cached data if available
+      if (this.state.trendingSearchesCache) {
+        this.displayTrendingSearches(this.state.trendingSearchesCache);
+        return;
+      }
+
+      const ajaxData = {
+        action: "primefit_get_trending_searches",
+        nonce: window.primefitData?.nonce || "",
+      };
+
+      $.ajax({
+        url: window.primefitData?.ajaxUrl || "/wp-admin/admin-ajax.php",
+        type: "POST",
+        data: ajaxData,
+        timeout: 5000,
+        success: (response) => {
+          if (response.success && response.data.trending_searches) {
+            // Cache the results
+            this.state.trendingSearchesCache = response.data.trending_searches;
+            this.state.trendingSearchesLoaded = true;
+            this.displayTrendingSearches(response.data.trending_searches);
+          }
+        },
+        error: (xhr, status, error) => {
+          if (this.config.debugMode) {
+            console.error("Failed to load trending searches:", error);
+          }
+          this.state.trendingSearchesLoaded = true; // Mark as loaded to prevent retries
+        },
+      });
+    },
+
+    /**
+     * Display trending searches
+     */
+    displayTrendingSearches: function (trendingSearches) {
+      if (!trendingSearches || trendingSearches.length === 0) {
+        this.elements.$trendingSearches.hide();
+        return;
+      }
+
+      // Unbind previous event handlers to prevent memory leaks
+      this.elements.$trendingSearchesList.off('click.trending');
+
+      let html = "";
+      trendingSearches.forEach((searchTerm) => {
+        html += `<button class="trending-search-item" data-search-term="${this.escapeHtml(searchTerm)}">${this.escapeHtml(searchTerm)}</button>`;
+      });
+
+      this.elements.$trendingSearchesList.html(html);
+
+      // Bind click events with namespace to prevent memory leaks
+      this.elements.$trendingSearchesList.on("click.trending", ".trending-search-item", (e) => {
+        const searchTerm = $(e.target).data("search-term");
+        this.elements.$searchInput.val(searchTerm);
+        this.elements.$searchInput.trigger("input");
+        this.performSearch(this.normalizeQuery(searchTerm));
+      });
+
+      // Show the entire trending searches section (including header) only when there are results
+      this.elements.$trendingSearches.show();
+    },
+
+    /**
+     * Hide trending searches when user starts typing
+     */
+    hideTrendingSearches: function () {
+      this.elements.$trendingSearches.hide();
+    },
+
+    /**
+     * Show trending searches when search input is empty
+     */
+    showTrendingSearches: function () {
+      if (this.elements.$searchInput.val().trim().length === 0 && this.state.trendingSearchesCache && this.state.trendingSearchesCache.length > 0) {
+        this.elements.$trendingSearches.show();
+      }
+    },
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml: function (text) {
+      const map = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+      return text.replace(/[&<>"']/g, function (m) {
+        return map[m];
+      });
     },
   };
 
