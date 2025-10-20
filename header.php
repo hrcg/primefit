@@ -56,15 +56,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span></span>
 				</button>
 				
-				<!-- Search Icon for Mobile (hidden on single product pages) -->
-				<?php if ( ! is_singular( 'product' ) ) : ?>
+				<!-- Search Icon for Mobile (hidden on single product pages on mobile only) -->
 				<button class="search-toggle search-toggle--mobile" aria-label="Search" aria-controls="search-overlay" aria-expanded="false">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<circle cx="11" cy="11" r="8"></circle>
 						<path d="m21 21-4.35-4.35"></path>
 					</svg>
 				</button>
-				<?php endif; ?>
 				<?php
 					wp_nav_menu([
 						'theme_location' => 'primary',
@@ -140,7 +138,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 
 			<div class="header-right">
-				<?php if ( ! is_singular( 'product' ) ) : ?>
 				<nav class="secondary-nav" aria-label="Secondary Menu">
 					<?php
 						wp_nav_menu([
@@ -151,7 +148,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 						]);
 					?>
 				</nav>
-				<?php endif; ?>
 				
 				<?php if ( class_exists('WooCommerce') ) { ?>
 					<div class="cart-wrap" data-behavior="click">

@@ -295,10 +295,15 @@
   display: block;
 }
 
-/* Show search toggle on mobile */
+/* Show search toggle on mobile, but hide on single product pages */
 @media (max-width: 1024px) {
   .search-toggle--mobile {
     display: block;
+  }
+  
+  /* Hide search icon on single product pages on mobile */
+  body.single-product .search-toggle--mobile {
+    display: none;
   }
 }
 
@@ -1057,6 +1062,22 @@
 
   .hamburger {
     display: flex;
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 641px) {
+  /* Hide first li of secondary menu on single product pages on mobile */
+  .secondary-nav .menu--secondary li:first-child,
+  .secondary-nav .menu--secondary .menu-item-10979 {
+    display: none !important;
+  }
+}
+
+/* Hide first li of mobile tertiary menu on single product pages */
+@media (max-width: 1024px) {
+  .mobile-menu--tertiary li:first-child,
+  .mobile-menu--tertiary .menu-item-10979 {
+    display: none !important;
   }
 }
 
