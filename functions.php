@@ -966,6 +966,7 @@ function primefit_get_search_product_data( $product ) {
 
 /**
  * Track search queries for trending functionality
+ * Optimized with batched writes and memory-based tracking for better performance
  */
 function primefit_track_search_query( $query ) {
 	if ( empty( $query ) || strlen( $query ) < 2 ) {
@@ -973,53 +974,99 @@ function primefit_track_search_query( $query ) {
 	}
 
 	$query = sanitize_text_field( $query );
-	$today = date( 'Y-m-d' );
 	
-	// Use transient for better performance and automatic cleanup
-	$cache_key = 'primefit_trending_' . $today;
-	$trending_data = get_transient( $cache_key );
-	
-	if ( false === $trending_data ) {
-		$trending_data = array();
+	// Cache today's date for the request
+	static $today = null;
+	if ( null === $today ) {
+		$today = date( 'Y-m-d' );
 	}
 	
-	// Increment count for this query
-	if ( ! isset( $trending_data[ $query ] ) ) {
-		$trending_data[ $query ] = 0;
+	// Use memory-based tracking for performance
+	$memory_key = 'primefit_trending_memory_' . $today;
+	$memory_data = wp_cache_get( $memory_key, 'primefit_trending_memory' );
+	
+	if ( empty( $memory_data ) ) {
+		$memory_data = array();
 	}
-	$trending_data[ $query ]++;
 	
-	// Store with 24-hour expiration (automatically cleaned up)
-	set_transient( $cache_key, $trending_data, DAY_IN_SECONDS );
+	// Increment count in memory (simplified)
+	$memory_data[ $query ] = isset( $memory_data[ $query ] ) ? $memory_data[ $query ] + 1 : 1;
 	
-	// Also update persistent storage for historical data (less frequent)
-	$persistent_data = get_option( 'primefit_trending_searches', array() );
-	if ( ! isset( $persistent_data[ $today ] ) ) {
-		$persistent_data[ $today ] = array();
-	}
-	$persistent_data[ $today ][ $query ] = $trending_data[ $query ];
+	// Store in memory with 1-hour expiration
+	wp_cache_set( $memory_key, $memory_data, 'primefit_trending_memory', HOUR_IN_SECONDS );
 	
-	// Clean up old data (keep only last 7 days)
-	$cutoff_date = date( 'Y-m-d', strtotime( '-7 days' ) );
-	foreach ( $persistent_data as $date => $queries ) {
-		if ( $date < $cutoff_date ) {
-			unset( $persistent_data[ $date ] );
+	// Schedule periodic database sync (every 10th search)
+	static $search_count = 0;
+	static $last_sync_check = 0;
+	$search_count++;
+	
+	// Only check sync conditions every 10 searches (avoid transient reads)
+	if ( $search_count % 10 === 0 ) {
+		$current_time = time();
+		
+		// Check if 5 minutes have passed since last check
+		if ( $last_sync_check === 0 || ( $current_time - $last_sync_check ) > 300 ) {
+			primefit_sync_trending_to_database( $today );
+			$last_sync_check = $current_time;
 		}
-	}
-	
-	// Update option more frequently (every 3rd search) for better trending accuracy
-	static $write_counter = 0;
-	$write_counter++;
-	if ( $write_counter % 3 === 0 ) {
-		update_option( 'primefit_trending_searches', $persistent_data );
 	}
 }
 
 /**
- * Get trending searches
+ * Sync trending search data from memory to database
+ * Called periodically to ensure persistence without performance impact
  */
-function primefit_get_trending_searches( $limit = 4, $days = 3 ) {
-	// Try to get cached results first
+function primefit_sync_trending_to_database( $today = null ) {
+	if ( null === $today ) {
+		$today = date( 'Y-m-d' );
+	}
+	
+	$memory_key = 'primefit_trending_memory_' . $today;
+	$memory_data = wp_cache_get( $memory_key, 'primefit_trending_memory' );
+	
+	if ( empty( $memory_data ) ) {
+		return; // No data to sync
+	}
+	
+	// Get current persistent data
+	$persistent_data = get_option( 'primefit_trending_searches', array() );
+	
+	// Initialize today's data if needed
+	if ( ! isset( $persistent_data[ $today ] ) ) {
+		$persistent_data[ $today ] = array();
+	}
+	
+	// Merge memory data with persistent data (optimized)
+	foreach ( $memory_data as $query => $count ) {
+		$persistent_data[ $today ][ $query ] = isset( $persistent_data[ $today ][ $query ] ) 
+			? $persistent_data[ $today ][ $query ] + $count 
+			: $count;
+	}
+	
+	// Only clean up old data occasionally (every ~25% of syncs) to reduce overhead
+	static $cleanup_counter = 0;
+	$cleanup_counter++;
+	
+	if ( $cleanup_counter % 4 === 0 ) {
+		$cutoff_date = date( 'Y-m-d', strtotime( '-7 days' ) );
+		$persistent_data = array_filter( $persistent_data, function( $date ) use ( $cutoff_date ) {
+			return $date >= $cutoff_date;
+		}, ARRAY_FILTER_USE_KEY );
+	}
+	
+	// Update database
+	update_option( 'primefit_trending_searches', $persistent_data, false );
+	
+	// Clear memory data after successful sync
+	wp_cache_delete( $memory_key, 'primefit_trending_memory' );
+}
+
+/**
+ * Get trending searches
+ * Optimized to combine database persistence with memory performance
+ */
+function primefit_get_trending_searches( $limit = 4, $days = 7 ) {
+	// Try to get cached results first for performance
 	$cache_key = 'primefit_trending_results_' . $days . '_' . $limit;
 	$cached_results = wp_cache_get( $cache_key, 'primefit_trending' );
 	
@@ -1027,36 +1074,52 @@ function primefit_get_trending_searches( $limit = 4, $days = 3 ) {
 		return $cached_results;
 	}
 	
-	$trending_data = get_option( 'primefit_trending_searches', array() );
-	$combined_counts = array();
-	
-	// Include today's transient data for more up-to-date results
+	// Calculate dates once
 	$today = date( 'Y-m-d' );
-	$today_cache_key = 'primefit_trending_' . $today;
-	$today_data = get_transient( $today_cache_key );
+	$cutoff_date = date( 'Y-m-d', strtotime( "-{$days} days" ) );
 	
-	if ( false !== $today_data ) {
-		$trending_data[ $today ] = $today_data;
+	// Get persistent data from database (primary source)
+	$trending_data = get_option( 'primefit_trending_searches', array() );
+	
+	// Include today's memory data for most up-to-date results
+	$memory_key = 'primefit_trending_memory_' . $today;
+	$memory_data = wp_cache_get( $memory_key, 'primefit_trending_memory' );
+	
+	if ( ! empty( $memory_data ) ) {
+		// Ensure today's data array exists
+		if ( ! isset( $trending_data[ $today ] ) ) {
+			$trending_data[ $today ] = array();
+		}
+		// Merge memory data (optimized)
+		foreach ( $memory_data as $query => $count ) {
+			$trending_data[ $today ][ $query ] = isset( $trending_data[ $today ][ $query ] )
+				? $trending_data[ $today ][ $query ] + $count
+				: $count;
+		}
 	}
 	
-	// Combine counts from last N days
-	$cutoff_date = date( 'Y-m-d', strtotime( "-{$days} days" ) );
+	// Combine counts from last N days (optimized loop)
+	$combined_counts = array();
 	foreach ( $trending_data as $date => $queries ) {
 		if ( $date >= $cutoff_date ) {
 			foreach ( $queries as $query => $count ) {
-				if ( ! isset( $combined_counts[ $query ] ) ) {
-					$combined_counts[ $query ] = 0;
-				}
-				$combined_counts[ $query ] += $count;
+				$combined_counts[ $query ] = isset( $combined_counts[ $query ] )
+					? $combined_counts[ $query ] + $count
+					: $count;
 			}
 		}
 	}
 	
+	// Early return if no data
+	if ( empty( $combined_counts ) ) {
+		return array();
+	}
+	
 	// Sort by count and return top results
 	arsort( $combined_counts );
-	$results = array_slice( array_keys( $combined_counts ), 0, $limit );
+	$results = array_slice( array_keys( $combined_counts ), 0, $limit, true );
 	
-	// Cache results for 15 minutes
+	// Cache results for 15 minutes for performance
 	wp_cache_set( $cache_key, $results, 'primefit_trending', 900 );
 	
 	return $results;
@@ -1074,9 +1137,65 @@ function primefit_handle_get_trending_searches() {
 		wp_send_json_error( 'Security check failed', 403 );
 	}
 
-	$trending_searches = primefit_get_trending_searches( 4, 3 );
+	$trending_searches = primefit_get_trending_searches( 4, 7 );
 	
 	wp_send_json_success( array(
 		'trending_searches' => $trending_searches
 	) );
 }
+
+/**
+ * Debug function to test trending searches persistence
+ * Can be called via WP-CLI or admin interface for testing
+ */
+function primefit_debug_trending_searches() {
+	// Add some test searches
+	$test_searches = array( 'protein powder', 'gym equipment', 'fitness tracker', 'workout gear' );
+	foreach ( $test_searches as $search ) {
+		primefit_track_search_query( $search );
+	}
+	
+	// Force sync to database
+	primefit_sync_trending_to_database();
+	
+	// Get current trending data
+	$trending_data = get_option( 'primefit_trending_searches', array() );
+	$trending_searches = primefit_get_trending_searches( 4, 7 );
+	
+	return array(
+		'raw_data' => $trending_data,
+		'trending_searches' => $trending_searches,
+		'message' => 'Trending searches data retrieved successfully'
+	);
+}
+
+/**
+ * Scheduled cleanup function to ensure data integrity
+ * Runs daily to sync any remaining memory data and clean up old data
+ */
+function primefit_trending_searches_cleanup() {
+	// Force sync any remaining memory data
+	primefit_sync_trending_to_database();
+	
+	// Clean up old data from database
+	$persistent_data = get_option( 'primefit_trending_searches', array() );
+	$cutoff_date = date( 'Y-m-d', strtotime( '-7 days' ) );
+	$cleaned = false;
+	
+	foreach ( $persistent_data as $date => $queries ) {
+		if ( $date < $cutoff_date ) {
+			unset( $persistent_data[ $date ] );
+			$cleaned = true;
+		}
+	}
+	
+	if ( $cleaned ) {
+		update_option( 'primefit_trending_searches', $persistent_data );
+	}
+}
+
+// Schedule daily cleanup
+if ( ! wp_next_scheduled( 'primefit_trending_cleanup' ) ) {
+	wp_schedule_event( time(), 'daily', 'primefit_trending_cleanup' );
+}
+add_action( 'primefit_trending_cleanup', 'primefit_trending_searches_cleanup' );
