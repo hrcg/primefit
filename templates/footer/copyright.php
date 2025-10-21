@@ -20,7 +20,7 @@ $copyright_text = get_theme_mod('primefit_copyright_text', $copyright['text']);
 
 <div class="footer-bottom">
 	<p>COPYRIGHT © 2025 - <img src="<?php echo get_template_directory_uri(); ?>/assets/images/symbol.webp" alt="PrimeFit Symbol" class="footer-symbol" loading="lazy" />
- 	PRIMEFIT ATHLETICS</p>
+ 	PRIMEFIT BETTER THAN YESTERDAY</p>
 	<div class="site-built-with">
 		<a href="https://swissdigital.io" target="_blank" rel="noopener noreferrer" class="site-built-link">
 			<span>SITE BUILT BY</span>

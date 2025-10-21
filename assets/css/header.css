@@ -197,8 +197,7 @@
 /* Hamburger Menu */
 .hamburger {
   display: none;
-  width: 24px;
-  height: 14px;
+  width: 22px;
   position: relative;
   background: transparent;
   border: 0;
@@ -248,35 +247,12 @@
   }
 }
 
-.hamburger span {
-  height: 2px;
-  background: #fff !important;
+.hamburger-icon {
   display: block;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  filter: brightness(0) invert(1); /* Makes the SVG white */
+  transition: transform 0.3s ease;
 }
 
-/* 
- * HAMBURGER BUTTON VISIBILITY FIX
- * Ensures hamburger button is always white and visible regardless of theme preference
- * This fixes iOS visibility issues where the button becomes invisible in light themes
- */
-[data-theme="light"] .hamburger span {
-  background: #fff !important;
-}
-
-@media (prefers-color-scheme: light) {
-  .hamburger span {
-    background: #fff !important;
-  }
-}
-
-/* iOS-specific optimizations for hamburger button visibility */
-@supports (-webkit-touch-callout: none) {
-  .hamburger span {
-    background: #fff !important;
-    -webkit-tap-highlight-color: transparent;
-  }
-}
 
 /* Search Toggle Button */
 .search-toggle {
@@ -350,7 +326,7 @@
 
 /* Search Panel Header */
 .search-panel-header {
-  padding: 20px;
+  padding: 20px 20px 0 20px;
 }
 
 .search-input-container {
@@ -545,7 +521,7 @@
 /* Trending Searches */
 .trending-searches {
   margin-bottom: 24px;
-  padding: 20px 0;
+  padding: 10px 0 20px 0;
   border-bottom: 1px solid #e5e5e5;
   display: none; /* Hidden by default, shown only when there are trending searches */
 }
@@ -849,7 +825,7 @@
   background: transparent;
   border: 0;
   color: var(--text);
-  font-size: 28px;
+  font-size: 36px;
   line-height: 1;
   padding: 0;
   cursor: pointer;

@@ -51,9 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</button>
 				<!-- Hamburger Menu -->
 				<button class="hamburger" aria-label="Open menu" aria-controls="mobile-nav" aria-expanded="false">
-					<span></span>
-					<span></span>
-					<span></span>
+					<img src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/hamburger.svg' ); ?>" alt="Menu" class="hamburger-icon">
 				</button>
 				
 				<!-- Search Icon for Mobile (hidden on single product pages on mobile only) -->
