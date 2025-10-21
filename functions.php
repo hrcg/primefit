@@ -1199,3 +1199,252 @@ if ( ! wp_next_scheduled( 'primefit_trending_cleanup' ) ) {
 	wp_schedule_event( time(), 'daily', 'primefit_trending_cleanup' );
 }
 add_action( 'primefit_trending_cleanup', 'primefit_trending_searches_cleanup' );
+
+/**
+ * POS Integration - Register REST API Routes
+ * Registers WTN endpoint for creating WooCommerce orders
+ */
+add_action('rest_api_init', 'primefit_register_pos_routes');
+
+function primefit_register_pos_routes() {
+    // Register main WTN endpoint
+    register_rest_route('pos/v1', '/wtn', array(
+        'methods' => 'POST',
+        'callback' => 'handle_pos_wtn_request',
+        'permission_callback' => '__return_true',
+    ));
+    
+    // Register test endpoints
+    register_rest_route('pos/v1', '/test-invoice', array(
+        'methods' => 'POST',
+        'callback' => 'handle_pos_test_invoice',
+        'permission_callback' => '__return_true',
+    ));
+    
+    register_rest_route('pos/v1', '/test-wtn', array(
+        'methods' => 'POST',
+        'callback' => 'handle_pos_test_wtn',
+        'permission_callback' => '__return_true',
+    ));
+}
+
+/**
+ * Handle POS Invoice Request - Create WooCommerce Order
+ */
+function handle_pos_wtn_request(WP_REST_Request $request) {
+    $headers = $request->get_headers();
+    $incoming_key = $headers['x_api_key'][0] ?? $headers['x-api-key'][0] ?? '';
+    
+    // Check against both POS API keys
+    $wtn_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJpa01oaGJZYjZHVVdtUk9tRVFKUzNaM3NUdkozIiwiaWF0IjoxNzM2MTc0ODc2LCJkb2NJZCI6IjhvZ3FWQk0wUFBrSWsybm9wNlhaIn0.VboJSXyBVKKz5m689VYRuvEFLe_BrYGY2GWpVJL_V-k';
+    $invoice_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJodFF0VWtvMURtU0s4RDZrWklXZTh2eDRxV2oxIiwiaWF0IjoxNzQ1NDk5MDE3LCJkb2NJZCI6Inp2MjRQbHBpNWhoOTdJOE55akxvIn0.-lRvglaEJxwo5BeolEi_WvyxK0zRmgJtKmpxkLhNZX0';
+    
+    if ($incoming_key !== $wtn_api_key && $incoming_key !== $invoice_api_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized - Invalid API key'], 403);
+    }
+
+    $data = $request->get_json_params();
+    
+    // Handle both API formats: invoice and wtn
+    $items = array();
+    if (!empty($data['order']['items'])) {
+        // Invoice API format
+        $items = $data['order']['items'];
+    } elseif (!empty($data['wtnOptions']['items'])) {
+        // WTN API format
+        $items = $data['wtnOptions']['items'];
+    } else {
+        return new WP_REST_Response(['error' => 'Missing items'], 400);
+    }
+    $order = wc_create_order();
+
+    // Add products to order
+    foreach ($items as $item) {
+        $product_id = null;
+        
+        // Handle different field names for SKU/ID
+        $sku = $item['sku'] ?? $item['itemId'] ?? '';
+        $quantity = intval($item['quantity'] ?? $item['amount'] ?? 1);
+        $price = floatval($item['totalWithTax'] ?? $item['cost'] ?? 0);
+        
+        // Look for product by SKU/itemId first
+        if (!empty($sku)) {
+            $product_id = wc_get_product_id_by_sku($sku);
+        }
+        
+        // If no SKU match, try to find by name
+        if (!$product_id && !empty($item['name'])) {
+            $products = wc_get_products(array(
+                'name' => $item['name'],
+                'limit' => 1,
+                'status' => 'publish'
+            ));
+            if (!empty($products)) {
+                $product_id = $products[0]->get_id();
+            }
+        }
+        
+        // Add product to order
+        if ($product_id) {
+            $order->add_product(wc_get_product($product_id), $quantity);
+        } else {
+            // Create a simple line item if product not found
+            $order_item = new WC_Order_Item_Product();
+            $order_item->set_name($item['name'] ?? 'Unknown Product');
+            $order_item->set_quantity($quantity);
+            $order_item->set_total($price);
+            $order->add_item($order_item);
+        }
+    }
+
+    // Set customer information if available
+    if (!empty($data['order']['options']['customer'])) {
+        $customer = $data['order']['options']['customer'];
+        
+        if (!empty($customer['name'])) {
+            $order->set_billing_first_name($customer['name']);
+            $order->set_shipping_first_name($customer['name']);
+        }
+        
+        if (!empty($customer['address'])) {
+            $order->set_billing_address_1($customer['address']);
+            $order->set_shipping_address_1($customer['address']);
+        }
+        
+        if (!empty($customer['town'])) {
+            $order->set_billing_city($customer['town']);
+            $order->set_shipping_city($customer['town']);
+        }
+        
+        if (!empty($customer['country'])) {
+            $order->set_billing_country($customer['country']);
+            $order->set_shipping_country($customer['country']);
+        }
+        
+        if (!empty($customer['id'])) {
+            $order->set_billing_company($customer['id']);
+        }
+    }
+
+    // Store POS metadata (handle both API formats)
+    $order->update_meta_data('_pos_shop_id', $data['shopId'] ?? '');
+    $order->update_meta_data('_pos_order_id', $data['orderId'] ?? '');
+    
+    // Invoice API metadata
+    if (!empty($data['order'])) {
+        $order->update_meta_data('_pos_currency', $data['order']['currency'] ?? '');
+        $order->update_meta_data('_pos_exchange_rate', $data['order']['exchangeRate'] ?? '');
+        $order->update_meta_data('_pos_payment_method', $data['order']['options']['paymentMethod'] ?? '');
+        $order->update_meta_data('_pos_invoice_type', $data['order']['options']['invoiceType'] ?? '');
+        $order->update_meta_data('_pos_is_einvoice', $data['order']['options']['isEinvoice'] ?? false);
+        
+        // Store bank account info if available
+        if (!empty($data['order']['options']['bankAccounts'])) {
+            $order->update_meta_data('_pos_bank_accounts', json_encode($data['order']['options']['bankAccounts']));
+        }
+        
+        // Store e-invoice options if available
+        if (!empty($data['order']['options']['eInvoiceOptions'])) {
+            $order->update_meta_data('_pos_einvoice_options', json_encode($data['order']['options']['eInvoiceOptions']));
+        }
+    }
+    
+    // WTN API metadata
+    if (!empty($data['wtnOptions'])) {
+        $order->update_meta_data('_pos_inventory_id', $data['inventory']['inventoryId'] ?? '');
+        $order->update_meta_data('_pos_vehicle_plate', $data['wtnOptions']['vehPlates'] ?? '');
+        $order->update_meta_data('_pos_carrier_name', $data['wtnOptions']['carrier']['name'] ?? '');
+        $order->update_meta_data('_pos_carrier_address', $data['wtnOptions']['carrier']['address'] ?? '');
+        $order->update_meta_data('_pos_carrier_id', $data['wtnOptions']['carrier']['idNum'] ?? '');
+        $order->update_meta_data('_pos_transaction_type', $data['wtnOptions']['transaction'] ?? '');
+        $order->update_meta_data('_pos_wtn_type', $data['wtnOptions']['type'] ?? '');
+        $order->update_meta_data('_pos_start_point', $data['wtnOptions']['startPoint']['city'] ?? '');
+        $order->update_meta_data('_pos_end_point', $data['wtnOptions']['endPoint']['city'] ?? '');
+    }
+
+    $order->set_status('processing');
+    $order->save();
+
+    return new WP_REST_Response([
+        'success' => true,
+        'order_id' => $order->get_id(),
+        'message' => 'POS order successfully created in WooCommerce'
+    ], 200);
+}
+
+/**
+ * Test endpoint for Invoice API format
+ */
+function handle_pos_test_invoice(WP_REST_Request $request) {
+    $headers = $request->get_headers();
+    $incoming_key = $headers['x_api_key'][0] ?? $headers['x-api-key'][0] ?? '';
+    
+    // Check against Invoice API key
+    $invoice_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJodFF0VWtvMURtU0s4RDZrWklXZTh2eDRxV2oxIiwiaWF0IjoxNzQ1NDk5MDE3LCJkb2NJZCI6Inp2MjRQbHBpNWhoOTdJOE55akxvIn0.-lRvglaEJxwo5BeolEi_WvyxK0zRmgJtKmpxkLhNZX0';
+    
+    if ($incoming_key !== $invoice_api_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized - Invalid Invoice API key'], 403);
+    }
+
+    $data = $request->get_json_params();
+
+    // Log received data for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG === true) {
+        error_log('📦 POS Invoice Test Received: ' . print_r($data, true));
+    }
+
+    return new WP_REST_Response([
+        'success' => true,
+        'message' => 'Invoice API test received successfully',
+        'api_type' => 'invoice',
+        'received_data' => $data,
+        'detected_fields' => [
+            'shop_id' => $data['shopId'] ?? 'not provided',
+            'order_id' => $data['orderId'] ?? 'not provided',
+            'has_customer' => !empty($data['order']['options']['customer']),
+            'customer_name' => $data['order']['options']['customer']['name'] ?? 'not provided',
+            'items_count' => count($data['order']['items'] ?? []),
+            'currency' => $data['order']['currency'] ?? 'not provided',
+            'payment_method' => $data['order']['options']['paymentMethod'] ?? 'not provided'
+        ]
+    ], 200);
+}
+
+/**
+ * Test endpoint for WTN API format
+ */
+function handle_pos_test_wtn(WP_REST_Request $request) {
+    $headers = $request->get_headers();
+    $incoming_key = $headers['x_api_key'][0] ?? $headers['x-api-key'][0] ?? '';
+    
+    // Check against WTN API key
+    $wtn_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJpa01oaGJZYjZHVVdtUk9tRVFKUzNaM3NUdkozIiwiaWF0IjoxNzM2MTc0ODc2LCJkb2NJZCI6IjhvZ3FWQk0wUFBrSWsybm9wNlhaIn0.VboJSXyBVKKz5m689VYRuvEFLe_BrYGY2GWpVJL_V-k';
+    
+    if ($incoming_key !== $wtn_api_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized - Invalid WTN API key'], 403);
+    }
+
+    $data = $request->get_json_params();
+
+    // Log received data for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG === true) {
+        error_log('📦 POS WTN Test Received: ' . print_r($data, true));
+    }
+
+    return new WP_REST_Response([
+        'success' => true,
+        'message' => 'WTN API test received successfully',
+        'api_type' => 'wtn',
+        'received_data' => $data,
+        'detected_fields' => [
+            'shop_id' => $data['shopId'] ?? 'not provided',
+            'inventory_id' => $data['inventory']['inventoryId'] ?? 'not provided',
+            'items_count' => count($data['wtnOptions']['items'] ?? []),
+            'vehicle_plate' => $data['wtnOptions']['vehPlates'] ?? 'not provided',
+            'carrier_name' => $data['wtnOptions']['carrier']['name'] ?? 'not provided',
+            'transaction_type' => $data['wtnOptions']['transaction'] ?? 'not provided',
+            'wtn_type' => $data['wtnOptions']['type'] ?? 'not provided',
+            'has_skus' => !empty(array_filter(array_column($data['wtnOptions']['items'] ?? [], 'itemId')))
+        ]
+    ], 200);
+}
