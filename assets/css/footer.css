@@ -178,10 +178,18 @@
 }
 
 .footer-symbol {
-  width: 18px;
+  width: 22px;
   height: auto;
   vertical-align: middle;
   display: inline-block;
+}
+
+.footer-symbol-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .site-built-with {
