@@ -1322,41 +1322,69 @@ function primefit_send_weekly_coupon_report() {
 		} );
 		$top_coupons = array_slice( $coupon_stats, 0, 10 );
 
-		// Get email recipients for weekly reports
-		$recipients = primefit_get_weekly_report_recipients();
-
-		if ( empty( $recipients ) ) {
-			return; // No recipients configured - this is normal, don't log
-		}
-
-		$subject = sprintf( __( 'Weekly Coupon Usage Report - %s', 'primefit' ), $start_date . ' to ' . $end_date );
-
-		$message = primefit_generate_weekly_report_html( $weekly_stats, $coupon_stats, $top_coupons, $start_date, $end_date );
-
-		if ( empty( $message ) ) {
-			error_log( '[PrimeFit] Failed to generate weekly report HTML' );
-			return;
-		}
-
-		$headers = array(
-			'Content-Type: text/html; charset=UTF-8',
-			'From: ' . get_bloginfo( 'name' ) . ' <' . get_option( 'admin_email' ) . '>'
-		);
-
+		// Send individual reports to each coupon owner
 		$sent_count = 0;
 		$failed_count = 0;
 
-		foreach ( $recipients as $recipient ) {
-			$recipient = sanitize_email( $recipient );
-			if ( ! is_email( $recipient ) ) {
+		foreach ( $coupon_stats as $coupon_data ) {
+			$coupon_code = $coupon_data['code'];
+			$coupon_stats_data = $coupon_data['stats'];
+			
+			// Get the coupon object to access notification emails
+			$coupon = new WC_Coupon( $coupon_code );
+			if ( ! $coupon || ! function_exists( 'get_field' ) ) {
 				continue;
 			}
 
-			$mail_result = wp_mail( $recipient, $subject, $message, $headers );
-			if ( $mail_result ) {
-				$sent_count++;
-			} else {
-				$failed_count++;
+			$notification_emails = get_field( 'notification_emails', $coupon->get_id() );
+			if ( empty( $notification_emails ) ) {
+				continue; // Skip coupons without notification emails
+			}
+
+			$recipients = array_map( 'trim', explode( "\n", $notification_emails ) );
+			$recipients = array_filter( array_map( 'sanitize_email', $recipients ), 'is_email' );
+
+			if ( empty( $recipients ) ) {
+				continue;
+			}
+
+			// Generate individual report for this coupon
+			$subject = sprintf( __( 'Weekly Report for Your Coupon: %s - %s', 'primefit' ), $coupon_code, $start_date . ' to ' . $end_date );
+			$message = primefit_generate_individual_coupon_report_html( $coupon_code, $coupon_stats_data, $start_date, $end_date );
+
+			if ( empty( $message ) ) {
+				error_log( '[PrimeFit] Failed to generate individual report HTML for coupon: ' . $coupon_code );
+				continue;
+			}
+
+			$headers = array(
+				'Content-Type: text/html; charset=UTF-8',
+				'From: ' . get_bloginfo( 'name' ) . ' <' . get_option( 'admin_email' ) . '>'
+			);
+
+			// Send to each recipient for this coupon
+			foreach ( $recipients as $recipient ) {
+				$mail_result = wp_mail( $recipient, $subject, $message, $headers );
+				if ( $mail_result ) {
+					$sent_count++;
+				} else {
+					$failed_count++;
+				}
+			}
+		}
+
+		// Send admin summary report
+		$admin_email = get_option( 'admin_email' );
+		if ( $admin_email ) {
+			$admin_subject = sprintf( __( 'Weekly Coupon Reports Summary - %s', 'primefit' ), $start_date . ' to ' . $end_date );
+			$admin_message = primefit_generate_admin_summary_html( $coupon_stats, $start_date, $end_date, $sent_count, $failed_count );
+			
+			if ( ! empty( $admin_message ) ) {
+				$admin_headers = array(
+					'Content-Type: text/html; charset=UTF-8',
+					'From: ' . get_bloginfo( 'name' ) . ' <' . get_option( 'admin_email' ) . '>'
+				);
+				wp_mail( $admin_email, $admin_subject, $admin_message, $admin_headers );
 			}
 		}
 
@@ -1422,6 +1450,176 @@ function primefit_get_weekly_report_recipients() {
 	$recipients = array_unique( array_filter( $recipients ) );
 
 	return $recipients;
+}
+
+/**
+ * Generate HTML content for admin summary report
+ */
+function primefit_generate_admin_summary_html( $coupon_stats, $start_date, $end_date, $sent_count, $failed_count ) {
+	ob_start();
+	?>
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Weekly Coupon Reports Summary</title>
+		<style>
+			body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+			.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+			.header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 30px; text-align: center; }
+			.section { margin-bottom: 30px; }
+			.section h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+			.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+			.stat-box { background: #f8f9fa; padding: 20px; border-radius: 5px; text-align: center; }
+			.stat-number { font-size: 2em; font-weight: bold; color: #3498db; }
+			.stat-label { color: #666; font-size: 0.9em; }
+			.coupon-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+			.coupon-table th, .coupon-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+			.coupon-table th { background: #f8f9fa; font-weight: bold; }
+			.coupon-table tr:hover { background: #f5f5f5; }
+			.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; }
+			.summary-box { background: #e8f4fd; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="header">
+				<h1>Weekly Coupon Reports Summary</h1>
+				<p><strong>Report Period:</strong> <?php echo esc_html( $start_date ); ?> to <?php echo esc_html( $end_date ); ?></p>
+			</div>
+
+			<div class="section">
+				<h2>Email Delivery Summary</h2>
+				<div class="summary-box">
+					<p><strong>Individual reports sent:</strong> <?php echo number_format( $sent_count ); ?></p>
+					<p><strong>Failed deliveries:</strong> <?php echo number_format( $failed_count ); ?></p>
+					<p><strong>Coupons with configured notifications:</strong> <?php echo count( $coupon_stats ); ?></p>
+				</div>
+			</div>
+
+			<div class="section">
+				<h2>All Coupons Overview</h2>
+				<table class="coupon-table">
+					<thead>
+						<tr>
+							<th>Coupon Code</th>
+							<th>Uses</th>
+							<th>Total Savings</th>
+							<th>Unique Customers</th>
+							<th>Avg. per Customer</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $coupon_stats as $coupon_data ) : ?>
+							<tr>
+								<td><?php echo esc_html( $coupon_data['code'] ); ?></td>
+								<td><?php echo number_format( $coupon_data['stats']['total_uses'] ); ?></td>
+								<td>€<?php echo number_format( $coupon_data['stats']['total_savings'], 2 ); ?></td>
+								<td><?php echo number_format( $coupon_data['stats']['unique_emails'] ); ?></td>
+								<td>€<?php echo number_format( $coupon_data['stats']['avg_savings_per_user'], 2 ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="footer">
+				<p><strong>Report Generated:</strong> <?php echo current_time( 'Y-m-d H:i:s' ); ?></p>
+				<p>This is an automated summary report from <?php echo esc_html( get_bloginfo( 'name' ) ); ?>.</p>
+				<p>Individual reports have been sent to each coupon owner's configured email addresses.</p>
+			</div>
+		</div>
+	</body>
+	</html>
+	<?php
+	return ob_get_clean();
+}
+
+/**
+ * Generate HTML content for individual coupon report
+ */
+function primefit_generate_individual_coupon_report_html( $coupon_code, $stats, $start_date, $end_date ) {
+	ob_start();
+	?>
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Weekly Report for Coupon: <?php echo esc_html( $coupon_code ); ?></title>
+		<style>
+			body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+			.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+			.header { background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 30px; text-align: center; }
+			.section { margin-bottom: 30px; }
+			.section h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+			.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px; }
+			.stat-box { background: #f8f9fa; padding: 20px; border-radius: 5px; text-align: center; }
+			.stat-number { font-size: 2em; font-weight: bold; color: #3498db; }
+			.stat-label { color: #666; font-size: 0.9em; }
+			.coupon-info { background: #e8f4fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+			.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; text-align: center; }
+			.no-data { text-align: center; color: #666; font-style: italic; padding: 40px; }
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="header">
+				<h1>Weekly Coupon Report</h1>
+				<p><strong>Coupon Code:</strong> <?php echo esc_html( $coupon_code ); ?></p>
+				<p><strong>Report Period:</strong> <?php echo esc_html( $start_date ); ?> to <?php echo esc_html( $end_date ); ?></p>
+			</div>
+
+			<?php if ( $stats['total_uses'] > 0 ) : ?>
+				<div class="section">
+					<h2>Your Coupon Performance</h2>
+					<div class="stats-grid">
+						<div class="stat-box">
+							<div class="stat-number"><?php echo number_format( $stats['total_uses'] ); ?></div>
+							<div class="stat-label">Total Uses</div>
+						</div>
+						<div class="stat-box">
+							<div class="stat-number">€<?php echo number_format( $stats['total_savings'], 2 ); ?></div>
+							<div class="stat-label">Total Savings</div>
+						</div>
+						<div class="stat-box">
+							<div class="stat-number"><?php echo number_format( $stats['unique_emails'] ); ?></div>
+							<div class="stat-label">Unique Customers</div>
+						</div>
+						<div class="stat-box">
+							<div class="stat-number">€<?php echo number_format( $stats['avg_savings_per_user'], 2 ); ?></div>
+							<div class="stat-label">Avg. Savings per Customer</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="section">
+					<h2>Performance Summary</h2>
+					<div class="coupon-info">
+						<p><strong>Your coupon "<?php echo esc_html( $coupon_code ); ?>" was used <?php echo number_format( $stats['total_uses'] ); ?> times this week.</strong></p>
+						<p>This generated €<?php echo number_format( $stats['total_savings'], 2 ); ?> in total savings for <?php echo number_format( $stats['unique_emails'] ); ?> unique customers.</p>
+						<p>On average, each customer saved €<?php echo number_format( $stats['avg_savings_per_user'], 2 ); ?> when using your coupon.</p>
+					</div>
+				</div>
+			<?php else : ?>
+				<div class="section">
+					<div class="no-data">
+						<h2>No Activity This Week</h2>
+						<p>Your coupon "<?php echo esc_html( $coupon_code ); ?>" was not used during this reporting period.</p>
+						<p>Consider promoting your coupon to increase usage!</p>
+					</div>
+				</div>
+			<?php endif; ?>
+
+			<div class="footer">
+				<p><strong>Report Generated:</strong> <?php echo current_time( 'Y-m-d H:i:s' ); ?></p>
+				<p>This is an automated report from <?php echo esc_html( get_bloginfo( 'name' ) ); ?>.</p>
+				<p>You are receiving this because you are configured as a notification recipient for this coupon.</p>
+			</div>
+		</div>
+	</body>
+	</html>
+	<?php
+	return ob_get_clean();
 }
 
 /**
