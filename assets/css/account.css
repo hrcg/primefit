@@ -1349,6 +1349,98 @@
   flex-direction: column;
 }
 
+/* Enhanced success message styling for account pages */
+.woocommerce-account .woocommerce-message {
+  background: var(--account-success-bg);
+  color: var(--account-text);
+  border: 1px solid var(--account-success-bg);
+  border-radius: 8px;
+  padding: 8px 20px;
+  margin: 32px 0;
+  max-width: fit-content;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;  
+  text-align: center;
+}
+
+/* Success message container for lost password page */
+.login-page-container .woocommerce-message {
+  max-width: 400px;
+  margin: 0 auto 32px auto;
+  background: var(--account-success-bg);
+  color: var(--account-success-text);
+  border: 1px solid var(--account-success-bg);
+  border-radius: 8px;
+  padding: 8px 20px;
+  max-width: fit-content;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Error message styling */
+.woocommerce-account .woocommerce-error {
+  color: var(--account-error-text);
+  margin: 32px 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.login-page-container .woocommerce-error {
+  max-width: 400px;
+  margin: 0 auto 32px auto;
+  background: var(--account-error-bg);
+  color: var(--account-error-text);
+  border: 1px solid var(--account-error-bg);
+  border-radius: 8px;
+  padding: 24px 32px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Info message styling */
+.woocommerce-account .woocommerce-info {
+  background: var(--account-nav-bg);
+  color: var(--account-text);
+  border: 1px solid var(--account-border);
+  border-radius: 8px;
+  padding: 24px 32px;
+  margin: 32px 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.login-page-container .woocommerce-info {
+  max-width: 400px;
+  margin: 0 auto 32px auto;
+  background: var(--account-nav-bg);
+  color: var(--account-text);
+  border: 1px solid var(--account-border);
+  border-radius: 8px;
+  padding: 24px 32px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* ==========================================================================
    Responsive Design
    ========================================================================== */
@@ -1528,6 +1620,293 @@
   .woocommerce-table--order-downloads td {
     padding: 8px 6px;
     font-size: 11px;
+  }
+}
+
+/* ==========================================================================
+   Lost Password Form Styles
+   ========================================================================== */
+
+.lost-password-form {
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+.lost-password-form .login-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--account-text);
+  margin: 0 0 48px 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.lost-password-form .form-field {
+  margin-bottom: 24px;
+}
+
+.lost-password-form .form-field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--account-text);
+  margin-bottom: 12px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.lost-password-form .form-field input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 1px solid var(--account-input-border);
+  border-radius: 8px;
+  background: var(--account-input-bg);
+  color: var(--account-text);
+  font-size: 16px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.lost-password-form .form-field input:focus {
+  outline: none;
+  border-color: var(--account-input-focus-border);
+  background: var(--account-input-bg);
+}
+
+.lost-password-form .form-field input::placeholder {
+  color: var(--account-text-light);
+  opacity: 1;
+}
+
+.lost-password-form .form-submit {
+  margin-top: 48px;
+  text-align: center;
+}
+
+.lost-password-form .woocommerce-form-login__submit {
+  width: 100%;
+  padding: 16px 32px;
+  background: var(--account-button-bg);
+  color: var(--account-button-text);
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.lost-password-form .woocommerce-form-login__submit:hover {
+  background: var(--account-button-hover-bg);
+}
+
+/* Back to login section */
+.back-to-login-section {
+  margin-top: 24px;
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--account-border);
+}
+
+.back-to-login-text {
+  color: var(--account-text);
+  font-size: 14px;
+  margin-bottom: 16px;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  opacity: 0.8;
+}
+
+.back-to-login-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--account-text);
+  border: 2px solid var(--account-text);
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.back-to-login-button:hover {
+  background: var(--account-text);
+  color: var(--account-bg);
+  text-decoration: none;
+}
+
+/* Dark mode specific styling for lost password form */
+@media (prefers-color-scheme: dark) {
+  .lost-password-form .woocommerce-form-login__submit {
+    background: #ffffff;
+    color: #0d0d0d;
+  }
+
+  .lost-password-form .woocommerce-form-login__submit:hover {
+    background: #f0f0f0;
+    color: #0d0d0d;
+  }
+
+  .back-to-login-button {
+    background: #ffffff;
+    color: #0d0d0d;
+    border: 2px solid #ffffff;
+  }
+
+  .back-to-login-button:hover {
+    background: #f0f0f0;
+    color: #0d0d0d;
+  }
+}
+
+[data-theme="dark"] .lost-password-form .woocommerce-form-login__submit {
+  background: #ffffff;
+  color: #0d0d0d;
+}
+
+[data-theme="dark"] .lost-password-form .woocommerce-form-login__submit:hover {
+  background: #f0f0f0;
+  color: #0d0d0d;
+}
+
+[data-theme="dark"] .back-to-login-button {
+  background: #ffffff;
+  color: #0d0d0d;
+  border: 2px solid #ffffff;
+}
+
+[data-theme="dark"] .back-to-login-button:hover {
+  background: #f0f0f0;
+  color: #0d0d0d;
+}
+
+/* Success state styling */
+.lost-password-success {
+  background: transparent;
+  padding: 0;
+  border: none;
+}
+
+.lost-password-success .login-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--account-text);
+  margin: 0 0 48px 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+}
+
+.success-message {
+  background: var(--account-success-bg);
+  color: var(--account-success-text);
+  border: 1px solid var(--account-success-bg);
+  border-radius: 8px;
+  padding: 24px 32px;
+  margin-bottom: 32px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  text-align: center;
+  font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.success-message p {
+  margin: 0 0 16px 0;
+}
+
+.success-message p:last-child {
+  margin-bottom: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* Responsive design for lost password form */
+@media (max-width: 768px) {
+  .lost-password-form .login-title,
+  .lost-password-success .login-title {
+    font-size: 28px;
+    margin-bottom: 40px;
+  }
+
+  .lost-password-form .form-field {
+    margin-bottom: 28px;
+  }
+
+  .lost-password-form .form-submit {
+    margin-top: 40px;
+  }
+
+  .success-message {
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    font-size: 15px;
+  }
+
+  .back-to-login-section {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  .back-to-login-button {
+    padding: 14px 28px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lost-password-form .login-title,
+  .lost-password-success .login-title {
+    font-size: 24px;
+    margin-bottom: 32px;
+  }
+
+  .lost-password-form .form-field {
+    margin-bottom: 24px;
+  }
+
+  .lost-password-form .form-submit {
+    margin-top: 32px;
+  }
+
+  .success-message {
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  .success-message p:last-child {
+    font-size: 13px;
+  }
+
+  .back-to-login-section {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .back-to-login-button {
+    padding: 12px 24px;
+    font-size: 14px;
   }
 }
 
