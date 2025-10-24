@@ -193,17 +193,28 @@ function primefit_track_discount_usage( $order_id ) {
 		return;
 	}
 
-	// Get applied coupons
+	// Use only native WooCommerce coupon codes
 	$coupons = $order->get_coupon_codes();
-
 	if ( empty( $coupons ) ) {
 		return; // No coupons to track
 	}
 
-	// Get customer email and validate
+	// Get customer email and validate - allow tracking even without valid email
 	$email = $order->get_billing_email();
 	if ( empty( $email ) || ! is_email( $email ) ) {
-		return;
+		// Try to get email from user account if order has a customer
+		$user_id = $order->get_user_id();
+		if ( $user_id > 0 ) {
+			$user = get_user_by( 'id', $user_id );
+			if ( $user && is_email( $user->user_email ) ) {
+				$email = $user->user_email;
+			}
+		}
+		
+		// If still no valid email, use a placeholder for tracking purposes
+		if ( empty( $email ) || ! is_email( $email ) ) {
+			$email = 'no-email@tracked-order-' . $order_id . '.local';
+		}
 	}
 
 	$user_id = $order->get_user_id();
@@ -235,7 +246,7 @@ function primefit_track_discount_usage( $order_id ) {
 				continue;
 			}
 
-			// Calculate savings for this coupon
+			// Calculate savings for this coupon (supports native and migrated)
 			$savings_amount = primefit_calculate_coupon_savings( $coupon, $order );
 
 			// Get user IP and agent for tracking
@@ -456,8 +467,8 @@ function primefit_get_coupon_last_reset_date( $coupon_code ) {
 	}
 
 	$last_reset = $wpdb->get_var( $wpdb->prepare(
-		"SELECT reset_date FROM $table_name WHERE coupon_code = %s ORDER BY reset_date DESC LIMIT 1",
-		$coupon_code
+		"SELECT reset_date FROM $table_name WHERE LOWER(coupon_code) = %s ORDER BY reset_date DESC LIMIT 1",
+		strtolower( trim( $coupon_code ) )
 	) );
 
 	return $last_reset ? $last_reset : false;
@@ -633,8 +644,9 @@ function primefit_get_discount_stats( $coupon_code = null, $email = null, $start
 	$params = array();
 
 	if ( $coupon_code ) {
-		$where_conditions[] = 'coupon_code = %s';
-		$params[] = $coupon_code;
+		$coupon_code_norm = strtolower( trim( $coupon_code ) );
+		$where_conditions[] = 'LOWER(coupon_code) = %s';
+		$params[] = $coupon_code_norm;
 	}
 
 	if ( $email ) {
@@ -2002,8 +2014,8 @@ function primefit_export_coupon_usage_data( $coupon_ids ) {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'discount_code_tracking';
 		$last_used = $wpdb->get_var( $wpdb->prepare(
-			"SELECT MAX(usage_date) FROM $table_name WHERE coupon_code = %s",
-			$coupon->get_code()
+			"SELECT MAX(usage_date) FROM $table_name WHERE LOWER(coupon_code) = %s",
+			strtolower( trim( $coupon->get_code() ) )
 		) );
 
 		fputcsv( $output, array(
