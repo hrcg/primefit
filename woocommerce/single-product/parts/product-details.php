@@ -61,17 +61,14 @@ foreach ( $attributes as $attribute ) {
 ?>
 
 <div class="product-details-container">
-	<!-- Product SKU -->
 	<?php if ( $sku ) : ?>
 		<div class="product-sku">
 			<span class="sku-label"><?php echo esc_html( $sku ); ?></span>
 		</div>
 	<?php endif; ?>
 	
-	<!-- Product Title -->
 	<h1 class="product-title"><?php echo esc_html( $product_name ); ?></h1>
 	
-	<!-- Product Color (if available) -->
 	<?php if ( $color_attribute ) : ?>
 		<div class="product-color">
 			<span class="color-label"><?php echo esc_html( wc_attribute_label( $color_attribute->get_name() ) ); ?>:</span>
@@ -79,12 +76,10 @@ foreach ( $attributes as $attribute ) {
 		</div>
 	<?php endif; ?>
 	
-	<!-- Product Price -->
 	<div class="product-price">
 		<?php echo $price_html; ?>
 	</div>
 	
-	<!-- Color Selection (for variable products) -->
 	<?php if ( $is_variable && $color_attribute ) : ?>
 		<div class="product-color-selection">
 			<span class="selection-label"><?php echo esc_html( wc_attribute_label( $color_attribute->get_name() ) ); ?>:</span>
@@ -129,7 +124,6 @@ foreach ( $attributes as $attribute ) {
 		</div>
 	<?php endif; ?>
 	
-	<!-- Size Selection (for variable products) -->
 	<?php if ( $is_variable && $size_attribute ) : ?>
 		<div class="product-size-selection">
 			<span class="selection-label"><?php echo esc_html( wc_attribute_label( $size_attribute->get_name() ) ); ?>:</span>
@@ -185,14 +179,12 @@ foreach ( $attributes as $attribute ) {
 		</div>
 	<?php endif; ?>
 	
-	<!-- Stock Status Notice -->
 	<?php if ( ! $is_in_stock ) : ?>
 		<div class="stock-notice">
 			<span class="stock-text"><?php esc_html_e( 'FINAL SALE // NO RETURNS OR EXCHANGES', 'primefit' ); ?></span>
 		</div>
 	<?php endif; ?>
 	
-	<!-- Add to Cart / Notify Button -->
 	<div class="product-actions">
 		<?php if ( $is_in_stock ) : ?>
 			<?php woocommerce_template_single_add_to_cart(); ?>

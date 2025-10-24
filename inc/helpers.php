@@ -948,9 +948,7 @@ function primefit_render_hero( $args = array() ) {
 	<section class="<?php echo esc_attr( $hero_classes ); ?>" id="<?php echo esc_attr( $hero_id ); ?>">
 		<div class="hero-media">
 			<?php if (!empty($hero_video_desktop_url) || !empty($hero_video_mobile_url)) : ?>
-				<!-- Video Background with Fallback Image -->
 				<div class="hero-video-container">
-					<!-- Desktop Video -->
 					<?php if (!empty($hero_video_desktop_url)) : ?>
 						<video 
 							class="hero-video hero-video--desktop" 
@@ -966,7 +964,6 @@ function primefit_render_hero( $args = array() ) {
 						</video>
 					<?php endif; ?>
 					
-					<!-- Mobile Video -->
 					<?php if (!empty($hero_video_mobile_url)) : ?>
 						<video 
 							class="hero-video hero-video--mobile" 
@@ -983,15 +980,11 @@ function primefit_render_hero( $args = array() ) {
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
-			
-		<!-- High Quality Fallback Image (always present for loading state and fallback) -->
 		<picture class="hero-fallback-image">
 			<?php
-			// Get WebP versions for better compression while maintaining quality
 			$desktop_webp = primefit_get_hero_optimized_image_url($hero_image_desktop_url, 'webp');
 			$mobile_webp = primefit_get_hero_optimized_image_url($hero_image_mobile_url, 'webp');
 
-			// Add WebP sources if available (but keep full resolution)
 			if ($desktop_webp !== $hero_image_desktop_url) {
 				echo '<source media="(min-width: 769px)" type="image/webp" srcset="' . esc_url($desktop_webp) . '">';
 			}

@@ -45,7 +45,6 @@ if ( empty( $attachment_ids ) ) {
 ?>
 
 <div class="product-gallery-container">
-	<!-- Thumbnail Gallery -->
 	<?php if ( count( $attachment_ids ) > 1 ) : ?>
 		<div class="product-thumbnails">
 			<?php foreach ( $attachment_ids as $index => $attachment_id ) : ?>
@@ -72,7 +71,6 @@ if ( empty( $attachment_ids ) ) {
 		</div>
 	<?php endif; ?>
 	
-	<!-- Main Image Display -->
 	<div class="product-main-image">
 		<div class="main-image-wrapper">
 		<?php
@@ -87,11 +85,9 @@ if ( empty( $attachment_ids ) ) {
 			/>
 		</div>
 		
-		<!-- Image Navigation Dots -->
 		<?php if ( count( $attachment_ids ) > 1 ) : ?>
 
 			
-			<!-- Navigation Arrows -->
 			<button class="image-nav image-nav-prev" aria-label="<?php esc_attr_e( 'Previous image', 'primefit' ); ?>">
 				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -105,5 +101,3 @@ if ( empty( $attachment_ids ) ) {
 		<?php endif; ?>
 	</div>
 </div>
-
-<!-- Gallery functionality is handled by single-product.js -->

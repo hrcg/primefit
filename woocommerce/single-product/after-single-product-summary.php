@@ -22,7 +22,6 @@ $highlights_data = primefit_get_technical_highlights( $product->get_id() );
 ?>
 
 <?php if ( ! empty( $features_data ) && is_array( $features_data ) ) : ?>
-	<!-- Product Features Section -->
 	<div class="product-features">
 		<div class="product-features-container">
 			<h2 class="features-title"><?php esc_html_e( 'FEATURES', 'primefit' ); ?></h2>
@@ -69,7 +68,6 @@ $highlights_data = primefit_get_technical_highlights( $product->get_id() );
 <?php endif; ?>
 
 <?php if ( ! empty( $highlights_data ) && is_array( $highlights_data ) ) : ?>
-	<!-- Technical Highlights Section -->
 	<div class="product-technical-highlights">
 		<div class="product-technical-highlights-container">
 			<h2 class="technical-highlights-title"><?php esc_html_e( 'TECHNICAL HIGHLIGHTS', 'primefit' ); ?></h2>

@@ -16,7 +16,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <div class="asrv-footer-info">
 	
-	<!-- Social Media Links -->
 	<div class="asrv-social-links">
 		<h3 class="asrv-footer-heading"><?php esc_html_e( 'Follow Us', ASRV_THEME_TEXTDOMAIN ); ?></h3>
 		<div class="asrv-social-icons">
@@ -38,7 +37,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	</div>
 	
-	<!-- Newsletter Signup -->
 	<div class="asrv-newsletter">
 		<h3 class="asrv-footer-heading"><?php esc_html_e( 'Stay Updated', ASRV_THEME_TEXTDOMAIN ); ?></h3>
 		<p class="asrv-newsletter-description"><?php esc_html_e( 'Subscribe to get updates on new products and exclusive offers.', ASRV_THEME_TEXTDOMAIN ); ?></p>

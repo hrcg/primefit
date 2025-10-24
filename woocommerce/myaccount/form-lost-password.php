@@ -14,7 +14,6 @@ do_action( 'woocommerce_before_lost_password_form' ); ?>
 <div class="login-page-container">
     <div class="login-form-wrapper">
         <?php if ( isset( $_GET['reset-link-sent'] ) && 'true' === $_GET['reset-link-sent'] ) : ?>
-            <!-- Success State -->
             <div class="account-form lost-password-success active">
                 <h1 class="login-title"><?php esc_html_e( 'CHECK YOUR EMAIL', 'primefit' ); ?></h1>
                 
@@ -30,7 +29,6 @@ do_action( 'woocommerce_before_lost_password_form' ); ?>
                 </div>
             </div>
         <?php else : ?>
-            <!-- Form State -->
             <div class="account-form lost-password-form active">
                 <h1 class="login-title"><?php esc_html_e( 'RESET PASSWORD', 'primefit' ); ?></h1>
                 

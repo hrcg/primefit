@@ -24,8 +24,6 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 	<form name="checkout" method="post" class="checkout woocommerce-checkout" action="<?php echo esc_url( wc_get_checkout_url() ); ?>" enctype="multipart/form-data">
 
 		<div class="checkout-layout">
-			<!-- Desktop: Left Column: Contact & Billing Information -->
-			<!-- Mobile: Order Summary (order: 1) -->
 			<div class="checkout-summary-section">
 				<div class="summary-header">
 					<h3 class="summary-title">Order summary</h3>
@@ -77,12 +75,10 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					?>
 				</div>
 
-				<!-- Coupon Section -->
 				<div class="coupon-section">
 					<button type="button" class="coupon-toggle">Add discount code <span class="arrow">▼</span></button>
 				</div>
 
-				<!-- Order Totals -->
 				<div class="order-totals">
 					<div class="total-line">
 						<span class="total-label">Subtotal</span>
@@ -94,14 +90,11 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					</div>
 				</div>
 
-				</div> <!-- End summary-content -->
+				</div>
 			</div>
 
-			<!-- Desktop: Right Column: Order Summary -->
-			<!-- Mobile: Contact Information (order: 2) -->
 			<div class="checkout-form-section">
 				
-				<!-- Contact Information -->
 				<div class="form-section">
 					<h3 class="section-title">Contact information</h3>
 					<p class="section-description">We'll use this email to send you details and updates about your order.</p>
@@ -122,7 +115,6 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					<?php endif; ?>
 				</div>
 
-				<!-- Billing Address -->
 				<div class="form-section">
 					<h3 class="section-title">Billing address</h3>
 					<p class="section-description">Enter the billing address that matches your payment method.</p>
@@ -130,7 +122,6 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					<?php if ( $checkout->get_checkout_fields() ) : ?>
 						<?php do_action( 'woocommerce_checkout_before_customer_details' ); ?>
 						
-						<!-- Custom billing fields with placeholders -->
 						<div class="woocommerce-billing-fields">
 							<h3>Billing details</h3>
 							
@@ -216,7 +207,6 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 
 			</div>
 
-			<!-- Unified Payment Options Section (responsive positioning via CSS) -->
 			<div class="payment-options-section">
 				<h3 class="section-title">Payment options</h3>
 				<?php do_action( 'woocommerce_checkout_before_order_review' ); ?>

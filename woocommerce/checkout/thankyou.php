@@ -118,7 +118,6 @@ endif;
     </div>
 
     <div class="payment-summary-content">
-        <!-- Order Status Card -->
         <div class="payment-summary-card order-status-card animate-in">
             <div class="card-header">
                 <h3 class="card-title"><?php esc_html_e( 'Order Status', 'primefit' ); ?></h3>
@@ -150,7 +149,6 @@ endif;
             </div>
         </div>
 
-        <!-- Order Items Card -->
         <div class="payment-summary-card order-items-card animate-in">
             <div class="card-header">
                 <h3 class="card-title"><?php esc_html_e( 'Order Items', 'primefit' ); ?></h3>
@@ -205,7 +203,6 @@ endif;
             </div>
         </div>
 
-        <!-- Order Summary Card -->
         <div class="payment-summary-card order-summary-card animate-in">
             <div class="card-header">
                 <h3 class="card-title"><?php esc_html_e( 'Order Summary', 'primefit' ); ?></h3>
@@ -244,7 +241,6 @@ endif;
             </div>
         </div>
 
-        <!-- Payment Information Card -->
         <div class="payment-summary-card payment-info-card animate-in">
             <div class="card-header">
                 <h3 class="card-title"><?php esc_html_e( 'Payment Information', 'primefit' ); ?></h3>
@@ -261,7 +257,6 @@ endif;
             </div>
         </div>
 
-        <!-- Shipping Information Card -->
         <?php if ( $shipping_address ) : ?>
         <div class="payment-summary-card shipping-info-card animate-in">
             <div class="card-header">
@@ -292,7 +287,6 @@ endif;
         </div>
         <?php endif; ?>
 
-        <!-- Order Notes Card -->
         <?php if ( $order->get_customer_note() ) : ?>
         <div class="payment-summary-card order-notes-card animate-in">
             <div class="card-header">
@@ -307,7 +301,6 @@ endif;
         <?php endif; ?>
     </div>
 
-    <!-- Action Buttons -->
     <div class="payment-summary-actions">
         <a href="<?php echo esc_url( wc_get_account_endpoint_url( 'orders' ) ); ?>" class="button button--secondary">
             <?php esc_html_e( 'View All Orders', 'primefit' ); ?>

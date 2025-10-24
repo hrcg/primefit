@@ -28,7 +28,6 @@ defined( 'ABSPATH' ) || exit;
                 </div>
                 
                 <div class="dashboard-cards">
-                    <!-- Order Status Card -->
                     <div class="dashboard-card order-status-card">
                         <div class="card-icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -50,7 +49,6 @@ defined( 'ABSPATH' ) || exit;
                         </div>
                     </div>
                     
-                    <!-- Order Details Card -->
                     <div class="dashboard-card order-details-card">
                         <div class="card-icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -124,7 +122,6 @@ defined( 'ABSPATH' ) || exit;
                         </div>
                     </div>
                     
-                    <!-- Billing Address Card -->
                     <?php if ( $order->get_formatted_billing_address() ) : ?>
                         <div class="dashboard-card billing-address-card">
                             <div class="card-icon">
@@ -140,7 +137,6 @@ defined( 'ABSPATH' ) || exit;
                         </div>
                     <?php endif; ?>
                     
-                    <!-- Shipping Address Card -->
                     <?php if ( $order->get_formatted_shipping_address() ) : ?>
                         <div class="dashboard-card shipping-address-card">
                             <div class="card-icon">
@@ -156,7 +152,6 @@ defined( 'ABSPATH' ) || exit;
                         </div>
                     <?php endif; ?>
                     
-                    <!-- Customer Note Card -->
                     <?php if ( $order->get_customer_note() ) : ?>
                         <div class="dashboard-card customer-note-card">
                             <div class="card-icon">

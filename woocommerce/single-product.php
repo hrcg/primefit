@@ -92,7 +92,7 @@ get_header( 'shop' );
 // Only show size guide modal if there's a size guide image for this product
 $size_guide_image = primefit_get_size_guide_image( get_the_ID() );
 if ( $size_guide_image ) : ?>
-<!-- Size Guide Modal -->
+
 <div id="size-guide-modal" class="size-guide-modal" style="display: none;">
 	<div class="size-guide-modal-overlay"></div>
 	<div class="size-guide-modal-content">

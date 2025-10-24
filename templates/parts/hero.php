@@ -62,9 +62,7 @@ if (empty($hero_image_mobile_url)) {
 <section class="hero" id="<?php echo esc_attr($hero_id); ?>">
 	<div class="hero-media">
 		<?php if (!empty($hero_video_desktop_url) || !empty($hero_video_mobile_url)) : ?>
-			<!-- Video Background with Fallback Image -->
 			<div class="hero-video-container">
-				<!-- Desktop Video -->
 				<?php if (!empty($hero_video_desktop_url)) : ?>
 					<video 
 						class="hero-video hero-video--desktop" 
@@ -80,7 +78,7 @@ if (empty($hero_image_mobile_url)) {
 					</video>
 				<?php endif; ?>
 				
-				<!-- Mobile Video -->
+
 				<?php if (!empty($hero_video_mobile_url)) : ?>
 					<video 
 						class="hero-video hero-video--mobile" 
@@ -98,7 +96,6 @@ if (empty($hero_image_mobile_url)) {
 			</div>
 		<?php endif; ?>
 		
-		<!-- High Quality Hero Image - Full Resolution -->
 		<picture class="hero-fallback-image">
 			<?php
 			// Get WebP versions for better compression while maintaining quality
@@ -115,7 +112,6 @@ if (empty($hero_image_mobile_url)) {
 			}
 			?>
 
-			<!-- High quality img with full resolution -->
 			<img
 				src="<?php echo esc_url($hero_image_desktop_url); ?>"
 				alt="<?php echo esc_attr($hero['heading']); ?>"

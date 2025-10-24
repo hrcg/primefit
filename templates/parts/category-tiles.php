@@ -7,10 +7,8 @@
  * Gets configuration from WordPress Customizer
  */
 
-// Get category tiles configuration from customizer
 $category_tiles_config = primefit_get_category_tiles_config();
 
-// Don't render if disabled
 if ( ! $category_tiles_config['enabled'] ) {
 	return;
 }
@@ -22,7 +20,6 @@ $section = $category_tiles_config;
 	<?php foreach ($section['tiles'] as $tile) : ?>
 		<div class="tile">
 			<?php
-			// Use the asset URI function to get the best available image format
 			$tile_image = $tile['image'];
 			$tile_webp = primefit_get_optimized_image_url($tile_image, 'webp');
 			$best_tile_image = $tile_webp !== $tile_image ? $tile_webp : $tile_image;
@@ -31,11 +28,9 @@ $section = $category_tiles_config;
 			<?php if ($best_tile_image) : ?>
 			<picture>
 				<?php if ($tile_webp !== $tile_image) : ?>
-				<!-- WebP source for good compression -->
 				<source type="image/webp" srcset="<?php echo esc_url($tile_webp); ?>">
 				<?php endif; ?>
 
-				<!-- Fallback image -->
 				<img
 					src="<?php echo esc_url($tile_image); ?>"
 					alt="<?php echo esc_attr( $tile['alt'] ); ?>"

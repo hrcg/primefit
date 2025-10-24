@@ -1717,7 +1717,7 @@ function primefit_mini_cart_recommended_items() {
 	}
 	
 	?>
-	</ul> <!-- Close the mini cart items list -->
+	</ul>
 	<div class="mini-cart-recommendations">
 		<h3 class="recommendations-title"><?php _e( 'ADD A LITTLE EXTRA', 'primefit' ); ?></h3>
 		<p class="recommendations-subtitle"><?php _e( 'Complete your look with these essentials', 'primefit' ); ?></p>
@@ -1738,7 +1738,7 @@ function primefit_mini_cart_recommended_items() {
 			</div>
 		</div>
 	</div>
-	<ul class="woocommerce-mini-cart hidden-list-start"> <!-- Reopen the list for WooCommerce -->
+	<ul class="woocommerce-mini-cart hidden-list-start">
 	<?php
 }
 

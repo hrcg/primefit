@@ -64,9 +64,7 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 <div class="shop-filter-bar">
 	<div class="container">
 		<div class="filter-bar-inner">
-			<!-- Grid Controls (Left) -->
 			<div class="grid-controls">
-					<!-- Mobile Grid Options (1, 2 columns) -->
 					<div class="grid-options-mobile">
 						<button class="grid-option<?php echo $current_grid === '2' ? ' active' : ''; ?>" data-grid="2" title="<?php esc_attr_e( '2 columns', 'primefit' ); ?>">
 							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
@@ -86,7 +84,6 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 						</button>
 					</div>
 					
-					<!-- Desktop Grid Options (3, 4 columns) -->
 					<div class="grid-options-desktop">
 						<button class="grid-option<?php echo $current_grid === '4' ? ' active' : ''; ?>" data-grid="4" title="<?php esc_attr_e( '4 columns', 'primefit' ); ?>">
 							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
@@ -124,10 +121,8 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 					</div>
 			</div>
 
-			<!-- Product Count / Category Title -->
 			<div class="product-count">
 				<?php
-				// Show category name if on category page, otherwise show product count
 				if ( is_product_category() ) {
 					$category = get_queried_object();
 					echo esc_html( html_entity_decode( $category->name, ENT_QUOTES, 'UTF-8' ) );
@@ -151,7 +146,6 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 				?>
 			</div>
 
-			<!-- Filter Controls Row -->
 			<div class="filter-controls">
 					<div class="filter-dropdown">
 						<button class="filter-dropdown-toggle" type="button" aria-expanded="false">
@@ -180,7 +174,6 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 					</div>
 
 
-				<!-- Sort Dropdown (Hidden - keeping for WooCommerce compatibility) -->
 				<form class="woocommerce-ordering" method="get" style="display: none;">
 					<select name="orderby" class="orderby" aria-label="<?php esc_attr_e( 'Shop order', 'woocommerce' ); ?>">
 						<?php foreach ( $catalog_orderby_options as $id => $name ) : ?>

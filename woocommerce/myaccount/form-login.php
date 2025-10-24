@@ -13,7 +13,6 @@ do_action( 'woocommerce_before_customer_login_form' ); ?>
 
 <div class="login-page-container">
     <div class="login-form-wrapper">
-        <!-- Sign In Form -->
         <div class="account-form login-form active" id="login-form">
             <h1 class="login-title"><?php esc_html_e( 'SIGN IN', 'primefit' ); ?></h1>
             
@@ -61,7 +60,6 @@ do_action( 'woocommerce_before_customer_login_form' ); ?>
             </form>
         </div>
 
-        <!-- Register Form -->
         <?php if ( 'yes' === get_option( 'woocommerce_enable_myaccount_registration' ) ) : ?>
         <div class="account-form register-form" id="register-form">
             <h1 class="login-title"><?php esc_html_e( 'CREATE ACCOUNT', 'primefit' ); ?></h1>

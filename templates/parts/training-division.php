@@ -35,7 +35,6 @@ $section_id = 'training-division-' . uniqid();
 
 <section class="training-division" id="<?php echo esc_attr($section_id); ?>">
 	<div class="training-division-media">
-		<!-- Use original high-quality image without compression -->
 		<img
 			src="<?php echo esc_url($section['image']); ?>"
 			alt="<?php echo esc_attr($section['heading']); ?>"
