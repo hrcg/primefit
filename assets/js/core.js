@@ -1338,21 +1338,70 @@
 
   // Initialize header scroll when DOM is ready or when jQuery is available
   if (typeof jQuery !== "undefined") {
-    $(document).ready(initHeaderScroll);
+    $(document).ready(function () {
+      initHeaderScroll();
+      initPromoBarScroll();
+    });
   } else {
     // Fallback if jQuery is not loaded yet
     document.addEventListener("DOMContentLoaded", function () {
       if (typeof jQuery !== "undefined") {
-        $(document).ready(initHeaderScroll);
+        $(document).ready(function () {
+          initHeaderScroll();
+          initPromoBarScroll();
+        });
       } else {
         // Last resort - use vanilla JavaScript
         initHeaderScrollVanilla();
+        initPromoBarScrollVanilla();
       }
     });
   }
 
   // Expose vanilla function globally as well
   window.initHeaderScrollVanilla = initHeaderScrollVanilla;
+
+  // Promo Bar: add scrolled state for sticky behavior
+  function initPromoBarScroll() {
+    // Use a more robust selector and check multiple times
+    const checkForPromoBar = () => {
+      const $promoBar = $(".promo-bar");
+      if ($promoBar.length) {
+        const toggleScrolled = () => {
+          if (window.scrollY > 10) {
+            $promoBar.addClass("is-scrolled");
+          } else {
+            $promoBar.removeClass("is-scrolled");
+          }
+        };
+
+        // Initialize immediately
+        toggleScrolled();
+
+        // Add scroll listener with throttling for better performance
+        let scrollTimeout;
+        $(window).on("scroll", function () {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleScrolled, 1);
+        });
+
+        return true; // Promo bar found and initialized
+      }
+      return false; // Promo bar not found yet
+    };
+
+    // Try to find promo bar immediately
+    if (!checkForPromoBar()) {
+      // If promo bar not found, try again after a short delay
+      setTimeout(checkForPromoBar, 100);
+      setTimeout(checkForPromoBar, 500);
+    }
+  }
+
+  // Expose function globally for inline script
+  window.initPromoBarScroll = initPromoBarScroll;
 
   // Vanilla JavaScript fallback for header scroll
   function initHeaderScrollVanilla() {
@@ -1391,6 +1440,47 @@
       setTimeout(checkForHeader, 500);
     }
   }
+
+  // Vanilla JavaScript fallback for promo bar scroll
+  function initPromoBarScrollVanilla() {
+    const checkForPromoBar = () => {
+      const promoBar = document.querySelector(".promo-bar");
+      if (promoBar) {
+        const toggleScrolled = () => {
+          if (window.scrollY > 10) {
+            promoBar.classList.add("is-scrolled");
+          } else {
+            promoBar.classList.remove("is-scrolled");
+          }
+        };
+
+        // Initialize immediately
+        toggleScrolled();
+
+        // Add scroll listener
+        let scrollTimeout;
+        window.addEventListener("scroll", function () {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleScrolled, 1);
+        });
+
+        return true; // Promo bar found and initialized
+      }
+      return false; // Promo bar not found yet
+    };
+
+    // Try to find promo bar immediately
+    if (!checkForPromoBar()) {
+      // If promo bar not found, try again after delays
+      setTimeout(checkForPromoBar, 100);
+      setTimeout(checkForPromoBar, 500);
+    }
+  }
+
+  // Expose vanilla function globally as well
+  window.initPromoBarScrollVanilla = initPromoBarScrollVanilla;
 
   // Mobile hamburger menu
   $(document).on("click", ".hamburger", function (e) {

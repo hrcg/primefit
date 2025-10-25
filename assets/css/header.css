@@ -253,7 +253,6 @@
   transition: transform 0.3s ease;
 }
 
-
 /* Search Toggle Button */
 .search-toggle {
   display: none;
@@ -276,7 +275,7 @@
   .search-toggle--mobile {
     display: block;
   }
-  
+
   /* Hide search icon on single product pages on mobile */
   body.single-product .search-toggle--mobile {
     display: none;
@@ -1151,9 +1150,9 @@
   left: 0;
   width: 100%;
   background-color: var(--accent);
-  z-index: var(--z-promo);
+  z-index: 999;
   padding: 12px 0;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* Clickable promo bar styles */
@@ -1234,7 +1233,7 @@ body:not(.has-hero-header):not(:has(.promo-bar)) .site-content {
 }
 
 body:not(.has-hero-header):has(.promo-bar) .site-content {
-  padding-top: 95px; /* Original padding when promo bar is present */
+  padding-top: 80px; /* Original padding when promo bar is present */
 }
 
 #menu-account {
