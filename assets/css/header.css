@@ -1179,7 +1179,6 @@
   text-transform: uppercase;
   color: var(--text);
   text-align: center;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
   line-height: 1.2;
 }
 
@@ -1195,7 +1194,7 @@ body:has(.promo-bar) .site-header {
   }
 
   .promo-text {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   /* Adjust header position for mobile */

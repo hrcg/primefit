@@ -765,18 +765,28 @@
     transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.woocommerce ul.products li.product:hover .product-second-image {
-  opacity: 1;
-  /* Scale up to match category page animation */
-  transform: scale(1.05);
+/* Force second image to stay hidden on touch devices (mobile/tablet) */
+@media (hover: none) {
+  .woocommerce ul.products li.product .product-second-image {
+    display: none !important;
+  }
 }
 
-/* Prevent hover effects when color swatch is active */
-.woocommerce
-  ul.products
-  li.product.color-swatch-active:hover
-  .product-second-image {
-  opacity: 0;
+/* Only show second image on hover for desktop with mouse (not mobile/tablet) */
+@media (hover: hover) and (pointer: fine) {
+  .woocommerce ul.products li.product:hover .product-second-image {
+    opacity: 1;
+    /* Scale up to match category page animation */
+    transform: scale(1.05);
+  }
+
+  /* Prevent hover effects when color swatch is active */
+  .woocommerce
+    ul.products
+    li.product.color-swatch-active:hover
+    .product-second-image {
+    opacity: 0;
+  }
 }
 
 /* Ensure color swatches remain functional when product is hovered */
@@ -841,8 +851,11 @@
   transition: color 0.2s ease;
 }
 
-.woocommerce ul.products li.product .woocommerce-loop-product__title:hover {
-  color: var(--muted);
+/* Product title hover effect - desktop only */
+@media (hover: hover) and (pointer: fine) {
+  .woocommerce ul.products li.product .woocommerce-loop-product__title:hover {
+    color: var(--muted);
+  }
 }
 
 /* Product Price */
@@ -905,10 +918,12 @@
   z-index: var(--z-content);
 }
 
-/* Color swatches disabled on product hover */
-.woocommerce ul.products li.product:hover .product-loop-color-swatches {
-  opacity: 0;
-  transform: translateY(10px);
+/* Color swatches disabled on product hover - desktop only */
+@media (hover: hover) and (pointer: fine) {
+  .woocommerce ul.products li.product:hover .product-loop-color-swatches {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 
 /* Ensure color swatches are always clickable */
@@ -1187,15 +1202,40 @@
   }
 }
 
-/* Hide price on hover for variable products */
-.woocommerce ul.products li.product:hover .product-price-container .price,
-.woocommerce
-  ul.products
-  li.product:hover
-  .product-price-container
-  .sold-out-text {
-  opacity: 0;
-  visibility: hidden;
+/* Hide price on hover for variable products - desktop only */
+@media (hover: hover) and (pointer: fine) {
+  .woocommerce ul.products li.product:hover .product-price-container .price,
+  .woocommerce
+    ul.products
+    li.product:hover
+    .product-price-container
+    .sold-out-text {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Force price to stay visible on touch devices even if hover is triggered */
+@media (hover: none) {
+  .woocommerce ul.products li.product .product-price-container .price,
+  .woocommerce
+    ul.products
+    li.product
+    .product-price-container
+    .sold-out-text {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  .woocommerce ul.products li.product:hover .product-price-container .price,
+  .woocommerce
+    ul.products
+    li.product:hover
+    .product-price-container
+    .sold-out-text {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
 }
 
 .woocommerce ul.products li.product .product-size-options .size-options {
