@@ -1108,7 +1108,10 @@
               .closest("ul")
               .find(".payment_method.selected");
 
-            if ($currentlySelected.length && !$currentlySelected.is($paymentMethod)) {
+            if (
+              $currentlySelected.length &&
+              !$currentlySelected.is($paymentMethod)
+            ) {
               $currentlySelected.removeClass("selected");
             }
 
@@ -1488,7 +1491,7 @@
       };
 
       // Phone number regex: allows + at start, numbers, spaces, hyphens, parentheses
-      const phoneRegex = /^\+?[0-9\s\-\(\)]*$/;
+      const phoneRegex = /^\+?[0-9 \(\)\-]+$/;
 
       // Prevent invalid characters from being typed
       $phoneField.on("keypress", function (e) {
@@ -1522,7 +1525,7 @@
           const pastedValue = $this.val();
           if (!phoneRegex.test(pastedValue)) {
             // Remove invalid characters
-            const cleanedValue = pastedValue.replace(/[^\+0-9\s\-\(\)]/g, "");
+            const cleanedValue = pastedValue.replace(/[^\+0-9 \(\)\-]/g, "");
             $this.val(cleanedValue);
           }
         }, 10);
@@ -1535,7 +1538,7 @@
 
         if (value && !phoneRegex.test(value)) {
           // Remove invalid characters
-          const cleanedValue = value.replace(/[^\+0-9\s\-\(\)]/g, "");
+          const cleanedValue = value.replace(/[^\+0-9 \(\)\-]/g, "");
           $this.val(cleanedValue);
         }
 

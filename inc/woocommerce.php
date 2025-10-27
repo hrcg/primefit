@@ -125,7 +125,8 @@ function primefit_checkout_field_validation() {
         wc_add_notice( __( 'Phone number is required.', 'primefit' ), 'error' );
     } else {
         // Phone regex: allows + at start, numbers, spaces, hyphens, parentheses
-        if ( ! preg_match( '/^\+?[0-9\s\-\(\)]+$/', $phone ) ) {
+        // Note: Using literal space instead of \s in character class for better browser/HTML5 compatibility
+        if ( ! preg_match( '/^\+?[0-9 \(\)\-]+$/', $phone ) ) {
             wc_add_notice( __( 'Please enter a valid phone number. Only numbers, spaces, hyphens, parentheses, and optional + sign are allowed.', 'primefit' ), 'error' );
         }
     }

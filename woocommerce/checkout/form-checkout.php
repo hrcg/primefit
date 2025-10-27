@@ -195,7 +195,7 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 							
 							<div class="form-row form-row-last">
 								<div class="phone-field-with-help">
-									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone *" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" pattern="^\+?[0-9\s\-\(\)]+$" title="Please enter a valid phone number (numbers, spaces, hyphens, parentheses, and optional + sign)" required />
+									<input type="tel" name="billing_phone" id="billing_phone" placeholder="Phone *" value="<?php echo esc_attr( $checkout->get_value( 'billing_phone' ) ); ?>" pattern="^\+?[0-9 \(\)\-]+$" title="Please enter a valid phone number. Only numbers, spaces, hyphens, parentheses, and optional + sign are allowed." required />
 									<span class="help-icon-inside" data-tooltip="In case we need to contact you about your order">?</span>
 								</div>
 							</div>
