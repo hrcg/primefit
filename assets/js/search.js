@@ -498,17 +498,33 @@
     },
 
     /**
-     * Prevent body scroll
+     * Prevent body scroll (mobile only)
      */
     preventBodyScroll: function () {
-      this.elements.$body.addClass("search-scroll-locked");
+      // Check if we're on mobile (using a mobile breakpoint, typically 768px or 1024px)
+      const isMobile = window.innerWidth <= 1024;
+      
+      if (isMobile) {
+        // Use the native scroll prevention from core.js for mobile
+        if (typeof preventPageScroll === 'function') {
+          preventPageScroll().catch(() => {});
+        }
+      }
     },
 
     /**
      * Allow body scroll
      */
     allowBodyScroll: function () {
-      this.elements.$body.removeClass("search-scroll-locked");
+      // Check if we're on mobile
+      const isMobile = window.innerWidth <= 1024;
+      
+      if (isMobile) {
+        // Use the native scroll prevention from core.js for mobile
+        if (typeof allowPageScroll === 'function') {
+          allowPageScroll();
+        }
+      }
     },
 
     /**

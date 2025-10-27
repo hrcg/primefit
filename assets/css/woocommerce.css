@@ -897,6 +897,7 @@
 @media (hover: hover) and (pointer: fine) {
   .woocommerce ul.products li.product:hover .product-loop-color-swatches {
     opacity: 0;
+    visibility: hidden;
     transform: translateY(10px);
   }
 }

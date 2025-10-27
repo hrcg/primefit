@@ -640,10 +640,6 @@
   transform: translateY(0);
 }
 
-/* Prevent body scroll when search is open */
-.search-scroll-locked {
-  overflow: hidden;
-}
 
 /* Desktop Search Styles */
 @media (min-width: 1025px) {
@@ -1196,7 +1192,7 @@ body:has(.promo-bar) .site-header {
   }
 
   .promo-text {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   /* Adjust header position for mobile */
