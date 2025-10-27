@@ -31,7 +31,13 @@
         return;
       }
 
-      // Initialize collapsed state
+      // Remove existing event listener if it exists
+      if (heading.clickHandler) {
+        heading.removeEventListener("click", heading.clickHandler);
+      }
+
+      // Initialize collapsed state - remove expanded if it exists
+      column.classList.remove("expanded");
       column.classList.add("collapsed");
       toggle.setAttribute("aria-expanded", "false");
 

@@ -263,6 +263,34 @@ function primefit_disable_shop_filters() {
 	
 	// Remove breadcrumbs on shop page
 	remove_action( 'woocommerce_before_main_content', 'woocommerce_breadcrumb', 20 );
+	
+	// Remove page title on product category pages
+	remove_action( 'woocommerce_archive_description', 'woocommerce_taxonomy_archive_description', 10 );
+	remove_action( 'woocommerce_archive_description', 'woocommerce_product_archive_description', 10 );
+	
+	// Also remove the title from the archive header
+	add_filter( 'woocommerce_show_page_title', 'primefit_hide_category_page_title' );
+}
+
+/**
+ * Hide page title on product category pages
+ */
+function primefit_hide_category_page_title( $show ) {
+	if ( is_product_category() || is_product_tag() ) {
+		return false;
+	}
+	return $show;
+}
+
+/**
+ * Remove WooCommerce page title action on product category pages
+ */
+add_action( 'woocommerce_before_shop_loop', 'primefit_remove_category_page_title_action', 1 );
+function primefit_remove_category_page_title_action() {
+	if ( is_product_category() || is_product_tag() ) {
+		// Remove the page title action completely
+		remove_action( 'woocommerce_shop_loop_header', 'woocommerce_product_archive_description', 10 );
+	}
 }
 
 /**
