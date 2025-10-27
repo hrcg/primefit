@@ -1263,7 +1263,7 @@ body:not(.has-hero-header):has(.promo-bar) .site-content {
 
 .mega-menu-content {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 60px;
   padding: 40px 0;
   max-width: 1200px;

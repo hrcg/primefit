@@ -2267,3 +2267,92 @@ function primefit_handle_payment_summary_query() {
 }
 
 // Payment summary endpoint content function already declared above
+
+/**
+ * Remove default WooCommerce related products
+ */
+add_action( 'woocommerce_after_single_product_summary', 'primefit_remove_default_related_products', 5 );
+function primefit_remove_default_related_products() {
+	remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
+}
+
+/**
+ * Custom related products section using the same loop as category pages
+ */
+add_action( 'woocommerce_after_single_product_summary', 'primefit_output_related_products', 20 );
+function primefit_output_related_products() {
+	global $product;
+	
+	if ( ! $product ) {
+		return;
+	}
+	
+	// Get related products
+	$related_products = wc_get_related_products( $product->get_id(), 8 );
+	
+	// If no related products, get products from same category
+	if ( empty( $related_products ) ) {
+		$product_categories = wp_get_post_terms( $product->get_id(), 'product_cat', array( 'fields' => 'ids' ) );
+		
+		if ( empty( $product_categories ) ) {
+			return;
+		}
+		
+		// Get products from the same category, excluding current product
+		$args = array(
+			'post_type' => 'product',
+			'posts_per_page' => 8,
+			'post__not_in' => array( $product->get_id() ),
+			'tax_query' => array(
+				array(
+					'taxonomy' => 'product_cat',
+					'field' => 'term_id',
+					'terms' => $product_categories,
+				)
+			),
+			'orderby' => 'rand',
+			'fields' => 'ids'
+		);
+		
+		$query = new WP_Query( $args );
+		if ( $query->have_posts() ) {
+			$related_products = $query->posts;
+		} else {
+			return;
+		}
+	}
+	
+	// Limit to 4 products
+	$related_products = array_slice( $related_products, 0, 4 );
+	
+	// Use the same product loop function as category pages
+	primefit_render_product_loop( array(
+		'title' => __( 'You may also like', 'primefit' ),
+		'limit' => 4,
+		'columns' => 4,
+		'orderby' => 'post__in', // Use post__in to maintain order
+		'order' => 'ASC',
+		'show_view_all' => false,
+		'products' => $related_products, // Pass specific products to display
+		'is_related_products' => true, // Flag to identify related products section
+		'disable_cache' => true, // Disable cache for dynamic related products
+	) );
+}
+
+/**
+ * Modify product loop to accept specific product IDs
+ */
+add_filter( 'woocommerce_shortcode_products_query', 'primefit_custom_related_products_query', 10, 3 );
+function primefit_custom_related_products_query( $query_args, $attributes, $type ) {
+	// Check if we have specific product IDs to show
+	if ( isset( $attributes['ids'] ) && ! empty( $attributes['ids'] ) ) {
+		// Parse comma-separated IDs
+		$ids = array_map( 'absint', explode( ',', $attributes['ids'] ) );
+		if ( ! empty( $ids ) ) {
+			$query_args['post__in'] = $ids;
+			$query_args['orderby'] = 'post__in'; // Maintain order of products passed in
+		}
+	}
+	
+	return $query_args;
+}

@@ -704,6 +704,30 @@ function primefit_customize_register( $wp_customize ) {
 		'description' => __( 'Enter links separated by commas. Example: Run,Train,Rec', 'primefit' ),
 	) );
 
+	// Column 5 Heading
+	$wp_customize->add_setting( 'primefit_mega_menu_column_5_heading', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_5_heading', array(
+		'label'   => __( 'Column 5 Heading', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'text',
+		'description' => __( 'Leave empty to hide this column', 'primefit' ),
+	) );
+
+	// Column 5 Links
+	$wp_customize->add_setting( 'primefit_mega_menu_column_5_links', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_5_links', array(
+		'label'       => __( 'Column 5 Links (comma-separated)', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'textarea',
+		'description' => __( 'Enter links separated by commas', 'primefit' ),
+	) );
+
 	// Navigation Badge Section
 	$wp_customize->add_section( 'primefit_navigation_badge', array(
 		'title'    => __( 'Navigation Badge', 'primefit' ),
@@ -1216,6 +1240,8 @@ function primefit_get_mega_menu_config() {
 		'column_3_links' => get_theme_mod( 'primefit_mega_menu_column_3_links', 'Hats & Headwear,Bags,Socks,Jewelry & Hardware' ),
 		'column_4_heading' => get_theme_mod( 'primefit_mega_menu_column_4_heading', 'DESIGNED FOR' ),
 		'column_4_links' => get_theme_mod( 'primefit_mega_menu_column_4_links', 'Run,Train,Rec' ),
+		'column_5_heading' => get_theme_mod( 'primefit_mega_menu_column_5_heading', '' ),
+		'column_5_links' => get_theme_mod( 'primefit_mega_menu_column_5_links', '' ),
 	);
 }
 

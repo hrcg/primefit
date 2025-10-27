@@ -1374,6 +1374,24 @@
   position: relative;
 }
 
+/* Disable hover effects for related products section */
+.related-products-section .woocommerce ul.products li.product:hover .product-second-image {
+  opacity: 0 !important;
+  transform: none !important;
+}
+
+.related-products-section .woocommerce ul.products li.product:hover .product-size-options {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.related-products-section .woocommerce ul.products li.product:hover .product-price-container .price,
+.related-products-section .woocommerce ul.products li.product:hover .product-price-container .sold-out-text {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 /* Product Showcase Actions - Center the button */
 .product-showcase-actions,
 .featured-products-actions {
