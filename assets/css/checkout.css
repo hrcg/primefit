@@ -926,7 +926,7 @@
 
 /* Select2 container styling */
 .select2-container {
-  width: 100% !important;
+  width: 96%;
   position: relative;
   display: inline-block;
   vertical-align: middle;
@@ -1188,8 +1188,6 @@
 .woocommerce-checkout .woocommerce-billing-fields input,
 .woocommerce-checkout .woocommerce-billing-fields select,
 .woocommerce-checkout .woocommerce-billing-fields textarea {
-  width: 100% !important;
-  max-width: 100% !important;
   box-sizing: border-box !important;
   background: var(--checkout-input-bg) !important;
   color: var(--checkout-text) !important;
@@ -1208,12 +1206,6 @@
   color: var(--checkout-text-light) !important;
 }
 
-/* Fix any inline styles that might override our CSS */
-.woocommerce-checkout .woocommerce-billing-fields input[style],
-.woocommerce-checkout .woocommerce-billing-fields select[style] {
-  width: 100% !important;
-  max-width: 100% !important;
-}
 
 /* Order review table */
 .woocommerce-checkout-review-order-table {
@@ -2144,10 +2136,6 @@ body .woocommerce-checkout .blockMsg h1 {
   background-color: var(--checkout-dropdown-bg) !important;
 }
 
-/* Ensure Select2 is full width */
-.woocommerce-checkout .select2-container {
-  width: 100% !important;
-}
 
 /* Mobile optimization for Select2 */
 @media (max-width: 768px) {

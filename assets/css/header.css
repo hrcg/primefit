@@ -240,6 +240,7 @@
 @media (max-width: 1024px) {
   body.single-product .header-back-button {
     display: block !important;
+    margin-right: 9px;
   }
 
   body.single-product .hamburger {
