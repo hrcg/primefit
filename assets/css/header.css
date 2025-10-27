@@ -375,6 +375,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 8px;
 }
 
 .search-results-count {
@@ -795,7 +796,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 82vw;
+  width: 75vw;
   max-width: 380px;
   height: 100vh;
   background: var(--background);
@@ -844,7 +845,7 @@
   color: var(--text);
   text-decoration: none;
   display: block;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 700;
@@ -907,7 +908,7 @@
 .mobile-menu .sub-menu a {
   margin: 10px 0 0 5px;
   padding: 5px 0 5px 10px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
   border-left: 2px solid transparent;
@@ -930,7 +931,7 @@
   text-decoration: none;
   padding: 0;
   display: block;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 700;
