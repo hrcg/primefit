@@ -792,8 +792,8 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 75vw;
-  max-width: 380px;
+  width: 80vw;
+  max-width: 400px;
   height: 100vh;
   background: var(--background);
   color: var(--text);
@@ -921,7 +921,7 @@
 
 /* Tertiary menu in mobile panel - same style as primary menu */
 .mobile-nav--tertiary {
-  margin-top: 20px;
+  margin-top: 30px;
 }
 
 .mobile-menu--tertiary a {
