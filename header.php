@@ -206,6 +206,50 @@ if ( ! defined( 'ABSPATH' ) ) {
 							]);
 						?>
 					</nav>
+					
+					<?php
+					$mobile_tiles_config = primefit_get_mobile_header_tiles_config();
+					if ( $mobile_tiles_config['enabled'] && ! empty( $mobile_tiles_config['tiles'] ) ) :
+					?>
+					<div class="tiles-3" style="margin-left: 20px;">
+						<?php foreach ( $mobile_tiles_config['tiles'] as $tile ) : ?>
+							<div class="tile">
+								<?php
+								$tile_image = $tile['image'];
+								$tile_webp = function_exists( 'primefit_get_optimized_image_url' ) ? primefit_get_optimized_image_url($tile_image, 'webp') : $tile_image;
+								$best_tile_image = $tile_webp !== $tile_image ? $tile_webp : $tile_image;
+								?>
+								<?php if ($best_tile_image) : ?>
+								<picture>
+									<?php if ($tile_webp !== $tile_image) : ?>
+									<source type="image/webp" srcset="<?php echo esc_url($tile_webp); ?>">
+									<?php endif; ?>
+									<img
+										src="<?php echo esc_url($tile_image); ?>"
+										alt="<?php echo esc_attr( $tile['alt'] ?: 'Mobile tile image' ); ?>"
+										loading="lazy"
+										decoding="async"
+										width="400"
+										height="300"
+									/>
+								</picture>
+								<?php endif; ?>
+								<div class="tile-overlay">
+									<div class="tile-content">
+										<?php if ( ! empty( $tile['description'] ) ) : ?>
+											<p class="tile-description"><?php echo esc_html( $tile['description'] ); ?></p>
+										<?php endif; ?>
+										<?php if ( ! empty( $tile['button_text'] ) && ! empty( $tile['url'] ) ) : ?>
+											<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-button button button--primary">
+												<?php echo esc_html( $tile['button_text'] ); ?>
+											</a>
+										<?php endif; ?>
+									</div>
+								</div>
+							</div>
+						<?php endforeach; ?>
+					</div>
+					<?php endif; ?>
 				</aside>
 			</div>
 
