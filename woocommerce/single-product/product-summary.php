@@ -61,8 +61,10 @@ $attributes = $product->get_attributes();
 $color_attribute = null;
 $size_attribute = null;
 
-// Get variation attributes for better detection with caching
-$variation_attributes = $product->get_variation_attributes();
+// Get variation attributes for better detection with caching (only for variable products)
+$variation_attributes = $is_variable && method_exists( $product, 'get_variation_attributes' ) 
+	? $product->get_variation_attributes() 
+	: array();
 
 // Get WooCommerce default attributes with caching
 $default_attributes = $product->get_default_attributes();
