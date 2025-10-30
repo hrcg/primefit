@@ -1140,6 +1140,11 @@ body.mobile-open .qlwapp__button.qlwapp__button--bubble {
   display: none;
 }
 
+/* Hide WhatsApp button when sticky add-to-cart is visible */
+body:has(.sticky-add-to-cart.visible) .qlwapp__button.qlwapp__button--bubble {
+  display: none;
+}
+
 /* Desktop: slide from left */
 @media (min-width: 1025px) {
   .mobile-open .mobile-nav-panel {
