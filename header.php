@@ -208,7 +208,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						$mobile_tiles_config = primefit_get_mobile_header_tiles_config();
 						if ( $mobile_tiles_config['enabled'] && ! empty( $mobile_tiles_config['tiles'] ) ) :
 						?>
-						<div class="tiles-3" style="margin-left: 20px;">
+						<div class="tiles-3" style="margin-left: 12px;">
 							<?php foreach ( $mobile_tiles_config['tiles'] as $tile ) : ?>
 								<div class="tile">
 									<?php
