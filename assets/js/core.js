@@ -9,6 +9,13 @@
 (function ($) {
   "use strict";
 
+  function isIOSSafari() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var isWebKit = /WebKit\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+    return isIOS && isWebKit;
+  }
+
   /**
    * Unified Cart Manager - Prevents cart fragment refresh conflicts
    * Enhanced with proper queuing, priority system, and conflict resolution
@@ -1038,6 +1045,7 @@
     // Check if browser supports Intersection Observer
     if ("IntersectionObserver" in window) {
       var lazyImages = document.querySelectorAll('img[loading="lazy"]');
+      var isIOS = isIOSSafari();
       var imageObserver = new IntersectionObserver(
         function (entries, observer) {
           entries.forEach(function (entry) {
@@ -1085,7 +1093,8 @@
           });
         },
         {
-          rootMargin: "50px 0px", // Load images 50px before they come into view
+          // Wider pre-load window on iOS to avoid decode-on-enter flicker
+          rootMargin: isIOS ? "200px 0px" : "50px 0px",
           threshold: 0.01,
         }
       );
@@ -1231,6 +1240,13 @@
     } catch (e) {
       // Ignore if URL API not available
     }
+
+    // Add iOS Safari class for CSS-based fixes
+    try {
+      if (isIOSSafari()) {
+        document.documentElement.classList.add("ios-safari-flicker-fix");
+      }
+    } catch (e) {}
 
     // Keep mini cart and checkout in sync when coupons change anywhere
     // Listen for WooCommerce coupon events and refresh fragments accordingly

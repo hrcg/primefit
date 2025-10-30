@@ -653,7 +653,6 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Override WooCommerce default width and float styling */
@@ -2030,5 +2029,25 @@ body.woocommerce .hero {
   .woocommerce nav.woocommerce-pagination ul li span.current {
     background: var(--text, #fff);
     color: var(--background, #000);
+  }
+}
+
+/* iOS Safari flicker mitigation for product loop images */
+@supports (-webkit-hyphens: none) and (not (overflow: clip)) {
+  .ios-safari-flicker-fix .woocommerce ul.products li.product .product-image-container,
+  .ios-safari-flicker-fix .woocommerce ul.products li.product .product-image-container img,
+  .ios-safari-flicker-fix .woocommerce ul.products li.product .attachment-woocommerce_thumbnail,
+  .ios-safari-flicker-fix .woocommerce ul.products li.product .product-second-image {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: auto;
+  }
+
+  /* Disable opacity/transform transitions on list images to avoid recomposite flicker */
+  .ios-safari-flicker-fix .woocommerce ul.products li.product .attachment-woocommerce_thumbnail,
+  .ios-safari-flicker-fix .woocommerce ul.products li.product .product-second-image {
+    transition: none !important;
   }
 }
