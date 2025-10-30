@@ -178,78 +178,76 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="mobile-nav-overlay" aria-hidden="true"></div>
 				<aside class="mobile-nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
 					<div class="mobile-nav-header">
-						<!-- END OF SEASON SALE
-						<a href="product-category/sale" style="text-decoration: none; color: inherit;">
-						<span class="mobile-nav-title">END OF SEASON SALE</span>
-				</a>
-				-->
-						<button class="mobile-nav-close" aria-label="Close menu">&times;</button>
+						<span>Menu</span>
+						<button type="button" class="mobile-nav-close" aria-label="Close menu">&times;</button>
 					</div>
-					<nav class="mobile-nav" aria-label="Mobile Primary Menu">
+					<div class="mobile-nav-content">
+						<nav class="mobile-nav" aria-label="Mobile Primary Menu">
+							<?php
+								wp_nav_menu([
+									'theme_location' => 'primary',
+									'container'      => false,
+									'menu_class'      => 'mobile-menu',
+									'fallback_cb'     => false,
+								]);
+							?>
+						</nav>
+						
+						<nav class="mobile-nav mobile-nav--tertiary" aria-label="Mobile Tertiary Menu">
+							<?php
+								wp_nav_menu([
+									'theme_location' => 'secondary',
+									'container'      => false,
+									'menu_class'      => 'mobile-menu mobile-menu--tertiary',
+									'fallback_cb'     => false,
+								]);
+							?>
+						</nav>
+						
 						<?php
-							wp_nav_menu([
-								'theme_location' => 'primary',
-								'container'      => false,
-								'menu_class'      => 'mobile-menu',
-								'fallback_cb'     => false,
-							]);
+						$mobile_tiles_config = primefit_get_mobile_header_tiles_config();
+						if ( $mobile_tiles_config['enabled'] && ! empty( $mobile_tiles_config['tiles'] ) ) :
 						?>
-					</nav>
-					
-					<nav class="mobile-nav mobile-nav--tertiary" aria-label="Mobile Tertiary Menu">
-						<?php
-							wp_nav_menu([
-								'theme_location' => 'secondary',
-								'container'      => false,
-								'menu_class'      => 'mobile-menu mobile-menu--tertiary',
-								'fallback_cb'     => false,
-							]);
-						?>
-					</nav>
-					
-					<?php
-					$mobile_tiles_config = primefit_get_mobile_header_tiles_config();
-					if ( $mobile_tiles_config['enabled'] && ! empty( $mobile_tiles_config['tiles'] ) ) :
-					?>
-					<div class="tiles-3" style="margin-left: 20px;">
-						<?php foreach ( $mobile_tiles_config['tiles'] as $tile ) : ?>
-							<div class="tile">
-								<?php
-								$tile_image = $tile['image'];
-								$tile_webp = function_exists( 'primefit_get_optimized_image_url' ) ? primefit_get_optimized_image_url($tile_image, 'webp') : $tile_image;
-								$best_tile_image = $tile_webp !== $tile_image ? $tile_webp : $tile_image;
-								?>
-								<?php if ($best_tile_image) : ?>
-								<picture>
-									<?php if ($tile_webp !== $tile_image) : ?>
-									<source type="image/webp" srcset="<?php echo esc_url($tile_webp); ?>">
+						<div class="tiles-3" style="margin-left: 20px;">
+							<?php foreach ( $mobile_tiles_config['tiles'] as $tile ) : ?>
+								<div class="tile">
+									<?php
+									$tile_image = $tile['image'];
+									$tile_webp = function_exists( 'primefit_get_optimized_image_url' ) ? primefit_get_optimized_image_url($tile_image, 'webp') : $tile_image;
+									$best_tile_image = $tile_webp !== $tile_image ? $tile_webp : $tile_image;
+									?>
+									<?php if ($best_tile_image) : ?>
+									<picture>
+										<?php if ($tile_webp !== $tile_image) : ?>
+										<source type="image/webp" srcset="<?php echo esc_url($tile_webp); ?>">
+										<?php endif; ?>
+										<img
+											src="<?php echo esc_url($tile_image); ?>"
+											alt="<?php echo esc_attr( $tile['alt'] ?: 'Mobile tile image' ); ?>"
+											loading="lazy"
+											decoding="async"
+											width="400"
+											height="300"
+										/>
+									</picture>
 									<?php endif; ?>
-									<img
-										src="<?php echo esc_url($tile_image); ?>"
-										alt="<?php echo esc_attr( $tile['alt'] ?: 'Mobile tile image' ); ?>"
-										loading="lazy"
-										decoding="async"
-										width="400"
-										height="300"
-									/>
-								</picture>
-								<?php endif; ?>
-								<div class="tile-overlay">
-									<div class="tile-content">
-										<?php if ( ! empty( $tile['description'] ) ) : ?>
-											<p class="tile-description"><?php echo esc_html( $tile['description'] ); ?></p>
-										<?php endif; ?>
-										<?php if ( ! empty( $tile['button_text'] ) && ! empty( $tile['url'] ) ) : ?>
-											<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-button button button--primary">
-												<?php echo esc_html( $tile['button_text'] ); ?>
-											</a>
-										<?php endif; ?>
+									<div class="tile-overlay">
+										<div class="tile-content">
+											<?php if ( ! empty( $tile['description'] ) ) : ?>
+												<p class="tile-description"><?php echo esc_html( $tile['description'] ); ?></p>
+											<?php endif; ?>
+											<?php if ( ! empty( $tile['button_text'] ) && ! empty( $tile['url'] ) ) : ?>
+												<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-button button button--primary">
+													<?php echo esc_html( $tile['button_text'] ); ?>
+												</a>
+											<?php endif; ?>
+										</div>
 									</div>
 								</div>
-							</div>
-						<?php endforeach; ?>
+							<?php endforeach; ?>
+						</div>
+						<?php endif; ?>
 					</div>
-					<?php endif; ?>
 				</aside>
 			</div>
 
