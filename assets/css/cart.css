@@ -88,7 +88,6 @@
   justify-content: space-between;
   padding: 10px 20px;
   border-bottom: 1px solid var(--border);
-  border-top: 1px solid var(--border);
   background: var(--bg) !important;
 }
 
@@ -1520,6 +1519,7 @@
   /* Further reduce padding */
   .cart-panel-header {
     padding: 12px 16px;
+    border-top: 1px solid var(--border);
   }
 
   .woocommerce-mini-cart__item {

@@ -840,6 +840,7 @@ article {
 }
 .tiles-3 .tile {
   position: relative;
+  border: 1px solid var(--border);
 }
 .tiles-3 .tile img {
   width: 100%;
