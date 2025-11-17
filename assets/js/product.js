@@ -174,6 +174,35 @@
     initTapIndicators();
     initShopFilterBar();
 
+    // Record recently viewed product
+    try {
+      const pd = window.primefitProductData;
+      if (pd && pd.productId) {
+        const entry = {
+          id: pd.productId,
+          title: pd.title || document.title || "",
+          url: pd.url || window.location.href,
+          image: pd.image || (document.querySelector(".woocommerce-product-gallery__image img") ? document.querySelector(".woocommerce-product-gallery__image img").src : "")
+        };
+
+        if (typeof Storage !== "undefined") {
+          const key = "primefit_recently_viewed";
+          let items = [];
+          try {
+            items = JSON.parse(localStorage.getItem(key) || "[]");
+          } catch (_) {
+            items = [];
+          }
+
+          items = Array.isArray(items) ? items : [];
+          items = items.filter((it) => String(it.id) !== String(entry.id));
+          items.unshift(entry);
+          items = items.slice(0, 3);
+          localStorage.setItem(key, JSON.stringify(items));
+        }
+      }
+    } catch (_) {}
+
     // Re-initialize on window resize with stored handler for cleanup
     const resizeHandler = function () {
       initTapIndicators();

@@ -1,0 +1,123 @@
+# PosPlus API Integration Context for Cursor
+
+## Project Overview
+I'm building a WooCommerce integration with the PosPlus API. PosPlus is the single source of truth for all product data (products, names, sizes, stock, prices, etc.), and I need to sync this data to my WooCommerce store.
+
+## API Details
+
+### Base Information
+- **API URL**: `https://testing-api.posplus.al`
+- **Swagger Documentation**: `https://testing-api.posplus.al/swagger/index.html`
+- **Company ID**: `11120`
+- **API Version**: `1.0`
+
+### Authentication
+The API uses Bearer token authentication via JWT.
+
+**Login Endpoint**: `POST /authentication/login`
+
+**Login Credentials**:
+```json
+{
+  "userName": "admin",
+  "password": "Admin@"
+}
+```
+
+**Authentication Flow**:
+1. Call the login endpoint with credentials
+2. Receive an `accessToken` in the response
+3. Use this token in all subsequent requests as: `Authorization: Bearer <accessToken>`
+4. The token expires after a period of time (need to re-authenticate when it expires)
+
+### Available Endpoints (from Swagger)
+- `GET /{companyId}/AnalyticalDiscounts`
+- `GET /{companyId}/AnalyticalDiscounts/{id}`
+- Additional endpoints available in the Swagger UI (need to explore)
+
+## Integration Requirements
+
+### Core Functionality Needed
+1. **Authentication Manager**
+   - Login and store access token
+   - Automatically re-authenticate when token expires
+   - Handle authentication errors gracefully
+
+2. **Product Sync**
+   - Fetch all products from PosPlus API
+   - Map PosPlus product fields to WooCommerce product fields
+   - Create new products in WooCommerce if they don't exist (match by SKU)
+   - Update existing products if they exist
+   - Sync product data including:
+     - Product name
+     - SKU
+     - Price
+     - Stock quantity
+     - Description
+     - Product variations/sizes (if applicable)
+     - Categories (if applicable)
+     - Images (if available in API)
+
+3. **Sync Strategy**
+   - Manual sync via admin button
+   - Scheduled automatic sync (every 6 hours or configurable)
+   - Logging of sync operations (success/failures)
+
+4. **Admin Interface**
+   - WordPress admin page for the plugin
+   - Test connection button
+   - Manual sync button
+   - Sync logs display
+   - Configuration settings (credentials, sync frequency)
+
+### Technical Stack
+- **Platform**: WordPress with WooCommerce
+- **Language**: PHP (WordPress plugin)
+- **API Communication**: WordPress HTTP API (`wp_remote_post`, `wp_remote_get`)
+- **Data Storage**: WooCommerce product database
+
+## What I Need Help With
+
+When working on this project, please:
+
+1. **Explore the Swagger API** to identify:
+   - The correct endpoint(s) for fetching products
+   - The exact structure of product data returned by the API
+   - Any pagination or filtering options
+   - Rate limits or best practices
+
+2. **Field Mapping**: Help me map the PosPlus API product fields to WooCommerce fields accurately
+
+3. **Error Handling**: Implement robust error handling for:
+   - Authentication failures
+   - API timeouts
+   - Invalid product data
+   - Sync conflicts
+
+4. **Performance**: Optimize for syncing large product catalogs (batch processing, pagination)
+
+5. **Code Quality**: Follow WordPress coding standards and best practices
+
+## Current Code Status
+I have a basic plugin structure that handles authentication and basic product sync, but it needs to be customized based on the actual API structure from Swagger.
+
+## Important Considerations
+- PosPlus is the source of truth - never sync data FROM WooCommerce TO PosPlus
+- Need to preserve custom WooCommerce data that isn't managed by PosPlus
+- Handle cases where products are deleted in PosPlus (should they be deleted or just marked out of stock?)
+- Consider multi-language support if needed
+- Security: Store API credentials securely
+
+## Questions to Answer
+1. What is the exact endpoint for fetching products?
+2. What is the structure of the product data in the API response?
+3. Does the API support pagination for large product catalogs?
+4. Are there separate endpoints for product variants/variations?
+5. How are product categories structured in the API?
+6. Are product images available and how are they accessed?
+7. What is the token expiration time?
+8. Are there rate limits on the API?
+
+---
+
+Please help me build a production-ready WooCommerce plugin that reliably syncs product data from the PosPlus API, with proper error handling, logging, and a user-friendly admin interface.

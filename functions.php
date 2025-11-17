@@ -220,6 +220,7 @@ function primefit_init_advanced_caching() {
 		// Add advanced product caching hooks
 		add_action( 'pre_get_posts', 'primefit_advanced_product_query_optimization', 5 );
 		add_filter( 'posts_results', 'primefit_cache_product_meta_bulk', 10, 2 );
+		
 		add_action( 'wp', 'primefit_cache_query_results_advanced', 15 );
 		
 		// Enhanced cache invalidation
@@ -782,29 +783,44 @@ function primefit_handle_product_search() {
 		wp_send_json_error( 'Search query too short', 400 );
 	}
 
-	// Generate cache key
-	$cache_key = 'primefit_search_' . md5( $search_query );
+	// NOTE: We record trending searches only when there are results (handled below)
+
+	// Normalize search query for consistent caching (lowercase, trim)
+	$normalized_query = strtolower( trim( $search_query ) );
+
+	// Generate cache key using normalized query
+	$cache_key = 'primefit_search_' . md5( $normalized_query );
 	
 	// Try to get cached results first
 	$cached_results = wp_cache_get( $cache_key, 'primefit_search' );
 	
 	if ( false !== $cached_results ) {
+		// Track only if cached results contain products
+		if ( ! empty( $cached_results['products'] ) ) {
+			primefit_track_search_query( $search_query );
+		}
 		wp_send_json_success( $cached_results );
 	}
 
-	// Perform optimized product search
-	$search_results = primefit_perform_product_search( $search_query );
+	// Perform optimized product search using normalized query
+	$search_results = primefit_perform_product_search( $normalized_query );
 	
 	// Add debug info if no results found
 	if ( empty( $search_results['products'] ) ) {
 		$search_results['debug'] = array(
-			'query' => $search_query,
+			'original_query' => $search_query,
+			'normalized_query' => $normalized_query,
 			'total_found' => $search_results['total'],
 			'wc_active' => class_exists( 'WooCommerce' ),
 			'wc_version' => class_exists( 'WooCommerce' ) ? WC()->version : 'N/A'
 		);
 	}
 	
+	// Track only if fresh results contain products
+	if ( ! empty( $search_results['products'] ) ) {
+		primefit_track_search_query( $search_query );
+	}
+
 	// Cache results for 15 minutes
 	wp_cache_set( $cache_key, $search_results, 'primefit_search', 900 );
 	
@@ -813,12 +829,13 @@ function primefit_handle_product_search() {
 
 /**
  * Perform optimized product search with WooCommerce integration
+ * Includes SKU search support
  */
 function primefit_perform_product_search( $search_query ) {
 	global $wpdb;
 	
-	// Use WooCommerce's product search with optimized query
-	$args = array(
+	// Primary search by title/content using 's'
+	$primary_args = array(
 		'post_type' => 'product',
 		'post_status' => 'publish',
 		'posts_per_page' => 12, // Limit results for performance
@@ -853,19 +870,115 @@ function primefit_perform_product_search( $search_query ) {
 		'order' => 'DESC'
 	);
 
-	$query = new WP_Query( $args );
+	$primary_query = new WP_Query( $primary_args );
+	
+	// Collect primary IDs
+	$primary_ids = array();
+	if ( $primary_query->have_posts() ) {
+		foreach ( $primary_query->posts as $post_obj ) {
+			$primary_ids[] = (int) $post_obj->ID;
+		}
+	}
+	
+	// Secondary search by SKU (supports products and variations)
+	$sku_like = $search_query;
+	$sku_meta_query = array(
+		'relation' => 'AND',
+		array(
+			'key' => '_sku',
+			'value' => $sku_like,
+			'compare' => 'LIKE'
+		),
+	);
+	
+	$sku_query = new WP_Query( array(
+		'post_type' => array( 'product', 'product_variation' ),
+		'post_status' => 'publish',
+		'posts_per_page' => 50,
+		'fields' => 'ids',
+		'meta_query' => $sku_meta_query,
+	) );
+	
+	$sku_ids = array();
+	if ( $sku_query->have_posts() ) {
+		foreach ( $sku_query->posts as $matched_id ) {
+			// Map variations to their parent product
+			$post_type = get_post_type( $matched_id );
+			if ( 'product_variation' === $post_type ) {
+				$parent_id = (int) wp_get_post_parent_id( $matched_id );
+				if ( $parent_id > 0 ) {
+					$sku_ids[] = $parent_id;
+				}
+			} else {
+				$sku_ids[] = (int) $matched_id;
+			}
+		}
+	}
+	
+	// Prioritize SKU matches first, then append primary search results
+	$final_ids_ordered = array_values( array_unique( array_merge( $sku_ids, $primary_ids ) ) );
+	
+	// Fallback: if no results yet, try an exact SKU match to be safe
+	if ( empty( $final_ids_ordered ) ) {
+		$sku_exact_query = new WP_Query( array(
+			'post_type' => array( 'product', 'product_variation' ),
+			'post_status' => 'publish',
+			'posts_per_page' => 50,
+			'fields' => 'ids',
+			'meta_query' => array(
+				array(
+					'key' => '_sku',
+					'value' => $search_query,
+					'compare' => '='
+				),
+			),
+		) );
+		
+		if ( $sku_exact_query->have_posts() ) {
+			foreach ( $sku_exact_query->posts as $matched_id ) {
+				$post_type = get_post_type( $matched_id );
+				if ( 'product_variation' === $post_type ) {
+					$parent_id = (int) wp_get_post_parent_id( $matched_id );
+					if ( $parent_id > 0 ) {
+						$final_ids_ordered[] = $parent_id;
+					}
+				} else {
+					$final_ids_ordered[] = (int) $matched_id;
+				}
+			}
+			$final_ids_ordered = array_values( array_unique( $final_ids_ordered ) );
+		}
+	}
+	
+	// Limit to max results
+	$limited_ids = array_slice( $final_ids_ordered, 0, 12 );
+	
+	// Build a query to fetch product objects in the desired order
+	$display_query = null;
+	if ( ! empty( $limited_ids ) ) {
+		$display_query = new WP_Query( array(
+			'post_type' => 'product',
+			'post_status' => 'publish',
+			'posts_per_page' => count( $limited_ids ),
+			'post__in' => $limited_ids,
+			'orderby' => 'post__in',
+		) );
+	} else {
+		// Use the primary query (which is empty) to keep structure consistent
+		$display_query = $primary_query;
+	}
 	
 	$results = array(
 		'products' => array(),
 		'ids' => array(),
-		'total' => $query->found_posts,
+		'total' => count( $final_ids_ordered ),
 		'query' => $search_query,
 		'html' => ''
 	);
 
-	if ( $query->have_posts() ) {
-		while ( $query->have_posts() ) {
-			$query->the_post();
+	if ( $display_query->have_posts() ) {
+		while ( $display_query->have_posts() ) {
+			$display_query->the_post();
 			global $product;
 			
 			if ( ! $product || ! $product->is_visible() ) {
@@ -887,7 +1000,12 @@ function primefit_perform_product_search( $search_query ) {
 		$ids_str = implode( ',', array_map( 'absint', $results['ids'] ) );
 		// Use 4 columns for compact search overlay layout
 		$columns = 4;
-		$results['html'] = do_shortcode( '[products ids="' . esc_attr( $ids_str ) . '" columns="' . esc_attr( $columns ) . '"]' );
+		$html = do_shortcode( '[products ids="' . esc_attr( $ids_str ) . '" columns="' . esc_attr( $columns ) . '"]' );
+		
+		// Add search-products class to the products ul element
+		$html = str_replace( 'class="products columns-' . $columns . '"', 'class="products columns-' . $columns . ' search-products"', $html );
+		
+		$results['html'] = $html;
 	}
 
 	return $results;
@@ -942,4 +1060,732 @@ function primefit_get_search_product_data( $product ) {
 	wp_cache_set( $cache_key, $product_data, 'primefit_products', 3600 );
 	
 	return $product_data;
+}
+
+/**
+ * Add SKU search support to product searches
+ * Modifies the SQL search query to include SKU meta field
+ */
+function primefit_search_sku_in_products( $search, $wp_query ) {
+	global $wpdb;
+	
+	// Only apply to searches with search terms
+	if ( empty( $search ) ) {
+		return $search;
+	}
+	
+	// Check if this is a search query (either via is_search() or has 's' parameter)
+	$has_search_param = $wp_query->get( 's' );
+	if ( empty( $has_search_param ) && ! $wp_query->is_search() ) {
+		return $search;
+	}
+	
+	// Check if this is a product search
+	$post_type = $wp_query->get( 'post_type' );
+	$is_product_search = false;
+	
+	if ( $post_type === 'product' || ( is_array( $post_type ) && in_array( 'product', $post_type ) ) ) {
+		$is_product_search = true;
+	} elseif ( empty( $post_type ) || $post_type === 'any' ) {
+		// For general searches, we'll add SKU search but only for products
+		// We need to check if products are included in the search
+		$is_product_search = true; // Assume products might be included
+	} else {
+		// Not a product search, skip
+		return $search;
+	}
+	
+	if ( ! $is_product_search ) {
+		return $search;
+	}
+	
+	// Get the search terms
+	$search_terms = $wp_query->get( 's' );
+	if ( empty( $search_terms ) ) {
+		return $search;
+	}
+	
+	// Escape and prepare search terms for SQL LIKE
+	$escaped_search = $wpdb->esc_like( $search_terms );
+	$escaped_search = '%' . $escaped_search . '%';
+	
+	// Build SKU search condition using prepared statement
+	$sku_search = $wpdb->prepare(
+		" OR EXISTS (
+			SELECT 1 FROM {$wpdb->postmeta}
+			WHERE {$wpdb->postmeta}.post_id = {$wpdb->posts}.ID
+			AND {$wpdb->postmeta}.meta_key = '_sku'
+			AND {$wpdb->postmeta}.meta_value LIKE %s
+		)",
+		$escaped_search
+	);
+	
+	// WordPress search SQL typically has a pattern like:
+	// ((wp_posts.post_title LIKE '%term%') OR (wp_posts.post_content LIKE '%term%'))
+	// We need to add SKU search to this pattern
+	// The search string usually ends with closing parentheses
+	// We'll add the SKU search condition before the final closing parentheses
+	
+	// Count opening and closing parentheses to find where to insert
+	$open_count = substr_count( $search, '(' );
+	$close_count = substr_count( $search, ')' );
+	
+	// If the search string has balanced parentheses, add SKU search before the last closing paren
+	if ( $open_count === $close_count && $close_count > 0 ) {
+		// Find the last closing parenthesis
+		$last_close_pos = strrpos( $search, ')' );
+		if ( $last_close_pos !== false ) {
+			// Insert SKU search before the last closing parenthesis
+			$search = substr_replace( $search, $sku_search . ')', $last_close_pos, 1 );
+		} else {
+			// Fallback: append SKU search
+			$search = rtrim( $search ) . $sku_search;
+		}
+	} else {
+		// Fallback: append SKU search to the end
+		$search = rtrim( $search ) . $sku_search;
+	}
+	
+	return $search;
+}
+
+/**
+ * Track search queries for trending functionality
+ * Optimized with batched writes and memory-based tracking for better performance
+ */
+function primefit_track_search_query( $query ) {
+	if ( empty( $query ) || strlen( $query ) < 2 ) {
+		return;
+	}
+
+	$query = sanitize_text_field( $query );
+	
+	// Cache today's date for the request
+	static $today = null;
+	if ( null === $today ) {
+		$today = date( 'Y-m-d' );
+	}
+	
+	// Use memory-based tracking for performance
+	$memory_key = 'primefit_trending_memory_' . $today;
+	$memory_data = wp_cache_get( $memory_key, 'primefit_trending_memory' );
+	
+	if ( empty( $memory_data ) ) {
+		$memory_data = array();
+	}
+	
+	// Increment count in memory (simplified)
+	$memory_data[ $query ] = isset( $memory_data[ $query ] ) ? $memory_data[ $query ] + 1 : 1;
+	
+	// Store in memory with 1-hour expiration
+	wp_cache_set( $memory_key, $memory_data, 'primefit_trending_memory', HOUR_IN_SECONDS );
+	
+	// Schedule periodic database sync (every 10th search)
+	static $search_count = 0;
+	static $last_sync_check = 0;
+	$search_count++;
+	
+	// Only check sync conditions every 10 searches (avoid transient reads)
+	if ( $search_count % 10 === 0 ) {
+		$current_time = time();
+		
+		// Check if 5 minutes have passed since last check
+		if ( $last_sync_check === 0 || ( $current_time - $last_sync_check ) > 300 ) {
+			primefit_sync_trending_to_database( $today );
+			$last_sync_check = $current_time;
+		}
+	}
+}
+
+/**
+ * Sync trending search data from memory to database
+ * Called periodically to ensure persistence without performance impact
+ */
+function primefit_sync_trending_to_database( $today = null ) {
+	if ( null === $today ) {
+		$today = date( 'Y-m-d' );
+	}
+	
+	$memory_key = 'primefit_trending_memory_' . $today;
+	$memory_data = wp_cache_get( $memory_key, 'primefit_trending_memory' );
+	
+	if ( empty( $memory_data ) ) {
+		return; // No data to sync
+	}
+	
+	// Get current persistent data
+	$persistent_data = get_option( 'primefit_trending_searches', array() );
+	
+	// Initialize today's data if needed
+	if ( ! isset( $persistent_data[ $today ] ) ) {
+		$persistent_data[ $today ] = array();
+	}
+	
+	// Merge memory data with persistent data (optimized)
+	foreach ( $memory_data as $query => $count ) {
+		$persistent_data[ $today ][ $query ] = isset( $persistent_data[ $today ][ $query ] ) 
+			? $persistent_data[ $today ][ $query ] + $count 
+			: $count;
+	}
+	
+	// Only clean up old data occasionally (every ~25% of syncs) to reduce overhead
+	static $cleanup_counter = 0;
+	$cleanup_counter++;
+	
+	if ( $cleanup_counter % 4 === 0 ) {
+		$cutoff_date = date( 'Y-m-d', strtotime( '-7 days' ) );
+		$persistent_data = array_filter( $persistent_data, function( $date ) use ( $cutoff_date ) {
+			return $date >= $cutoff_date;
+		}, ARRAY_FILTER_USE_KEY );
+	}
+	
+	// Update database
+	update_option( 'primefit_trending_searches', $persistent_data, false );
+	
+	// Clear memory data after successful sync
+	wp_cache_delete( $memory_key, 'primefit_trending_memory' );
+}
+
+/**
+ * Get trending searches
+ * Optimized to combine database persistence with memory performance
+ */
+function primefit_get_trending_searches( $limit = 8, $days = 7 ) {
+	// Manual overrides from admin settings
+	$manual_raw  = get_option( 'primefit_trending_manual_terms', '' );
+	$manual_mode = get_option( 'primefit_trending_manual_mode', 'off' );
+	$manual_key  = md5( $manual_raw . '|' . $manual_mode );
+	$manual_terms = primefit_parse_trending_terms( $manual_raw );
+	
+	// Try to get cached results first for performance (include manual settings in the key)
+	$cache_key = 'primefit_trending_results_' . $days . '_' . $limit . '_' . $manual_key;
+	$cached_results = wp_cache_get( $cache_key, 'primefit_trending' );
+	
+	if ( false !== $cached_results ) {
+		return $cached_results;
+	}
+	
+	// Calculate dates once
+	$today = date( 'Y-m-d' );
+	$cutoff_date = date( 'Y-m-d', strtotime( "-{$days} days" ) );
+	
+	// Get persistent data from database (primary source)
+	$trending_data = get_option( 'primefit_trending_searches', array() );
+	
+	// Include today's memory data for most up-to-date results
+	$memory_key = 'primefit_trending_memory_' . $today;
+	$memory_data = wp_cache_get( $memory_key, 'primefit_trending_memory' );
+	
+	if ( ! empty( $memory_data ) ) {
+		// Ensure today's data array exists
+		if ( ! isset( $trending_data[ $today ] ) ) {
+			$trending_data[ $today ] = array();
+		}
+		// Merge memory data (optimized)
+		foreach ( $memory_data as $query => $count ) {
+			$trending_data[ $today ][ $query ] = isset( $trending_data[ $today ][ $query ] )
+				? $trending_data[ $today ][ $query ] + $count
+				: $count;
+		}
+	}
+	
+	// Combine counts from last N days (optimized loop)
+	$combined_counts = array();
+	foreach ( $trending_data as $date => $queries ) {
+		if ( $date >= $cutoff_date ) {
+			foreach ( $queries as $query => $count ) {
+				$combined_counts[ $query ] = isset( $combined_counts[ $query ] )
+					? $combined_counts[ $query ] + $count
+					: $count;
+			}
+		}
+	}
+	
+	// Early return if no data
+	if ( empty( $combined_counts ) ) {
+		// If no computed data, but manual replace/prepend exists, use manual
+		if ( ! empty( $manual_terms ) && in_array( $manual_mode, array( 'replace', 'prepend' ), true ) ) {
+			$results = array_slice( $manual_terms, 0, $limit );
+			wp_cache_set( $cache_key, $results, 'primefit_trending', 900 );
+			return $results;
+		}
+		return array();
+	}
+	
+	// Sort by count and return top results
+	arsort( $combined_counts );
+	$results = array_slice( array_keys( $combined_counts ), 0, $limit, true );
+	
+	// Apply manual settings
+	if ( ! empty( $manual_terms ) ) {
+		if ( 'replace' === $manual_mode ) {
+			$results = array_slice( $manual_terms, 0, $limit );
+		} elseif ( 'prepend' === $manual_mode ) {
+			$results = array_values( array_unique( array_merge( array_slice( $manual_terms, 0, $limit ), $results ) ) );
+			$results = array_slice( $results, 0, $limit );
+		}
+	}
+	
+	// Cache results for 15 minutes for performance
+	wp_cache_set( $cache_key, $results, 'primefit_trending', 900 );
+	
+	return $results;
+}
+
+/**
+ * Parse manual trending terms from admin setting
+ */
+function primefit_parse_trending_terms( $raw ) {
+	if ( empty( $raw ) ) {
+		return array();
+	}
+	
+	$parts = preg_split( '/[\r\n,]+/', (string) $raw );
+	if ( ! is_array( $parts ) ) {
+		return array();
+	}
+	
+	$terms = array();
+	foreach ( $parts as $term ) {
+		$clean = trim( wp_strip_all_tags( $term ) );
+		if ( $clean !== '' ) {
+			$terms[] = $clean;
+		}
+	}
+	
+	// De-duplicate while preserving order and cap to 50 to avoid unbounded growth
+	$terms = array_values( array_unique( $terms ) );
+	return array_slice( $terms, 0, 50 );
+}
+
+/**
+ * AJAX handler for getting trending searches
+ */
+add_action( 'wp_ajax_primefit_get_trending_searches', 'primefit_handle_get_trending_searches' );
+add_action( 'wp_ajax_nopriv_primefit_get_trending_searches', 'primefit_handle_get_trending_searches' );
+
+function primefit_handle_get_trending_searches() {
+	// Verify nonce for security
+	if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'primefit_nonce' ) ) {
+		wp_send_json_error( 'Security check failed', 403 );
+	}
+
+	$trending_searches = primefit_get_trending_searches( 8, 7 );
+	
+	wp_send_json_success( array(
+		'trending_searches' => $trending_searches
+	) );
+}
+
+/**
+ * Debug function to test trending searches persistence
+ * Can be called via WP-CLI or admin interface for testing
+ */
+function primefit_debug_trending_searches() {
+	// Add some test searches
+	$test_searches = array( 'protein powder', 'gym equipment', 'fitness tracker', 'workout gear' );
+	foreach ( $test_searches as $search ) {
+		primefit_track_search_query( $search );
+	}
+	
+	// Force sync to database
+	primefit_sync_trending_to_database();
+	
+	// Get current trending data
+	$trending_data = get_option( 'primefit_trending_searches', array() );
+	$trending_searches = primefit_get_trending_searches( 6, 7 );
+	
+	return array(
+		'raw_data' => $trending_data,
+		'trending_searches' => $trending_searches,
+		'message' => 'Trending searches data retrieved successfully'
+	);
+}
+
+/**
+ * Scheduled cleanup function to ensure data integrity
+ * Runs daily to sync any remaining memory data and clean up old data
+ */
+function primefit_trending_searches_cleanup() {
+	// Force sync any remaining memory data
+	primefit_sync_trending_to_database();
+	
+	// Clean up old data from database
+	$persistent_data = get_option( 'primefit_trending_searches', array() );
+	$cutoff_date = date( 'Y-m-d', strtotime( '-7 days' ) );
+	$cleaned = false;
+	
+	foreach ( $persistent_data as $date => $queries ) {
+		if ( $date < $cutoff_date ) {
+			unset( $persistent_data[ $date ] );
+			$cleaned = true;
+		}
+	}
+	
+	if ( $cleaned ) {
+		update_option( 'primefit_trending_searches', $persistent_data );
+	}
+}
+
+// Schedule daily cleanup
+if ( ! wp_next_scheduled( 'primefit_trending_cleanup' ) ) {
+	wp_schedule_event( time(), 'daily', 'primefit_trending_cleanup' );
+}
+add_action( 'primefit_trending_cleanup', 'primefit_trending_searches_cleanup' );
+
+/**
+ * Admin settings: PrimeFit Search settings page (manual trending searches)
+ */
+add_action( 'admin_menu', 'primefit_register_search_settings_page' );
+function primefit_register_search_settings_page() {
+	add_options_page(
+		'PrimeFit Search',
+		'PrimeFit Search',
+		'manage_options',
+		'primefit-search-settings',
+		'primefit_render_search_settings_page'
+	);
+}
+
+add_action( 'admin_init', 'primefit_register_search_settings' );
+function primefit_register_search_settings() {
+	// Settings group
+	register_setting(
+		'primefit_search',
+		'primefit_trending_manual_terms',
+		array(
+			'type' => 'string',
+			'sanitize_callback' => function( $value ) {
+				// Normalize line endings and trim
+				$value = is_string( $value ) ? str_replace( array( "\r\n", "\r" ), "\n", $value ) : '';
+				// Limit total length to prevent abuse
+				$value = substr( $value, 0, 8000 );
+				return wp_kses_post( $value );
+			},
+			'default' => ''
+		)
+	);
+	
+	register_setting(
+		'primefit_search',
+		'primefit_trending_manual_mode',
+		array(
+			'type' => 'string',
+			'sanitize_callback' => function( $value ) {
+				$allowed = array( 'off', 'prepend', 'replace' );
+				return in_array( $value, $allowed, true ) ? $value : 'off';
+			},
+			'default' => 'off'
+		)
+	);
+	
+	add_settings_section(
+		'primefit_trending_section',
+		'Trending Searches',
+		'__return_false',
+		'primefit-search-settings'
+	);
+	
+	add_settings_field(
+		'primefit_trending_manual_mode',
+		'Manual Mode',
+		'primefit_field_trending_mode',
+		'primefit-search-settings',
+		'primefit_trending_section'
+	);
+	
+	add_settings_field(
+		'primefit_trending_manual_terms',
+		'Manual Trending Terms',
+		'primefit_field_trending_terms',
+		'primefit-search-settings',
+		'primefit_trending_section'
+	);
+}
+
+function primefit_field_trending_mode() {
+	$mode = get_option( 'primefit_trending_manual_mode', 'off' );
+	?>
+	<select name="primefit_trending_manual_mode">
+		<option value="off" <?php selected( $mode, 'off' ); ?>>Off (use automatic)</option>
+		<option value="prepend" <?php selected( $mode, 'prepend' ); ?>>Prepend manual terms</option>
+		<option value="replace" <?php selected( $mode, 'replace' ); ?>>Replace with manual terms</option>
+	</select>
+	<p class="description">Choose how manual terms should be used in the search overlay.</p>
+	<?php
+}
+
+function primefit_field_trending_terms() {
+	$value = get_option( 'primefit_trending_manual_terms', '' );
+	?>
+	<textarea name="primefit_trending_manual_terms" rows="6" cols="60" class="large-text code"><?php echo esc_textarea( $value ); ?></textarea>
+	<p class="description">Enter terms separated by commas or new lines. First items have higher priority.</p>
+	<?php
+}
+
+function primefit_render_search_settings_page() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	?>
+	<div class="wrap">
+		<h1>PrimeFit Search</h1>
+		<form action="options.php" method="post">
+			<?php
+				settings_fields( 'primefit_search' );
+				do_settings_sections( 'primefit-search-settings' );
+				submit_button();
+			?>
+		</form>
+	</div>
+	<?php
+}
+
+/**
+ * POS Integration - Register REST API Routes
+ * Registers WTN endpoint for creating WooCommerce orders
+ */
+add_action('rest_api_init', 'primefit_register_pos_routes');
+
+function primefit_register_pos_routes() {
+    // Register main WTN endpoint
+    register_rest_route('pos/v1', '/wtn', array(
+        'methods' => 'POST',
+        'callback' => 'handle_pos_wtn_request',
+        'permission_callback' => '__return_true',
+    ));
+    
+    // Register test endpoints
+    register_rest_route('pos/v1', '/test-invoice', array(
+        'methods' => 'POST',
+        'callback' => 'handle_pos_test_invoice',
+        'permission_callback' => '__return_true',
+    ));
+    
+    register_rest_route('pos/v1', '/test-wtn', array(
+        'methods' => 'POST',
+        'callback' => 'handle_pos_test_wtn',
+        'permission_callback' => '__return_true',
+    ));
+}
+
+/**
+ * Handle POS Invoice Request - Create WooCommerce Order
+ */
+function handle_pos_wtn_request(WP_REST_Request $request) {
+    $headers = $request->get_headers();
+    $incoming_key = $headers['x_api_key'][0] ?? $headers['x-api-key'][0] ?? '';
+    
+    // Check against both POS API keys
+    $wtn_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJpa01oaGJZYjZHVVdtUk9tRVFKUzNaM3NUdkozIiwiaWF0IjoxNzM2MTc0ODc2LCJkb2NJZCI6IjhvZ3FWQk0wUFBrSWsybm9wNlhaIn0.VboJSXyBVKKz5m689VYRuvEFLe_BrYGY2GWpVJL_V-k';
+    $invoice_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJodFF0VWtvMURtU0s4RDZrWklXZTh2eDRxV2oxIiwiaWF0IjoxNzQ1NDk5MDE3LCJkb2NJZCI6Inp2MjRQbHBpNWhoOTdJOE55akxvIn0.-lRvglaEJxwo5BeolEi_WvyxK0zRmgJtKmpxkLhNZX0';
+    
+    if ($incoming_key !== $wtn_api_key && $incoming_key !== $invoice_api_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized - Invalid API key'], 403);
+    }
+
+    $data = $request->get_json_params();
+    
+    // Handle both API formats: invoice and wtn
+    $items = array();
+    if (!empty($data['order']['items'])) {
+        // Invoice API format
+        $items = $data['order']['items'];
+    } elseif (!empty($data['wtnOptions']['items'])) {
+        // WTN API format
+        $items = $data['wtnOptions']['items'];
+    } else {
+        return new WP_REST_Response(['error' => 'Missing items'], 400);
+    }
+    $order = wc_create_order();
+
+    // Add products to order
+    foreach ($items as $item) {
+        $product_id = null;
+        
+        // Handle different field names for SKU/ID
+        $sku = $item['sku'] ?? $item['itemId'] ?? '';
+        $quantity = intval($item['quantity'] ?? $item['amount'] ?? 1);
+        $price = floatval($item['totalWithTax'] ?? $item['cost'] ?? 0);
+        
+        // Look for product by SKU/itemId first
+        if (!empty($sku)) {
+            $product_id = wc_get_product_id_by_sku($sku);
+        }
+        
+        // If no SKU match, try to find by name
+        if (!$product_id && !empty($item['name'])) {
+            $products = wc_get_products(array(
+                'name' => $item['name'],
+                'limit' => 1,
+                'status' => 'publish'
+            ));
+            if (!empty($products)) {
+                $product_id = $products[0]->get_id();
+            }
+        }
+        
+        // Add product to order
+        if ($product_id) {
+            $order->add_product(wc_get_product($product_id), $quantity);
+        } else {
+            // Create a simple line item if product not found
+            $order_item = new WC_Order_Item_Product();
+            $order_item->set_name($item['name'] ?? 'Unknown Product');
+            $order_item->set_quantity($quantity);
+            $order_item->set_total($price);
+            $order->add_item($order_item);
+        }
+    }
+
+    // Set customer information if available
+    if (!empty($data['order']['options']['customer'])) {
+        $customer = $data['order']['options']['customer'];
+        
+        if (!empty($customer['name'])) {
+            $order->set_billing_first_name($customer['name']);
+            $order->set_shipping_first_name($customer['name']);
+        }
+        
+        if (!empty($customer['address'])) {
+            $order->set_billing_address_1($customer['address']);
+            $order->set_shipping_address_1($customer['address']);
+        }
+        
+        if (!empty($customer['town'])) {
+            $order->set_billing_city($customer['town']);
+            $order->set_shipping_city($customer['town']);
+        }
+        
+        if (!empty($customer['country'])) {
+            $order->set_billing_country($customer['country']);
+            $order->set_shipping_country($customer['country']);
+        }
+        
+        if (!empty($customer['id'])) {
+            $order->set_billing_company($customer['id']);
+        }
+    }
+
+    // Store POS metadata (handle both API formats)
+    $order->update_meta_data('_pos_shop_id', $data['shopId'] ?? '');
+    $order->update_meta_data('_pos_order_id', $data['orderId'] ?? '');
+    
+    // Invoice API metadata
+    if (!empty($data['order'])) {
+        $order->update_meta_data('_pos_currency', $data['order']['currency'] ?? '');
+        $order->update_meta_data('_pos_exchange_rate', $data['order']['exchangeRate'] ?? '');
+        $order->update_meta_data('_pos_payment_method', $data['order']['options']['paymentMethod'] ?? '');
+        $order->update_meta_data('_pos_invoice_type', $data['order']['options']['invoiceType'] ?? '');
+        $order->update_meta_data('_pos_is_einvoice', $data['order']['options']['isEinvoice'] ?? false);
+        
+        // Store bank account info if available
+        if (!empty($data['order']['options']['bankAccounts'])) {
+            $order->update_meta_data('_pos_bank_accounts', json_encode($data['order']['options']['bankAccounts']));
+        }
+        
+        // Store e-invoice options if available
+        if (!empty($data['order']['options']['eInvoiceOptions'])) {
+            $order->update_meta_data('_pos_einvoice_options', json_encode($data['order']['options']['eInvoiceOptions']));
+        }
+    }
+    
+    // WTN API metadata
+    if (!empty($data['wtnOptions'])) {
+        $order->update_meta_data('_pos_inventory_id', $data['inventory']['inventoryId'] ?? '');
+        $order->update_meta_data('_pos_vehicle_plate', $data['wtnOptions']['vehPlates'] ?? '');
+        $order->update_meta_data('_pos_carrier_name', $data['wtnOptions']['carrier']['name'] ?? '');
+        $order->update_meta_data('_pos_carrier_address', $data['wtnOptions']['carrier']['address'] ?? '');
+        $order->update_meta_data('_pos_carrier_id', $data['wtnOptions']['carrier']['idNum'] ?? '');
+        $order->update_meta_data('_pos_transaction_type', $data['wtnOptions']['transaction'] ?? '');
+        $order->update_meta_data('_pos_wtn_type', $data['wtnOptions']['type'] ?? '');
+        $order->update_meta_data('_pos_start_point', $data['wtnOptions']['startPoint']['city'] ?? '');
+        $order->update_meta_data('_pos_end_point', $data['wtnOptions']['endPoint']['city'] ?? '');
+    }
+
+    $order->set_status('processing');
+    $order->save();
+
+    return new WP_REST_Response([
+        'success' => true,
+        'order_id' => $order->get_id(),
+        'message' => 'POS order successfully created in WooCommerce'
+    ], 200);
+}
+
+/**
+ * Test endpoint for Invoice API format
+ */
+function handle_pos_test_invoice(WP_REST_Request $request) {
+    $headers = $request->get_headers();
+    $incoming_key = $headers['x_api_key'][0] ?? $headers['x-api-key'][0] ?? '';
+    
+    // Check against Invoice API key
+    $invoice_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJodFF0VWtvMURtU0s4RDZrWklXZTh2eDRxV2oxIiwiaWF0IjoxNzQ1NDk5MDE3LCJkb2NJZCI6Inp2MjRQbHBpNWhoOTdJOE55akxvIn0.-lRvglaEJxwo5BeolEi_WvyxK0zRmgJtKmpxkLhNZX0';
+    
+    if ($incoming_key !== $invoice_api_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized - Invalid Invoice API key'], 403);
+    }
+
+    $data = $request->get_json_params();
+
+    // Log received data for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG === true) {
+        error_log('📦 POS Invoice Test Received: ' . print_r($data, true));
+    }
+
+    return new WP_REST_Response([
+        'success' => true,
+        'message' => 'Invoice API test received successfully',
+        'api_type' => 'invoice',
+        'received_data' => $data,
+        'detected_fields' => [
+            'shop_id' => $data['shopId'] ?? 'not provided',
+            'order_id' => $data['orderId'] ?? 'not provided',
+            'has_customer' => !empty($data['order']['options']['customer']),
+            'customer_name' => $data['order']['options']['customer']['name'] ?? 'not provided',
+            'items_count' => count($data['order']['items'] ?? []),
+            'currency' => $data['order']['currency'] ?? 'not provided',
+            'payment_method' => $data['order']['options']['paymentMethod'] ?? 'not provided'
+        ]
+    ], 200);
+}
+
+/**
+ * Test endpoint for WTN API format
+ */
+function handle_pos_test_wtn(WP_REST_Request $request) {
+    $headers = $request->get_headers();
+    $incoming_key = $headers['x_api_key'][0] ?? $headers['x-api-key'][0] ?? '';
+    
+    // Check against WTN API key
+    $wtn_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJpa01oaGJZYjZHVVdtUk9tRVFKUzNaM3NUdkozIiwiaWF0IjoxNzM2MTc0ODc2LCJkb2NJZCI6IjhvZ3FWQk0wUFBrSWsybm9wNlhaIn0.VboJSXyBVKKz5m689VYRuvEFLe_BrYGY2GWpVJL_V-k';
+    
+    if ($incoming_key !== $wtn_api_key) {
+        return new WP_REST_Response(['error' => 'Unauthorized - Invalid WTN API key'], 403);
+    }
+
+    $data = $request->get_json_params();
+
+    // Log received data for debugging
+    if (defined('WP_DEBUG') && WP_DEBUG === true) {
+        error_log('📦 POS WTN Test Received: ' . print_r($data, true));
+    }
+
+    return new WP_REST_Response([
+        'success' => true,
+        'message' => 'WTN API test received successfully',
+        'api_type' => 'wtn',
+        'received_data' => $data,
+        'detected_fields' => [
+            'shop_id' => $data['shopId'] ?? 'not provided',
+            'inventory_id' => $data['inventory']['inventoryId'] ?? 'not provided',
+            'items_count' => count($data['wtnOptions']['items'] ?? []),
+            'vehicle_plate' => $data['wtnOptions']['vehPlates'] ?? 'not provided',
+            'carrier_name' => $data['wtnOptions']['carrier']['name'] ?? 'not provided',
+            'transaction_type' => $data['wtnOptions']['transaction'] ?? 'not provided',
+            'wtn_type' => $data['wtnOptions']['type'] ?? 'not provided',
+            'has_skus' => !empty(array_filter(array_column($data['wtnOptions']['items'] ?? [], 'itemId')))
+        ]
+    ], 200);
 }

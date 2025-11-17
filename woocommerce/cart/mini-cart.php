@@ -66,7 +66,7 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 
 							<div class="woocommerce-mini-cart__item-quantity">
 								<div class="quantity">
-									<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>">−</button>
+									<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>"></button>
 									<input
 										type="number"
 										class="qty"
@@ -79,7 +79,7 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 										inputmode="numeric"
 										readonly
 									>
-									<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>">+</button>
+								<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>"></button>
 								</div>
 								<span class="quantity-price"><?php echo $product_price; ?></span>
 							</div>

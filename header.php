@@ -15,8 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="verify-paysera" content="27896fd15f547b01780669a2c65f1189">
-	
-	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-SQ3XS6BVYY"></script>
 	<script>
 		window.dataLayer = window.dataLayer || [];
@@ -24,8 +22,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		gtag('js', new Date());
 		gtag('config', 'G-SQ3XS6BVYY');
 	</script>
-	
-	<!-- Microsoft Clarity -->
 	<script type="text/javascript">
 		(function(c,l,a,r,i,t,y){
 			c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -45,18 +41,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="container">
 		<div class="header-inner">
 			<nav class="header-left" aria-label="Primary Menu">
-				<!-- Back Button (only visible on single product pages) -->
 				<button class="header-back-button" aria-label="<?php esc_attr_e( 'Go back', 'primefit' ); ?>" data-home-url="<?php echo esc_url( home_url( '/' ) ); ?>" style="display: none;">
 					<img src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/back-button.svg' ); ?>" alt="<?php esc_attr_e( 'Go back', 'primefit' ); ?>" class="back-button-icon">
 				</button>
-				<!-- Hamburger Menu -->
 				<button class="hamburger" aria-label="Open menu" aria-controls="mobile-nav" aria-expanded="false">
-					<span></span>
-					<span></span>
-					<span></span>
+					<img src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/hamburger.svg' ); ?>" alt="Menu" class="hamburger-icon">
 				</button>
 				
-				<!-- Search Icon for Mobile -->
 				<button class="search-toggle search-toggle--mobile" aria-label="Search" aria-controls="search-overlay" aria-expanded="false">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<circle cx="11" cy="11" r="8"></circle>
@@ -77,7 +68,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 			$mega_menu_config = primefit_get_mega_menu_config();
 			if ( $mega_menu_config['enabled'] ) : 
 			?>
-			<!-- Mega Menu -->
 			<div class="mega-menu" id="mega-menu" aria-hidden="true">
 				<div class="container">
 					<div class="mega-menu-content">
@@ -125,6 +115,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 								?>
 							</ul>
 						</div>
+						<?php if ( ! empty( $mega_menu_config['column_5_heading'] ) ) : ?>
+						<div class="mega-menu-column">
+							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_5_heading'] ); ?></h3>
+							<ul class="mega-menu-links">
+								<?php
+								$links_5 = primefit_get_category_links( $mega_menu_config['column_5_links'] );
+								foreach ( $links_5 as $link ) {
+									echo '<li><a href="' . esc_url( $link['url'] ) . '">' . esc_html( $link['name'] ) . '</a></li>';
+								}
+								?>
+							</ul>
+						</div>
+						<?php endif; ?>
 					</div>
 				</div>
 			</div>
@@ -175,55 +178,125 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="mobile-nav-overlay" aria-hidden="true"></div>
 				<aside class="mobile-nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
 					<div class="mobile-nav-header">
-						<a href="product-category/sale" style="text-decoration: none; color: inherit;">
-						<span class="mobile-nav-title">END OF SEASON SALE</span>
-				</a>
-						<button class="mobile-nav-close" aria-label="Close menu">&times;</button>
+						<span>Menu</span>
+						<button type="button" class="mobile-nav-close" aria-label="Close menu">&times;</button>
 					</div>
-					<nav class="mobile-nav" aria-label="Mobile Primary Menu">
+					<div class="mobile-nav-content">
+						<nav class="mobile-nav" aria-label="Mobile Primary Menu">
+							<?php
+								wp_nav_menu([
+									'theme_location' => 'primary',
+									'container'      => false,
+									'menu_class'      => 'mobile-menu',
+									'fallback_cb'     => false,
+								]);
+							?>
+						</nav>
+						
+						<nav class="mobile-nav mobile-nav--tertiary" aria-label="Mobile Tertiary Menu">
+							<?php
+								wp_nav_menu([
+									'theme_location' => 'secondary',
+									'container'      => false,
+									'menu_class'      => 'mobile-menu mobile-menu--tertiary',
+									'fallback_cb'     => false,
+								]);
+							?>
+						</nav>
+						
 						<?php
-							wp_nav_menu([
-								'theme_location' => 'primary',
-								'container'      => false,
-								'menu_class'      => 'mobile-menu',
-								'fallback_cb'     => false,
-							]);
+						$mobile_tiles_config = primefit_get_mobile_header_tiles_config();
+						if ( $mobile_tiles_config['enabled'] && ! empty( $mobile_tiles_config['tiles'] ) ) :
 						?>
-					</nav>
-					
-					<nav class="mobile-nav mobile-nav--tertiary" aria-label="Mobile Tertiary Menu">
-						<?php
-							wp_nav_menu([
-								'theme_location' => 'secondary',
-								'container'      => false,
-								'menu_class'      => 'mobile-menu mobile-menu--tertiary',
-								'fallback_cb'     => false,
-							]);
-						?>
-					</nav>
+						<div class="tiles-3" style="margin-left: 13px;">
+							<?php foreach ( $mobile_tiles_config['tiles'] as $tile ) : ?>
+								<div class="tile">
+									<?php
+									$tile_image = $tile['image'];
+									$tile_webp = function_exists( 'primefit_get_optimized_image_url' ) ? primefit_get_optimized_image_url($tile_image, 'webp') : $tile_image;
+									$best_tile_image = $tile_webp !== $tile_image ? $tile_webp : $tile_image;
+									?>
+									<?php if ($best_tile_image) : ?>
+									<picture>
+										<?php if ($tile_webp !== $tile_image) : ?>
+										<source type="image/webp" srcset="<?php echo esc_url($tile_webp); ?>">
+										<?php endif; ?>
+										<img
+											src="<?php echo esc_url($tile_image); ?>"
+											alt="<?php echo esc_attr( $tile['alt'] ?: 'Mobile tile image' ); ?>"
+											loading="lazy"
+											decoding="async"
+											width="400"
+											height="300"
+										/>
+									</picture>
+									<?php endif; ?>
+									<div class="tile-overlay">
+										<div class="tile-content">
+											<?php if ( ! empty( $tile['description'] ) ) : ?>
+												<p class="tile-description"><?php echo esc_html( $tile['description'] ); ?></p>
+											<?php endif; ?>
+											<?php if ( ! empty( $tile['button_text'] ) && ! empty( $tile['url'] ) ) : ?>
+												<a href="<?php echo esc_url( $tile['url'] ); ?>" class="tile-button button button--primary">
+													<?php echo esc_html( $tile['button_text'] ); ?>
+												</a>
+											<?php endif; ?>
+										</div>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+						<?php endif; ?>
+					</div>
 				</aside>
 			</div>
 
-			<!-- Search Overlay -->
 			<div class="search-overlay-wrap" id="search-overlay">
 				<div class="search-overlay" aria-hidden="true"></div>
 				<div class="search-panel" role="dialog" aria-modal="true" aria-label="Search" hidden>
 					<div class="search-panel-header">
+						<button class="search-back" aria-label="Back" type="button">
+								<img src="<?php echo esc_url( PRIMEFIT_THEME_URI . '/assets/images/back-button.svg' ); ?>" alt="<?php esc_attr_e( 'Back', 'primefit' ); ?>" class="search-back-icon">
+						</button>
 						<div class="search-input-container">
 							<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<circle cx="11" cy="11" r="8"></circle>
 								<path d="m21 21-4.35-4.35"></path>
 							</svg>
 							<input type="text" class="search-input" placeholder="Search products..." autocomplete="off" aria-label="Search products">
-							<button class="search-close" aria-label="Close search">&times;</button>
+							<button type="button" class="search-clear" aria-label="Clear search" style="display: none;" aria-hidden="true">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<line x1="18" y1="6" x2="6" y2="18"></line>
+									<line x1="6" y1="6" x2="18" y2="18"></line>
+								</svg>
+							</button>
 						</div>
-                        <div class="search-results-header">
-                            <span class="search-results-count">0 results</span>
+                        <div class="search-results-header" style="display: none;">
+                            <span class="search-results-count"></span>
                         </div>
 					</div>
 					<div class="search-panel-content">
+						<div class="search-suggestions">
+							<div class="trending-searches" id="trending-searches">
+								<div class="trending-searches-header">
+									<svg class="trending-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="22,12 18,12 15,21 9,3 6,12 2,12"></polyline>
+									</svg>
+									<h3 class="trending-searches-title">TRENDING SEARCHES</h3>
+								</div>
+								<div class="trending-searches-list">
+								</div>
+							</div>
+							<div class="recently-viewed" id="recently-viewed" style="display: none;">
+								<div class="recently-viewed-header">
+									<h3 class="recently-viewed-title">RECENTLY VIEWED</h3>
+									<button type="button" class="recently-viewed-clear">CLEAR</button>
+								</div>
+								<div class="recently-viewed-list"></div>
+							</div>
+						</div>
+						
 						<div class="search-results">
-							<!-- Search results will be populated here -->
 						</div>
 						<div class="search-loading" style="display: none;">
 							<div class="search-spinner"></div>

@@ -70,7 +70,7 @@ function primefit_customize_register( $wp_customize ) {
 
 	// Promo Bar Text Color
 	$wp_customize->add_setting( 'primefit_promo_text_color', array(
-		'default'           => '#ffffff',
+		'default'           => '#000',
 		'sanitize_callback' => 'sanitize_hex_color',
 	) );
 	$wp_customize->add_control( new WP_Customize_Color_Control( $wp_customize, 'primefit_promo_text_color', array(
@@ -704,6 +704,30 @@ function primefit_customize_register( $wp_customize ) {
 		'description' => __( 'Enter links separated by commas. Example: Run,Train,Rec', 'primefit' ),
 	) );
 
+	// Column 5 Heading
+	$wp_customize->add_setting( 'primefit_mega_menu_column_5_heading', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_5_heading', array(
+		'label'   => __( 'Column 5 Heading', 'primefit' ),
+		'section' => 'primefit_mega_menu',
+		'type'    => 'text',
+		'description' => __( 'Leave empty to hide this column', 'primefit' ),
+	) );
+
+	// Column 5 Links
+	$wp_customize->add_setting( 'primefit_mega_menu_column_5_links', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mega_menu_column_5_links', array(
+		'label'       => __( 'Column 5 Links (comma-separated)', 'primefit' ),
+		'section'     => 'primefit_mega_menu',
+		'type'        => 'textarea',
+		'description' => __( 'Enter links separated by commas', 'primefit' ),
+	) );
+
 	// Navigation Badge Section
 	$wp_customize->add_section( 'primefit_navigation_badge', array(
 		'title'    => __( 'Navigation Badge', 'primefit' ),
@@ -1049,6 +1073,156 @@ function primefit_customize_register( $wp_customize ) {
 		),
 		'description' => __( 'Number of products to display (1-50)', 'primefit' ),
 	) );
+
+	// Mobile Header Tiles Section Panel
+	$wp_customize->add_section( 'primefit_mobile_header_tiles', array(
+		'title'    => __( 'Mobile Header Tiles', 'primefit' ),
+		'priority' => 44,
+	) );
+
+	// Mobile Header Tiles Enable/Disable
+	$wp_customize->add_setting( 'primefit_mobile_header_tiles_enabled', array(
+		'default'           => true,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_header_tiles_enabled', array(
+		'label'   => __( 'Enable Mobile Header Tiles', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'checkbox',
+		'description' => __( 'Display category tiles below the mobile menu', 'primefit' ),
+	) );
+
+	// Mobile Tile 1 Image
+	$wp_customize->add_setting( 'primefit_mobile_tile_1_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_mobile_tile_1_image', array(
+		'label'    => __( 'Tile 1 Image', 'primefit' ),
+		'section'  => 'primefit_mobile_header_tiles',
+		'mime_type' => 'image',
+	) ) );
+
+	// Mobile Tile 1 Description
+	$wp_customize->add_setting( 'primefit_mobile_tile_1_description', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_textarea_field',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_1_description', array(
+		'label'   => __( 'Tile 1 Description', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'textarea',
+	) );
+
+	// Mobile Tile 1 Button Text
+	$wp_customize->add_setting( 'primefit_mobile_tile_1_button_text', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_1_button_text', array(
+		'label'   => __( 'Tile 1 Button Text', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'text',
+	) );
+
+	// Mobile Tile 1 Link
+	$wp_customize->add_setting( 'primefit_mobile_tile_1_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_1_link', array(
+		'label'   => __( 'Tile 1 Link', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'url',
+	) );
+
+	// Mobile Tile 2 Image
+	$wp_customize->add_setting( 'primefit_mobile_tile_2_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_mobile_tile_2_image', array(
+		'label'    => __( 'Tile 2 Image', 'primefit' ),
+		'section'  => 'primefit_mobile_header_tiles',
+		'mime_type' => 'image',
+	) ) );
+
+	// Mobile Tile 2 Description
+	$wp_customize->add_setting( 'primefit_mobile_tile_2_description', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_textarea_field',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_2_description', array(
+		'label'   => __( 'Tile 2 Description', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'textarea',
+	) );
+
+	// Mobile Tile 2 Button Text
+	$wp_customize->add_setting( 'primefit_mobile_tile_2_button_text', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_2_button_text', array(
+		'label'   => __( 'Tile 2 Button Text', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'text',
+	) );
+
+	// Mobile Tile 2 Link
+	$wp_customize->add_setting( 'primefit_mobile_tile_2_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_2_link', array(
+		'label'   => __( 'Tile 2 Link', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'url',
+	) );
+
+	// Mobile Tile 3 Image
+	$wp_customize->add_setting( 'primefit_mobile_tile_3_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_mobile_tile_3_image', array(
+		'label'    => __( 'Tile 3 Image', 'primefit' ),
+		'section'  => 'primefit_mobile_header_tiles',
+		'mime_type' => 'image',
+	) ) );
+
+	// Mobile Tile 3 Description
+	$wp_customize->add_setting( 'primefit_mobile_tile_3_description', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_textarea_field',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_3_description', array(
+		'label'   => __( 'Tile 3 Description', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'textarea',
+	) );
+
+	// Mobile Tile 3 Button Text
+	$wp_customize->add_setting( 'primefit_mobile_tile_3_button_text', array(
+		'default'           => '',
+		'sanitize_callback' => 'sanitize_text_field',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_3_button_text', array(
+		'label'   => __( 'Tile 3 Button Text', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'text',
+	) );
+
+	// Mobile Tile 3 Link
+	$wp_customize->add_setting( 'primefit_mobile_tile_3_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+	) );
+	$wp_customize->add_control( 'primefit_mobile_tile_3_link', array(
+		'label'   => __( 'Tile 3 Link', 'primefit' ),
+		'section' => 'primefit_mobile_header_tiles',
+		'type'    => 'url',
+	) );
 }
 
 /**
@@ -1060,7 +1234,7 @@ function primefit_get_promo_bar_config() {
 		'text' => get_theme_mod( 'primefit_promo_text', 'END OF SEASON SALE — UP TO 60% OFF — LIMITED TIME ONLY' ),
 		'link' => get_theme_mod( 'primefit_promo_link', '' ),
 		'bg_color' => get_theme_mod( 'primefit_promo_bg_color', '#ff3b30' ),
-		'text_color' => get_theme_mod( 'primefit_promo_text_color', '#ffffff' ),
+		'text_color' => get_theme_mod( 'primefit_promo_text_color', '#000' ),
 	);
 }
 
@@ -1216,6 +1390,8 @@ function primefit_get_mega_menu_config() {
 		'column_3_links' => get_theme_mod( 'primefit_mega_menu_column_3_links', 'Hats & Headwear,Bags,Socks,Jewelry & Hardware' ),
 		'column_4_heading' => get_theme_mod( 'primefit_mega_menu_column_4_heading', 'DESIGNED FOR' ),
 		'column_4_links' => get_theme_mod( 'primefit_mega_menu_column_4_links', 'Run,Train,Rec' ),
+		'column_5_heading' => get_theme_mod( 'primefit_mega_menu_column_5_heading', '' ),
+		'column_5_links' => get_theme_mod( 'primefit_mega_menu_column_5_links', '' ),
 	);
 }
 
@@ -1707,6 +1883,73 @@ function primefit_get_third_product_loop_config() {
 }
 
 /**
+ * Helper function to get mobile header tiles configuration from customizer
+ */
+function primefit_get_mobile_header_tiles_config() {
+	// Use caching for better performance
+	$cache_key = 'primefit_mobile_header_tiles_config';
+	$cached_config = get_transient( $cache_key );
+
+	if ( $cached_config !== false ) {
+		return $cached_config;
+	}
+
+	// Get image IDs and URLs for each tile
+	$tile_1_image_id = get_theme_mod( 'primefit_mobile_tile_1_image' );
+	$tile_2_image_id = get_theme_mod( 'primefit_mobile_tile_2_image' );
+	$tile_3_image_id = get_theme_mod( 'primefit_mobile_tile_3_image' );
+
+	$tile_1_image_url = $tile_1_image_id ? wp_get_attachment_image_url( $tile_1_image_id, 'full' ) : '';
+	$tile_2_image_url = $tile_2_image_id ? wp_get_attachment_image_url( $tile_2_image_id, 'full' ) : '';
+	$tile_3_image_url = $tile_3_image_id ? wp_get_attachment_image_url( $tile_3_image_id, 'full' ) : '';
+
+	$tiles = array();
+
+	// Tile 1
+	if ( ! empty( $tile_1_image_url ) ) {
+		$tiles[] = array(
+			'image' => $tile_1_image_url,
+			'alt' => get_theme_mod( 'primefit_mobile_tile_1_description', '' ),
+			'description' => get_theme_mod( 'primefit_mobile_tile_1_description', '' ),
+			'button_text' => get_theme_mod( 'primefit_mobile_tile_1_button_text', '' ),
+			'url' => get_theme_mod( 'primefit_mobile_tile_1_link', '' ),
+		);
+	}
+
+	// Tile 2
+	if ( ! empty( $tile_2_image_url ) ) {
+		$tiles[] = array(
+			'image' => $tile_2_image_url,
+			'alt' => get_theme_mod( 'primefit_mobile_tile_2_description', '' ),
+			'description' => get_theme_mod( 'primefit_mobile_tile_2_description', '' ),
+			'button_text' => get_theme_mod( 'primefit_mobile_tile_2_button_text', '' ),
+			'url' => get_theme_mod( 'primefit_mobile_tile_2_link', '' ),
+		);
+	}
+
+	// Tile 3
+	if ( ! empty( $tile_3_image_url ) ) {
+		$tiles[] = array(
+			'image' => $tile_3_image_url,
+			'alt' => get_theme_mod( 'primefit_mobile_tile_3_description', '' ),
+			'description' => get_theme_mod( 'primefit_mobile_tile_3_description', '' ),
+			'button_text' => get_theme_mod( 'primefit_mobile_tile_3_button_text', '' ),
+			'url' => get_theme_mod( 'primefit_mobile_tile_3_link', '' ),
+		);
+	}
+
+	$config = array(
+		'enabled' => get_theme_mod( 'primefit_mobile_header_tiles_enabled', true ),
+		'tiles' => $tiles,
+	);
+
+	// Cache for 1 hour (3600 seconds)
+	set_transient( $cache_key, $config, 3600 );
+
+	return $config;
+}
+
+/**
  * Sanitize select/dropdown values
  */
 function primefit_sanitize_select( $input, $setting ) {
@@ -1729,6 +1972,9 @@ function primefit_clear_customizer_caches( $wp_customize ) {
 	
 	// Clear category tiles cache
 	delete_transient( 'primefit_category_tiles_config' );
+	
+	// Clear mobile header tiles cache
+	delete_transient( 'primefit_mobile_header_tiles_config' );
 	
 	// Clear any product loop caches (they use dynamic cache keys)
 	// We'll use a wildcard delete approach

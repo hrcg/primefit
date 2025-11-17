@@ -9,6 +9,24 @@
 (function ($) {
   "use strict";
 
+  function isIOSSafari() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var isWebKit = /WebKit\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+    return isIOS && isWebKit;
+  }
+  function getIOSMajorVersion() {
+    try {
+      var ua = navigator.userAgent || "";
+      // Example: CPU iPhone OS 17_5 like Mac OS X
+      var match = ua.match(/OS\s(\d+)[._]/);
+      if (match && match[1]) {
+        return parseInt(match[1], 10);
+      }
+    } catch (e) {}
+    return null;
+  }
+
   /**
    * Unified Cart Manager - Prevents cart fragment refresh conflicts
    * Enhanced with proper queuing, priority system, and conflict resolution
@@ -1038,6 +1056,7 @@
     // Check if browser supports Intersection Observer
     if ("IntersectionObserver" in window) {
       var lazyImages = document.querySelectorAll('img[loading="lazy"]');
+      var isIOS = isIOSSafari();
       var imageObserver = new IntersectionObserver(
         function (entries, observer) {
           entries.forEach(function (entry) {
@@ -1056,12 +1075,10 @@
                 return;
               }
 
-              // Add loading class for smooth transition
-              img.classList.add("loading");
-
-              // For images without data-src, just mark as loaded immediately
-              // since native lazy loading will handle the actual loading
+              // If we control the src via data-src, preload then swap
               if (img.dataset.src) {
+                // Add loading class for smooth transition only when swapping src
+                img.classList.add("loading");
                 // Preload the image
                 var newImg = new Image();
                 newImg.onload = function () {
@@ -1075,9 +1092,8 @@
                 };
                 newImg.src = img.dataset.src;
               } else {
-                // For native lazy loading, just add loaded class
-                img.classList.remove("loading");
-                img.classList.add("loaded");
+                // For native lazy-loading images (no data-src), do nothing to avoid
+                // class toggles that can trigger unnecessary composites on iOS.
               }
 
               observer.unobserve(img);
@@ -1085,7 +1101,8 @@
           });
         },
         {
-          rootMargin: "50px 0px", // Load images 50px before they come into view
+          // Wider pre-load window on iOS to avoid decode-on-enter flicker
+          rootMargin: isIOS ? "200px 0px" : "50px 0px",
           threshold: 0.01,
         }
       );
@@ -1232,6 +1249,17 @@
       // Ignore if URL API not available
     }
 
+    // Add iOS Safari class for CSS-based fixes
+    try {
+      if (isIOSSafari()) {
+        document.documentElement.classList.add("ios-safari-flicker-fix");
+        var iosMajor = getIOSMajorVersion();
+        if (iosMajor) {
+          document.documentElement.classList.add("ios-" + iosMajor);
+        }
+      }
+    } catch (e) {}
+
     // Keep mini cart and checkout in sync when coupons change anywhere
     // Listen for WooCommerce coupon events and refresh fragments accordingly
     try {
@@ -1338,21 +1366,73 @@
 
   // Initialize header scroll when DOM is ready or when jQuery is available
   if (typeof jQuery !== "undefined") {
-    $(document).ready(initHeaderScroll);
+    $(document).ready(function () {
+      initHeaderScroll();
+      initPromoBarScroll();
+      initWhatsAppButtonScroll();
+    });
   } else {
     // Fallback if jQuery is not loaded yet
     document.addEventListener("DOMContentLoaded", function () {
       if (typeof jQuery !== "undefined") {
-        $(document).ready(initHeaderScroll);
+        $(document).ready(function () {
+          initHeaderScroll();
+          initPromoBarScroll();
+          initWhatsAppButtonScroll();
+        });
       } else {
         // Last resort - use vanilla JavaScript
         initHeaderScrollVanilla();
+        initPromoBarScrollVanilla();
+        initWhatsAppButtonScroll();
       }
     });
   }
 
   // Expose vanilla function globally as well
   window.initHeaderScrollVanilla = initHeaderScrollVanilla;
+
+  // Promo Bar: add scrolled state for sticky behavior
+  function initPromoBarScroll() {
+    // Use a more robust selector and check multiple times
+    const checkForPromoBar = () => {
+      const $promoBar = $(".promo-bar");
+      if ($promoBar.length) {
+        const toggleScrolled = () => {
+          if (window.scrollY > 10) {
+            $promoBar.addClass("is-scrolled");
+          } else {
+            $promoBar.removeClass("is-scrolled");
+          }
+        };
+
+        // Initialize immediately
+        toggleScrolled();
+
+        // Add scroll listener with throttling for better performance
+        let scrollTimeout;
+        $(window).on("scroll", function () {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleScrolled, 1);
+        });
+
+        return true; // Promo bar found and initialized
+      }
+      return false; // Promo bar not found yet
+    };
+
+    // Try to find promo bar immediately
+    if (!checkForPromoBar()) {
+      // If promo bar not found, try again after a short delay
+      setTimeout(checkForPromoBar, 100);
+      setTimeout(checkForPromoBar, 500);
+    }
+  }
+
+  // Expose function globally for inline script
+  window.initPromoBarScroll = initPromoBarScroll;
 
   // Vanilla JavaScript fallback for header scroll
   function initHeaderScrollVanilla() {
@@ -1391,6 +1471,97 @@
       setTimeout(checkForHeader, 500);
     }
   }
+
+  // Vanilla JavaScript fallback for promo bar scroll
+  function initPromoBarScrollVanilla() {
+    const checkForPromoBar = () => {
+      const promoBar = document.querySelector(".promo-bar");
+      if (promoBar) {
+        const toggleScrolled = () => {
+          if (window.scrollY > 10) {
+            promoBar.classList.add("is-scrolled");
+          } else {
+            promoBar.classList.remove("is-scrolled");
+          }
+        };
+
+        // Initialize immediately
+        toggleScrolled();
+
+        // Add scroll listener
+        let scrollTimeout;
+        window.addEventListener("scroll", function () {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleScrolled, 1);
+        });
+
+        return true; // Promo bar found and initialized
+      }
+      return false; // Promo bar not found yet
+    };
+
+    // Try to find promo bar immediately
+    if (!checkForPromoBar()) {
+      // If promo bar not found, try again after delays
+      setTimeout(checkForPromoBar, 100);
+      setTimeout(checkForPromoBar, 500);
+    }
+  }
+
+  // Expose vanilla function globally as well
+  window.initPromoBarScrollVanilla = initPromoBarScrollVanilla;
+
+  // WhatsApp button: show after 100px scroll
+  // Skip on product pages - button should be visible normally
+  function initWhatsAppButtonScroll() {
+    // Don't apply scroll behavior on product pages
+    if (document.body.classList.contains("single-product")) {
+      return;
+    }
+
+    const checkForWhatsAppButton = () => {
+      const whatsappButton = document.querySelector(
+        ".qlwapp__button.qlwapp__button--bubble"
+      );
+      if (whatsappButton) {
+        const toggleVisibility = () => {
+          if (window.scrollY > 100) {
+            whatsappButton.classList.add("is-visible");
+          } else {
+            whatsappButton.classList.remove("is-visible");
+          }
+        };
+
+        // Initialize immediately
+        toggleVisibility();
+
+        // Add scroll listener with throttling for better performance
+        let scrollTimeout;
+        window.addEventListener("scroll", function () {
+          if (scrollTimeout) {
+            clearTimeout(scrollTimeout);
+          }
+          scrollTimeout = setTimeout(toggleVisibility, 1);
+        }, { passive: true });
+
+        return true; // WhatsApp button found and initialized
+      }
+      return false; // WhatsApp button not found yet
+    };
+
+    // Try to find WhatsApp button immediately
+    if (!checkForWhatsAppButton()) {
+      // If button not found, try again after delays
+      setTimeout(checkForWhatsAppButton, 100);
+      setTimeout(checkForWhatsAppButton, 500);
+      setTimeout(checkForWhatsAppButton, 1000);
+    }
+  }
+
+  // Expose function globally for inline script
+  window.initWhatsAppButtonScroll = initWhatsAppButtonScroll;
 
   // Mobile hamburger menu
   $(document).on("click", ".hamburger", function (e) {

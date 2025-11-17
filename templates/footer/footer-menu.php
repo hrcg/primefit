@@ -70,12 +70,5 @@
 				</a>
 			</div>
 		</div>
-		
-		<div class="join-section">
-			<a href="#" class="join-link">
-				<span class="join-text">JOIN</span><br>
-			<span class="join-logo">PRIMEFIT</span>
-			</a>
-		</div>
 	</div>
 </div>

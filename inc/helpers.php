@@ -948,9 +948,7 @@ function primefit_render_hero( $args = array() ) {
 	<section class="<?php echo esc_attr( $hero_classes ); ?>" id="<?php echo esc_attr( $hero_id ); ?>">
 		<div class="hero-media">
 			<?php if (!empty($hero_video_desktop_url) || !empty($hero_video_mobile_url)) : ?>
-				<!-- Video Background with Fallback Image -->
 				<div class="hero-video-container">
-					<!-- Desktop Video -->
 					<?php if (!empty($hero_video_desktop_url)) : ?>
 						<video 
 							class="hero-video hero-video--desktop" 
@@ -966,7 +964,6 @@ function primefit_render_hero( $args = array() ) {
 						</video>
 					<?php endif; ?>
 					
-					<!-- Mobile Video -->
 					<?php if (!empty($hero_video_mobile_url)) : ?>
 						<video 
 							class="hero-video hero-video--mobile" 
@@ -983,15 +980,11 @@ function primefit_render_hero( $args = array() ) {
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
-			
-		<!-- High Quality Fallback Image (always present for loading state and fallback) -->
 		<picture class="hero-fallback-image">
 			<?php
-			// Get WebP versions for better compression while maintaining quality
 			$desktop_webp = primefit_get_hero_optimized_image_url($hero_image_desktop_url, 'webp');
 			$mobile_webp = primefit_get_hero_optimized_image_url($hero_image_mobile_url, 'webp');
 
-			// Add WebP sources if available (but keep full resolution)
 			if ($desktop_webp !== $hero_image_desktop_url) {
 				echo '<source media="(min-width: 769px)" type="image/webp" srcset="' . esc_url($desktop_webp) . '">';
 			}
@@ -1093,6 +1086,12 @@ function primefit_render_product_loop( $args = array() ) {
 
 	$section = wp_parse_args( $args, $defaults );
 	
+	// Handle custom product IDs for related products
+	if ( isset( $args['products'] ) && is_array( $args['products'] ) && ! empty( $args['products'] ) ) {
+		// Convert product IDs to comma-separated string
+		$section['ids'] = implode( ',', array_map( 'absint', $args['products'] ) );
+	}
+	
 	// Handle button_link if provided (takes precedence over view_all_link for backwards compatibility)
 	if ( isset( $args['button_link'] ) ) {
 		$section['view_all_link'] = $args['button_link'];
@@ -1106,12 +1105,15 @@ function primefit_render_product_loop( $args = array() ) {
 	// Generate cache key based on all relevant parameters
 	$cache_key = primefit_get_product_loop_cache_key( $section );
 
-	// Try to get cached content first
-	$cached_content = get_transient( $cache_key );
+	// Only use cache if not disabled
+	if ( ! isset( $args['disable_cache'] ) || ! $args['disable_cache'] ) {
+		// Try to get cached content first
+		$cached_content = get_transient( $cache_key );
 
-	if ( $cached_content !== false ) {
-		echo $cached_content;
-		return;
+		if ( $cached_content !== false ) {
+			echo $cached_content;
+			return;
+		}
 	}
 
 	// Build WooCommerce shortcode attributes
@@ -1124,6 +1126,10 @@ function primefit_render_product_loop( $args = array() ) {
 	);
 
 	// Add conditional attributes
+	if ( ! empty( $section['ids'] ) ) {
+		$shortcode_atts['ids'] = sanitize_text_field( $section['ids'] );
+	}
+
 	if ( ! empty( $section['category'] ) ) {
 		$shortcode_atts['category'] = sanitize_text_field( $section['category'] );
 	}
@@ -1159,12 +1165,20 @@ function primefit_render_product_loop( $args = array() ) {
 		'product-loop--' . $section['columns'] . '-columns'
 	);
 
+	// Add related products class if this is a related products section
+	if ( isset( $args['is_related_products'] ) && $args['is_related_products'] ) {
+		$section_classes[] = 'related-products-section';
+	}
+
 	$section_classes = implode( ' ', array_filter( $section_classes ) );
 
+	// Determine if container class should be applied
+	$container_class = ( isset( $args['is_related_products'] ) && $args['is_related_products'] ) ? '' : 'container';
+	
 	ob_start();
 	?>
 	<section class="<?php echo esc_attr( $section_classes ); ?>">
-		<div class="container">
+		<div<?php echo $container_class ? ' class="' . esc_attr( $container_class ) . '"' : ''; ?>>
 			<?php if ( ! empty( $section['title'] ) ) : ?>
 				<?php
 				get_template_part( 'templates/parts/section-header', null, array(
@@ -1199,8 +1213,10 @@ function primefit_render_product_loop( $args = array() ) {
 	<?php
 	$content = ob_get_clean();
 
-	// Cache the content for 15 minutes (900 seconds)
-	set_transient( $cache_key, $content, 900 );
+	// Cache the content for 15 minutes (900 seconds) only if not disabled
+	if ( ! isset( $args['disable_cache'] ) || ! $args['disable_cache'] ) {
+		set_transient( $cache_key, $content, 900 );
+	}
 
 	echo $content;
 }
@@ -1251,6 +1267,11 @@ function primefit_get_product_loop_cache_key( $section ) {
 
 	if ( $section['best_selling'] ) {
 		$key_parts[] = 'best_selling';
+	}
+
+	// Add product IDs to cache key for related products
+	if ( ! empty( $section['ids'] ) ) {
+		$key_parts[] = 'ids_' . md5( $section['ids'] ); // Use MD5 to keep key length manageable
 	}
 
 	// Add current language for multilingual support

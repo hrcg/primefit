@@ -61,8 +61,10 @@ $attributes = $product->get_attributes();
 $color_attribute = null;
 $size_attribute = null;
 
-// Get variation attributes for better detection with caching
-$variation_attributes = $product->get_variation_attributes();
+// Get variation attributes for better detection with caching (only for variable products)
+$variation_attributes = $is_variable && method_exists( $product, 'get_variation_attributes' ) 
+	? $product->get_variation_attributes() 
+	: array();
 
 // Get WooCommerce default attributes with caching
 $default_attributes = $product->get_default_attributes();
@@ -123,17 +125,14 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 ?>
 
 <div class="product-details-container">
-	<!-- Product SKU -->
 	<?php if ( $sku ) : ?>
 		<div class="product-sku">
 			<span class="sku-label"><?php echo esc_html( $sku ); ?></span>
 		</div>
 	<?php endif; ?>
 	
-	<!-- Product Title -->
 	<h1 class="product-title"><?php echo esc_html( $product_name ); ?></h1>
 	
-	<!-- Product Color (if available) -->
 	<?php if ( $color_attribute ) : ?>
 		<div class="product-color">
 			<span class="color-label"><?php echo esc_html( wc_attribute_label( $color_attribute->get_name() ) ); ?>:</span>
@@ -141,12 +140,10 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 		</div>
 	<?php endif; ?>
 	
-	<!-- Product Price -->
 	<div class="product-price">
 		<?php echo $price_html; ?>
 	</div>
 	
-	<!-- Color Selection (for variable products) -->
 	<?php if ( $is_variable && $variations ) : ?>
 		<?php if ( $color_attribute ) : ?>
 		<div class="product-color-selection">
@@ -247,7 +244,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 		<?php endif; ?>
 	<?php endif; ?>
 	
-	<!-- Size Selection (for variable products) -->
 	<?php if ( $is_variable && $size_attribute ) : ?>
 		<div class="product-size-selection">
 			<div class="size-options">
@@ -360,25 +356,20 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 		</div>
 	<?php endif; ?>
 	
-	<!-- Stock Status Notice -->
 	<?php if ( ! $is_in_stock ) : ?>
 		<div class="stock-notice">
 			<span class="stock-text"><?php esc_html_e( 'FINAL SALE // NO RETURNS OR EXCHANGES', 'primefit' ); ?></span>
 		</div>
 	<?php endif; ?>
 	
-	<!-- Add to Cart / Notify Button -->
 	<div class="product-actions">
 		<?php if ( $is_in_stock ) : ?>
 			<?php if ( $is_variable && $variations ) : ?>
-				<!-- Custom variation form for variable products -->
 				<form class="primefit-variations-form variations_form cart" action="<?php echo esc_url( apply_filters( 'woocommerce_add_to_cart_form_action', $product->get_permalink() ) ); ?>" method="post" enctype='multipart/form-data' data-product_id="<?php echo absint( $product->get_id() ); ?>" data-product_variations="<?php echo $variations_attr; ?>">
-					<!-- Hidden variation inputs -->
 					<input type="hidden" name="add-to-cart" value="<?php echo absint( $product->get_id() ); ?>" />
 					<input type="hidden" name="product_id" value="<?php echo absint( $product->get_id() ); ?>" />
 					<input type="hidden" name="variation_id" class="variation_id" value="0" />
 					
-					<!-- Hidden attribute inputs for WooCommerce validation -->
 					<?php if ( $color_attribute ) : ?>
 						<input type="hidden" name="attribute_<?php echo esc_attr( $color_attribute->get_name() ); ?>" class="attribute_color_input" value="" />
 					<?php endif; ?>
@@ -386,7 +377,6 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 						<input type="hidden" name="attribute_<?php echo esc_attr( $size_attribute->get_name() ); ?>" class="attribute_size_input" value="" />
 					<?php endif; ?>
 					
-					<!-- Quantity input -->
 					<div class="quantity-input-wrapper">
 						<?php primefit_quantity_input(
 							array(
@@ -398,13 +388,11 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 						); ?>
 					</div>
 					
-					<!-- Add to cart button -->
 					<button type="submit" class="single_add_to_cart_button button alt ajax_add_to_cart" data-product_id="<?php echo absint( $product->get_id() ); ?>" disabled>
 						<?php esc_html_e( 'SELECT OPTIONS', 'primefit' ); ?>
 					</button>
 				</form>
 			<?php else : ?>
-				<!-- Simple product add to cart -->
 				<?php woocommerce_template_single_add_to_cart(); ?>
 			<?php endif; ?>
 		<?php else : ?>
@@ -414,10 +402,8 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 		<?php endif; ?>
 	</div>
 	
-	<!-- Collapsible Sections -->
 	<div class="product-collapsible-sections">
 		<?php
-		// Description Section
 		$description = $product->get_description();
 		if ( $description ) :
 		?>
@@ -442,12 +428,14 @@ if ( ! $size_attribute && ! empty( $variation_attributes ) ) {
 </div>
 
 <script type="text/javascript">
-// Product variation data
 window.primefitProductData = {
 	variations: <?php echo json_encode( $variations ?? array() ); ?>,
 	productId: <?php echo absint( $product->get_id() ); ?>,
 	defaultColor: <?php echo json_encode( $default_color ); ?>,
 	defaultSize: <?php echo json_encode( $default_size ); ?>,
-	variationGalleries: <?php echo json_encode( primefit_get_variation_gallery_data( $product->get_id() ) ); ?>
+	variationGalleries: <?php echo json_encode( primefit_get_variation_gallery_data( $product->get_id() ) ); ?>,
+	title: <?php echo json_encode( get_the_title( $product->get_id() ) ); ?>,
+	url: <?php echo json_encode( get_permalink( $product->get_id() ) ); ?>,
+	image: <?php echo json_encode( get_the_post_thumbnail_url( $product->get_id(), 'woocommerce_thumbnail' ) ); ?>
 };
 </script>

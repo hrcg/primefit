@@ -136,14 +136,14 @@
     height: fit-content;
     border-left: 1px solid var(--checkout-border);
     border-top: none;
-    padding: 40px 32px;
+    padding: 30px 20px 10px;
   }
 
   /* Position payment section in grid on desktop */
   .payment-options-section {
     grid-area: payment;
     border-left: 1px solid var(--checkout-border);
-    padding: 0 0px 20px 20px;
+    padding: 20px;
   }
 }
 
@@ -164,11 +164,6 @@
   top: 0;
   height: fit-content;
   box-sizing: border-box;
-}
-
-/* Payment options section - Within order summary */
-.payment-options-section {
-  margin-top: 32px;
 }
 
 /* ==========================================================================
@@ -926,7 +921,7 @@
 
 /* Select2 container styling */
 .select2-container {
-  width: 100% !important;
+  width: 96%;
   position: relative;
   display: inline-block;
   vertical-align: middle;
@@ -1188,8 +1183,6 @@
 .woocommerce-checkout .woocommerce-billing-fields input,
 .woocommerce-checkout .woocommerce-billing-fields select,
 .woocommerce-checkout .woocommerce-billing-fields textarea {
-  width: 100% !important;
-  max-width: 100% !important;
   box-sizing: border-box !important;
   background: var(--checkout-input-bg) !important;
   color: var(--checkout-text) !important;
@@ -1208,12 +1201,6 @@
   color: var(--checkout-text-light) !important;
 }
 
-/* Fix any inline styles that might override our CSS */
-.woocommerce-checkout .woocommerce-billing-fields input[style],
-.woocommerce-checkout .woocommerce-billing-fields select[style] {
-  width: 100% !important;
-  max-width: 100% !important;
-}
 
 /* Order review table */
 .woocommerce-checkout-review-order-table {
@@ -1250,18 +1237,24 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  border-top: 1px solid var(--checkout-border);
+  border-bottom: 1px solid var(--checkout-border);
 }
 
 .woocommerce-checkout .payment_methods li {
-  margin-bottom: 40px;
+  margin-bottom: 0;
   position: relative;
+  border-bottom: 1px solid var(--checkout-border);
+}
+
+.woocommerce-checkout .payment_methods li:last-child {
+  border-bottom: none;
 }
 
 /* Payment method container */
 .woocommerce-checkout .payment_methods li .payment_method {
-  cursor: pointer;
+  padding: 16px 0;
   position: relative;
-  overflow: hidden;
 }
 
 .woocommerce-checkout .payment_methods li .payment_method.selected {
@@ -1269,102 +1262,85 @@
   background: transparent;
 }
 
-/* Ensure checkmark appears for selected payment method */
-.woocommerce-checkout .payment_methods li .payment_method.selected::after {
-  content: "✓";
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
 /* Payment method label */
 .woocommerce-checkout .payment_methods label {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--checkout-text);
   cursor: pointer;
   margin: 0;
   padding: 0;
   width: 100%;
+  position: relative;
 }
 
-/* Custom radio button styling - Hidden but functional */
+/* Custom radio button styling - Visible and styled */
 .woocommerce-checkout .payment_methods input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
+  position: relative;
+  width: 20px;
+  height: 20px;
   margin: 0;
   padding: 0;
-  border: none;
-  background: none;
+  border: 2px solid var(--checkout-input-border);
+  background: var(--checkout-input-bg);
+  border-radius: 50%;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  pointer-events: none;
-}
-
-/* Custom visual indicator for selected state */
-.woocommerce-checkout
-  .payment_methods
-  input[type="radio"]:checked
-  ~ .payment_method::after {
-  content: "✓";
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
+/* Radio button checked state */
+.woocommerce-checkout .payment_methods input[type="radio"]:checked {
+  border-color: var(--checkout-text);
+  background: var(--checkout-text);
+  position: relative;
+}
+
+/* Radio button checked inner circle */
+.woocommerce-checkout .payment_methods input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: var(--checkout-bg);
+  border-radius: 50%;
+}
+
 .woocommerce-checkout .payment_methods input[type="radio"]:focus {
-  outline: none;
+  outline: 2px solid var(--checkout-input-focus-border);
+  outline-offset: 2px;
 }
 
-/* Hover effect for checkmark */
-.woocommerce-checkout
-  .payment_methods
-  li:hover
-  input[type="radio"]:checked
-  ~ .payment_method::after {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+/* Payment method icons/logos container */
+.payment-method-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
-/* Hover effect for selected payment method checkmark */
-.woocommerce-checkout
-  .payment_methods
-  li:hover
-  .payment_method.selected::after {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.payment-method-icon {
+  height: 24px;
+  width: auto;
+  display: block;
+}
+
+/* Payment method title */
+.payment-method-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--checkout-text);
+  margin: 0;
+  line-height: 1.3;
 }
 
 /* Payment method content */
@@ -1376,19 +1352,171 @@
   position: relative;
 }
 
-.payment-method-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--checkout-text);
-  margin: 0;
-  line-height: 1.3;
-}
-
 .payment-method-description {
   font-size: 14px;
   color: var(--checkout-text-muted);
   margin: 0;
   line-height: 1.4;
+}
+
+/* Payment box - card details container */
+.woocommerce-checkout .payment_methods .payment_box {
+  margin-top: 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+}
+
+/* Payment box fields */
+.woocommerce-checkout .payment_methods .payment_box .form-row {
+  margin-bottom: 16px;
+}
+
+.woocommerce-checkout .payment_methods .payment_box input[type="text"],
+.woocommerce-checkout .payment_methods .payment_box input[type="tel"],
+.woocommerce-checkout .payment_methods .payment_box input[type="email"] {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--checkout-input-border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: var(--checkout-input-bg);
+  color: var(--checkout-text);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.woocommerce-checkout .payment_methods .payment_box input[type="text"]:focus,
+.woocommerce-checkout .payment_methods .payment_box input[type="tel"]:focus,
+.woocommerce-checkout .payment_methods .payment_box input[type="email"]:focus {
+  outline: none;
+  border-color: var(--checkout-input-focus-border);
+}
+
+.woocommerce-checkout .payment_methods .payment_box input[type="text"]::placeholder,
+.woocommerce-checkout .payment_methods .payment_box input[type="tel"]::placeholder,
+.woocommerce-checkout .payment_methods .payment_box input[type="email"]::placeholder {
+  color: var(--checkout-text-light);
+}
+
+/* Card number field with icon */
+.woocommerce-checkout .payment_methods .payment_box .form-row-first {
+  position: relative;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-first input {
+  padding-right: 40px;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-first::after {
+  content: "🔒";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Security code field with help icon */
+.woocommerce-checkout .payment_methods .payment_box .form-row-last {
+  position: relative;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-last input {
+  padding-right: 40px;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-last::after {
+  content: "?";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--checkout-border);
+  border-radius: 50%;
+  font-size: 12px;
+  color: var(--checkout-text-muted);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Side-by-side fields for expiration and security code */
+.woocommerce-checkout .payment_methods .payment_box .form-row.form-row-first,
+.woocommerce-checkout .payment_methods .payment_box .form-row.form-row-last {
+  display: inline-block;
+  width: calc(50% - 8px);
+  vertical-align: top;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row.form-row-first {
+  margin-right: 16px;
+}
+
+/* Billing address checkbox */
+.woocommerce-checkout .payment_methods .payment_box .form-row-wide input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0 8px 0 0;
+  cursor: pointer;
+  border: 2px solid var(--checkout-input-border);
+  background: var(--checkout-input-bg);
+  border-radius: 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-wide input[type="checkbox"]:checked {
+  background: var(--checkout-text);
+  border-color: var(--checkout-text);
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-wide input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--checkout-bg);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.woocommerce-checkout .payment_methods .payment_box .form-row-wide input[type="checkbox"]:focus {
+  outline: 2px solid var(--checkout-input-focus-border);
+  outline-offset: 2px;
+}
+
+/* Checkbox label */
+.woocommerce-checkout .payment_methods .payment_box .form-row-wide label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--checkout-text);
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+/* Hide payment box when not selected - WooCommerce handles this, but ensure it works */
+.woocommerce-checkout .payment_methods li:not(.payment_method_selected) .payment_box {
+  display: none !important;
+}
+
+.woocommerce-checkout .payment_methods li.payment_method_selected .payment_box,
+.woocommerce-checkout .payment_methods li input[type="radio"]:checked ~ .payment_box {
+  display: block !important;
 }
 
 .woocommerce-shipping-methods {
@@ -1591,26 +1719,13 @@
   }
 
   .woocommerce-checkout .payment_methods label {
-    gap: 12px;
+    gap: 10px;
     font-size: 15px;
   }
 
   .woocommerce-checkout .payment_methods input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .woocommerce-checkout
-    .payment_methods
-    input[type="radio"]:checked
-    ~ .payment_method::after {
     width: 18px;
     height: 18px;
-    font-size: 11px;
-    top: 8px;
-    right: 8px;
   }
 
   .payment-method-title {
@@ -1647,26 +1762,13 @@
   }
 
   .woocommerce-checkout .payment_methods label {
-    gap: 10px;
+    gap: 8px;
     font-size: 14px;
   }
 
   .woocommerce-checkout .payment_methods input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .woocommerce-checkout
-    .payment_methods
-    input[type="radio"]:checked
-    ~ .payment_method::after {
-    width: 16px;
-    height: 16px;
-    font-size: 10px;
-    top: 6px;
-    right: 6px;
+    width: 18px;
+    height: 18px;
   }
 
   .payment-method-title {
@@ -1724,108 +1826,7 @@
   display: none;
 }
 
-/* Payment methods styling - Enhanced version */
-.woocommerce-checkout .payment_methods {
-  list-style: none;
-  margin: 0 0 20px 0;
-  padding: 0;
-}
-
-.woocommerce-checkout .payment_methods li {
-  margin-bottom: 16px;
-  position: relative;
-}
-
-/* Payment method container */
-.woocommerce-checkout .payment_methods li .payment_method {
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.woocommerce-checkout .payment_methods li .payment_method.selected {
-  border-color: var(--checkout-input-focus-border);
-  background: transparent;
-}
-
-/* Ensure checkmark appears for selected payment method */
-.woocommerce-checkout .payment_methods li .payment_method.selected::after {
-  content: "✓";
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-/* Payment method label */
-.woocommerce-checkout .payment_methods label {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--checkout-text);
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
-
-/* Custom radio button styling - Hidden but functional */
-.woocommerce-checkout .payment_methods input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  pointer-events: none;
-}
-
-/* Custom visual indicator for selected state */
-.woocommerce-checkout
-  .payment_methods
-  input[type="radio"]:checked
-  ~ .payment_method::after {
-  content: "✓";
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.woocommerce-checkout .payment_methods input[type="radio"]:focus {
-  outline: none;
-}
+/* Payment methods styling - Enhanced version (consolidated with main styles above) */
 
 /* Browser-specific dropdown styling */
 select::-ms-expand {
@@ -1879,9 +1880,8 @@ body.woocommerce-checkout
   .payment_methods
   li
   .payment_method {
-  cursor: pointer !important;
+  padding: 16px 0 !important;
   position: relative !important;
-  overflow: hidden !important;
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;
@@ -1899,13 +1899,13 @@ body.woocommerce-checkout
 /* Ensure payment method labels maintain styling */
 body.woocommerce-checkout .woocommerce-checkout .payment_methods label {
   display: flex !important;
-  align-items: flex-start !important;
-  gap: 16px !important;
+  align-items: center !important;
+  gap: 12px !important;
   font-size: 16px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   color: var(--checkout-text) !important;
   cursor: pointer !important;
-  margin-bottom: 20px !important;
+  margin: 0 !important;
   padding: 0 !important;
   width: 100% !important;
 }
@@ -1921,7 +1921,7 @@ body.woocommerce-checkout .payment-method-content {
 
 body.woocommerce-checkout .payment-method-title {
   font-size: 16px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   color: var(--checkout-text) !important;
   line-height: 1.3 !important;
 }
@@ -2144,10 +2144,6 @@ body .woocommerce-checkout .blockMsg h1 {
   background-color: var(--checkout-dropdown-bg) !important;
 }
 
-/* Ensure Select2 is full width */
-.woocommerce-checkout .select2-container {
-  width: 100% !important;
-}
 
 /* Mobile optimization for Select2 */
 @media (max-width: 768px) {
