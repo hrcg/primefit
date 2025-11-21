@@ -11,7 +11,7 @@
 
 .footer-content {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   gap: 60px;
   margin: 0 auto;
 }
@@ -116,6 +116,48 @@
 .social-icon img {
   width: 20px;
   height: 20px;
+}
+
+/* Location Section */
+.location-section {
+  margin-top: 0;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b8b8b8;
+  transition: color 0.2s ease;
+}
+
+.location-item:hover {
+  color: #fff;
+}
+
+.location-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b8b8b8;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.location-item:hover .location-icon {
+  color: #fff;
+}
+
+.location-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.location-text {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 /* Download App Button */
@@ -249,7 +291,8 @@
     gap: 40px;
   }
 
-  .footer-column:last-child {
+  .footer-column:nth-child(4),
+  .footer-column:nth-child(5) {
     grid-column: 1 / -1;
     margin-top: 20px;
   }
@@ -266,7 +309,8 @@
   }
 
   .footer-column:nth-child(3),
-  .footer-column:last-child {
+  .footer-column:nth-child(4),
+  .footer-column:nth-child(5) {
     grid-column: 1 / -1;
     margin-top: 0;
   }
@@ -308,7 +352,8 @@
   }
 
   .footer-column:nth-child(3),
-  .footer-column:last-child {
+  .footer-column:nth-child(4),
+  .footer-column:nth-child(5) {
     grid-column: 1;
   }
 
@@ -324,6 +369,15 @@
   .social-icon img {
     width: 18px;
     height: 18px;
+  }
+
+  .location-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .location-text {
+    font-size: 13px;
   }
 
   /* Ensure toggles work on smallest screens */

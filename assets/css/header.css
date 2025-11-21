@@ -1376,16 +1376,16 @@ body.search-open
 }
 
 @media (max-width: 1024px) and (min-width: 641px) {
-  /* Hide first li of secondary menu on single product pages on mobile */
-  .secondary-nav .menu--secondary li:first-child,
+  /* Hide search item in secondary menu on mobile */
+  .secondary-nav .menu--secondary .menu-item-search,
   .secondary-nav .menu--secondary .menu-item-10979 {
     display: none !important;
   }
 }
 
-/* Hide first li of mobile tertiary menu on single product pages */
+/* Hide search item in mobile tertiary menu */
 @media (max-width: 1024px) {
-  .mobile-menu--tertiary li:first-child,
+  .mobile-menu--tertiary .menu-item-search,
   .mobile-menu--tertiary .menu-item-10979 {
     display: none !important;
   }

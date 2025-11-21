@@ -57,6 +57,23 @@
 		]);
 		?>
 	</div>
+		
+	<div class="footer-column">
+		<h3 class="footer-heading">
+			<span class="footer-heading-text">Location</span>
+			<button class="footer-toggle" aria-label="Toggle Location menu" aria-expanded="false">
+				<span class="toggle-icon">+</span>
+			</button>
+		</h3>
+		<?php
+		wp_nav_menu([
+			'theme_location' => 'footer-fourth',
+			'container'      => false,
+			'menu_class'     => 'footer-links',
+			'fallback_cb'    => false,
+		]);
+		?>
+	</div>
 	
 	<div class="footer-column">
 		<div class="connect-header">

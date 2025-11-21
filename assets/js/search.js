@@ -181,14 +181,17 @@
       this.elements.$searchToggle.attr("aria-expanded", "true");
 
       // Load trending searches only when search opens (lazy loading)
+      // Recently viewed will be shown AFTER trending searches render
       if (!this.state.trendingSearchesLoaded) {
         this.loadTrendingSearches();
       } else if (this.state.trendingSearchesCache) {
         this.displayTrendingSearches(this.state.trendingSearchesCache);
+        // Show recently viewed after trending searches are displayed from cache
+        this.displayRecentlyViewed(this.loadRecentlyViewed());
+      } else {
+        // No trending searches cache, show recently viewed immediately
+        this.displayRecentlyViewed(this.loadRecentlyViewed());
       }
-
-      // Load and show recently viewed
-      this.displayRecentlyViewed(this.loadRecentlyViewed());
 
       // Focus search input after animation with multiple attempts for reliability
       setTimeout(() => {
@@ -629,6 +632,8 @@
       // Return cached data if available
       if (this.state.trendingSearchesCache) {
         this.displayTrendingSearches(this.state.trendingSearchesCache);
+        // Show recently viewed after trending searches are displayed from cache
+        this.displayRecentlyViewed(this.loadRecentlyViewed());
         return;
       }
 
@@ -648,6 +653,12 @@
             this.state.trendingSearchesCache = response.data.trending_searches;
             this.state.trendingSearchesLoaded = true;
             this.displayTrendingSearches(response.data.trending_searches);
+            // Show recently viewed AFTER trending searches are rendered
+            this.displayRecentlyViewed(this.loadRecentlyViewed());
+          } else {
+            // No trending searches available, show recently viewed
+            this.state.trendingSearchesLoaded = true;
+            this.displayRecentlyViewed(this.loadRecentlyViewed());
           }
         },
         error: (xhr, status, error) => {
@@ -655,6 +666,8 @@
             console.error("Failed to load trending searches:", error);
           }
           this.state.trendingSearchesLoaded = true; // Mark as loaded to prevent retries
+          // Show recently viewed even if trending searches failed
+          this.displayRecentlyViewed(this.loadRecentlyViewed());
         },
       });
     },
@@ -665,6 +678,10 @@
     displayTrendingSearches: function (trendingSearches) {
       if (!trendingSearches || trendingSearches.length === 0) {
         this.elements.$trendingSearches.hide();
+        // Show recently viewed even if no trending searches
+        if (this.elements.$searchInput.val().trim().length === 0) {
+          this.displayRecentlyViewed(this.loadRecentlyViewed());
+        }
         return;
       }
 

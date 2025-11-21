@@ -367,6 +367,21 @@ function primefit_add_mega_menu_attribute( $atts, $item, $args ) {
 }
 
 /**
+ * Add custom class to search menu item in secondary menu
+ */
+add_filter( 'nav_menu_css_class', 'primefit_add_search_menu_item_class', 10, 4 );
+function primefit_add_search_menu_item_class( $classes, $item, $args, $depth ) {
+	// Only apply to secondary menu
+	if ( isset( $args->theme_location ) && $args->theme_location === 'secondary' ) {
+		// Check if this is the search menu item by title
+		if ( strtolower( trim( $item->title ) ) === 'search' ) {
+			$classes[] = 'menu-item-search';
+		}
+	}
+	return $classes;
+}
+
+/**
  * Add NEW badge to specific menu items
  */
 add_filter( 'nav_menu_item_title', 'primefit_add_new_badge_to_menu_item', 10, 4 );
