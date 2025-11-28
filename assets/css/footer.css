@@ -234,6 +234,23 @@
   gap: 8px;
 }
 
+.pulse {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background-color: #000;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+      opacity: 1;
+  }
+  50% {
+      opacity: 0.4;
+  }
+}
+
 .site-built-with {
   margin-top: 16px;
   display: flex;
@@ -246,10 +263,12 @@
 .site-built-link {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-direction: column;
+  gap: 4px;
+  flex-direction: row;
   text-decoration: none;
   transition: opacity 0.2s ease;
+  background-color: #fff;
+  padding: 4px 8px;
 }
 
 .site-built-link:hover {
@@ -258,7 +277,7 @@
 
 .site-built-with span {
   font-size: 10px;
-  color: #888;
+  color: #0c0c0c;
   font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -266,8 +285,9 @@
 
 .swiss-vector-icon {
   width: 22px;
-  opacity: 0.7;
+  opacity: 0.9;
   transition: opacity 0.2s ease;
+  filter: brightness(0) invert(0);
 }
 
 .swiss-vector-icon:hover {
