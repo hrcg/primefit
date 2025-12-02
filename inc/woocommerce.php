@@ -22,6 +22,14 @@ if ( ! class_exists( 'WooCommerce' ) ) {
 // WooCommerce is available - setting up cart functions
 
 /**
+ * Products per page configuration for category pages
+ * Change this value to adjust how many products are shown per page
+ */
+if ( ! defined( 'PRIMEFIT_PRODUCTS_PER_PAGE' ) ) {
+	define( 'PRIMEFIT_PRODUCTS_PER_PAGE', 40 );
+}
+
+/**
  * Add Kosovo to WooCommerce countries list
  */
 add_filter( 'woocommerce_countries', 'primefit_add_kosovo' );
@@ -328,8 +336,8 @@ function primefit_optimize_woocommerce_queries( $query ) {
 		return;
 	}
 	
-	// Reduce products per page for better performance
-	$query->set( 'posts_per_page', 16 );
+	// Set products per page from configuration
+	$query->set( 'posts_per_page', PRIMEFIT_PRODUCTS_PER_PAGE );
 	
 	// Optimize query by removing unnecessary fields
 	$query->set( 'no_found_rows', false ); // We need found_rows for pagination
@@ -574,9 +582,9 @@ function primefit_clear_registered_product_query_transients() {
  */
 add_action( 'init', 'primefit_set_optimized_woocommerce_settings', 5 );
 function primefit_set_optimized_woocommerce_settings() {
-	// Set products per page to 16 for better UX
+	// Set products per page from configuration
 	add_filter( 'loop_shop_per_page', function() {
-		return 16;
+		return PRIMEFIT_PRODUCTS_PER_PAGE;
 	}, 20 );
 	
 	// Set default catalog orderby to menu_order for better performance

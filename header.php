@@ -128,6 +128,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</ul>
 						</div>
 						<?php endif; ?>
+						<?php if ( ! empty( $mega_menu_config['column_6_heading'] ) ) : ?>
+						<div class="mega-menu-column">
+							<h3 class="mega-menu-heading"><?php echo esc_html( $mega_menu_config['column_6_heading'] ); ?></h3>
+							<ul class="mega-menu-links">
+								<?php
+								$links_6 = primefit_get_category_links( $mega_menu_config['column_6_links'] );
+								foreach ( $links_6 as $link ) {
+									echo '<li><a href="' . esc_url( $link['url'] ) . '">' . esc_html( $link['name'] ) . '</a></li>';
+								}
+								?>
+							</ul>
+						</div>
+						<?php endif; ?>
 					</div>
 				</div>
 			</div>
