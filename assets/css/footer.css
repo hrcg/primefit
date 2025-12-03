@@ -210,6 +210,10 @@
   text-align: center;
 }
 
+.single-product .footer-bottom {
+  padding: 20px 0 100px;
+}
+
 .footer-bottom p {
   margin: 0;
   font-size: 12px;

@@ -697,6 +697,7 @@ article {
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.1;
+  text-transform: uppercase;
 }
 
 .hero-subheading {
@@ -1332,6 +1333,85 @@ article {
 .pf-swatch.active {
   background: #fff;
   color: #0d0d0d;
+}
+
+/* Gift Card amount swatches - only for Gift Card products */
+/* Target the specific attribute used by the gift card amount select:
+   <select name="attribute_gift-card-amount" ...> */
+.pf-swatches[data-attr="attribute_gift-card-amount"] {
+  gap: 16px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+
+.reset_variations, .woocommerce-variation-price {
+  display: none !important;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 0.03em;
+}
+
+.pf-swatches[data-attr="attribute_gift-card-amount"] .pf-swatch {
+  background: var(--card-background, var(--bg));
+  color: var(--text);
+  padding: 12px 20px;
+  border: none;
+  font-size: 12px;
+  min-width: 105px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pf-swatches[data-attr="attribute_gift-card-amount"] .pf-swatch:hover {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.pf-swatches[data-attr="attribute_gift-card-amount"] .pf-swatch.active {
+  background: var(--text);
+  color: var(--bg);
+}
+
+/* Gift Card Amount label positioning - move label above values */
+table.variations tbody tr.pf-gift-card-amount-row {
+  display: block;
+}
+
+table.variations tbody tr.pf-gift-card-amount-row td.label {
+  display: block;
+  width: 100%;
+  padding-bottom: 8px;
+  padding-right: 0;
+}
+
+table.variations tbody tr.pf-gift-card-amount-row td.value {
+  display: block;
+  width: 100%;
+  padding-left: 0;
+}
+
+/* Fallback using :has() selector for browsers that support it but JS hasn't run yet */
+table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) {
+  display: block;
+}
+
+table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) td.label {
+  display: block;
+  width: 100%;
+  padding-bottom: 8px;
+  padding-right: 0;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) td.value {
+  display: block;
+  width: 100%;
+  padding-left: 0;
 }
 
 /* Product Showcase Responsive Design */
