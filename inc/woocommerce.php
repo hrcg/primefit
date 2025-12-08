@@ -26,7 +26,7 @@ if ( ! class_exists( 'WooCommerce' ) ) {
  * Change this value to adjust how many products are shown per page
  */
 if ( ! defined( 'PRIMEFIT_PRODUCTS_PER_PAGE' ) ) {
-	define( 'PRIMEFIT_PRODUCTS_PER_PAGE', 40 );
+	define( 'PRIMEFIT_PRODUCTS_PER_PAGE', 48 );
 }
 
 /**
@@ -2192,6 +2192,50 @@ function primefit_customize_stripe_title( $title, $gateway_id ) {
         return 'Card/Debit Card';
     }
     return $title;
+}
+
+/**
+ * Restrict Cash on Delivery payment method to Albania, Kosovo, and North Macedonia only
+ */
+add_filter( 'woocommerce_available_payment_gateways', 'primefit_restrict_cash_on_delivery', 10, 1 );
+function primefit_restrict_cash_on_delivery( $available_gateways ) {
+    // Countries where Cash on Delivery is allowed
+    $allowed_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
+    
+    // Get the billing country from checkout
+    $billing_country = '';
+    
+    // Try to get country from POST data first (during checkout update)
+    if ( isset( $_POST['billing_country'] ) && ! empty( $_POST['billing_country'] ) ) {
+        $billing_country = sanitize_text_field( $_POST['billing_country'] );
+    } 
+    // Try to get from customer session/chosen country
+    elseif ( WC()->customer && WC()->customer->get_billing_country() ) {
+        $billing_country = WC()->customer->get_billing_country();
+    }
+    // Try to get from user meta if logged in
+    elseif ( is_user_logged_in() ) {
+        $user_id = get_current_user_id();
+        $billing_country = get_user_meta( $user_id, 'billing_country', true );
+    }
+    // Try to get from WooCommerce session
+    elseif ( WC()->session && WC()->session->get( 'customer' ) ) {
+        $customer_data = WC()->session->get( 'customer' );
+        if ( isset( $customer_data['country'] ) ) {
+            $billing_country = $customer_data['country'];
+        }
+    }
+    
+    // Only show Cash on Delivery if country is explicitly one of the allowed countries
+    // Hide it for all other countries or if country is not set yet
+    if ( empty( $billing_country ) || ! in_array( $billing_country, $allowed_countries, true ) ) {
+        // Remove Cash on Delivery gateway (typically identified as 'cod')
+        if ( isset( $available_gateways['cod'] ) ) {
+            unset( $available_gateways['cod'] );
+        }
+    }
+    
+    return $available_gateways;
 }
 
 /**
