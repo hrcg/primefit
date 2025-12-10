@@ -341,6 +341,12 @@ function primefit_handle_custom_sorting( $query ) {
 				$query->set( 'order', 'DESC' );
 				break;
 		}
+	} else {
+		// Default to newest products first for product category pages
+		if ( is_product_category() ) {
+			$query->set( 'orderby', 'date ID' );
+			$query->set( 'order', 'DESC' );
+		}
 	}
 }
 
