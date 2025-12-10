@@ -286,6 +286,15 @@ function primefit_enqueue_assets() {
 		true // Defer for better performance
 	);
 	
+	// Promo bar Christmas animation - load on all pages (only activates if promo bar exists)
+	wp_enqueue_script(
+		'primefit-promo-bar-christmas',
+		PRIMEFIT_THEME_URI . '/assets/js/promo-bar-christmas.js',
+		[],
+		primefit_get_file_version( '/assets/js/promo-bar-christmas.js' ),
+		true // Defer for better performance
+	);
+	
 	// Shop functionality - load on shop pages
 	// On mobile, this will be lazy loaded instead
 	if ( in_array( $page_type, [ 'shop', 'category', 'tag', 'front_page' ] ) && ! wp_is_mobile() ) {

@@ -1502,6 +1502,7 @@ body.search-open
   z-index: 999;
   padding: 12px 0;
   transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 /* Clickable promo bar styles */
@@ -1519,6 +1520,7 @@ body.search-open
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  z-index: 2;
 }
 
 .promo-text {
@@ -1532,7 +1534,7 @@ body.search-open
 
 /* Adjust header position when promo bar is present */
 body:has(.promo-bar) .site-header {
-  top: 38px; /* Height of promo bar */
+  top: 38px; /* Height of promo bar (lights are now in header, not promo bar) */
 }
 
 /* Responsive adjustments */
@@ -1547,16 +1549,16 @@ body:has(.promo-bar) .site-header {
 
   /* Adjust header position for mobile */
   body:has(.promo-bar) .site-header {
-    top: 31px; /* Reduced promo bar height on mobile */
+    top: 31px; /* Height of promo bar on mobile */
   }
 
   /* Adjust site content padding for mobile */
   body:has(.promo-bar):not(.has-hero-header) .site-content {
-    padding-top: 83px; /* Mobile promo bar + header height */
+    padding-top: 103px; /* Mobile promo bar + header height */
   }
 
   body:not(.has-hero-header):not(:has(.promo-bar)) .site-content {
-    padding-top: 40px; /* Reduced by 43px when promo bar is not active on mobile */
+    padding-top: 40px; /* Header height on mobile */
   }
 
   body:has(.promo-bar).has-hero-header .site-content {
@@ -1576,11 +1578,11 @@ body:has(.promo-bar) .site-header {
 }
 
 body:not(.has-hero-header):not(:has(.promo-bar)) .site-content {
-  padding-top: 46px; /* Reduced by 43px when promo bar is not active */
+  padding-top: 46px; /* Header height */
 }
 
 body:not(.has-hero-header):has(.promo-bar) .site-content {
-  padding-top: 80px; /* Original padding when promo bar is present */
+  padding-top: 80px; /* Promo bar + header */
 }
 
 body.archive:has(.promo-bar) .site-content {
