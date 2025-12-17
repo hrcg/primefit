@@ -45,6 +45,14 @@
       canvas.className = 'hero-snow-canvas';
       const ctx = canvas.getContext('2d');
       
+      // Device tilt influence
+      let tiltX = 0;
+      let tiltY = 0;
+      let targetTiltX = 0;
+      let targetTiltY = 0;
+      const TILT_SCALE = 0.05; // stronger response to tilt
+      const MAX_TILT = 3; // allow more noticeable drift
+
       let width = heroSection.clientWidth;
       let height = heroSection.clientHeight;
       let active = false;
@@ -88,6 +96,47 @@
       const snowflakes = [];
       let snowflake;
 
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function startOrientationTracking() {
+        if (!('DeviceOrientationEvent' in window)) {
+          return;
+        }
+
+        const handleOrientation = (event) => {
+          const gamma = event.gamma || 0; // left/right tilt
+          const beta = event.beta || 0;   // front/back tilt
+          targetTiltX = clamp(gamma * TILT_SCALE, -MAX_TILT, MAX_TILT);
+          targetTiltY = clamp(beta * TILT_SCALE, -MAX_TILT, MAX_TILT);
+        };
+
+        const attachListener = () => {
+          window.addEventListener('deviceorientation', handleOrientation, true);
+        };
+
+        // iOS requires a user gesture before requesting permission
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const requestPermission = () => {
+            DeviceOrientationEvent.requestPermission()
+              .then((res) => {
+                if (res === 'granted') {
+                  attachListener();
+                }
+              })
+              .catch(() => {
+                // ignore if permission is denied
+              });
+          };
+
+          heroSection.addEventListener('click', requestPermission, { once: true });
+          heroSection.addEventListener('touchend', requestPermission, { once: true });
+        } else {
+          attachListener();
+        }
+      }
+
       for (let i = 0; i < COUNT; i++) {
         snowflake = new Snowflake();
         snowflake.reset();
@@ -101,10 +150,14 @@
           return;
         }
 
+        // smooth tilt changes to avoid jitter
+        tiltX = tiltX * 0.75 + targetTiltX * 0.25;
+        tiltY = tiltY * 0.75 + targetTiltY * 0.25;
+
         for (let i = 0; i < COUNT; i++) {
           snowflake = snowflakes[i];
-          snowflake.y += snowflake.vy;
-          snowflake.x += snowflake.vx;
+          snowflake.y += snowflake.vy + tiltY;
+          snowflake.x += snowflake.vx + tiltX;
 
           ctx.globalAlpha = snowflake.o;
           ctx.beginPath();
@@ -133,6 +186,7 @@
       onResize();
       window.addEventListener('resize', onResize, false);
       heroSection.appendChild(canvas);
+      startOrientationTracking();
       
       // Start animation immediately
       active = true;

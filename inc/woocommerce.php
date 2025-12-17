@@ -2196,19 +2196,20 @@ function primefit_customize_stripe_title( $title, $gateway_id ) {
 
 /**
  * Restrict Cash on Delivery payment method to Albania, Kosovo, and North Macedonia only
+ * Also disable COD for specific products
  */
 add_filter( 'woocommerce_available_payment_gateways', 'primefit_restrict_cash_on_delivery', 10, 1 );
 function primefit_restrict_cash_on_delivery( $available_gateways ) {
     // Countries where Cash on Delivery is allowed
     $allowed_countries = array( 'AL', 'XK', 'MK' ); // Albania, Kosovo, North Macedonia
-    
+
     // Get the billing country from checkout
     $billing_country = '';
-    
+
     // Try to get country from POST data first (during checkout update)
     if ( isset( $_POST['billing_country'] ) && ! empty( $_POST['billing_country'] ) ) {
         $billing_country = sanitize_text_field( $_POST['billing_country'] );
-    } 
+    }
     // Try to get from customer session/chosen country
     elseif ( WC()->customer && WC()->customer->get_billing_country() ) {
         $billing_country = WC()->customer->get_billing_country();
@@ -2225,16 +2226,31 @@ function primefit_restrict_cash_on_delivery( $available_gateways ) {
             $billing_country = $customer_data['country'];
         }
     }
-    
-    // Only show Cash on Delivery if country is explicitly one of the allowed countries
-    // Hide it for all other countries or if country is not set yet
-    if ( empty( $billing_country ) || ! in_array( $billing_country, $allowed_countries, true ) ) {
+
+    // Product IDs where COD should be disabled
+    $restricted_products = [11924]; // Product ID for PW Gift Card
+
+    // Check if cart contains restricted products
+    $has_restricted_product = false;
+    if ( WC()->cart && ! WC()->cart->is_empty() ) {
+        foreach ( WC()->cart->get_cart() as $cart_item ) {
+            if ( in_array( $cart_item['product_id'], $restricted_products, true ) ) {
+                $has_restricted_product = true;
+                break;
+            }
+        }
+    }
+
+    // Remove Cash on Delivery gateway if:
+    // 1. Country is not in allowed list, OR
+    // 2. Cart contains restricted products
+    if ( ( empty( $billing_country ) || ! in_array( $billing_country, $allowed_countries, true ) ) || $has_restricted_product ) {
         // Remove Cash on Delivery gateway (typically identified as 'cod')
         if ( isset( $available_gateways['cod'] ) ) {
             unset( $available_gateways['cod'] );
         }
     }
-    
+
     return $available_gateways;
 }
 
