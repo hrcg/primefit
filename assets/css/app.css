@@ -691,6 +691,20 @@ article {
 }
 
 /* Hero Typography */
+.hero-small-image {
+  margin-bottom: 20px;
+  display: inline-block;
+  max-width: 120px;
+  width: auto;
+  height: auto;
+}
+
+.hero-small-image img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 .hero-heading {
   margin: 0 0 10px 0;
   font-size: clamp(28px, 4vw, 48px);
@@ -760,6 +774,11 @@ article {
 
   .hero-subheading {
     font-size: 12px;
+  }
+
+  .hero-small-image {
+    max-width: 80px;
+    margin-bottom: 15px;
   }
 }
 /* ========================================
@@ -1345,7 +1364,8 @@ article {
   padding: 8px;
 }
 
-.reset_variations, .woocommerce-variation-price {
+.reset_variations,
+.woocommerce-variation-price {
   display: none !important;
   text-transform: uppercase;
   font-size: 12px;
@@ -1395,11 +1415,16 @@ table.variations tbody tr.pf-gift-card-amount-row td.value {
 }
 
 /* Fallback using :has() selector for browsers that support it but JS hasn't run yet */
-table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) {
+table.variations
+  tbody
+  tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) {
   display: block;
 }
 
-table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) td.label {
+table.variations
+  tbody
+  tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"])
+  td.label {
   display: block;
   width: 100%;
   padding-bottom: 8px;
@@ -1408,7 +1433,10 @@ table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-ca
   font-size: 12px;
 }
 
-table.variations tbody tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"]) td.value {
+table.variations
+  tbody
+  tr:has(td.value .pf-swatches[data-attr="attribute_gift-card-amount"])
+  td.value {
   display: block;
   width: 100%;
   padding-left: 0;

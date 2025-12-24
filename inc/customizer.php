@@ -277,6 +277,18 @@ function primefit_customize_register( $wp_customize ) {
 		'description' => __( 'Image shown while video is loading on mobile devices', 'primefit' ),
 	) ) );
 
+	// Hero Small Image Above Heading
+	$wp_customize->add_setting( 'primefit_hero_small_image', array(
+		'default'           => '',
+		'sanitize_callback' => 'absint',
+	) );
+	$wp_customize->add_control( new WP_Customize_Media_Control( $wp_customize, 'primefit_hero_small_image', array(
+		'label'    => __( 'Small Image Above Heading', 'primefit' ),
+		'section'  => 'primefit_hero',
+		'mime_type' => 'image',
+		'description' => __( 'Upload a small image to display above the main hero heading (e.g., Santa image)', 'primefit' ),
+	) ) );
+
 	// Training Division Section Panel
 	$wp_customize->add_section( 'primefit_training_division', array(
 		'title'    => __( 'Training Division Section', 'primefit' ),
@@ -1311,6 +1323,10 @@ function primefit_get_hero_config() {
 		$cta_link = wc_get_page_permalink( 'shop' );
 	}
 
+	// Get small image above heading
+	$hero_small_image_id = get_theme_mod( 'primefit_hero_small_image' );
+	$hero_small_image_url = $hero_small_image_id ? wp_get_attachment_image_url( $hero_small_image_id, 'medium' ) : '';
+
 	$config = array(
 		'image_desktop' => $hero_image_desktop_url,
 		'image_mobile' => $hero_image_mobile_url,
@@ -1318,6 +1334,7 @@ function primefit_get_hero_config() {
 		'video_mobile' => $hero_video_mobile_url,
 		'video_poster_desktop' => $hero_video_poster_desktop_url,
 		'video_poster_mobile' => $hero_video_poster_mobile_url,
+		'small_image' => $hero_small_image_url,
 		'heading' => get_theme_mod( 'primefit_hero_heading', 'END OF SEASON SALE' ),
 		'subheading' => get_theme_mod( 'primefit_hero_subheading', 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.' ),
 		'cta_text' => get_theme_mod( 'primefit_hero_cta_text', 'SHOP NOW' ),

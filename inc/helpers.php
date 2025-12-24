@@ -890,6 +890,7 @@ function primefit_render_hero( $args = array() ) {
 	$defaults = array(
 		'image_desktop' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
 		'image_mobile' => primefit_get_asset_uri(array('/assets/images/hero-image.webp', '/assets/images/hero-image.jpg')),
+		'small_image' => '',
 		'heading' => 'END OF SEASON SALE',
 		'subheading' => 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.',
 		'cta_text' => 'SHOP NOW',
@@ -1010,10 +1011,15 @@ function primefit_render_hero( $args = array() ) {
 		
 		<div class="hero-content">
 			<div class="container">
-				<div class="hero-text hero-text--<?php echo esc_attr($hero['overlay_position']); ?> hero-text--<?php echo esc_attr($hero['text_color']); ?>">
-					<?php if ( ! empty( $hero['heading'] ) ) : ?>
-						<h1 class="hero-heading"><?php echo esc_html( $hero['heading'] ); ?></h1>
-					<?php endif; ?>
+			<div class="hero-text hero-text--<?php echo esc_attr($hero['overlay_position']); ?> hero-text--<?php echo esc_attr($hero['text_color']); ?>">
+				<?php if ( ! empty( $hero['small_image'] ) ) : ?>
+					<div class="hero-small-image">
+						<img src="<?php echo esc_url( $hero['small_image'] ); ?>" alt="<?php echo esc_attr( $hero['heading'] ); ?>" />
+					</div>
+				<?php endif; ?>
+				<?php if ( ! empty( $hero['heading'] ) ) : ?>
+					<h1 class="hero-heading"><?php echo esc_html( $hero['heading'] ); ?></h1>
+				<?php endif; ?>
 					
 					<?php if ( ! empty( $hero['subheading'] ) ) : ?>
 						<p class="hero-subheading"><?php echo esc_html( $hero['subheading'] ); ?></p>

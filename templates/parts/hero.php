@@ -19,6 +19,7 @@
 $defaults = array(
 	'image_desktop' => primefit_get_asset_uri(array('/assets/images/DSC03813.webp', '/assets/images/DSC03813.jpg', '/assets/images/DSC03813.jpeg', '/assets/images/DSC03813.png')),
 	'image_mobile' => primefit_get_asset_uri(array('/assets/images/DSC03756.webp', '/assets/images/DSC03756.jpg', '/assets/images/DSC03756.jpeg', '/assets/images/DSC03756.png')),
+	'small_image' => '',
 	'heading' => 'END OF SEASON SALE',
 	'subheading' => 'UP TO 60% OFF. LIMITED TIME ONLY. WHILE SUPPLIES LAST.',
 	'cta_text' => 'SHOP NOW',
@@ -132,10 +133,15 @@ if (empty($hero_image_mobile_url)) {
 	
 	<div class="hero-content">
 		<div class="container">
-			<div class="hero-text hero-text--<?php echo esc_attr($hero['overlay_position']); ?> hero-text--<?php echo esc_attr($hero['text_color']); ?>">
-				<?php if (!empty($hero['heading'])) : ?>
-					<h1 class="hero-heading"><?php echo esc_html($hero['heading']); ?></h1>
-				<?php endif; ?>
+		<div class="hero-text hero-text--<?php echo esc_attr($hero['overlay_position']); ?> hero-text--<?php echo esc_attr($hero['text_color']); ?>">
+			<?php if (!empty($hero['small_image'])) : ?>
+				<div class="hero-small-image">
+					<img src="<?php echo esc_url($hero['small_image']); ?>" alt="<?php echo esc_attr($hero['heading']); ?>" />
+				</div>
+			<?php endif; ?>
+			<?php if (!empty($hero['heading'])) : ?>
+				<h1 class="hero-heading"><?php echo esc_html($hero['heading']); ?></h1>
+			<?php endif; ?>
 				
 				<?php if (!empty($hero['subheading'])) : ?>
 					<p class="hero-subheading"><?php echo esc_html($hero['subheading']); ?></p>
