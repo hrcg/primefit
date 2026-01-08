@@ -80,13 +80,25 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 				</div>
 
 				<div class="order-totals">
-					<div class="total-line">
+					<div class="total-line subtotal-line">
 						<span class="total-label">Subtotal</span>
 						<span class="total-value"><?php wc_cart_totals_subtotal_html(); ?></span>
 					</div>
 					<div class="total-line final-total">
 						<span class="total-label">Total</span>
 						<span class="total-value"><?php wc_cart_totals_order_total_html(); ?></span>
+					</div>
+					<?php
+					$bundle_savings = function_exists( 'primefit_bundle_get_cart_savings_total' ) ? (float) primefit_bundle_get_cart_savings_total() : 0.0;
+					$bundle_items_total = function_exists( 'primefit_bundle_get_cart_original_items_total' ) ? (float) primefit_bundle_get_cart_original_items_total() : 0.0;
+					?>
+					<div class="total-line bundle-items-total" data-bundle-items-total-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>
+						<span class="total-label">Price of all items</span>
+						<span class="total-value"><?php echo $bundle_savings > 0 ? wp_kses_post( wc_price( $bundle_items_total ) ) : ''; ?></span>
+					</div>
+					<div class="total-line bundle-savings" data-bundle-savings-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>
+						<span class="total-label">You save</span>
+						<span class="total-value"><?php echo $bundle_savings > 0 ? wp_kses_post( wc_price( $bundle_savings ) ) : ''; ?></span>
 					</div>
 				</div>
 

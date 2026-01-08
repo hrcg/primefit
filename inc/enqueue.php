@@ -236,6 +236,14 @@ function primefit_enqueue_assets() {
 		false // Load in head for immediate scroll listener setup
 	);
 
+	// Expose a stable "theme asset version" to JS so we can invalidate cached WooCommerce fragments
+	// when theme code changes (WooCommerce caches mini-cart HTML in localStorage).
+	wp_add_inline_script(
+		'primefit-core',
+		'window.PrimeFit = window.PrimeFit || {}; window.PrimeFit.assetVersion = ' . wp_json_encode( (string) primefit_get_file_version( '/assets/js/core.js' ) ) . ';',
+		'before'
+	);
+
 	// Add inline script to ensure scroll listener is initialized after scripts are loaded
 	add_action('wp_footer', function() {
 		?>
@@ -287,6 +295,8 @@ function primefit_enqueue_assets() {
 	);
 	
 	// Promo bar Christmas animation - load on all pages (only activates if promo bar exists)
+	// DISABLED - Uncomment below to re-enable
+	/*
 	wp_enqueue_script(
 		'primefit-promo-bar-christmas',
 		PRIMEFIT_THEME_URI . '/assets/js/promo-bar-christmas.js',
@@ -294,6 +304,7 @@ function primefit_enqueue_assets() {
 		primefit_get_file_version( '/assets/js/promo-bar-christmas.js' ),
 		true // Defer for better performance
 	);
+	*/
 	
 	// Shop functionality - load on shop pages
 	// On mobile, this will be lazy loaded instead

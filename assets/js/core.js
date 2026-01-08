@@ -9,6 +9,44 @@
 (function ($) {
   "use strict";
 
+  /**
+   * WooCommerce mini-cart fragments are cached in localStorage (HTML),
+   * which can persist across theme code updates. If we change markup in PHP,
+   * users may still see stale fragment HTML until their cart hash changes.
+   *
+   * Fix: when our theme asset version changes, clear the WC fragment cache
+   * so the mini cart re-renders with the latest template output.
+   */
+  (function primefitInvalidateWooFragmentsOnThemeUpdate() {
+    try {
+      var currentVersion =
+        window.PrimeFit && window.PrimeFit.assetVersion
+          ? String(window.PrimeFit.assetVersion)
+          : null;
+      if (!currentVersion || !window.localStorage) return;
+
+      var key = "primefit_asset_version";
+      var previousVersion = window.localStorage.getItem(key);
+      if (previousVersion === currentVersion) return;
+
+      // Clear WooCommerce cached fragments (keys vary slightly by WC versions).
+      window.localStorage.removeItem("wc_fragments");
+      window.localStorage.removeItem("wc_cart_hash");
+      window.localStorage.removeItem("wc_cart_created");
+      window.sessionStorage &&
+        window.sessionStorage.removeItem("wc_fragments");
+
+      window.localStorage.setItem(key, currentVersion);
+
+      // If wc-fragments is present, ask it to refresh ASAP.
+      if (document && document.body) {
+        $(document.body).trigger("wc_fragment_refresh");
+      }
+    } catch (e) {
+      // no-op
+    }
+  })();
+
   function isIOSSafari() {
     var ua = navigator.userAgent || navigator.vendor || window.opera;
     var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);

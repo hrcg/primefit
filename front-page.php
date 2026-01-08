@@ -22,6 +22,13 @@ if ( $product_showcase_config['enabled'] ) {
 	primefit_render_product_loop($product_showcase_args);
 }
 
+// Fourth Product Loop Section
+$fourth_product_loop_config = primefit_get_fourth_product_loop_config();
+if ( $fourth_product_loop_config['enabled'] ) {
+	$fourth_product_loop_args = primefit_get_product_loop_config('custom', $fourth_product_loop_config);
+	primefit_render_product_loop($fourth_product_loop_args);
+}
+
 // Training Division Section (uses customizer settings)
 get_template_part('templates/parts/training-division');
 

@@ -30,6 +30,7 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 		foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
 			$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 			$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
+			$is_bundle_child = ! empty( $cart_item['primefit_bundle_group_id'] );
 
 			if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_widget_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 				/**
@@ -42,7 +43,7 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 				$product_price     = apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key );
 				$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
 				?>
-				<li class="woocommerce-mini-cart-item <?php echo esc_attr( apply_filters( 'woocommerce_mini_cart_item_class', 'mini_cart_item', $cart_item, $cart_item_key ) ); ?>">
+				<li class="woocommerce-mini-cart-item <?php echo esc_attr( apply_filters( 'woocommerce_mini_cart_item_class', 'mini_cart_item', $cart_item, $cart_item_key ) ); ?><?php echo $is_bundle_child ? ' primefit-bundle-child' : ''; ?>">
 					
 					<?php echo apply_filters( 'woocommerce_cart_item_remove_link', sprintf( '<a href="%s" class="remove remove_from_cart_button" aria-label="%s" data-product_id="%s" data-cart_item_key="%s" data-product_sku="%s">REMOVE</a>', esc_url( wc_get_cart_remove_url( $cart_item_key ) ), esc_attr__( 'Remove this item', 'woocommerce' ), esc_attr( $product_id ), esc_attr( $cart_item_key ), esc_attr( $_product->get_sku() ) ), $cart_item_key ); ?>
 					
@@ -65,22 +66,28 @@ do_action( 'woocommerce_before_mini_cart' ); ?>
 							<?php echo wc_get_formatted_cart_item_data( $cart_item ); ?>
 
 							<div class="woocommerce-mini-cart__item-quantity">
-								<div class="quantity">
-									<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>"></button>
-									<input
-										type="number"
-										class="qty"
-										value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
-										min="1"
-										max="<?php echo esc_attr( $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 999 ); ?>"
-										data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>"
-										data-original-value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
-										step="1"
-										inputmode="numeric"
-										readonly
-									>
-								<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>"></button>
-								</div>
+								<?php if ( $is_bundle_child ) : ?>
+									<div class="quantity quantity--bundle" aria-label="<?php esc_attr_e( 'Bundle quantity is fixed per item', 'primefit' ); ?>">
+										<span class="qty-text">×<?php echo esc_html( (int) $cart_item['quantity'] ); ?></span>
+									</div>
+								<?php else : ?>
+									<div class="quantity">
+										<button type="button" class="minus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Decrease quantity', 'primefit' ); ?>"></button>
+										<input
+											type="number"
+											class="qty"
+											value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
+											min="1"
+											max="<?php echo esc_attr( $_product->get_max_purchase_quantity() > 0 ? $_product->get_max_purchase_quantity() : 999 ); ?>"
+											data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>"
+											data-original-value="<?php echo esc_attr( $cart_item['quantity'] ); ?>"
+											step="1"
+											inputmode="numeric"
+											readonly
+										>
+										<button type="button" class="plus" data-cart-item-key="<?php echo esc_attr( $cart_item_key ); ?>" aria-label="<?php esc_attr_e( 'Increase quantity', 'primefit' ); ?>"></button>
+									</div>
+								<?php endif; ?>
 								<span class="quantity-price"><?php echo $product_price; ?></span>
 							</div>
 						</div>

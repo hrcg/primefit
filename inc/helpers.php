@@ -1845,6 +1845,14 @@ function primefit_clear_category_cache( $term_id ) {
 function primefit_cache_product_variations( $product_id, $variations, $expiration = 3600 ) {
 	$cache_key = "product_variations_{$product_id}";
 	wp_cache_set( $cache_key, $variations, 'primefit_variations', $expiration );
+
+	// Fallback for sites without persistent object cache: store as transient too.
+	$transient_key = "primefit_product_variations_{$product_id}";
+	set_transient( $transient_key, $variations, (int) $expiration );
+	if ( function_exists( 'primefit_register_transient_key' ) ) {
+		// Register under product cache keys so it is cleared on product updates.
+		primefit_register_transient_key( 'primefit_products_keys', $transient_key );
+	}
 }
 
 /**
@@ -1855,7 +1863,20 @@ function primefit_cache_product_variations( $product_id, $variations, $expiratio
  */
 function primefit_get_cached_product_variations( $product_id ) {
 	$cache_key = "product_variations_{$product_id}";
-	return wp_cache_get( $cache_key, 'primefit_variations' );
+	$cached = wp_cache_get( $cache_key, 'primefit_variations' );
+	if ( false !== $cached ) {
+		return $cached;
+	}
+
+	// Transient fallback.
+	$transient_key = "primefit_product_variations_{$product_id}";
+	$cached = get_transient( $transient_key );
+	if ( false !== $cached ) {
+		wp_cache_set( $cache_key, $cached, 'primefit_variations', HOUR_IN_SECONDS );
+		return $cached;
+	}
+
+	return false;
 }
 
 /**

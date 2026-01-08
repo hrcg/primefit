@@ -20,6 +20,7 @@
   --muted: #8a8a8a;
   --border: #7c7c7c;
   --accent: #ff4444;
+  --green: #44ff44;
 
   /* Derived colors - using CSS calc for better performance */
   --background: var(--bg);
@@ -52,7 +53,7 @@
   --muted: #6a6a6a;
   --border: #e7e7e7;
   --accent: #ff4444;
-
+  --green: #1d991d;
   /* Derived colors automatically update via CSS variables */
   --background: var(--bg);
   --headerBackground: #131313; /* Keep header dark in light theme */

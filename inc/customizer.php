@@ -1098,6 +1098,85 @@ function primefit_customize_register( $wp_customize ) {
 		'description' => __( 'Number of products to display (1-50)', 'primefit' ),
 	) );
 
+	// Fourth Product Loop Section
+	$wp_customize->add_setting( 'primefit_fourth_product_loop_enabled', array(
+		'default'           => false,
+		'sanitize_callback' => 'wp_validate_boolean',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_fourth_product_loop_enabled', array(
+		'label'   => __( 'Enable Fourth Product Loop Section', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'checkbox',
+	) );
+
+	// Fourth Product Loop Category
+	$wp_customize->add_setting( 'primefit_fourth_product_loop_category', array(
+		'default'           => '',
+		'sanitize_callback' => 'primefit_sanitize_select',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_fourth_product_loop_category', array(
+		'label'       => __( 'Fourth Product Loop Category', 'primefit' ),
+		'section'     => 'primefit_homepage_product_loops',
+		'type'        => 'select',
+		'choices'     => primefit_get_product_categories_choices(),
+		'description' => __( 'Leave empty to show all products, or select a specific category to filter by.', 'primefit' ),
+	) );
+
+	// Fourth Product Loop Title
+	$wp_customize->add_setting( 'primefit_fourth_product_loop_title', array(
+		'default'           => 'FEATURED PRODUCTS',
+		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_fourth_product_loop_title', array(
+		'label'   => __( 'Fourth Product Loop Title', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Fourth Product Loop Button Text
+	$wp_customize->add_setting( 'primefit_fourth_product_loop_button_text', array(
+		'default'           => 'VIEW ALL',
+		'sanitize_callback' => 'sanitize_text_field',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_fourth_product_loop_button_text', array(
+		'label'   => __( 'Fourth Product Loop Button Text', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'text',
+	) );
+
+	// Fourth Product Loop Button Link
+	$wp_customize->add_setting( 'primefit_fourth_product_loop_button_link', array(
+		'default'           => '',
+		'sanitize_callback' => 'esc_url_raw',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_fourth_product_loop_button_link', array(
+		'label'   => __( 'Fourth Product Loop Button Link', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'url',
+	) );
+
+	// Fourth Product Loop Limit
+	$wp_customize->add_setting( 'primefit_fourth_product_loop_limit', array(
+		'default'           => 8,
+		'sanitize_callback' => 'absint',
+		'transport'         => 'refresh',
+	) );
+	$wp_customize->add_control( 'primefit_fourth_product_loop_limit', array(
+		'label'   => __( 'Fourth Product Loop Limit', 'primefit' ),
+		'section' => 'primefit_homepage_product_loops',
+		'type'    => 'number',
+		'input_attrs' => array(
+			'min' => 1,
+			'max' => 50,
+		),
+		'description' => __( 'Number of products to display (1-50)', 'primefit' ),
+	) );
+
 	// Mobile Header Tiles Section Panel
 	$wp_customize->add_section( 'primefit_mobile_header_tiles', array(
 		'title'    => __( 'Mobile Header Tiles', 'primefit' ),
@@ -1905,6 +1984,35 @@ function primefit_get_third_product_loop_config() {
 		'columns' => 3, // Different layout for variety
 		'show_view_all' => true,
 		'section_class' => 'third-product-loop'
+	);
+}
+
+/**
+ * Helper function to get fourth product loop configuration from customizer
+ */
+function primefit_get_fourth_product_loop_config() {
+	// Get category slug from ID
+	$category_id = get_theme_mod( 'primefit_fourth_product_loop_category', '' );
+	$category_slug = '';
+
+	if ( ! empty( $category_id ) ) {
+		$category = get_term( $category_id, 'product_cat' );
+		$category_slug = $category && ! is_wp_error( $category ) ? $category->slug : '';
+	}
+
+	// Get button link - don't apply fallback here, let the render function handle it
+	$button_link = get_theme_mod( 'primefit_fourth_product_loop_button_link', '' );
+
+	return array(
+		'enabled' => get_theme_mod( 'primefit_fourth_product_loop_enabled', false ),
+		'category' => $category_slug,
+		'title' => get_theme_mod( 'primefit_fourth_product_loop_title', 'FEATURED PRODUCTS' ),
+		'button_text' => get_theme_mod( 'primefit_fourth_product_loop_button_text', 'VIEW ALL' ),
+		'button_link' => $button_link,
+		'limit' => get_theme_mod( 'primefit_fourth_product_loop_limit', 8 ),
+		'columns' => 4,
+		'show_view_all' => true,
+		'section_class' => 'fourth-product-loop'
 	);
 }
 

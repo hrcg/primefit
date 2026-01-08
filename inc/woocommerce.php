@@ -750,7 +750,28 @@ function primefit_header_cart_fragment( $fragments ) {
 		ob_start();
 		wc_cart_totals_subtotal_html();
 		$subtotal_html = ob_get_clean();
-		$fragments['.order-totals .total-line:not(.final-total) .total-value'] = '<span class="total-value">' . $subtotal_html . '</span>';
+		$fragments['.order-totals .subtotal-line .total-value'] = '<span class="total-value">' . $subtotal_html . '</span>';
+
+		// Bundle savings line (only shown when bundle savings exist).
+		$bundle_savings = function_exists( 'primefit_bundle_get_cart_savings_total' ) ? (float) primefit_bundle_get_cart_savings_total() : 0.0;
+		$bundle_items_total = function_exists( 'primefit_bundle_get_cart_original_items_total' ) ? (float) primefit_bundle_get_cart_original_items_total() : 0.0;
+		ob_start();
+		?>
+		<div class="total-line bundle-items-total" data-bundle-items-total-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>
+			<span class="total-label">Price of all items</span>
+			<span class="total-value"><?php echo $bundle_savings > 0 ? wp_kses_post( wc_price( $bundle_items_total ) ) : ''; ?></span>
+		</div>
+		<?php
+		$fragments['.order-totals [data-bundle-items-total-line]'] = ob_get_clean();
+
+		ob_start();
+		?>
+		<div class="total-line bundle-savings" data-bundle-savings-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>
+			<span class="total-label">You save</span>
+			<span class="total-value"><?php echo $bundle_savings > 0 ? wp_kses_post( wc_price( $bundle_savings ) ) : ''; ?></span>
+		</div>
+		<?php
+		$fragments['.order-totals [data-bundle-savings-line]'] = ob_get_clean();
 		
 		// Add order items fragment for checkout page (always generate for AJAX compatibility)
 		ob_start();
@@ -911,6 +932,13 @@ function primefit_wc_update_cart_item_quantity() {
     if ( ! WC()->cart ) {
         wp_send_json_error( __( 'Cart not available', 'primefit' ), 500 );
     }
+
+	// SECURITY/CORRECTNESS: Do not allow quantity changes for bundle child items.
+	// Bundle totals are computed by distributing a fixed bundle price across children.
+	$cart_contents = WC()->cart->get_cart();
+	if ( isset( $cart_contents[ $cart_item_key ] ) && ! empty( $cart_contents[ $cart_item_key ]['primefit_bundle_group_id'] ) ) {
+		wp_send_json_error( __( 'Bundle item quantity cannot be changed.', 'primefit' ), 400 );
+	}
 
     // Update cart item quantity
 
@@ -1926,22 +1954,28 @@ function primefit_mini_cart_order_summary() {
 	if ( WC()->cart->is_empty() ) {
 		return;
 	}
+
+	$bundle_savings = function_exists( 'primefit_bundle_get_cart_savings_total' ) ? (float) primefit_bundle_get_cart_savings_total() : 0.0;
+	$bundle_items_total = function_exists( 'primefit_bundle_get_cart_original_items_total' ) ? (float) primefit_bundle_get_cart_original_items_total() : 0.0;
+	$bundle_total = function_exists( 'primefit_bundle_get_cart_bundle_total' ) ? (float) primefit_bundle_get_cart_bundle_total() : 0.0;
+	$has_bundle   = $bundle_total > 0;
+
+	// Final fallback: if we couldn't detect via cart meta but savings calculations say we have savings, treat as bundle.
+	if ( ! $has_bundle && $bundle_savings > 0 ) {
+		$has_bundle = true;
+	}
+
+	// If bundle totals weren't computed by the helper (can happen in fragment contexts),
+	// fall back to using (items_total - bundle_total) if possible.
+	if ( $has_bundle && $bundle_savings <= 0 && $bundle_items_total > 0 && $bundle_total > 0 ) {
+		$bundle_savings = max( 0.0, $bundle_items_total - $bundle_total );
+	}
 	
-	?>
-	<div class="mini-cart-order-summary">
-		<h3 class="order-summary-title"><?php _e( 'ORDER SUMMARY', 'primefit' ); ?></h3>
-		
-		<div class="order-summary-line">
-			<span class="line-label"><?php _e( 'Sub Total', 'primefit' ); ?></span>
-			<span class="line-value"><?php echo WC()->cart->get_cart_subtotal(); ?></span>
-		</div>
-		
-	<?php if ( WC()->cart->needs_shipping() && WC()->cart->show_shipping() ) : ?>
-		<?php 
-		// Get actual shipping cost from the chosen shipping method
-		$shipping_total = 0;
-		$shipping_label = __( 'Shipping', 'primefit' );
-		
+	// Calculate shipping total early so it can be used in the bundle total calculation
+	$shipping_total = 0;
+	$shipping_label = __( 'Shipping', 'primefit' );
+	
+	if ( WC()->cart->needs_shipping() && WC()->cart->show_shipping() ) {
 		// Try to get the actual shipping method label and cost from packages
 		$packages = WC()->shipping->get_packages();
 		if ( ! empty( $packages ) ) {
@@ -1970,13 +2004,46 @@ function primefit_mini_cart_order_summary() {
 		if ( $shipping_total === 0 ) {
 			$shipping_total = WC()->cart->get_shipping_total();
 		}
-		?>
+		
+		// Check if user qualifies for free shipping - if so, set shipping to 0
+		if ( function_exists( 'primefit_user_qualifies_for_free_shipping' ) && primefit_user_qualifies_for_free_shipping() ) {
+			$shipping_total = 0;
+		}
+	}
+	
+	?>
+	<div class="mini-cart-order-summary">
+		<h3 class="order-summary-title"><?php _e( 'ORDER SUMMARY', 'primefit' ); ?></h3>
+		
+		<?php if ( $has_bundle ) : ?>
+			<div class="order-summary-line bundle-items-total" data-bundle-items-total-line>
+				<span class="line-label"><?php _e( 'Price of all items', 'primefit' ); ?></span>
+				<span class="line-value"><?php echo wp_kses_post( wc_price( $bundle_items_total ) ); ?></span>
+			</div>
+		<?php endif; ?>
+
+		<div class="order-summary-line">
+			<span class="line-label"><?php _e( 'Sub Total', 'primefit' ); ?></span>
+			<span class="line-value">
+				<?php
+				// Keep Sub Total consistent with "Price of all items" for bundle carts.
+				// (The bundle helper computes the cart's item total in the way the UI expects.)
+				if ( $has_bundle && $bundle_items_total > 0 ) {
+					echo wp_kses_post( wc_price( $bundle_items_total ) );
+				} else {
+					echo WC()->cart->get_cart_subtotal();
+				}
+				?>
+			</span>
+		</div>
+		
+	<?php if ( WC()->cart->needs_shipping() && WC()->cart->show_shipping() ) : ?>
 		<div class="order-summary-line">
 			<span class="line-label"><?php echo esc_html( $shipping_label ); ?></span>
 			<span class="line-value">
 				<?php
 				// Check if user qualifies for free shipping first OR if shipping cost is 0
-				if ( primefit_user_qualifies_for_free_shipping() || $shipping_total == 0 ) {
+				if ( function_exists( 'primefit_user_qualifies_for_free_shipping' ) && primefit_user_qualifies_for_free_shipping() || $shipping_total == 0 ) {
 					echo '<span class="free-shipping">' . __( 'FREE', 'primefit' ) . '</span>';
 				} else {
 					// Display the actual shipping cost from the chosen method
@@ -1989,8 +2056,25 @@ function primefit_mini_cart_order_summary() {
 		
 		<div class="order-summary-line total-line">
 			<span class="line-label"><?php _e( 'Total', 'primefit' ); ?></span>
-			<span class="line-value total-value"><?php echo WC()->cart->get_total(); ?></span>
+			<span class="line-value total-value">
+				<?php
+				// For bundle carts, show the bundle price + shipping (source of truth) instead of WooCommerce's full order total.
+				if ( $has_bundle && $bundle_total > 0 ) {
+					$bundle_total_with_shipping = $bundle_total + (float) $shipping_total;
+					echo wp_kses_post( wc_price( $bundle_total_with_shipping ) );
+				} else {
+					echo WC()->cart->get_total();
+				}
+				?>
+			</span>
 		</div>
+
+		<?php if ( $has_bundle ) : ?>
+			<div class="order-summary-line bundle-savings" data-bundle-savings-line>
+				<span class="line-label"><?php _e( 'You save', 'primefit' ); ?></span>
+				<span class="line-value"><?php echo wp_kses_post( wc_price( max( 0.0, $bundle_savings ) ) ); ?></span>
+			</div>
+		<?php endif; ?>
 	</div>
 	<?php
 }

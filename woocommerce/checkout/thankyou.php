@@ -53,6 +53,47 @@ $shipping_address = $order->get_formatted_shipping_address();
 $order_items = $order->get_items();
 $item_count = $order->get_item_count();
 
+// Bundle grouping (if this order contains PrimeFit bundle items).
+$bundle_groups = array(); // gid => array( name, items[], base_total, charged_total )
+$non_bundle_items = array(); // item_id => item
+$display_items_total = 0.0; // What we display as "items total" (bundle items use base/original).
+foreach ( $order_items as $item_id => $item ) {
+	$gid = (string) $item->get_meta( '_primefit_bundle_group_id', true );
+	if ( $gid === '' ) {
+		$non_bundle_items[ $item_id ] = $item;
+		$display_items_total += (float) $item->get_subtotal();
+		continue;
+	}
+
+	$bundle_name = (string) $item->get_meta( '_primefit_bundle_product_name', true );
+	if ( ! isset( $bundle_groups[ $gid ] ) ) {
+		$bundle_groups[ $gid ] = array(
+			'name' => $bundle_name,
+			'items' => array(),
+			'base_total' => 0.0,
+			'charged_total' => 0.0,
+		);
+	}
+
+	$qty = (int) $item->get_quantity();
+	$base_unit = (float) $item->get_meta( '_primefit_bundle_child_base_price', true );
+	$base_line_total = $base_unit > 0 ? ( $base_unit * max( 1, $qty ) ) : 0.0;
+
+	$bundle_groups[ $gid ]['items'][ $item_id ] = $item;
+	$bundle_groups[ $gid ]['base_total'] += $base_line_total > 0 ? $base_line_total : (float) $item->get_subtotal();
+	$bundle_groups[ $gid ]['charged_total'] += (float) $item->get_subtotal();
+	$display_items_total += $base_line_total > 0 ? $base_line_total : (float) $item->get_subtotal();
+}
+
+// Calculate total bundle savings for this order.
+$bundle_savings_total = 0.0;
+foreach ( $bundle_groups as $g ) {
+	$s = (float) $g['base_total'] - (float) $g['charged_total'];
+	if ( $s > 0 ) {
+		$bundle_savings_total += $s;
+	}
+}
+
 // Get shipping method
 $shipping_methods = $order->get_shipping_methods();
 $shipping_method = '';
@@ -158,49 +199,74 @@ endif;
             </div>
             <div class="card-content">
                 <div class="order-items-list">
-                    <?php foreach ( $order_items as $item_id => $item ) : ?>
-                        <?php
-                        $product = $item->get_product();
-                        $product_name = $item->get_name();
-                        $quantity = $item->get_quantity();
-                        $item_total = $item->get_total();
-                        $product_image = $product ? $product->get_image( 'thumbnail' ) : '';
-                        ?>
-                        <div class="order-item">
-                            <div class="item-image">
-                                <?php echo $product_image; ?>
-                            </div>
-                            <div class="item-details">
-                                <h4 class="item-name"><?php echo esc_html( $product_name ); ?></h4>
-                                <div class="item-meta">
-                                    <span class="item-quantity"><?php printf( esc_html__( 'Qty: %d', 'primefit' ), $quantity ); ?></span>
-                                    <?php if ( $item->get_variation_id() ) : ?>
-                                        <div class="item-variation">
-                                            <?php 
-                                            $variation_data = $item->get_meta_data();
-                                            $variation_attributes = array();
-                                            
-                                            foreach ( $variation_data as $meta ) {
-                                                if ( $meta->key && strpos( $meta->key, 'attribute_' ) === 0 ) {
-                                                    $attribute_name = str_replace( 'attribute_', '', $meta->key );
-                                                    $attribute_name = wc_attribute_label( $attribute_name );
-                                                    $variation_attributes[] = $attribute_name . ': ' . $meta->value;
-                                                }
-                                            }
-                                            
-                                            if ( ! empty( $variation_attributes ) ) {
-                                                echo wp_kses_post( implode( ', ', $variation_attributes ) );
-                                            }
-                                            ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <div class="item-total">
-                                <?php echo wc_price( $item_total ); ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+					<?php
+					$print_order_item = function( WC_Order_Item_Product $item ) {
+						$product = $item->get_product();
+						$product_name = $item->get_name();
+						$quantity = (int) $item->get_quantity();
+						$product_image = $product ? $product->get_image( 'thumbnail' ) : '';
+
+						// For bundle items, show the original/base (non-discounted) price.
+						$base_unit = (float) $item->get_meta( '_primefit_bundle_child_base_price', true );
+						$item_total = (float) $item->get_total();
+						$display_total = $base_unit > 0 ? ( $base_unit * max( 1, $quantity ) ) : $item_total;
+						?>
+						<div class="order-item">
+							<div class="item-image">
+								<?php echo $product_image; ?>
+							</div>
+							<div class="item-details">
+								<h4 class="item-name"><?php echo esc_html( $product_name ); ?></h4>
+								<div class="item-meta">
+									<span class="item-quantity"><?php printf( esc_html__( 'Qty: %d', 'primefit' ), $quantity ); ?></span>
+									<?php if ( $item->get_variation_id() ) : ?>
+										<div class="item-variation">
+											<?php
+											$variation_data = $item->get_meta_data();
+											$variation_attributes = array();
+
+											foreach ( $variation_data as $meta ) {
+												if ( $meta->key && strpos( $meta->key, 'attribute_' ) === 0 ) {
+													$attribute_name = str_replace( 'attribute_', '', $meta->key );
+													$attribute_name = wc_attribute_label( $attribute_name );
+													$variation_attributes[] = $attribute_name . ': ' . $meta->value;
+												}
+											}
+
+											if ( ! empty( $variation_attributes ) ) {
+												echo wp_kses_post( implode( ', ', $variation_attributes ) );
+											}
+											?>
+										</div>
+									<?php endif; ?>
+								</div>
+							</div>
+							<div class="item-total">
+								<?php echo wc_price( $display_total ); ?>
+							</div>
+						</div>
+						<?php
+					};
+					?>
+
+					<?php foreach ( $bundle_groups as $gid => $group ) : ?>
+						<div class="order-items-bundle-header">
+							<?php
+							printf(
+								/* translators: 1: bundle name */
+								esc_html__( 'YOU GOT BUNDLE "%s"', 'primefit' ),
+								esc_html( (string) $group['name'] )
+							);
+							?>
+						</div>
+						<?php foreach ( $group['items'] as $item ) : ?>
+							<?php $print_order_item( $item ); ?>
+						<?php endforeach; ?>
+					<?php endforeach; ?>
+
+					<?php foreach ( $non_bundle_items as $item ) : ?>
+						<?php $print_order_item( $item ); ?>
+					<?php endforeach; ?>
                 </div>
             </div>
         </div>
@@ -212,9 +278,24 @@ endif;
             </div>
             <div class="card-content">
                 <div class="summary-line">
-                    <span class="summary-label"><?php esc_html_e( 'Subtotal', 'primefit' ); ?></span>
-                    <span class="summary-value"><?php echo wc_price( $order->get_subtotal() ); ?></span>
+                    <span class="summary-label"><?php esc_html_e( 'Items total', 'primefit' ); ?></span>
+                    <span class="summary-value"><?php echo wc_price( $display_items_total ); ?></span>
                 </div>
+
+				<?php if ( $bundle_savings_total > 0 ) : ?>
+					<div class="summary-line discount">
+						<span class="summary-label"><?php esc_html_e( 'Bundle discount', 'primefit' ); ?></span>
+						<span class="summary-value">-<?php echo wc_price( $bundle_savings_total ); ?></span>
+					</div>
+					<div class="summary-line">
+						<span class="summary-label"><?php esc_html_e( 'Subtotal', 'primefit' ); ?></span>
+						<span class="summary-value"><?php echo wc_price( $order->get_subtotal() ); ?></span>
+					</div>
+					<div class="summary-line">
+						<span class="summary-label"><?php esc_html_e( 'Bundle savings', 'primefit' ); ?></span>
+						<span class="summary-value"><?php echo esc_html( sprintf( __( 'You saved %s by getting this bundle', 'primefit' ), strip_tags( wc_price( $bundle_savings_total ) ) ) ); ?></span>
+					</div>
+				<?php endif; ?>
 
                 <?php if ( $order->get_total_discount() > 0 ) : ?>
                     <div class="summary-line discount">
