@@ -570,7 +570,8 @@
     cacheDOM() {
       this.$colorOptions = $(".color-option");
       this.$sizeOptions = $(".size-option");
-      this.$addToCartButton = $(".single_add_to_cart_button");
+      // Exclude bundle form buttons from single product logic
+      this.$addToCartButton = $(".single_add_to_cart_button").not(".primefit-bundle-form .single_add_to_cart_button");
       this.$variationForm = $(".primefit-variations-form");
     }
 
@@ -1327,7 +1328,7 @@
 
       const $selectedColor = $(".color-option.active");
       const $selectedSize = $(".size-option.selected");
-      const $addToCartButton = $(".single_add_to_cart_button");
+      const $addToCartButton = $(".single_add_to_cart_button").not(".primefit-bundle-form .single_add_to_cart_button");
 
       // Only proceed if both color and size are selected
       if (!$selectedColor.length || !$selectedSize.length) {
@@ -2032,7 +2033,7 @@
     }
 
     createStickyButton() {
-      const $originalButton = $(".single_add_to_cart_button");
+      const $originalButton = $(".single_add_to_cart_button").not(".primefit-bundle-form .single_add_to_cart_button");
       const $notifyButton = $(".notify-button");
       const $originalQuantity = $(".quantity");
 
@@ -2172,7 +2173,7 @@
     }
 
     checkVisibility() {
-      const $originalButton = $(".single_add_to_cart_button");
+      const $originalButton = $(".single_add_to_cart_button").not(".primefit-bundle-form .single_add_to_cart_button");
       const $notifyButton = $(".notify-button");
       const $stickyButton = $("#sticky-add-to-cart");
 
@@ -2207,7 +2208,7 @@
     }
 
     handleStickyButtonClick() {
-      const $originalButton = $(".single_add_to_cart_button");
+      const $originalButton = $(".single_add_to_cart_button").not(".primefit-bundle-form .single_add_to_cart_button");
       const $notifyButton = $(".notify-button");
       const $sourceButton = $originalButton.length
         ? $originalButton
@@ -2230,7 +2231,7 @@
     }
 
     syncButtonState() {
-      const $originalButton = $(".single_add_to_cart_button");
+      const $originalButton = $(".single_add_to_cart_button").not(".primefit-bundle-form .single_add_to_cart_button");
       const $notifyButton = $(".notify-button");
       const $stickyButton = $(".sticky-add-to-cart-button");
       const $stickyQuantityInput = $(".sticky-quantity-input");

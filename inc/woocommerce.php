@@ -758,7 +758,7 @@ function primefit_header_cart_fragment( $fragments ) {
 		ob_start();
 		?>
 		<div class="total-line bundle-items-total" data-bundle-items-total-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>
-			<span class="total-label">Price of all items</span>
+			<span class="total-label">Price without bundle discount</span>
 			<span class="total-value"><?php echo $bundle_savings > 0 ? wp_kses_post( wc_price( $bundle_items_total ) ) : ''; ?></span>
 		</div>
 		<?php
@@ -2017,7 +2017,7 @@ function primefit_mini_cart_order_summary() {
 		
 		<?php if ( $has_bundle ) : ?>
 			<div class="order-summary-line bundle-items-total" data-bundle-items-total-line>
-				<span class="line-label"><?php _e( 'Price of all items', 'primefit' ); ?></span>
+				<span class="line-label"><?php _e( 'Price without bundle discount', 'primefit' ); ?></span>
 				<span class="line-value"><?php echo wp_kses_post( wc_price( $bundle_items_total ) ); ?></span>
 			</div>
 		<?php endif; ?>
@@ -2026,7 +2026,7 @@ function primefit_mini_cart_order_summary() {
 			<span class="line-label"><?php _e( 'Sub Total', 'primefit' ); ?></span>
 			<span class="line-value">
 				<?php
-				// Keep Sub Total consistent with "Price of all items" for bundle carts.
+				// Keep Sub Total consistent with "Price without bundle discount" for bundle carts.
 				// (The bundle helper computes the cart's item total in the way the UI expects.)
 				if ( $has_bundle && $bundle_items_total > 0 ) {
 					echo wp_kses_post( wc_price( $bundle_items_total ) );

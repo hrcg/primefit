@@ -93,7 +93,7 @@ if ( ! $checkout->is_registration_enabled() && $checkout->is_registration_requir
 					$bundle_items_total = function_exists( 'primefit_bundle_get_cart_original_items_total' ) ? (float) primefit_bundle_get_cart_original_items_total() : 0.0;
 					?>
 					<div class="total-line bundle-items-total" data-bundle-items-total-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>
-						<span class="total-label">Price of all items</span>
+						<span class="total-label">Price without bundle discount</span>
 						<span class="total-value"><?php echo $bundle_savings > 0 ? wp_kses_post( wc_price( $bundle_items_total ) ) : ''; ?></span>
 					</div>
 					<div class="total-line bundle-savings" data-bundle-savings-line <?php echo $bundle_savings > 0 ? '' : 'style="display:none;"'; ?>>

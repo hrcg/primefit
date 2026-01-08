@@ -1266,8 +1266,8 @@ body.single-product .single-product-page {
   }
 
   .thumbnail-item {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     flex-shrink: 0;
   }
 
@@ -1997,7 +1997,7 @@ input[type="search"] {
 /* Bundle pricing section */
 .primefit-bundle-pricing {
   margin: 32px 0;
-  padding: 24px;
+  padding: 12px;
   background: var(--product-card-bg);
   border: 1px solid var(--product-border);
   border-radius: 4px;
@@ -2018,6 +2018,8 @@ input[type="search"] {
 .primefit-bundle-pricing__line .label {
   color: var(--product-text);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .primefit-bundle-pricing__line .value {
@@ -2079,7 +2081,7 @@ input[type="search"] {
 
   .primefit-bundle-pricing__bundle .label,
   .primefit-bundle-pricing__bundle .value {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
 

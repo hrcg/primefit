@@ -274,7 +274,7 @@ $bundle_price = (float) $bundle_product->get_price();
 
 	<div class="primefit-bundle-pricing" data-primefit-bundle-pricing>
 		<div class="primefit-bundle-pricing__line">
-			<span class="label"><?php esc_html_e( 'Price of all items', 'primefit' ); ?></span>
+			<span class="label"><?php esc_html_e( 'Price without bundle discount', 'primefit' ); ?></span>
 			<span class="value" data-items-total>—</span>
 		</div>
 		<div class="primefit-bundle-pricing__line primefit-bundle-pricing__bundle">
@@ -289,8 +289,8 @@ $bundle_price = (float) $bundle_product->get_price();
 
 	<input type="hidden" name="quantity" value="1" />
 
-	<button type="submit" class="single_add_to_cart_button button alt" disabled data-primefit-bundle-submit>
-		<?php esc_html_e( 'Add bundle to cart', 'primefit' ); ?>
+	<button type="submit" class="single_add_to_cart_button button alt" disabled data-primefit-bundle-submit data-text-ready="<?php esc_attr_e( 'Add bundle to cart', 'primefit' ); ?>">
+		<?php esc_html_e( 'Select Options', 'primefit' ); ?>
 	</button>
 </form>
 

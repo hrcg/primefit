@@ -717,7 +717,7 @@ add_filter( 'woocommerce_cart_item_subtotal', function( $subtotal_html, $cart_it
 }, 20, 3 );
 
 /**
- * Checkout display: show "Price of all items" and "You save" after Total, only when bundle savings exist.
+ * Checkout display: show "Price without bundle discount" and "You save" after Total, only when bundle savings exist.
  */
 add_action( 'woocommerce_review_order_after_order_total', function() {
 	$savings = primefit_bundle_get_cart_savings_total();
@@ -727,8 +727,8 @@ add_action( 'woocommerce_review_order_after_order_total', function() {
 	$original_items_total = primefit_bundle_get_cart_original_items_total();
 	?>
 	<tr class="primefit-bundle-original-items-total">
-		<th><?php esc_html_e( 'Price of all items', 'primefit' ); ?></th>
-		<td data-title="<?php echo esc_attr__( 'Price of all items', 'primefit' ); ?>"><?php echo wp_kses_post( wc_price( $original_items_total ) ); ?></td>
+		<th><?php esc_html_e( 'Price without bundle discount', 'primefit' ); ?></th>
+		<td data-title="<?php echo esc_attr__( 'Price without bundle discount', 'primefit' ); ?>"><?php echo wp_kses_post( wc_price( $original_items_total ) ); ?></td>
 	</tr>
 	<tr class="primefit-bundle-savings">
 		<th><?php esc_html_e( 'You save', 'primefit' ); ?></th>
