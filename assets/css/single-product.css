@@ -2067,10 +2067,18 @@ input[type="search"] {
   letter-spacing: 0.02em;
 }
 
-.primefit-bundle-pricing__savings .label,
 .primefit-bundle-pricing__savings .value {
-  color: var(--green);
+  font-size: 14px;
   font-weight: 600;
+  color: #fff;
+  padding: 4px 12px;
+  background: var(--green);
+  border-radius: 12px;
+}
+
+.primefit-bundle-pricing__savings .label {
+  color: var(--green);
+  font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
