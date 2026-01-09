@@ -1918,8 +1918,7 @@ input[type="search"] {
 }
 
 .primefit-bundle-item {
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+  margin-bottom: 20px;
   border-bottom: 1px solid var(--product-border);
 }
 
@@ -1943,6 +1942,15 @@ input[type="search"] {
   flex: 1;
 }
 
+.primefit-bundle-item__title-wrapper .primefit-bundle-item__status {
+  position: static;
+  width: auto;
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-left: 8px;
+}
+
 .primefit-bundle-item__label {
   font-size: 18px;
   font-weight: 600;
@@ -1957,6 +1965,15 @@ input[type="search"] {
   color: var(--product-muted);
   font-weight: 400;
   margin-left: 4px;
+}
+
+.primefit-bundle-item__hint {
+  font-size: 14px;
+  color: var(--product-muted);
+  font-weight: 400;
+  margin-left: 8px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .primefit-bundle-item__image {
@@ -1987,7 +2004,7 @@ input[type="search"] {
 
 /* Bundle item color and size selections */
 .primefit-bundle-item .product-color-selection {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .primefit-bundle-item .product-size-selection {
@@ -1996,11 +2013,22 @@ input[type="search"] {
 
 /* Bundle pricing section */
 .primefit-bundle-pricing {
-  margin: 32px 0;
+  margin: 15px 0 30px;
   padding: 12px;
-  background: var(--product-card-bg);
-  border: 1px solid var(--product-border);
-  border-radius: 4px;
+  background: #0d0d0d;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .primefit-bundle-pricing {
+  background: #ffffff;
+  color: #0d0d0d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .primefit-bundle-pricing {
+    background: #ffffff;
+    color: #0d0d0d;
+  }
 }
 
 .primefit-bundle-pricing__line {
@@ -2016,21 +2044,18 @@ input[type="search"] {
 }
 
 .primefit-bundle-pricing__line .label {
-  color: var(--product-text);
+  color: inherit;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .primefit-bundle-pricing__line .value {
-  color: var(--product-text);
+  color: inherit;
   font-weight: 600;
 }
 
 .primefit-bundle-pricing__bundle {
-  padding-top: 12px;
-  margin-top: 12px;
-  border-top: 1px solid var(--product-border);
   font-size: 18px;
 }
 
@@ -2042,18 +2067,123 @@ input[type="search"] {
   letter-spacing: 0.02em;
 }
 
-.primefit-bundle-pricing__savings {
-  padding-top: 12px;
-  margin-top: 12px;
-  border-top: 1px solid var(--product-border);
-}
-
 .primefit-bundle-pricing__savings .label,
 .primefit-bundle-pricing__savings .value {
   color: var(--green);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+/* Bundle summary section */
+.primefit-bundle-summary {
+  margin: 24px 0;
+  padding: 16px;
+  background: #0d0d0d;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .primefit-bundle-summary {
+  background: #ffffff;
+  color: #0d0d0d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .primefit-bundle-summary {
+    background: #ffffff;
+    color: #0d0d0d;
+  }
+}
+
+.primefit-bundle-summary__status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.primefit-bundle-summary__text {
+  font-size: 14px;
+  font-weight: 500;
+  color: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.primefit-bundle-summary__progress {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  padding: 4px 12px;
+  background: var(--product-accent);
+  border-radius: 12px;
+  min-width: 50px;
+  text-align: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.primefit-bundle-summary--complete .primefit-bundle-summary__progress {
+  background-color: var(--green);
+  color: #fff;
+}
+
+.primefit-bundle-summary__missing {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+[data-theme="dark"] .primefit-bundle-summary__missing {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  .primefit-bundle-summary__missing {
+    color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+.primefit-bundle-summary__missing-list {
+  margin-top: 8px;
+}
+
+.primefit-bundle-summary__missing-item {
+  margin-bottom: 6px;
+  position: relative;
+  text-transform: uppercase;
+}
+
+
+.primefit-bundle-summary__missing-item strong {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* Bundle item visual state indicators */
+.primefit-bundle-item__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.primefit-bundle-item__status--complete {
+  opacity: 1;
+}
+
+.primefit-bundle-item__checkmark {
+  width: 16px;
+  height: 16px;
+  color: var(--green);
+  stroke-width: 2.5;
+}
+
+.primefit-bundle-item--complete .primefit-bundle-item__label {
+  color: var(--green);
+}
+
+.primefit-bundle-item--complete .primefit-bundle-item__status {
+  opacity: 1;
 }
 
 /* Responsive adjustments for bundle items */

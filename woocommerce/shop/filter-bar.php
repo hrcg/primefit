@@ -51,7 +51,7 @@ $catalog_orderby_options = apply_filters( 'woocommerce_catalog_orderby', array(
 ) );
 
 // Get current grid view from cookie and constrain to allowed values
-$allowed_grids = array( '1', '2', '3', '4' );
+$allowed_grids = array( '1', '2', '3', '4', '5' );
 $current_grid = '2';
 if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 	$cookie_grid = sanitize_text_field( wp_unslash( $_COOKIE['primefit_grid_view'] ) );
@@ -86,8 +86,37 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 						</button>
 					</div>
 					
-					<!-- Desktop Grid Options (3, 4 columns) -->
+					<!-- Desktop Grid Options (4, 5 columns) -->
 					<div class="grid-options-desktop">
+						<button class="grid-option<?php echo $current_grid === '5' ? ' active' : ''; ?>" data-grid="5" title="<?php esc_attr_e( '5 columns', 'primefit' ); ?>">
+							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+								<rect x="1" y="1" width="3" height="3"></rect>
+								<rect x="5" y="1" width="3" height="3"></rect>
+								<rect x="9" y="1" width="3" height="3"></rect>
+								<rect x="13" y="1" width="3" height="3"></rect>
+								<rect x="17" y="1" width="2" height="3"></rect>
+								<rect x="1" y="5" width="3" height="3"></rect>
+								<rect x="5" y="5" width="3" height="3"></rect>
+								<rect x="9" y="5" width="3" height="3"></rect>
+								<rect x="13" y="5" width="3" height="3"></rect>
+								<rect x="17" y="5" width="2" height="3"></rect>
+								<rect x="1" y="9" width="3" height="3"></rect>
+								<rect x="5" y="9" width="3" height="3"></rect>
+								<rect x="9" y="9" width="3" height="3"></rect>
+								<rect x="13" y="9" width="3" height="3"></rect>
+								<rect x="17" y="9" width="2" height="3"></rect>
+								<rect x="1" y="13" width="3" height="3"></rect>
+								<rect x="5" y="13" width="3" height="3"></rect>
+								<rect x="9" y="13" width="3" height="3"></rect>
+								<rect x="13" y="13" width="3" height="3"></rect>
+								<rect x="17" y="13" width="2" height="3"></rect>
+								<rect x="1" y="17" width="3" height="2"></rect>
+								<rect x="5" y="17" width="3" height="2"></rect>
+								<rect x="9" y="17" width="3" height="2"></rect>
+								<rect x="13" y="17" width="3" height="2"></rect>
+								<rect x="17" y="17" width="2" height="2"></rect>
+							</svg>
+						</button>
 						<button class="grid-option<?php echo $current_grid === '4' ? ' active' : ''; ?>" data-grid="4" title="<?php esc_attr_e( '4 columns', 'primefit' ); ?>">
 							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
 								<rect x="1" y="1" width="4" height="4"></rect>
@@ -106,19 +135,6 @@ if ( isset( $_COOKIE['primefit_grid_view'] ) ) {
 								<rect x="6" y="16" width="4" height="3"></rect>
 								<rect x="11" y="16" width="4" height="3"></rect>
 								<rect x="16" y="16" width="3" height="3"></rect>
-							</svg>
-						</button>
-						<button class="grid-option<?php echo $current_grid === '3' ? ' active' : ''; ?>" data-grid="3" title="<?php esc_attr_e( '3 columns', 'primefit' ); ?>">
-							<svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-								<rect x="1" y="1" width="5" height="5"></rect>
-								<rect x="7.5" y="1" width="5" height="5"></rect>
-								<rect x="14" y="1" width="5" height="5"></rect>
-								<rect x="1" y="7.5" width="5" height="5"></rect>
-								<rect x="7.5" y="7.5" width="5" height="5"></rect>
-								<rect x="14" y="7.5" width="5" height="5"></rect>
-								<rect x="1" y="14" width="5" height="5"></rect>
-								<rect x="7.5" y="14" width="5" height="5"></rect>
-								<rect x="14" y="14" width="5" height="5"></rect>
 							</svg>
 						</button>
 					</div>

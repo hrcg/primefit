@@ -93,7 +93,7 @@
       event.preventDefault();
       const $button = $(event.currentTarget);
       const gridValue = $button.data("grid");
-      if (this.isMobile && (gridValue === "3" || gridValue === "4")) return;
+      if (this.isMobile && (gridValue === "3" || gridValue === "4" || gridValue === "5")) return;
       if (!this.isMobile && (gridValue === "1" || gridValue === "2")) return;
       this.$gridOptions.removeClass("active");
       $button.addClass("active");
@@ -103,7 +103,7 @@
     }
 
     applyGridLayout() {
-      this.$productsGrid.removeClass("grid-1 grid-2 grid-3 grid-4");
+      this.$productsGrid.removeClass("grid-1 grid-2 grid-3 grid-4 grid-5");
       this.$productsGrid.addClass(`grid-${this.currentGrid}`);
       this.$productsGrid.attr(
         "class",
@@ -342,7 +342,7 @@
     getCurrentGrid() {
       const cookieValue = this.getCookie("primefit_grid_view");
       if (cookieValue) return cookieValue;
-      return this.isMobileDevice() ? "2" : "4";
+      return this.isMobileDevice() ? "2" : "5";
     }
 
     isMobileDevice() {
@@ -365,9 +365,9 @@
           this.setCookie("primefit_grid_view", "2", 30);
         }
       } else {
-        if (currentGrid < 3) {
-          this.currentGrid = "4";
-          this.setCookie("primefit_grid_view", "4", 30);
+        if (currentGrid < 4) {
+          this.currentGrid = "5";
+          this.setCookie("primefit_grid_view", "5", 30);
         }
       }
       this.updateActiveGridOption();

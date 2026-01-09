@@ -248,6 +248,12 @@
   gap: 24px !important;
 }
 
+.woocommerce ul.products.grid-5 {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 20px !important;
+}
+
 /* Default mobile layout - 2 columns */
 @media (max-width: 1024px) {
   .woocommerce ul.products:not([class*="grid-"]) {
@@ -352,7 +358,8 @@
 
   /* Mobile grid layouts - override desktop settings */
   .woocommerce ul.products.grid-3,
-  .woocommerce ul.products.grid-4 {
+  .woocommerce ul.products.grid-4,
+  .woocommerce ul.products.grid-5 {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 20px !important;
   }
@@ -639,7 +646,8 @@
   /* 2 columns on tablet */
   .woocommerce ul.products.grid-2,
   .woocommerce ul.products.grid-3,
-  .woocommerce ul.products.grid-4 {
+  .woocommerce ul.products.grid-4,
+  .woocommerce ul.products.grid-5 {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 24px !important;
   }
@@ -648,8 +656,8 @@
 /* WooCommerce Products Grid */
 .woocommerce ul.products {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
   list-style: none;
   margin: 0;
   padding: 0;

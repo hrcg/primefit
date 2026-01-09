@@ -59,6 +59,10 @@
     const $submit = $form.find("[data-primefit-bundle-submit]").first();
     const $itemsTotal = $form.find("[data-items-total]").first();
     const $savings = $form.find("[data-savings]").first();
+    const $summary = $form.find("[data-primefit-bundle-summary]").first();
+    const $summaryText = $form.find("[data-summary-text]").first();
+    const $summaryProgress = $form.find("[data-summary-progress]").first();
+    const $summaryMissing = $form.find("[data-summary-missing]").first();
     const bundleQty = 1; // Bundles are always quantity 1
 
     const state = {
@@ -192,56 +196,244 @@
       });
     }
 
+    function isItemComplete(itemKey) {
+      const item = getItem(itemKey);
+      if (!item) return false;
+
+      const sel = state.selections[itemKey];
+      
+      // MUST have a selection entry
+      if (!sel || !sel.productId) {
+        return false;
+      }
+
+      const product = getProduct(itemKey, sel.productId);
+      
+      // MUST have a valid product
+      if (!product) {
+        return false;
+      }
+
+      // MUST have at least one in-stock option
+      if (!hasAnyInStockOption(product)) {
+        return false;
+      }
+
+      // MUST have a size selected (even if it's "one-size")
+      if (!sel.sizeKey) {
+        return false;
+      }
+
+      // Variable products MUST have a variation ID
+      if (isVariableProduct(product)) {
+        if (!sel.variationId || Number(sel.variationId) <= 0) {
+          return false;
+        }
+      }
+      
+      // Check if selected size/variation is in stock
+      if (sel.sizeKey && product.sizes && product.sizes[sel.sizeKey]) {
+        const chosen = product.sizes[sel.sizeKey];
+        if (chosen && chosen.in_stock === false) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function getItemMissingFields(itemKey) {
+      const item = getItem(itemKey);
+      if (!item) return [];
+
+      const sel = state.selections[itemKey];
+      const missing = [];
+
+      if (!sel || !sel.productId) {
+        // Check if item has multiple products (needs color selection)
+        if (item.products && item.products.length > 1) {
+          missing.push("color");
+        }
+      } else {
+        const product = getProduct(itemKey, sel.productId);
+        if (!product) {
+          missing.push("color");
+        } else {
+          if (!sel.sizeKey) {
+            missing.push("size");
+          } else if (sel.sizeKey && product.sizes && product.sizes[sel.sizeKey]) {
+            const chosen = product.sizes[sel.sizeKey];
+            if (chosen && chosen.in_stock === false) {
+              missing.push("size");
+            }
+          }
+        }
+      }
+
+      return missing;
+    }
+
+    function updateItemHint(itemKey) {
+      const $item = $form
+        .find('.primefit-bundle-item[data-item-key="' + itemKey + '"]')
+        .first();
+      if (!$item.length) return;
+
+      const $hint = $item.find("[data-item-hint]").first();
+      if (!$hint.length) return;
+
+      const isComplete = isItemComplete(itemKey);
+      if (isComplete) {
+        $hint.text("");
+        return;
+      }
+
+      const item = getItem(itemKey);
+      if (!item) return;
+
+      const missingFields = getItemMissingFields(itemKey);
+      if (missingFields.length > 0) {
+        const firstMissing = missingFields[0];
+        const hasMultipleProducts = item.products && item.products.length > 1;
+        
+        if (firstMissing === "color") {
+          // Color is step 1, size is step 2
+          $hint.text(" - SELECT COLOR 1/2");
+        } else if (firstMissing === "size") {
+          // If there are multiple products, size is step 2, otherwise it's the only step
+          if (hasMultipleProducts) {
+            $hint.text(" - SELECT SIZE 2/2");
+          } else {
+            // Single product item, size is the only step, no indicator needed
+            $hint.text(" - SELECT SIZE");
+          }
+        } else {
+          $hint.text("");
+        }
+      } else {
+        $hint.text("");
+      }
+    }
+
+    function updateVisualIndicators() {
+      data.items.forEach((item) => {
+        const $item = $form
+          .find('.primefit-bundle-item[data-item-key="' + item.key + '"]')
+          .first();
+        if (!$item.length) return;
+
+        const $status = $item.find("[data-item-status]").first();
+        const isComplete = isItemComplete(item.key);
+
+        if (isComplete) {
+          $item.addClass("primefit-bundle-item--complete");
+          $item.removeClass("primefit-bundle-item--incomplete");
+          if ($status.length) {
+            $status.addClass("primefit-bundle-item__status--complete");
+          }
+        } else {
+          $item.addClass("primefit-bundle-item--incomplete");
+          $item.removeClass("primefit-bundle-item--complete");
+          if ($status.length) {
+            $status.removeClass("primefit-bundle-item__status--complete");
+          }
+        }
+
+        // Update hint text
+        updateItemHint(item.key);
+      });
+    }
+
+    function updateSummary() {
+      let completedCount = 0;
+      const missingItems = [];
+
+      data.items.forEach((item) => {
+        const isComplete = isItemComplete(item.key);
+        if (isComplete) {
+          completedCount++;
+        } else {
+          const missingFields = getItemMissingFields(item.key);
+          const itemLabel = item.label || "Item";
+          if (missingFields.length > 0) {
+            missingItems.push({
+              label: itemLabel,
+              fields: missingFields
+            });
+          }
+        }
+      });
+
+      const totalItems = data.items.length;
+      $summaryProgress.text(completedCount + "/" + totalItems);
+
+      // Update missing items list
+      if (missingItems.length > 0 && $summaryMissing.length) {
+        let missingHtml = '<div class="primefit-bundle-summary__missing-list">';
+        missingItems.forEach((missing) => {
+          const fieldLabels = missing.fields.map(f => {
+            if (f === "color") return "color";
+            if (f === "size") return "size";
+            return f;
+          });
+          missingHtml += '<div class="primefit-bundle-summary__missing-item">';
+          missingHtml += '<strong>' + missing.label + '</strong>: ';
+          missingHtml += fieldLabels.join(", ");
+          missingHtml += '</div>';
+        });
+        missingHtml += '</div>';
+        $summaryMissing.html(missingHtml);
+        // Remove complete class when there are missing items
+        if ($summary.length) {
+          $summary.removeClass("primefit-bundle-summary--complete");
+        }
+      } else {
+        $summaryMissing.empty();
+        // Add complete class when all items are selected
+        if ($summary.length) {
+          $summary.addClass("primefit-bundle-summary--complete");
+        }
+      }
+    }
+
+    function getButtonText() {
+      if (data.items.length === 0) {
+        return "Select Options";
+      }
+
+      // Find first incomplete item
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i];
+        if (!isItemComplete(item.key)) {
+          const missingFields = getItemMissingFields(item.key);
+          const itemLabel = item.label || "Item";
+          
+          if (missingFields.includes("color")) {
+            return "Select color for " + itemLabel;
+          } else if (missingFields.includes("size")) {
+            return "Select size for " + itemLabel;
+          }
+        }
+      }
+
+      // All complete
+      const readyText = $submit.attr("data-text-ready");
+      return readyText || "Add bundle to cart";
+    }
+
     function updatePricing() {
       let itemsUnitTotal = 0;
       let allSelected = true;
 
       // Check every single item in the bundle
       data.items.forEach((item) => {
+        if (!isItemComplete(item.key)) {
+          allSelected = false;
+          return;
+        }
+
         const sel = state.selections[item.key];
-        
-        // MUST have a selection entry
-        if (!sel || !sel.productId) {
-          allSelected = false;
-          return;
-        }
-
         const product = getProduct(item.key, sel.productId);
-        
-        // MUST have a valid product
-        if (!product) {
-          allSelected = false;
-          return;
-        }
-
-        // MUST have at least one in-stock option
-        if (!hasAnyInStockOption(product)) {
-          allSelected = false;
-          return;
-        }
-
-        // MUST have a size selected (even if it's "one-size")
-        if (!sel.sizeKey) {
-          allSelected = false;
-          return;
-        }
-
-        // Variable products MUST have a variation ID
-        if (isVariableProduct(product)) {
-          if (!sel.variationId || Number(sel.variationId) <= 0) {
-            allSelected = false;
-            return;
-          }
-        }
-        
-        // Check if selected size/variation is in stock
-        if (sel.sizeKey && product.sizes && product.sizes[sel.sizeKey]) {
-          const chosen = product.sizes[sel.sizeKey];
-          if (chosen && chosen.in_stock === false) {
-            allSelected = false;
-            return;
-          }
-        }
 
         // Use price from selection for total calculation
         let priceToUse = sel.regularPrice || 0;
@@ -275,14 +467,20 @@
         $savings.text(formatMoney(Math.max(0, defaultTotal * bundleQty - bundleTotal)));
       }
 
-      // Enable submit only if all required selections are made
+      // Update visual indicators
+      updateVisualIndicators();
+
+      // Update summary
+      updateSummary();
+
+      // Update button text and state
+      const buttonText = getButtonText();
       if (allSelected) {
         $submit.prop("disabled", false);
-        const readyText = $submit.attr("data-text-ready");
-        if (readyText) $submit.text(readyText);
+        $submit.text(buttonText);
       } else {
         $submit.prop("disabled", true);
-        $submit.text("Select Options");
+        $submit.text(buttonText);
       }
     }
 
@@ -406,6 +604,16 @@
         
         // Set product ID in hidden input so size selection works
         $item.find("[data-item-product-input]").val(String(productId));
+        
+        // Initialize selection state (but don't auto-select size - user must choose)
+        if (!state.selections[item.key]) {
+          state.selections[item.key] = {
+            productId: productId,
+            sizeKey: "",
+            variationId: 0,
+            regularPrice: firstProductPrice,
+          };
+        }
         
         // Render sizes (user must click to select)
         renderSizes($item, item.key, productId);

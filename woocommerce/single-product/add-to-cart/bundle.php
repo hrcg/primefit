@@ -228,6 +228,12 @@ $bundle_price = (float) $bundle_product->get_price();
 							<?php if ( (int) $item['qty'] > 1 ) : ?>
 								<span class="primefit-bundle-item__qty">×<?php echo esc_html( (int) $item['qty'] ); ?></span>
 							<?php endif; ?>
+							<span class="primefit-bundle-item__hint" data-item-hint></span>
+						</div>
+						<div class="primefit-bundle-item__status" data-item-status>
+							<svg class="primefit-bundle-item__checkmark" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M13.3333 4L6 11.3333L2.66667 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							</svg>
 						</div>
 					</div>
 					<div class="primefit-bundle-item__price" data-item-price>—</div>
@@ -270,6 +276,14 @@ $bundle_price = (float) $bundle_product->get_price();
 				<input type="hidden" name="primefit_bundle_item_variation[<?php echo esc_attr( $item['key'] ); ?>]" value="0" data-item-variation-input />
 			</div>
 		<?php endforeach; ?>
+	</div>
+
+	<div class="primefit-bundle-summary" data-primefit-bundle-summary>
+		<div class="primefit-bundle-summary__status">
+			<span class="primefit-bundle-summary__text" data-summary-text><?php esc_html_e( 'Select options for all items', 'primefit' ); ?></span>
+			<span class="primefit-bundle-summary__progress" data-summary-progress>0/<?php echo esc_html( count( $items_ui ) ); ?></span>
+		</div>
+		<div class="primefit-bundle-summary__missing" data-summary-missing></div>
 	</div>
 
 	<div class="primefit-bundle-pricing" data-primefit-bundle-pricing>
