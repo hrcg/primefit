@@ -1196,6 +1196,13 @@
   white-space: nowrap;
 }
 
+/* Hide price for bundle child items */
+.primefit-bundle-child .quantity-price,
+.woocommerce-mini-cart-item.primefit-bundle-child .quantity-price,
+.mini_cart_item.primefit-bundle-child .quantity-price {
+  display: none;
+}
+
 /* Remove Link */
 .woocommerce-mini-cart__item-remove,
 .woocommerce-mini-cart-item-remove,

@@ -781,17 +781,25 @@ function primefit_header_cart_fragment( $fragments ) {
 			foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
 				$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 				$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
+				// Bundle child markers: group id is primary; other meta keys are fallbacks.
+				$is_bundle_child = ! empty( $cart_item['primefit_bundle_group_id'] )
+					|| ! empty( $cart_item['primefit_bundle_child_base_price'] )
+					|| ! empty( $cart_item['primefit_bundle_product_id'] )
+					|| ! empty( $cart_item['primefit_bundle_price'] )
+					|| ! empty( $cart_item['primefit_bundle_qty'] );
 				
 				if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_checkout_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 					?>
-					<div class="order-item">
+					<div class="order-item<?php echo $is_bundle_child ? ' primefit-bundle-child' : ''; ?>">
 						<div class="item-image">
 							<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_thumbnail', $_product->get_image(), $cart_item, $cart_item_key ) ); ?>
 							<span class="item-quantity"><?php echo esc_html( $cart_item['quantity'] ); ?></span>
 						</div>
 						<div class="item-details">
 							<h4 class="item-name"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key ) ); ?></h4>
-							<div class="item-price"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key ) ); ?></div>
+							<?php if ( ! $is_bundle_child ) : ?>
+								<div class="item-price"><?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key ) ); ?></div>
+							<?php endif; ?>
 							<?php
 							// Display product attributes
 							if ( $_product->is_type( 'variable' ) ) {
@@ -805,9 +813,11 @@ function primefit_header_cart_fragment( $fragments ) {
 							}
 							?>
 						</div>
-						<div class="item-total">
-							<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_subtotal', WC()->cart->get_product_subtotal( $_product, $cart_item['quantity'] ), $cart_item, $cart_item_key ) ); ?>
-						</div>
+						<?php if ( ! $is_bundle_child ) : ?>
+							<div class="item-total">
+								<?php echo wp_kses_post( apply_filters( 'woocommerce_cart_item_subtotal', WC()->cart->get_product_subtotal( $_product, $cart_item['quantity'] ), $cart_item, $cart_item_key ) ); ?>
+							</div>
+						<?php endif; ?>
 					</div>
 					<?php
 				}

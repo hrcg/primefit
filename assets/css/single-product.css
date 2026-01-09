@@ -1938,7 +1938,6 @@ input[type="search"] {
 .primefit-bundle-item__title-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
   flex: 1;
 }
 
@@ -1948,7 +1947,6 @@ input[type="search"] {
   height: auto;
   opacity: 0;
   transition: opacity 0.2s ease;
-  margin-left: 8px;
 }
 
 .primefit-bundle-item__label {
@@ -1997,9 +1995,7 @@ input[type="search"] {
 }
 
 .primefit-bundle-item__price {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--product-text);
+  display: none;
 }
 
 /* Bundle item color and size selections */

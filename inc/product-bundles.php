@@ -681,39 +681,42 @@ function primefit_bundle_get_cart_original_items_total() : float {
 }
 
 /**
- * Checkout display: show original/base prices for bundle child items (not the distributed bundle prices).
+ * Checkout display: hide prices for bundle child items.
  */
 add_filter( 'woocommerce_cart_item_price', function( $price_html, $cart_item, $cart_item_key ) {
 	if ( ! function_exists( 'is_checkout' ) || ! is_checkout() || ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-received' ) ) ) {
 		return $price_html;
 	}
-	if ( empty( $cart_item[ PRIMEFIT_BUNDLE_CART_GROUP_ID ] ) ) {
+	// Bundle child markers: group id is primary; other meta keys are fallbacks.
+	$is_bundle_child = ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_GROUP_ID ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_CHILD_BASE_PRICE ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_BUNDLE_ID ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_BUNDLE_PRICE ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_BUNDLE_QTY ] );
+	if ( ! $is_bundle_child ) {
 		return $price_html;
 	}
 
-	$base_unit = isset( $cart_item[ PRIMEFIT_BUNDLE_CART_CHILD_BASE_PRICE ] ) ? (float) $cart_item[ PRIMEFIT_BUNDLE_CART_CHILD_BASE_PRICE ] : 0.0;
-	if ( $base_unit <= 0 ) {
-		return $price_html;
-	}
-
-	return wc_price( $base_unit );
+	// Hide price for bundle child items
+	return '';
 }, 20, 3 );
 
 add_filter( 'woocommerce_cart_item_subtotal', function( $subtotal_html, $cart_item, $cart_item_key ) {
 	if ( ! function_exists( 'is_checkout' ) || ! is_checkout() || ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-received' ) ) ) {
 		return $subtotal_html;
 	}
-	if ( empty( $cart_item[ PRIMEFIT_BUNDLE_CART_GROUP_ID ] ) ) {
+	// Bundle child markers: group id is primary; other meta keys are fallbacks.
+	$is_bundle_child = ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_GROUP_ID ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_CHILD_BASE_PRICE ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_BUNDLE_ID ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_BUNDLE_PRICE ] )
+		|| ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_BUNDLE_QTY ] );
+	if ( ! $is_bundle_child ) {
 		return $subtotal_html;
 	}
 
-	$base_unit = isset( $cart_item[ PRIMEFIT_BUNDLE_CART_CHILD_BASE_PRICE ] ) ? (float) $cart_item[ PRIMEFIT_BUNDLE_CART_CHILD_BASE_PRICE ] : 0.0;
-	if ( $base_unit <= 0 ) {
-		return $subtotal_html;
-	}
-
-	$qty = isset( $cart_item['quantity'] ) ? max( 1, (int) $cart_item['quantity'] ) : 1;
-	return wc_price( $base_unit * $qty );
+	// Hide subtotal for bundle child items
+	return '';
 }, 20, 3 );
 
 /**

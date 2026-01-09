@@ -64,6 +64,7 @@
         this.initCountryBasedFieldHiding();
         this.initCheckoutTotalsAutoUpdate();
         this.initCountrySearch();
+        this.updateBundleItemsClass();
 
         // Initialize payment methods with proper timing
         this.initPaymentMethodEnhancements();
@@ -178,7 +179,31 @@
       // Important: Do NOT trigger update_checkout on wc_fragments_refreshed,
       // it creates a loop with global listeners that refresh fragments after checkout updates.
 
+      // Update bundle class when cart fragments are refreshed
+      $(document.body).on("wc_fragments_refreshed", () => {
+        this.updateBundleItemsClass();
+      });
+
       // Don't auto-trigger periodic updates; only initialize classes once
+    },
+
+    /**
+     * Update has-bundle-items class on checkout summary section
+     */
+    updateBundleItemsClass: function () {
+      const $summarySection = $(".checkout-summary-section");
+      if (!$summarySection.length) {
+        return;
+      }
+
+      // Check if any order item has the bundle-child class
+      const hasBundleItems = $(".order-item.primefit-bundle-child").length > 0;
+
+      if (hasBundleItems) {
+        $summarySection.addClass("has-bundle-items");
+      } else {
+        $summarySection.removeClass("has-bundle-items");
+      }
     },
 
     /**
@@ -2404,6 +2429,9 @@
 
       // Handle WooCommerce checkout updates - only reapply if needed
       $(document.body).on("updated_checkout", function () {
+        // Update bundle class when checkout updates
+        updateBundleClass();
+        
         // Check if any payment methods need enhancement
         const $paymentMethods = $(".woocommerce-checkout .payment_methods");
 
@@ -2427,8 +2455,27 @@
         }
       });
 
+      // Function to update bundle class on checkout summary
+      function updateBundleClass() {
+        const $summarySection = $(".checkout-summary-section");
+        if (!$summarySection.length) return;
+
+        const hasBundleItems = $(".order-item.primefit-bundle-child").length > 0;
+        if (hasBundleItems) {
+          $summarySection.addClass("has-bundle-items");
+        } else {
+          $summarySection.removeClass("has-bundle-items");
+        }
+      }
+
+      // Update bundle class on page load
+      updateBundleClass();
+
       // Handle WooCommerce fragments refresh - only reapply if needed
       $(document.body).on("wc_fragments_refreshed", function () {
+        // Update bundle class when fragments refresh
+        updateBundleClass();
+        
         // Check if any payment methods need enhancement
         const $paymentMethods = $(".woocommerce-checkout .payment_methods");
 
