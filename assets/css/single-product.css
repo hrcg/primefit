@@ -96,14 +96,14 @@ body.single-product .single-product-page {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 80px;
+  width: 90px;
   flex-shrink: 0;
   order: 1;
 }
 
 .thumbnail-item {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   border: 2px solid transparent;
   overflow: hidden;
   cursor: pointer;
@@ -1266,8 +1266,8 @@ body.single-product .single-product-page {
   }
 
   .thumbnail-item {
-    width: 70px;
-    height: 70px;
+    width: 65px;
+    height: 65px;
     flex-shrink: 0;
   }
 
