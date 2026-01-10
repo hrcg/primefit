@@ -262,8 +262,28 @@ $bundle_price = (float) $bundle_product->get_price();
 						</div>
 					</div>
 				<?php else : ?>
-					<!-- If only one product, set it as selected automatically -->
-					<input type="hidden" name="primefit_bundle_item_product[<?php echo esc_attr( $item['key'] ); ?>]" value="<?php echo esc_attr( (int) $item['products'][0]['id'] ); ?>" data-item-product-input />
+					<!-- If only one product, display its color - user must click to select -->
+					<div class="product-color-selection">
+						<div class="color-options" data-item-colors>
+							<?php
+							$single_product = $item['products'][0];
+							$color_img = isset( $single_product['thumb_url'] ) ? (string) $single_product['thumb_url'] : '';
+							?>
+							<button
+								type="button"
+								class="color-option primefit-bundle-color"
+								data-product-id="<?php echo esc_attr( (int) $single_product['id'] ); ?>"
+								data-color="<?php echo esc_attr( (string) $single_product['color'] ); ?>"
+								aria-label="<?php echo esc_attr( (string) $single_product['color'] ); ?>"
+							>
+								<?php if ( $color_img ) : ?>
+									<img src="<?php echo esc_url( $color_img ); ?>" alt="<?php echo esc_attr( (string) $single_product['color'] ); ?>" class="color-swatch" loading="lazy" decoding="async">
+								<?php endif; ?>
+								<span class="color-name"><?php echo esc_html( (string) $single_product['color'] ); ?></span>
+							</button>
+						</div>
+					</div>
+					<input type="hidden" name="primefit_bundle_item_product[<?php echo esc_attr( $item['key'] ); ?>]" value="" data-item-product-input />
 				<?php endif; ?>
 
 				<div class="product-size-selection">

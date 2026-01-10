@@ -114,18 +114,24 @@
     function sortSizes(sizeEntries) {
       // Define standard size order
       const sizeOrder = {
-        'xxs': 1, '2xs': 1,
-        'xs': 2,
-        's': 3, 'small': 3,
-        'm': 4, 'medium': 4,
-        'l': 5, 'large': 5,
-        'xl': 6,
-        'xxl': 7, '2xl': 7,
-        '3xl': 8, 'xxxl': 8,
-        '4xl': 9,
-        '5xl': 10,
-        '6xl': 11,
-        'one-size': 99
+        xxs: 1,
+        "2xs": 1,
+        xs: 2,
+        s: 3,
+        small: 3,
+        m: 4,
+        medium: 4,
+        l: 5,
+        large: 5,
+        xl: 6,
+        xxl: 7,
+        "2xl": 7,
+        "3xl": 8,
+        xxxl: 8,
+        "4xl": 9,
+        "5xl": 10,
+        "6xl": 11,
+        "one-size": 99,
       };
 
       return sizeEntries.sort(([sizeA], [sizeB]) => {
@@ -201,14 +207,14 @@
       if (!item) return false;
 
       const sel = state.selections[itemKey];
-      
+
       // MUST have a selection entry
       if (!sel || !sel.productId) {
         return false;
       }
 
       const product = getProduct(itemKey, sel.productId);
-      
+
       // MUST have a valid product
       if (!product) {
         return false;
@@ -230,7 +236,7 @@
           return false;
         }
       }
-      
+
       // Check if selected size/variation is in stock
       if (sel.sizeKey && product.sizes && product.sizes[sel.sizeKey]) {
         const chosen = product.sizes[sel.sizeKey];
@@ -250,10 +256,8 @@
       const missing = [];
 
       if (!sel || !sel.productId) {
-        // Check if item has multiple products (needs color selection)
-        if (item.products && item.products.length > 1) {
-          missing.push("color");
-        }
+        // All items need color selection (both single and multiple products)
+        missing.push("color");
       } else {
         const product = getProduct(itemKey, sel.productId);
         if (!product) {
@@ -261,7 +265,11 @@
         } else {
           if (!sel.sizeKey) {
             missing.push("size");
-          } else if (sel.sizeKey && product.sizes && product.sizes[sel.sizeKey]) {
+          } else if (
+            sel.sizeKey &&
+            product.sizes &&
+            product.sizes[sel.sizeKey]
+          ) {
             const chosen = product.sizes[sel.sizeKey];
             if (chosen && chosen.in_stock === false) {
               missing.push("size");
@@ -294,19 +302,13 @@
       const missingFields = getItemMissingFields(itemKey);
       if (missingFields.length > 0) {
         const firstMissing = missingFields[0];
-        const hasMultipleProducts = item.products && item.products.length > 1;
-        
+
         if (firstMissing === "color") {
-          // Color is step 1, size is step 2
+          // Color is step 1, size is step 2 (for both single and multiple products)
           $hint.text(" - SELECT COLOR 1/2");
         } else if (firstMissing === "size") {
-          // If there are multiple products, size is step 2, otherwise it's the only step
-          if (hasMultipleProducts) {
-            $hint.text(" - SELECT SIZE 2/2");
-          } else {
-            // Single product item, size is the only step, no indicator needed
-            $hint.text(" - SELECT SIZE");
-          }
+          // Size is step 2 (for both single and multiple products)
+          $hint.text(" - SELECT SIZE 2/2");
         } else {
           $hint.text("");
         }
@@ -358,7 +360,7 @@
           if (missingFields.length > 0) {
             missingItems.push({
               label: itemLabel,
-              fields: missingFields
+              fields: missingFields,
             });
           }
         }
@@ -371,17 +373,17 @@
       if (missingItems.length > 0 && $summaryMissing.length) {
         let missingHtml = '<div class="primefit-bundle-summary__missing-list">';
         missingItems.forEach((missing) => {
-          const fieldLabels = missing.fields.map(f => {
+          const fieldLabels = missing.fields.map((f) => {
             if (f === "color") return "color";
             if (f === "size") return "size";
             return f;
           });
           missingHtml += '<div class="primefit-bundle-summary__missing-item">';
-          missingHtml += '<strong>' + missing.label + '</strong>: ';
+          missingHtml += "<strong>" + missing.label + "</strong>: ";
           missingHtml += fieldLabels.join(", ");
-          missingHtml += '</div>';
+          missingHtml += "</div>";
         });
-        missingHtml += '</div>';
+        missingHtml += "</div>";
         $summaryMissing.html(missingHtml);
         // Remove complete class when there are missing items
         if ($summary.length) {
@@ -407,7 +409,7 @@
         if (!isItemComplete(item.key)) {
           const missingFields = getItemMissingFields(item.key);
           const itemLabel = item.label || "Item";
-          
+
           if (missingFields.includes("color")) {
             return "Select color for " + itemLabel;
           } else if (missingFields.includes("size")) {
@@ -457,14 +459,17 @@
         // Calculate default items total from first products if no selections yet
         let defaultTotal = 0;
         data.items.forEach((item) => {
-          const firstProduct = item.products && item.products.length ? item.products[0] : null;
+          const firstProduct =
+            item.products && item.products.length ? item.products[0] : null;
           if (firstProduct) {
             const itemQty = Math.max(1, parseInt(item.qty, 10) || 1);
             defaultTotal += getProductPrice(firstProduct) * itemQty;
           }
         });
         $itemsTotal.text(formatMoney(defaultTotal * bundleQty));
-        $savings.text(formatMoney(Math.max(0, defaultTotal * bundleQty - bundleTotal)));
+        $savings.text(
+          formatMoney(Math.max(0, defaultTotal * bundleQty - bundleTotal))
+        );
       }
 
       // Update visual indicators
@@ -502,32 +507,12 @@
       // Get price immediately (all sizes have same price)
       const productPrice = getProductPrice(product);
 
-      // If product has only one size, auto-select it
-      const sizes = product && product.sizes ? product.sizes : {};
-      const sizeKeys = Object.keys(sizes);
-      let sizeKey = "";
-      let variationId = 0;
-      let regularPrice = productPrice;
+      // Don't auto-select size - user must click to select
+      const sizeKey = "";
+      const variationId = 0;
+      const regularPrice = productPrice;
 
-      if (sizeKeys.length === 1) {
-        // Auto-select the only size
-        sizeKey = sizeKeys[0];
-        const sizeInfo = sizes[sizeKey];
-        const inStock = !!(sizeInfo && sizeInfo.in_stock);
-        if (inStock) {
-          variationId = Number(sizeInfo.variation_id || 0);
-          regularPrice = Number(
-            sizeInfo.regular_price || sizeInfo.price || productPrice
-          );
-        } else {
-          // Don't auto-select an out-of-stock size.
-          sizeKey = "";
-          variationId = 0;
-          regularPrice = productPrice;
-        }
-      }
-
-      // Update selection
+      // Update selection (color selected, but size not yet selected)
       state.selections[itemKey] = {
         productId,
         sizeKey,
@@ -538,13 +523,6 @@
       $item.find("[data-item-price]").text(formatMoney(regularPrice));
 
       renderSizes($item, itemKey, productId);
-
-      // If only one size, mark it as selected
-      if (sizeKeys.length === 1 && sizeKey) {
-        $item
-          .find('.primefit-bundle-size[data-size-key="' + sizeKey + '"]')
-          .addClass("selected");
-      }
 
       updatePricing();
     });
@@ -598,26 +576,8 @@
       // Show price for all items
       $item.find("[data-item-price]").text(formatMoney(firstProductPrice));
 
-      // If there's only one product (no color choice), set up size selection
-      if (item.products.length === 1) {
-        const productId = Number(firstProduct.id);
-        
-        // Set product ID in hidden input so size selection works
-        $item.find("[data-item-product-input]").val(String(productId));
-        
-        // Initialize selection state (but don't auto-select size - user must choose)
-        if (!state.selections[item.key]) {
-          state.selections[item.key] = {
-            productId: productId,
-            sizeKey: "",
-            variationId: 0,
-            regularPrice: firstProductPrice,
-          };
-        }
-        
-        // Render sizes (user must click to select)
-        renderSizes($item, item.key, productId);
-      }
+      // For single products, don't auto-render sizes - user must click color first
+      // (same behavior as multiple products)
       // If multiple products, user must select a color first (which will render sizes)
     });
 
