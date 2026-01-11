@@ -26,7 +26,7 @@ if ( ! class_exists( 'WooCommerce' ) ) {
  * Change this value to adjust how many products are shown per page
  */
 if ( ! defined( 'PRIMEFIT_PRODUCTS_PER_PAGE' ) ) {
-	define( 'PRIMEFIT_PRODUCTS_PER_PAGE', 48 );
+	define( 'PRIMEFIT_PRODUCTS_PER_PAGE', 55 );
 }
 
 /**
