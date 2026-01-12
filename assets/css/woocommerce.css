@@ -251,7 +251,7 @@
 .woocommerce ul.products.grid-5 {
   display: grid !important;
   grid-template-columns: repeat(5, 1fr) !important;
-  gap: 20px !important;
+  gap: 40px 20px !important;
 }
 
 /* Default mobile layout - 2 columns */
