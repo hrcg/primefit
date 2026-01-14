@@ -2134,6 +2134,11 @@ function primefit_handle_apply_coupon() {
 		wp_send_json_error( __( 'Please enter a coupon code', 'primefit' ) );
 	}
 	
+	// Check if cart contains bundles - prevent coupon application
+	if ( function_exists( 'primefit_cart_has_bundles' ) && primefit_cart_has_bundles() ) {
+		wp_send_json_error( __( 'Discount codes cannot be used with product bundles. Please remove bundles from your cart to use a discount code.', 'primefit' ) );
+	}
+	
 	// Clear any existing notices before applying coupon to avoid picking up old errors
 	wc_clear_notices();
 	

@@ -1221,3 +1221,94 @@ add_action( 'woocommerce_checkout_create_order_line_item', function( $item, $car
 	}
 }, 10, 4 );
 
+/**
+ * Helper: check if cart contains any product bundles.
+ *
+ * @return bool True if cart contains bundle items, false otherwise.
+ */
+function primefit_cart_has_bundles() : bool {
+	if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+		return false;
+	}
+
+	foreach ( WC()->cart->get_cart() as $cart_item ) {
+		if ( ! empty( $cart_item[ PRIMEFIT_BUNDLE_CART_GROUP_ID ] ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Prevent coupon codes from being used when product bundles are in the cart.
+ * This invalidates coupons at the validation stage.
+ */
+add_filter( 'woocommerce_coupon_is_valid', 'primefit_prevent_coupons_with_bundles', 20, 3 );
+function primefit_prevent_coupons_with_bundles( $valid, $coupon, $discount ) {
+	// Only check if coupon is otherwise valid
+	if ( ! $valid ) {
+		return $valid;
+	}
+
+	// Check if cart contains bundles
+	if ( primefit_cart_has_bundles() ) {
+		throw new Exception( __( 'Discount codes cannot be used with product bundles. Please remove bundles from your cart to use a discount code.', 'primefit' ) );
+	}
+
+	return $valid;
+}
+
+/**
+ * Remove any applied coupons when a bundle is added to the cart.
+ */
+add_action( 'woocommerce_add_to_cart', 'primefit_remove_coupons_on_bundle_add', 10, 6 );
+function primefit_remove_coupons_on_bundle_add( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data ) {
+	if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+		return;
+	}
+
+	// Check if the item just added is a bundle child item
+	if ( ! empty( $cart_item_data[ PRIMEFIT_BUNDLE_CART_GROUP_ID ] ) ) {
+		// Get all applied coupons
+		$applied_coupons = WC()->cart->get_applied_coupons();
+		
+		if ( ! empty( $applied_coupons ) ) {
+			// Remove all coupons
+			foreach ( $applied_coupons as $coupon_code ) {
+				WC()->cart->remove_coupon( $coupon_code );
+			}
+			
+			// Show notice to user
+			wc_add_notice( __( 'Discount codes cannot be used with product bundles. Your coupon has been removed.', 'primefit' ), 'notice' );
+			
+			// Recalculate totals
+			WC()->cart->calculate_totals();
+		}
+	}
+}
+
+/**
+ * Remove coupons when bundle is added via the bundle handler.
+ * This catches bundles added through the custom bundle add-to-cart handler.
+ */
+add_action( 'woocommerce_add_to_cart_handler_bundle', 'primefit_remove_coupons_on_bundle_handler', 999 );
+function primefit_remove_coupons_on_bundle_handler( $url = false ) {
+	if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+		return;
+	}
+
+	// Get all applied coupons
+	$applied_coupons = WC()->cart->get_applied_coupons();
+	
+	if ( ! empty( $applied_coupons ) ) {
+		// Remove all coupons
+		foreach ( $applied_coupons as $coupon_code ) {
+			WC()->cart->remove_coupon( $coupon_code );
+		}
+		
+		// Show notice to user
+		wc_add_notice( __( 'Discount codes cannot be used with product bundles. Your coupon has been removed.', 'primefit' ), 'notice' );
+	}
+}
+

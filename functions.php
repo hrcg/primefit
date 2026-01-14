@@ -663,6 +663,12 @@ function primefit_apply_coupon_if_valid( $coupon_code ) {
 			return false;
 		}
 
+		// Check if cart contains bundles - prevent coupon application
+		if ( function_exists( 'primefit_cart_has_bundles' ) && primefit_cart_has_bundles() ) {
+			// Don't apply coupon, but don't show error (will be handled by validation)
+			return false;
+		}
+
 		$applied_coupons = WC()->cart->get_applied_coupons();
 
 		// Check if coupon is already applied (case-insensitive)
