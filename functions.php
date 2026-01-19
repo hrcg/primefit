@@ -547,6 +547,7 @@ $includes = [
 	'inc/customizer.php',      // Theme customizer settings
 	'inc/acf-fields.php',      // ACF field groups and helpers
 	'inc/woocommerce.php',     // WooCommerce integration
+	'inc/product-video.php',   // Product video (admin + frontend meta)
 	'inc/product-bundles.php', // Product bundles (custom WooCommerce product type)
 	'inc/widgets.php',         // Custom widgets
 	'inc/discount-system.php', // Discount code tracking system

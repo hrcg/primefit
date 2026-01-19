@@ -110,6 +110,7 @@ body.single-product .single-product-page {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: none;
   padding: 0;
+  position: relative;
 }
 
 .thumbnail-item:hover {
@@ -118,6 +119,29 @@ body.single-product .single-product-page {
 
 .thumbnail-item.active {
   border-color: var(--product-text);
+}
+
+.thumbnail-item--video::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.thumbnail-item--video::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-40%, -50%);
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 16px solid rgba(255, 255, 255, 0.95);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
 }
 
 .thumbnail-image {
@@ -164,6 +188,14 @@ body.single-product .single-product-page {
   -webkit-touch-callout: none;
   /* Smooth transition for non-animated changes */
   transition: opacity 0.2s ease;
+}
+
+.main-product-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: var(--product-card-bg);
 }
 
 /* Slide animation states */
