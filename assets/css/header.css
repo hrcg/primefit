@@ -1599,7 +1599,7 @@ body.archive:has(.promo-bar) .site-content {
   top: 100%;
   left: 0;
   width: 100%;
-  background: var(--background);
+  background: var(--mega-menu-background);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
