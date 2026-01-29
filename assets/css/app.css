@@ -56,8 +56,15 @@
   --green: #19ab19;
   /* Derived colors automatically update via CSS variables */
   --background: var(--bg);
-  --headerBackground: #131313; /* Keep header dark in light theme */
+  --headerBackground: #fff; /* Light header/mega menu in light theme */
   --card-background: #f8f8f8;
+}
+
+/* System light mode: same header/mega menu background when no theme set */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --headerBackground: #fff;
+  }
 }
 
 html,

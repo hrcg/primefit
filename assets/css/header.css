@@ -1482,6 +1482,61 @@ body.search-open
   background: var(--headerBackground) !important;
 }
 
+/* Light mode: sticky header and mega-menu-open white background, inverted nav/logo (header only, not mega menu) */
+@media (prefers-color-scheme: light) {
+  .site-header.is-scrolled,
+  .site-header.mega-menu-open,
+  .has-hero-header .site-header.is-scrolled,
+  .tax-product_cat .site-header.is-scrolled {
+    background: #fff !important;
+  }
+
+  .site-header.is-scrolled .menu a,
+  .site-header.mega-menu-open .menu a {
+    color: #0d0d0d !important;
+  }
+
+  .site-header.is-scrolled .menu a:hover,
+  .site-header.mega-menu-open .menu a:hover {
+    opacity: 0.7;
+  }
+
+  .site-header.is-scrolled .site-brand .brand-logo,
+  .site-header.is-scrolled .site-brand .brand-symbol,
+  .site-header.is-scrolled .site-brand .custom-logo,
+  .site-header.mega-menu-open .site-brand .brand-logo,
+  .site-header.mega-menu-open .site-brand .brand-symbol,
+  .site-header.mega-menu-open .site-brand .custom-logo {
+    filter: invert(1);
+  }
+
+  .site-header.is-scrolled .hamburger-icon,
+  .site-header.mega-menu-open .hamburger-icon {
+    filter: brightness(0) invert(0);
+  }
+
+  .site-header.is-scrolled .search-toggle,
+  .site-header.mega-menu-open .search-toggle {
+    color: #0d0d0d;
+  }
+
+  .site-header.is-scrolled .search-toggle svg,
+  .site-header.mega-menu-open .search-toggle svg {
+    filter: invert(1);
+  }
+
+  .site-header.is-scrolled .header-cart .cart-label,
+  .site-header.mega-menu-open .header-cart .cart-label {
+    color: #0d0d0d;
+  }
+
+  .site-header.is-scrolled .header-cart .cart-count,
+  .site-header.mega-menu-open .header-cart .cart-count {
+    color: #0d0d0d;
+    border-color: #0d0d0d;
+  }
+}
+
 /* Scroll Prevention Styles */
 .scroll-locked {
   overflow: hidden !important;
@@ -1599,13 +1654,12 @@ body.archive:has(.promo-bar) .site-content {
   top: 100%;
   left: 0;
   width: 100%;
-  background: var(--mega-menu-background);
+  background: var(--headerBackground);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
   transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
   z-index: var(--z-overlay);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .mega-menu.active {
