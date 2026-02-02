@@ -239,7 +239,7 @@
 @media (max-width: 1024px) {
   body.single-product .header-back-button {
     display: block !important;
-    margin-right: 9px;
+    /* margin-right: 9px; */
   }
 
   body.single-product .hamburger {
@@ -276,10 +276,11 @@
     display: block;
   }
 
-  /* Hide search icon on single product pages on mobile */
+  /* Hide search icon on single product pages on mobile
   body.single-product .search-toggle--mobile {
     display: none;
   }
+     */
 }
 
 /* Hide search toggle on desktop (will use menu item instead) */
@@ -1353,10 +1354,11 @@ body.search-open
     margin-bottom: 5px;
   }
 
-  /* Add margin-right only when search icon is not rendered (single product pages) */
+  /* Add margin-right only when search icon is not rendered (single product pages)
   body.single-product .header-left {
     margin-right: 38px;
   }
+  */
 
   .header-center {
     order: 2;
