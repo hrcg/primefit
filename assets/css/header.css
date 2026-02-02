@@ -40,7 +40,7 @@
   top: 0;
   left: 0;
   width: 100%;
-  background: var(--headerBackground);
+  background: var(--bg);
   z-index: var(--z-dropdown);
   padding: 12px 0;
   transition: background-color 0.2s ease;
@@ -1475,29 +1475,42 @@ body.search-open
 /* When scrolled, force black background even on front page */
 .site-header.is-scrolled,
 .has-hero-header .site-header.is-scrolled {
-  background: var(--headerBackground) !important;
+  background: var(--bg) !important;
 }
 
 .tax-product_cat .site-header.is-scrolled {
-  background: var(--headerBackground) !important;
+  background: var(--bg) !important;
 }
 
 /* Light mode: sticky header and mega-menu-open white background, inverted nav/logo (header only, not mega menu) */
+/* Also: product pages, account page, and single (post/page) get inverted nav/logo in light mode */
 @media (prefers-color-scheme: light) {
   .site-header.is-scrolled,
   .site-header.mega-menu-open,
   .has-hero-header .site-header.is-scrolled,
-  .tax-product_cat .site-header.is-scrolled {
-    background: #fff !important;
+  .tax-product_cat .site-header.is-scrolled,
+  body.single-product .site-header,
+  body.woocommerce-account .site-header,
+  body.single .site-header,
+  body.page .site-header {
+    background: var(--bg) !important;
   }
 
   .site-header.is-scrolled .menu a,
-  .site-header.mega-menu-open .menu a {
+  .site-header.mega-menu-open .menu a,
+  body.single-product .site-header .menu a,
+  body.woocommerce-account .site-header .menu a,
+  body.single .site-header .menu a,
+  body.page .site-header .menu a {
     color: #0d0d0d !important;
   }
 
   .site-header.is-scrolled .menu a:hover,
-  .site-header.mega-menu-open .menu a:hover {
+  .site-header.mega-menu-open .menu a:hover,
+  body.single-product .site-header .menu a:hover,
+  body.woocommerce-account .site-header .menu a:hover,
+  body.single .site-header .menu a:hover,
+  body.page .site-header .menu a:hover {
     opacity: 0.7;
   }
 
@@ -1506,35 +1519,168 @@ body.search-open
   .site-header.is-scrolled .site-brand .custom-logo,
   .site-header.mega-menu-open .site-brand .brand-logo,
   .site-header.mega-menu-open .site-brand .brand-symbol,
-  .site-header.mega-menu-open .site-brand .custom-logo {
+  .site-header.mega-menu-open .site-brand .custom-logo,
+  body.single-product .site-header .site-brand .brand-logo,
+  body.single-product .site-header .site-brand .brand-symbol,
+  body.single-product .site-header .site-brand .custom-logo,
+  body.woocommerce-account .site-header .site-brand .brand-logo,
+  body.woocommerce-account .site-header .site-brand .brand-symbol,
+  body.woocommerce-account .site-header .site-brand .custom-logo,
+  body.single .site-header .site-brand .brand-logo,
+  body.single .site-header .site-brand .brand-symbol,
+  body.single .site-header .site-brand .custom-logo,
+  body.page .site-header .site-brand .brand-logo,
+  body.page .site-header .site-brand .brand-symbol,
+  body.page .site-header .site-brand .custom-logo {
     filter: invert(1);
   }
 
   .site-header.is-scrolled .hamburger-icon,
-  .site-header.mega-menu-open .hamburger-icon {
+  .site-header.mega-menu-open .hamburger-icon,
+  body.single-product .site-header .hamburger-icon,
+  body.woocommerce-account .site-header .hamburger-icon,
+  body.single .site-header .hamburger-icon,
+  body.page .site-header .hamburger-icon {
     filter: brightness(0) invert(0);
   }
 
-  .site-header.is-scrolled .search-toggle,
-  .site-header.mega-menu-open .search-toggle {
+  body.single-product .site-header .header-back-button .back-button-icon {
+    filter: brightness(0) invert(0);
+  }
+
+  .site-header .search-toggle,
+  .site-header .search-toggle--mobile {
     color: #0d0d0d;
   }
 
-  .site-header.is-scrolled .search-toggle svg,
-  .site-header.mega-menu-open .search-toggle svg {
+  /* Invert search icon only when header is NOT sticky */
+  .site-header .search-toggle svg,
+  .site-header .search-toggle--mobile svg {
     filter: invert(1);
   }
 
+  .site-header.is-scrolled .search-toggle svg,
+  .site-header.is-scrolled .search-toggle--mobile svg,
+  .site-header.mega-menu-open .search-toggle svg,
+  .site-header.mega-menu-open .search-toggle--mobile svg {
+    filter: none;
+  }
+
+  .site-header.is-scrolled .search-toggle,
+  .site-header.mega-menu-open .search-toggle,
+  body.single-product .site-header .search-toggle,
+  body.woocommerce-account .site-header .search-toggle,
+  body.single .site-header .search-toggle,
+  body.page .site-header .search-toggle {
+    color: #0d0d0d;
+  }
+
   .site-header.is-scrolled .header-cart .cart-label,
-  .site-header.mega-menu-open .header-cart .cart-label {
+  .site-header.mega-menu-open .header-cart .cart-label,
+  body.single-product .site-header .header-cart .cart-label,
+  body.woocommerce-account .site-header .header-cart .cart-label,
+  body.single .site-header .header-cart .cart-label,
+  body.page .site-header .header-cart .cart-label {
     color: #0d0d0d;
   }
 
   .site-header.is-scrolled .header-cart .cart-count,
-  .site-header.mega-menu-open .header-cart .cart-count {
+  .site-header.mega-menu-open .header-cart .cart-count,
+  body.single-product .site-header .header-cart .cart-count,
+  body.woocommerce-account .site-header .header-cart .cart-count,
+  body.single .site-header .header-cart .cart-count,
+  body.page .site-header .header-cart .cart-count {
     color: #0d0d0d;
     border-color: #0d0d0d;
   }
+}
+
+/* Explicit light theme: same inverted header on product, account, single pages */
+[data-theme="light"] body.single-product .site-header,
+[data-theme="light"] body.woocommerce-account .site-header,
+[data-theme="light"] body.single .site-header,
+[data-theme="light"] body.page .site-header {
+  background: #fff !important;
+}
+
+[data-theme="light"] body.single-product .site-header .menu a,
+[data-theme="light"] body.woocommerce-account .site-header .menu a,
+[data-theme="light"] body.single .site-header .menu a,
+[data-theme="light"] body.page .site-header .menu a {
+  color: #0d0d0d !important;
+}
+
+[data-theme="light"] body.single-product .site-header .menu a:hover,
+[data-theme="light"] body.woocommerce-account .site-header .menu a:hover,
+[data-theme="light"] body.single .site-header .menu a:hover,
+[data-theme="light"] body.page .site-header .menu a:hover {
+  opacity: 0.7;
+}
+
+[data-theme="light"] body.single-product .site-header .site-brand .brand-logo,
+[data-theme="light"] body.single-product .site-header .site-brand .brand-symbol,
+[data-theme="light"] body.single-product .site-header .site-brand .custom-logo,
+[data-theme="light"] body.woocommerce-account .site-header .site-brand .brand-logo,
+[data-theme="light"] body.woocommerce-account .site-header .site-brand .brand-symbol,
+[data-theme="light"] body.woocommerce-account .site-header .site-brand .custom-logo,
+[data-theme="light"] body.single .site-header .site-brand .brand-logo,
+[data-theme="light"] body.single .site-header .site-brand .brand-symbol,
+[data-theme="light"] body.single .site-header .site-brand .custom-logo,
+[data-theme="light"] body.page .site-header .site-brand .brand-logo,
+[data-theme="light"] body.page .site-header .site-brand .brand-symbol,
+[data-theme="light"] body.page .site-header .site-brand .custom-logo {
+  filter: invert(1);
+}
+
+[data-theme="light"] body.single-product .site-header .hamburger-icon,
+[data-theme="light"] body.woocommerce-account .site-header .hamburger-icon,
+[data-theme="light"] body.single .site-header .hamburger-icon,
+[data-theme="light"] body.page .site-header .hamburger-icon {
+  filter: brightness(0) invert(0);
+}
+
+[data-theme="light"] body.single-product .site-header .header-back-button .back-button-icon {
+  filter: brightness(0) invert(0);
+}
+
+[data-theme="light"] .site-header .search-toggle,
+[data-theme="light"] .site-header .search-toggle--mobile {
+  color: #0d0d0d;
+}
+
+/* Invert search icon only when header is NOT sticky */
+[data-theme="light"] .site-header .search-toggle svg,
+[data-theme="light"] .site-header .search-toggle--mobile svg {
+  filter: invert(1);
+}
+
+[data-theme="light"] .site-header.is-scrolled .search-toggle svg,
+[data-theme="light"] .site-header.is-scrolled .search-toggle--mobile svg,
+[data-theme="light"] .site-header.mega-menu-open .search-toggle svg,
+[data-theme="light"] .site-header.mega-menu-open .search-toggle--mobile svg {
+  filter: none;
+}
+
+[data-theme="light"] body.single-product .site-header .search-toggle,
+[data-theme="light"] body.woocommerce-account .site-header .search-toggle,
+[data-theme="light"] body.single .site-header .search-toggle,
+[data-theme="light"] body.page .site-header .search-toggle {
+  color: #0d0d0d;
+}
+
+[data-theme="light"] body.single-product .site-header .header-cart .cart-label,
+[data-theme="light"] body.woocommerce-account .site-header .header-cart .cart-label,
+[data-theme="light"] body.single .site-header .header-cart .cart-label,
+[data-theme="light"] body.page .site-header .header-cart .cart-label {
+  color: #0d0d0d;
+}
+
+[data-theme="light"] body.single-product .site-header .header-cart .cart-count,
+[data-theme="light"] body.woocommerce-account .site-header .header-cart .cart-count,
+[data-theme="light"] body.single .site-header .header-cart .cart-count,
+[data-theme="light"] body.page .site-header .header-cart .cart-count {
+  color: #0d0d0d;
+  border-color: #0d0d0d;
 }
 
 /* Scroll Prevention Styles */

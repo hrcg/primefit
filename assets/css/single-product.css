@@ -4,7 +4,7 @@
 
 /* Header styling for single product pages */
 body.single-product .site-header {
-  background: var(--headerBackground) !important;
+  background: var(--bg) !important;
 }
 
 /* CSS Custom Properties for Dark/Light Mode */
