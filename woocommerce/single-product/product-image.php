@@ -37,13 +37,11 @@ if ( false !== $cached_gallery ) {
 	$thumb_urls = isset( $cached_gallery['thumb_urls'] ) && is_array( $cached_gallery['thumb_urls'] ) ? $cached_gallery['thumb_urls'] : array();
 	
 	$video = isset( $cached_gallery['video'] ) && is_array( $cached_gallery['video'] ) ? $cached_gallery['video'] : array(
-		'id'         => 0,
-		'url'        => '',
-		'thumb_id'   => 0,
-		'thumb_url'  => '',
-		'poster_url' => '',
+		'id'        => 0,
+		'url'       => '',
+		'thumb_id'  => 0,
+		'thumb_url' => '',
 	);
-	$video['poster_url'] = isset( $video['poster_url'] ) ? $video['poster_url'] : '';
 	
 	$video_position = isset( $cached_gallery['video_position'] ) ? (int) $cached_gallery['video_position'] : 1;
 	if ( $video_position < 1 ) {
@@ -71,11 +69,10 @@ if ( false !== $cached_gallery ) {
 		$video_position = 1;
 	}
 	$video    = array(
-		'id'         => $video_id,
-		'url'        => '',
-		'thumb_id'   => $video_thumb_id,
-		'thumb_url'  => '',
-		'poster_url' => '',
+		'id'        => $video_id,
+		'url'       => '',
+		'thumb_id'  => $video_thumb_id,
+		'thumb_url' => '',
 	);
 	if ( $video_id > 0 ) {
 		$mime = get_post_mime_type( $video_id );
@@ -91,15 +88,6 @@ if ( false !== $cached_gallery ) {
 					$video_thumb = wp_get_attachment_image_url( $main_image_id, 'thumbnail' );
 				}
 				$video['thumb_url'] = $video_thumb ? $video_thumb : '';
-				// Large poster so it fills the main area (same size as main product images).
-				$video_poster = $video_thumb_id ? wp_get_attachment_image_url( $video_thumb_id, 'large' ) : '';
-				if ( ! $video_poster ) {
-					$video_poster = wp_get_attachment_image_url( $video_id, 'large' );
-				}
-				if ( ! $video_poster && ! empty( $main_image_id ) ) {
-					$video_poster = wp_get_attachment_image_url( $main_image_id, 'large' );
-				}
-				$video['poster_url'] = $video_poster ? $video_poster : '';
 			}
 		}
 	}
@@ -169,7 +157,7 @@ $gallery_data = array(
 	'product_id' => $product->get_id(),
 	'image_urls' => $image_urls,
 	'thumb_urls' => isset( $thumb_urls ) && is_array( $thumb_urls ) ? $thumb_urls : array(),
-	'video'      => isset( $video ) && is_array( $video ) ? $video : array( 'id' => 0, 'url' => '', 'thumb_id' => 0, 'thumb_url' => '', 'poster_url' => '' ),
+	'video'      => isset( $video ) && is_array( $video ) ? $video : array( 'id' => 0, 'url' => '', 'thumb_id' => 0, 'thumb_url' => '' ),
 	'video_position' => isset( $video_position ) ? max( 1, (int) $video_position ) : 1,
 );
 
@@ -236,7 +224,7 @@ if ( $has_video ) {
 					 width="800" 
 					 height="800" />
 			<?php elseif ( 'video' === $first_item_type && $has_video ) : ?>
-				<video class="main-product-video" autoplay muted loop playsinline preload="auto">
+				<video class="main-product-video" autoplay muted loop playsinline preload="auto" disablepictureinpicture>
 					<source src="<?php echo esc_url( $gallery_data['video']['url'] ); ?>" />
 				</video>
 			<?php endif; ?>
@@ -360,8 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				type: 'video',
 				id: galleryData.video.id || 0,
 				url: galleryData.video.url,
-				thumb: galleryData.video.thumb_url || (media[0] ? media[0].thumb : ''),
-				poster: galleryData.video.poster_url || galleryData.video.thumb_url || (media[0] ? media[0].url : '')
+				thumb: galleryData.video.thumb_url || (media[0] ? media[0].thumb : '')
 			};
 
 			const rawPos = Number(galleryData.video_position || 1);
@@ -458,10 +445,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			video.preload = 'auto';
 			video.playsInline = true;
 			video.dataset.mediaIndex = String(index);
-			// Show poster (large size) so the main area never goes black and it fills the container.
-			if (item.poster || item.thumb) {
-				video.poster = item.poster || item.thumb;
-			}
+			// Disable controls to prevent layout shifts
+			video.controls = false;
+			video.disablePictureInPicture = true;
 			const source = document.createElement('source');
 			source.src = item.url;
 			video.appendChild(source);

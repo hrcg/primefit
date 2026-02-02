@@ -196,6 +196,30 @@ body.single-product .single-product-page {
   display: block;
   object-fit: cover;
   background: var(--product-card-bg);
+  /* Prevent controls from causing layout shifts */
+  position: relative;
+}
+
+/* Hide native video controls to prevent layout shifts on mobile */
+.main-product-video::-webkit-media-controls {
+  display: none !important;
+}
+
+.main-product-video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+/* For other browsers */
+.main-product-video::--webkit-media-controls-panel {
+  display: none !important;
+}
+
+.main-product-video::-webkit-media-controls-play-button {
+  display: none !important;
+}
+
+.main-product-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
 }
 
 /* Slide animation states */
@@ -1238,6 +1262,8 @@ body.single-product .single-product-page {
   .product-gallery-container {
     order: 1;
     flex-direction: column;
+    /* In column layout, stretch children full width (prevents snapping/shrinking) */
+    align-items: stretch;
     gap: 15px;
   }
 
@@ -1253,6 +1279,11 @@ body.single-product .single-product-page {
 
   .product-main-image {
     order: 1;
+    width: 100%;
+  }
+
+  .main-image-wrapper {
+    width: 100%;
   }
 
   .product-details-container,
