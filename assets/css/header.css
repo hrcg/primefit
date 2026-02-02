@@ -1483,13 +1483,14 @@ body.search-open
 }
 
 /* Light mode: sticky header and mega-menu-open white background, inverted nav/logo (header only, not mega menu) */
-/* Also: product pages, account page, and single (post/page) get inverted nav/logo in light mode */
+/* Also: product pages, shop page, account page, and single (post/page) get inverted nav/logo in light mode */
 @media (prefers-color-scheme: light) {
   .site-header.is-scrolled,
   .site-header.mega-menu-open,
   .has-hero-header .site-header.is-scrolled,
   .tax-product_cat .site-header.is-scrolled,
   body.single-product .site-header,
+  body.post-type-archive-product .site-header,
   body.woocommerce-account .site-header,
   body.single .site-header,
   body.page .site-header {
@@ -1499,6 +1500,7 @@ body.search-open
   .site-header.is-scrolled .menu a,
   .site-header.mega-menu-open .menu a,
   body.single-product .site-header .menu a,
+  body.post-type-archive-product .site-header .menu a,
   body.woocommerce-account .site-header .menu a,
   body.single .site-header .menu a,
   body.page .site-header .menu a {
@@ -1508,6 +1510,7 @@ body.search-open
   .site-header.is-scrolled .menu a:hover,
   .site-header.mega-menu-open .menu a:hover,
   body.single-product .site-header .menu a:hover,
+  body.post-type-archive-product .site-header .menu a:hover,
   body.woocommerce-account .site-header .menu a:hover,
   body.single .site-header .menu a:hover,
   body.page .site-header .menu a:hover {
@@ -1523,6 +1526,9 @@ body.search-open
   body.single-product .site-header .site-brand .brand-logo,
   body.single-product .site-header .site-brand .brand-symbol,
   body.single-product .site-header .site-brand .custom-logo,
+  body.post-type-archive-product .site-header .site-brand .brand-logo,
+  body.post-type-archive-product .site-header .site-brand .brand-symbol,
+  body.post-type-archive-product .site-header .site-brand .custom-logo,
   body.woocommerce-account .site-header .site-brand .brand-logo,
   body.woocommerce-account .site-header .site-brand .brand-symbol,
   body.woocommerce-account .site-header .site-brand .custom-logo,
@@ -1538,6 +1544,7 @@ body.search-open
   .site-header.is-scrolled .hamburger-icon,
   .site-header.mega-menu-open .hamburger-icon,
   body.single-product .site-header .hamburger-icon,
+  body.post-type-archive-product .site-header .hamburger-icon,
   body.woocommerce-account .site-header .hamburger-icon,
   body.single .site-header .hamburger-icon,
   body.page .site-header .hamburger-icon {
@@ -1569,6 +1576,7 @@ body.search-open
   .site-header.is-scrolled .search-toggle,
   .site-header.mega-menu-open .search-toggle,
   body.single-product .site-header .search-toggle,
+  body.post-type-archive-product .site-header .search-toggle,
   body.woocommerce-account .site-header .search-toggle,
   body.single .site-header .search-toggle,
   body.page .site-header .search-toggle {
@@ -1578,6 +1586,7 @@ body.search-open
   .site-header.is-scrolled .header-cart .cart-label,
   .site-header.mega-menu-open .header-cart .cart-label,
   body.single-product .site-header .header-cart .cart-label,
+  body.post-type-archive-product .site-header .header-cart .cart-label,
   body.woocommerce-account .site-header .header-cart .cart-label,
   body.single .site-header .header-cart .cart-label,
   body.page .site-header .header-cart .cart-label {
@@ -1587,6 +1596,7 @@ body.search-open
   .site-header.is-scrolled .header-cart .cart-count,
   .site-header.mega-menu-open .header-cart .cart-count,
   body.single-product .site-header .header-cart .cart-count,
+  body.post-type-archive-product .site-header .header-cart .cart-count,
   body.woocommerce-account .site-header .header-cart .cart-count,
   body.single .site-header .header-cart .cart-count,
   body.page .site-header .header-cart .cart-count {
@@ -1595,8 +1605,9 @@ body.search-open
   }
 }
 
-/* Explicit light theme: same inverted header on product, account, single pages */
+/* Explicit light theme: same inverted header on product, shop, account, single pages */
 [data-theme="light"] body.single-product .site-header,
+[data-theme="light"] body.post-type-archive-product .site-header,
 [data-theme="light"] body.woocommerce-account .site-header,
 [data-theme="light"] body.single .site-header,
 [data-theme="light"] body.page .site-header {
@@ -1604,6 +1615,7 @@ body.search-open
 }
 
 [data-theme="light"] body.single-product .site-header .menu a,
+[data-theme="light"] body.post-type-archive-product .site-header .menu a,
 [data-theme="light"] body.woocommerce-account .site-header .menu a,
 [data-theme="light"] body.single .site-header .menu a,
 [data-theme="light"] body.page .site-header .menu a {
@@ -1611,6 +1623,7 @@ body.search-open
 }
 
 [data-theme="light"] body.single-product .site-header .menu a:hover,
+[data-theme="light"] body.post-type-archive-product .site-header .menu a:hover,
 [data-theme="light"] body.woocommerce-account .site-header .menu a:hover,
 [data-theme="light"] body.single .site-header .menu a:hover,
 [data-theme="light"] body.page .site-header .menu a:hover {
@@ -1620,6 +1633,9 @@ body.search-open
 [data-theme="light"] body.single-product .site-header .site-brand .brand-logo,
 [data-theme="light"] body.single-product .site-header .site-brand .brand-symbol,
 [data-theme="light"] body.single-product .site-header .site-brand .custom-logo,
+[data-theme="light"] body.post-type-archive-product .site-header .site-brand .brand-logo,
+[data-theme="light"] body.post-type-archive-product .site-header .site-brand .brand-symbol,
+[data-theme="light"] body.post-type-archive-product .site-header .site-brand .custom-logo,
 [data-theme="light"] body.woocommerce-account .site-header .site-brand .brand-logo,
 [data-theme="light"] body.woocommerce-account .site-header .site-brand .brand-symbol,
 [data-theme="light"] body.woocommerce-account .site-header .site-brand .custom-logo,
@@ -1633,6 +1649,7 @@ body.search-open
 }
 
 [data-theme="light"] body.single-product .site-header .hamburger-icon,
+[data-theme="light"] body.post-type-archive-product .site-header .hamburger-icon,
 [data-theme="light"] body.woocommerce-account .site-header .hamburger-icon,
 [data-theme="light"] body.single .site-header .hamburger-icon,
 [data-theme="light"] body.page .site-header .hamburger-icon {
@@ -1662,6 +1679,7 @@ body.search-open
 }
 
 [data-theme="light"] body.single-product .site-header .search-toggle,
+[data-theme="light"] body.post-type-archive-product .site-header .search-toggle,
 [data-theme="light"] body.woocommerce-account .site-header .search-toggle,
 [data-theme="light"] body.single .site-header .search-toggle,
 [data-theme="light"] body.page .site-header .search-toggle {
@@ -1669,6 +1687,7 @@ body.search-open
 }
 
 [data-theme="light"] body.single-product .site-header .header-cart .cart-label,
+[data-theme="light"] body.post-type-archive-product .site-header .header-cart .cart-label,
 [data-theme="light"] body.woocommerce-account .site-header .header-cart .cart-label,
 [data-theme="light"] body.single .site-header .header-cart .cart-label,
 [data-theme="light"] body.page .site-header .header-cart .cart-label {
@@ -1676,6 +1695,7 @@ body.search-open
 }
 
 [data-theme="light"] body.single-product .site-header .header-cart .cart-count,
+[data-theme="light"] body.post-type-archive-product .site-header .header-cart .cart-count,
 [data-theme="light"] body.woocommerce-account .site-header .header-cart .cart-count,
 [data-theme="light"] body.single .site-header .header-cart .cart-count,
 [data-theme="light"] body.page .site-header .header-cart .cart-count {
@@ -1800,7 +1820,7 @@ body.archive:has(.promo-bar) .site-content {
   top: 100%;
   left: 0;
   width: 100%;
-  background: var(--headerBackground);
+  background: var(--bg);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
@@ -1869,7 +1889,7 @@ body.archive:has(.promo-bar) .site-content {
 
 /* Header state when mega menu is open */
 .site-header.mega-menu-open {
-  background: var(--headerBackground);
+  background: var(--bg);
 }
 
 /* Hide mega menu on mobile */
