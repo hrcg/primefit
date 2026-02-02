@@ -1562,9 +1562,9 @@ body.search-open
     color: #0d0d0d;
   }
 
-  /* Invert search icon only when header is NOT sticky */
-  .site-header .search-toggle svg,
-  .site-header .search-toggle--mobile svg {
+  /* Invert search icon only when header is NOT sticky (exclude single, shop, account, checkout, order-received) */
+  body:not(.single):not(.page):not(.post-type-archive-product):not(.woocommerce-account):not(.woocommerce-checkout):not(.woocommerce-order-received) .site-header .search-toggle svg,
+  body:not(.single):not(.page):not(.post-type-archive-product):not(.woocommerce-account):not(.woocommerce-checkout):not(.woocommerce-order-received) .site-header .search-toggle--mobile svg {
     filter: invert(1);
   }
 
@@ -1667,9 +1667,9 @@ body.search-open
   color: #0d0d0d;
 }
 
-/* Invert search icon only when header is NOT sticky */
-[data-theme="light"] .site-header .search-toggle svg,
-[data-theme="light"] .site-header .search-toggle--mobile svg {
+/* Invert search icon only when header is NOT sticky (exclude single, shop, account, checkout, order-received) */
+[data-theme="light"] body:not(.single):not(.page):not(.post-type-archive-product):not(.woocommerce-account):not(.woocommerce-checkout):not(.woocommerce-order-received) .site-header .search-toggle svg,
+[data-theme="light"] body:not(.single):not(.page):not(.post-type-archive-product):not(.woocommerce-account):not(.woocommerce-checkout):not(.woocommerce-order-received) .site-header .search-toggle--mobile svg {
   filter: invert(1);
 }
 
