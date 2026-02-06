@@ -1980,6 +1980,27 @@ function primefit_mini_cart_order_summary() {
 	if ( $has_bundle && $bundle_savings <= 0 && $bundle_items_total > 0 && $bundle_total > 0 ) {
 		$bundle_savings = max( 0.0, $bundle_items_total - $bundle_total );
 	}
+
+	// When a cart contains BOTH bundles and normal products, the "bundle total" helper only
+	// represents the bundle groups. We must add normal (non-bundle) line totals too,
+	// otherwise the displayed Total will be too low.
+	$non_bundle_total    = 0.0;
+	$has_non_bundle_item = false;
+	foreach ( WC()->cart->get_cart() as $cart_item ) {
+		if ( ! empty( $cart_item['primefit_bundle_group_id'] ) ) {
+			continue;
+		}
+		$has_non_bundle_item = true;
+		if ( isset( $cart_item['line_total'] ) ) {
+			$non_bundle_total += (float) $cart_item['line_total'];
+			continue;
+		}
+		// Fallback: product price * qty.
+		if ( isset( $cart_item['data'] ) && $cart_item['data'] instanceof WC_Product ) {
+			$qty = isset( $cart_item['quantity'] ) ? max( 1, (int) $cart_item['quantity'] ) : 1;
+			$non_bundle_total += ( (float) $cart_item['data']->get_price() * $qty );
+		}
+	}
 	
 	// Calculate shipping total early so it can be used in the bundle total calculation
 	$shipping_total = 0;
@@ -2071,6 +2092,9 @@ function primefit_mini_cart_order_summary() {
 				// For bundle carts, show the bundle price + shipping (source of truth) instead of WooCommerce's full order total.
 				if ( $has_bundle && $bundle_total > 0 ) {
 					$bundle_total_with_shipping = $bundle_total + (float) $shipping_total;
+					if ( $has_non_bundle_item && $non_bundle_total > 0 ) {
+						$bundle_total_with_shipping += (float) $non_bundle_total;
+					}
 					echo wp_kses_post( wc_price( $bundle_total_with_shipping ) );
 				} else {
 					echo WC()->cart->get_total();
