@@ -294,17 +294,20 @@ function primefit_enqueue_assets() {
 		true // Defer for better performance
 	);
 	
-	// Promo bar Christmas animation - load on all pages (only activates if promo bar exists)
-	// DISABLED - Uncomment below to re-enable
-	/*
-	wp_enqueue_script(
-		'primefit-promo-bar-christmas',
-		PRIMEFIT_THEME_URI . '/assets/js/promo-bar-christmas.js',
-		[],
-		primefit_get_file_version( '/assets/js/promo-bar-christmas.js' ),
-		true // Defer for better performance
-	);
-	*/
+	// Hero seasonal decoration - only when enabled in Customizer (Hero Section)
+	if ( get_theme_mod( 'primefit_hero_seasonal_decoration_enabled', false ) ) {
+		wp_enqueue_script(
+			'primefit-hero-seasonal-decoration',
+			PRIMEFIT_THEME_URI . '/assets/js/hero-seasonal-decoration.js',
+			[],
+			primefit_get_file_version( '/assets/js/hero-seasonal-decoration.js' ),
+			true
+		);
+		wp_localize_script( 'primefit-hero-seasonal-decoration', 'primefitSeasonalDecoration', array(
+			'enabled' => true,
+			'variant' => get_theme_mod( 'primefit_hero_seasonal_decoration_variant', 'valentines' ),
+		) );
+	}
 	
 	// Shop functionality - load on shop pages
 	// On mobile, this will be lazy loaded instead

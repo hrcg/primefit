@@ -277,6 +277,36 @@ function primefit_customize_register( $wp_customize ) {
 		'description' => __( 'Image shown while video is loading on mobile devices', 'primefit' ),
 	) ) );
 
+	// Hero seasonal decoration (falling hearts, roses, snowflakes, etc.)
+	$wp_customize->add_setting( 'primefit_hero_seasonal_decoration_enabled', array(
+		'default'           => false,
+		'sanitize_callback' => 'wp_validate_boolean',
+	) );
+	$wp_customize->add_control( 'primefit_hero_seasonal_decoration_enabled', array(
+		'label'       => __( 'Enable hero seasonal decoration', 'primefit' ),
+		'description' => __( 'Show falling decorations (hearts, roses, snowflakes) on the hero section.', 'primefit' ),
+		'section'     => 'primefit_hero',
+		'type'        => 'checkbox',
+	) );
+
+	$wp_customize->add_setting( 'primefit_hero_seasonal_decoration_variant', array(
+		'default'           => 'valentines',
+		'sanitize_callback' => function( $value ) {
+			$allowed = array( 'valentines', 'christmas', 'newyear' );
+			return in_array( $value, $allowed, true ) ? $value : 'valentines';
+		},
+	) );
+	$wp_customize->add_control( 'primefit_hero_seasonal_decoration_variant', array(
+		'label'   => __( 'Decoration variant', 'primefit' ),
+		'section' => 'primefit_hero',
+		'type'    => 'select',
+		'choices' => array(
+			'valentines' => __( "Valentine's Day (hearts & roses)", 'primefit' ),
+			'christmas'  => __( 'Christmas (snowflakes)', 'primefit' ),
+			'newyear'    => __( 'New Year (confetti-style)', 'primefit' ),
+		),
+	) );
+
 	// Training Division Section Panel
 	$wp_customize->add_section( 'primefit_training_division', array(
 		'title'    => __( 'Training Division Section', 'primefit' ),
